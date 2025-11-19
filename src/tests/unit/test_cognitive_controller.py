@@ -1,6 +1,5 @@
 """Comprehensive unit tests for CognitiveController."""
 import numpy as np
-import pytest
 from threading import Thread
 from src.core.cognitive_controller import CognitiveController
 
@@ -167,7 +166,7 @@ class TestCognitiveController:
         vec = vec / np.linalg.norm(vec)
         
         initial_state = controller.process_event(vec, moral_value=0.9)
-        initial_threshold = initial_state["moral_threshold"]
+        initial_state["moral_threshold"]
         
         # Process many high-moral events
         for _ in range(50):

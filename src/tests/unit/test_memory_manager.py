@@ -1,7 +1,6 @@
 """Comprehensive unit tests for MemoryManager."""
 import pytest
 import numpy as np
-import asyncio
 from src.core.memory_manager import MemoryManager
 
 pytest_plugins = ('pytest_asyncio',)
@@ -216,7 +215,6 @@ class TestMemoryManager:
         config = {"dimension": 10}
         manager = MemoryManager(config)
         
-        initial_threshold = manager.filter.threshold
         
         # Process events to trigger adaptation
         for _ in range(20):

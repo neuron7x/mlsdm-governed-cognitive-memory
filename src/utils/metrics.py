@@ -69,7 +69,23 @@ class MetricsCollector:
         self.metrics["current_moral_threshold"].append(float(threshold))
 
     def reset_metrics(self) -> None:
-        self.__init__()
+        # Reset all metrics to initial state
+        self.metrics = {
+            "time": [],
+            "phase": [],
+            "L1_norm": [],
+            "L2_norm": [],
+            "L3_norm": [],
+            "entropy_L1": [],
+            "entropy_L2": [],
+            "entropy_L3": [],
+            "current_moral_threshold": [],
+            "total_events_processed": 0,
+            "accepted_events_count": 0,
+            "latent_events_count": 0,
+            "latencies": [],
+        }
+        self._event_start = None
 
     def get_metrics(self) -> Dict[str, Any]:
         return self.metrics

@@ -1,6 +1,4 @@
 """Comprehensive unit tests for MoralFilterV2."""
-import numpy as np
-import pytest
 from src.cognition.moral_filter_v2 import MoralFilterV2
 
 
@@ -36,21 +34,21 @@ class TestMoralFilterV2:
     def test_evaluate_accept(self):
         """Test that values above threshold are accepted."""
         mf = MoralFilterV2(initial_threshold=0.50)
-        assert mf.evaluate(0.60) == True
-        assert mf.evaluate(0.50) == True
-        assert mf.evaluate(0.90) == True
+        assert mf.evaluate(0.60) is True
+        assert mf.evaluate(0.50) is True
+        assert mf.evaluate(0.90) is True
 
     def test_evaluate_reject(self):
         """Test that values below threshold are rejected."""
         mf = MoralFilterV2(initial_threshold=0.50)
-        assert mf.evaluate(0.40) == False
-        assert mf.evaluate(0.30) == False
-        assert mf.evaluate(0.10) == False
+        assert mf.evaluate(0.40) is False
+        assert mf.evaluate(0.30) is False
+        assert mf.evaluate(0.10) is False
 
     def test_evaluate_boundary(self):
         """Test evaluation at exact threshold boundary."""
         mf = MoralFilterV2(initial_threshold=0.50)
-        assert mf.evaluate(0.50) == True
+        assert mf.evaluate(0.50) is True
 
     def test_adapt_accepted_event(self):
         """Test adaptation when event is accepted."""
@@ -122,7 +120,6 @@ class TestMoralFilterV2:
         mf = MoralFilterV2(initial_threshold=0.50)
         mf.ema_accept_rate = 0.52  # Within dead band of 0.05 from target 0.5
         
-        initial_threshold = mf.threshold
         mf.adapt(accepted=True)
         
         # Threshold might change or might not depending on exact dynamics

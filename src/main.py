@@ -2,7 +2,6 @@ import argparse
 import logging
 import json
 
-import numpy as np
 
 from src.core.memory_manager import MemoryManager
 from src.utils.config_loader import ConfigLoader

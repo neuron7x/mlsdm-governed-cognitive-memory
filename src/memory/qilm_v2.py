@@ -10,7 +10,7 @@ class MemoryRetrieval:
     resonance: float
 
 class QILM_v2:
-    def __init__(self, dimension=384, capacity=20000):
+    def __init__(self, dimension: int = 384, capacity: int = 20000) -> None:
         self.dimension = dimension
         self.capacity = capacity
         self.pointer = 0
@@ -20,10 +20,10 @@ class QILM_v2:
         self.phase_bank = np.zeros(capacity, dtype=np.float32)
         self.norms = np.zeros(capacity, dtype=np.float32)
 
-    def entangle(self, vector, phase):
+    def entangle(self, vector: List[float], phase: float) -> int:
         with self._lock:
             vec_np = np.array(vector, dtype=np.float32)
-            norm = np.linalg.norm(vec_np) or 1e-9
+            norm = float(np.linalg.norm(vec_np) or 1e-9)
             idx = self.pointer
             self.memory_bank[idx] = vec_np
             self.phase_bank[idx] = phase
@@ -32,12 +32,12 @@ class QILM_v2:
             self.size = min(self.size + 1, self.capacity)
             return idx
 
-    def retrieve(self, query_vector, current_phase, phase_tolerance=0.15, top_k=5):
+    def retrieve(self, query_vector: List[float], current_phase: float, phase_tolerance: float = 0.15, top_k: int = 5) -> List[MemoryRetrieval]:
         with self._lock:
             if self.size == 0:
                 return []
             q_vec = np.array(query_vector, dtype=np.float32)
-            q_norm = np.linalg.norm(q_vec) or 1e-9
+            q_norm = float(np.linalg.norm(q_vec) or 1e-9)
             phase_diff = np.abs(self.phase_bank[:self.size] - current_phase)
             phase_mask = phase_diff <= phase_tolerance
             if not np.any(phase_mask):
@@ -52,7 +52,7 @@ class QILM_v2:
                 top_local = top_local[np.argsort(cosine_sims[top_local])[::-1]]
             else:
                 top_local = np.argsort(cosine_sims)[::-1]
-            results = []
+            results: List[MemoryRetrieval] = []
             for loc in top_local:
                 glob = candidates_idx[loc]
                 results.append(MemoryRetrieval(
@@ -62,7 +62,7 @@ class QILM_v2:
                 ))
             return results
 
-    def get_state_stats(self):
+    def get_state_stats(self) -> dict[str, int | float]:
         return {
             "capacity": self.capacity,
             "used": self.size,

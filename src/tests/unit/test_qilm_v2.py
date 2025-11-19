@@ -1,6 +1,5 @@
 """Comprehensive unit tests for QILM_v2."""
 import numpy as np
-import pytest
 from threading import Thread
 from src.memory.qilm_v2 import QILM_v2, MemoryRetrieval
 
@@ -58,7 +57,7 @@ class TestQILM_v2:
         
         for i in range(7):
             vec = [float(j) for j in range(10)]
-            idx = qilm.entangle(vec, phase=0.1)
+            qilm.entangle(vec, phase=0.1)
         
         assert qilm.pointer == 2  # 7 % 5 = 2
         assert qilm.size == 5  # Capped at capacity

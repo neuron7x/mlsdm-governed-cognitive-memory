@@ -6,14 +6,14 @@ class MoralFilterV2:
     DEAD_BAND = 0.05
     EMA_ALPHA = 0.1
 
-    def __init__(self, initial_threshold=0.50):
+    def __init__(self, initial_threshold: float = 0.50) -> None:
         self.threshold = np.clip(initial_threshold, self.MIN_THRESHOLD, self.MAX_THRESHOLD)
         self.ema_accept_rate = 0.5
 
-    def evaluate(self, moral_value):
-        return moral_value >= self.threshold
+    def evaluate(self, moral_value: float) -> bool:
+        return bool(moral_value >= self.threshold)
 
-    def adapt(self, accepted):
+    def adapt(self, accepted: bool) -> None:
         signal = 1.0 if accepted else 0.0
         self.ema_accept_rate = self.EMA_ALPHA * signal + (1.0 - self.EMA_ALPHA) * self.ema_accept_rate
         error = self.ema_accept_rate - 0.5
@@ -21,5 +21,5 @@ class MoralFilterV2:
             delta = 0.05 * np.sign(error)
             self.threshold = np.clip(self.threshold + delta, self.MIN_THRESHOLD, self.MAX_THRESHOLD)
 
-    def get_state(self):
-        return {"threshold": self.threshold, "ema": self.ema_accept_rate}
+    def get_state(self) -> dict[str, float]:
+        return {"threshold": float(self.threshold), "ema": float(self.ema_accept_rate)}

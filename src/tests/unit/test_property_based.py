@@ -1,6 +1,6 @@
 """Property-based tests using Hypothesis for invariant verification."""
 import numpy as np
-from hypothesis import given, strategies as st, assume, settings
+from hypothesis import given, strategies as st, settings
 from src.cognition.moral_filter_v2 import MoralFilterV2
 from src.cognition.moral_filter import MoralFilter
 from src.memory.qilm_v2 import QILM_v2
