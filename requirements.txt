@@ -1,12 +1,13 @@
-numpy==1.26.4
+numpy>=2.0.0
+sentence-transformers>=3.0.0
+fastapi>=0.110.0
+uvicorn>=0.29.0
+pytest>=8.0.0
 pyyaml==6.0.1
 configparser==7.0.0
 matplotlib==3.8.4
 scikit-learn==1.4.2
-fastapi==0.111.0
-uvicorn==0.29.0
 prometheus-client==0.20.0
-pytest==8.2.0
 pytest-cov==4.1.0
 hypothesis==6.98.3
 opentelemetry-api==1.24.0

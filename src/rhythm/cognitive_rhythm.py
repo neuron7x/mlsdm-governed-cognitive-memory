@@ -2,7 +2,7 @@ from typing import Dict, Any
 
 
 class CognitiveRhythm:
-    def __init__(self, wake_duration: int = 5, sleep_duration: int = 2) -> None:
+    def __init__(self, wake_duration: int = 8, sleep_duration: int = 3) -> None:
         if wake_duration <= 0 or sleep_duration <= 0:
             raise ValueError("Durations must be positive.")
         self.wake_duration = int(wake_duration)

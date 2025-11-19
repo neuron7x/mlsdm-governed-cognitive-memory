@@ -5,14 +5,14 @@ from typing import Dict, Tuple, Any
 class MultiLevelSynapticMemory:
     def __init__(
         self,
-        dimension: int,
-        lambda_l1: float = 0.5,
-        lambda_l2: float = 0.1,
+        dimension: int = 384,
+        lambda_l1: float = 0.50,
+        lambda_l2: float = 0.10,
         lambda_l3: float = 0.01,
-        theta_l1: float = 1.0,
-        theta_l2: float = 2.0,
-        gating12: float = 0.5,
-        gating23: float = 0.3,
+        theta_l1: float = 1.2,
+        theta_l2: float = 2.5,
+        gating12: float = 0.45,
+        gating23: float = 0.30,
     ) -> None:
         self.dim = int(dimension)
         self.lambda_l1 = float(lambda_l1)
@@ -23,31 +23,30 @@ class MultiLevelSynapticMemory:
         self.gating12 = float(gating12)
         self.gating23 = float(gating23)
 
-        self.state_L1 = np.zeros(self.dim, dtype=float)
-        self.state_L2 = np.zeros(self.dim, dtype=float)
-        self.state_L3 = np.zeros(self.dim, dtype=float)
+        self.l1 = np.zeros(self.dim, dtype=np.float32)
+        self.l2 = np.zeros(self.dim, dtype=np.float32)
+        self.l3 = np.zeros(self.dim, dtype=np.float32)
 
-    def update(self, event_vector: np.ndarray) -> None:
-        if not isinstance(event_vector, np.ndarray) or event_vector.shape[0] != self.dim:
+    def update(self, event: np.ndarray) -> None:
+        if not isinstance(event, np.ndarray) or event.shape[0] != self.dim:
             raise ValueError(f"Event vector must be a NumPy array of dimension {self.dim}.")
 
-        self.state_L1 += event_vector
-        self.state_L1 *= 1.0 - self.lambda_l1
-        self.state_L2 *= 1.0 - self.lambda_l2
-        self.state_L3 *= 1.0 - self.lambda_l3
+        self.l1 *= (1 - self.lambda_l1)
+        self.l2 *= (1 - self.lambda_l2)
+        self.l3 *= (1 - self.lambda_l3)
+        self.l1 += event.astype(np.float32)
+        transfer12 = (self.l1 > self.theta_l1) * self.l1 * self.gating12
+        self.l1 -= transfer12
+        self.l2 += transfer12
+        transfer23 = (self.l2 > self.theta_l2) * self.l2 * self.gating23
+        self.l2 -= transfer23
+        self.l3 += transfer23
 
-        mask_L1 = self.state_L1 > self.theta_l1
-        transfer_L1 = self.state_L1 * mask_L1 * self.gating12
-        self.state_L2 += transfer_L1
-        self.state_L1 -= transfer_L1
-
-        mask_L2 = self.state_L2 > self.theta_l2
-        transfer_L2 = self.state_L2 * mask_L2 * self.gating23
-        self.state_L3 += transfer_L2
-        self.state_L2 -= transfer_L2
+    def state(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        return self.l1.copy(), self.l2.copy(), self.l3.copy()
 
     def get_state(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        return self.state_L1.copy(), self.state_L2.copy(), self.state_L3.copy()
+        return self.state()
 
     def reset_all(self) -> None:
         self.state_L1.fill(0.0)
