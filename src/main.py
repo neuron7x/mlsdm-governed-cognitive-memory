@@ -1,51 +1,42 @@
+import asyncio
+import yaml
 import argparse
-import logging
-import json
-
 import numpy as np
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import uvicorn
+from src.manager import CognitiveMemoryManager
+from prometheus_client import start_http_server
 
-from src.core.memory_manager import MemoryManager
-from src.utils.config_loader import ConfigLoader
+with open("config/default_config.yaml") as f:
+    config = yaml.safe_load(f)
 
+manager = CognitiveMemoryManager(config)
 
-class JSONFormatter(logging.Formatter):
-    def format(self, record):
-        log_record = {
-            "timestamp": self.formatTime(record, self.datefmt),
-            "level": record.levelname,
-            "message": record.getMessage(),
-            "module": record.module,
-        }
-        return json.dumps(log_record)
+app = FastAPI(title="MLSDM Governed Cognitive Memory")
 
+class EventInput(BaseModel):
+    event_vector: list[float]
+    moral_value: float
 
-handler = logging.StreamHandler()
-handler.setFormatter(JSONFormatter())
-logging.getLogger().addHandler(handler)
-logging.getLogger().setLevel(logging.INFO)
-logger = logging.getLogger(__name__)
+@app.post("/v1/process")
+async def process(payload: EventInput):
+    try:
+        state = await manager.process_event(np.array(payload.event_vector), payload.moral_value)
+        return state
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="mlsdm-governed-cognitive-memory CLI")
-    parser.add_argument("--config", type=str, default="config/default_config.yaml")
-    parser.add_argument("--steps", type=int, default=100)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
     parser.add_argument("--api", action="store_true")
     args = parser.parse_args()
 
+    start_http_server(8001)  # Prometheus
+
     if args.api:
-        import uvicorn
-        from src.api.app import app
-
         uvicorn.run(app, host="0.0.0.0", port=8000)
-        return
-
-    config = ConfigLoader.load_config(args.config)
-    manager = MemoryManager(config)
-    logger.info("Running simulation...")
-    manager.run_simulation(args.steps)
-    logger.info("Done.")
-
-
-if __name__ == "__main__":
-    main()
