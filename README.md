@@ -244,6 +244,18 @@ MIT License - see LICENSE file
 }
 ```
 
+## Bibliography
+
+For comprehensive references covering the neurobiological, cognitive, and AI safety foundations of this project, see [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md). The bibliography includes 18 validated sources across 6 key themes:
+- Moral Governance and Homeostasis
+- Circadian Rhythms and Rhythmic Processing
+- Multi-Level Synaptic Memory Models
+- Quantum-Inspired Memory and Phase-Based Retrieval
+- Hippocampal Replay and Memory Consolidation
+- General Cognitive Architectures and LLM Safety
+
+All sources include DOI/arXiv identifiers for traceability and relevance annotations linking to specific MLSDM components.
+
 ---
 
 **Note:** This is an Alpha release. Production use requires additional hardening (monitoring, logging, error handling).
