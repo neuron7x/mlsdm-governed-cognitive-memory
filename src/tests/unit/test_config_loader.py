@@ -98,7 +98,7 @@ class TestConfigLoader:
     def test_invalid_path_type(self):
         """Test that non-string path raises TypeError."""
         with pytest.raises(TypeError, match="Path must be a string"):
-            ConfigLoader.load_config(123)
+            ConfigLoader.load_config(123)  # type: ignore[arg-type]
 
     def test_ini_boolean_parsing(self):
         """Test that INI boolean values are parsed correctly."""

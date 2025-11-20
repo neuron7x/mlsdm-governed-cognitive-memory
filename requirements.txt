@@ -16,6 +16,7 @@ opentelemetry-sdk==1.24.0
 opentelemetry-instrumentation-fastapi==0.45b0
 ruff==0.4.10
 mypy==1.10.0
+types-PyYAML>=6.0.0
 locust==2.29.1
 jupyter==1.0.0
 tenacity==8.2.3

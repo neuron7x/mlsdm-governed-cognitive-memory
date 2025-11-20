@@ -66,7 +66,7 @@ class TestCognitiveController:
         state = controller.process_event(vec, moral_value=0.9)
         
         assert state["rejected"] is True
-        assert "sleep" in state["note"]
+        assert "sleep" in state["note"]  # type: ignore[operator]
 
     def test_step_counter_increments(self):
         """Test that step counter increments correctly."""
@@ -121,10 +121,10 @@ class TestCognitiveController:
         state = controller.process_event(vec, moral_value=0.9)
         
         assert "synaptic_norms" in state
-        assert "L1" in state["synaptic_norms"]
-        assert "L2" in state["synaptic_norms"]
-        assert "L3" in state["synaptic_norms"]
-        assert all(isinstance(norm, float) for norm in state["synaptic_norms"].values())
+        assert "L1" in state["synaptic_norms"]  # type: ignore[operator]
+        assert "L2" in state["synaptic_norms"]  # type: ignore[operator]
+        assert "L3" in state["synaptic_norms"]  # type: ignore[operator]
+        assert all(isinstance(norm, float) for norm in state["synaptic_norms"].values())  # type: ignore[union-attr]
 
     def test_qilm_usage_tracking(self):
         """Test that QILM usage is tracked in state."""
@@ -138,7 +138,7 @@ class TestCognitiveController:
         state_after = controller.process_event(vec, moral_value=0.9)
         qilm_used_after = state_after["qilm_used"]
         
-        assert qilm_used_after == qilm_used_before + 1
+        assert qilm_used_after == qilm_used_before + 1  # type: ignore[operator]
 
     def test_thread_safety(self):
         """Test that controller is thread-safe with concurrent access."""
@@ -176,7 +176,7 @@ class TestCognitiveController:
         final_threshold = final_state["moral_threshold"]
         
         # Threshold should be within bounds
-        assert 0.30 <= final_threshold <= 0.90
+        assert 0.30 <= final_threshold <= 0.90  # type: ignore[operator]
 
     def test_ema_tracking(self):
         """Test that EMA (exponential moving average) is tracked."""
@@ -187,7 +187,7 @@ class TestCognitiveController:
         state = controller.process_event(vec, moral_value=0.9)
         
         assert "moral_ema" in state
-        assert 0.0 <= state["moral_ema"] <= 1.0
+        assert 0.0 <= state["moral_ema"] <= 1.0  # type: ignore[operator]
 
     def test_phase_transitions(self):
         """Test that cognitive rhythm phase transitions are reflected in state."""

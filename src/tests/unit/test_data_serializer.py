@@ -79,12 +79,12 @@ class TestDataSerializer:
         data = {"key": "value"}
         
         with pytest.raises(TypeError, match="Filepath must be a string"):
-            DataSerializer.save(data, 123)
+            DataSerializer.save(data, 123)  # type: ignore[arg-type]
 
     def test_load_non_string_filepath(self):
         """Test that non-string filepath raises TypeError for load."""
         with pytest.raises(TypeError, match="Filepath must be a string"):
-            DataSerializer.load(123)
+            DataSerializer.load(123)  # type: ignore[arg-type]
 
     def test_save_nested_data_json(self):
         """Test saving nested data structures to JSON."""
@@ -132,7 +132,7 @@ class TestDataSerializer:
 
     def test_json_empty_dict(self):
         """Test saving and loading empty dictionary."""
-        data = {}
+        data: dict[str, str] = {}
         
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
             json_path = f.name

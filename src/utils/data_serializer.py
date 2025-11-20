@@ -6,7 +6,7 @@ import numpy as np
 from tenacity import retry, stop_after_attempt
 
 
-@retry(stop=stop_after_attempt(3))
+@retry(stop=stop_after_attempt(3))  # type: ignore[misc]
 def _save_data(data: Dict[str, Any], filepath: str) -> None:
     ext = os.path.splitext(filepath)[1].lower()
     if ext == ".json":
@@ -19,12 +19,13 @@ def _save_data(data: Dict[str, Any], filepath: str) -> None:
         raise ValueError(f"Unsupported format: {ext}")
 
 
-@retry(stop=stop_after_attempt(3))
+@retry(stop=stop_after_attempt(3))  # type: ignore[misc]
 def _load_data(filepath: str) -> Dict[str, Any]:
     ext = os.path.splitext(filepath)[1].lower()
     if ext == ".json":
         with open(filepath, "r", encoding="utf-8") as f:
-            return json.load(f)
+            result: Dict[str, Any] = json.load(f)
+            return result
     elif ext == ".npz":
         arrs = np.load(filepath, allow_pickle=True)
         return {k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in arrs.items()}
@@ -43,4 +44,5 @@ class DataSerializer:
     def load(filepath: str) -> Dict[str, Any]:
         if not isinstance(filepath, str):
             raise TypeError("Filepath must be a string.")
-        return _load_data(filepath)
+        result: Dict[str, Any] = _load_data(filepath)
+        return result

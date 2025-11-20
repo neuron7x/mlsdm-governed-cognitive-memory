@@ -28,12 +28,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
     return token
 
 
-class EventInput(BaseModel):
+class EventInput(BaseModel):  # type: ignore[misc]
     event_vector: List[float]
     moral_value: float
 
 
-class StateResponse(BaseModel):
+class StateResponse(BaseModel):  # type: ignore[misc]
     L1_norm: float
     L2_norm: float
     L3_norm: float
@@ -44,16 +44,17 @@ class StateResponse(BaseModel):
     moral_filter_threshold: float
 
 
-@app.post("/v1/process_event/", response_model=StateResponse)
+@app.post("/v1/process_event/", response_model=StateResponse)  # type: ignore[misc]
 async def process_event(event: EventInput, user: str = Depends(get_current_user)) -> StateResponse:
     vec = np.array(event.event_vector, dtype=float)
     if vec.shape[0] != _manager.dimension:
         raise HTTPException(status_code=400, detail="Dimension mismatch.")
     await _manager.process_event(vec, event.moral_value)
-    return await get_state(user)
+    state: StateResponse = await get_state(user)
+    return state
 
 
-@app.get("/v1/state/", response_model=StateResponse)
+@app.get("/v1/state/", response_model=StateResponse)  # type: ignore[misc]
 async def get_state(user: str = Depends(get_current_user)) -> StateResponse:
     L1, L2, L3 = _manager.memory.get_state()
     metrics = _manager.metrics_collector.get_metrics()
@@ -69,6 +70,6 @@ async def get_state(user: str = Depends(get_current_user)) -> StateResponse:
     )
 
 
-@app.get("/health")
+@app.get("/health")  # type: ignore[misc]
 async def health() -> Dict[str, str]:
     return {"status": "healthy"}
