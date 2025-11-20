@@ -14,6 +14,8 @@ class CognitiveController:
         self.rhythm = CognitiveRhythm(wake_duration=8, sleep_duration=3)
         self.synaptic = MultiLevelSynapticMemory(dimension=dim)
         self.step_counter = 0
+        # Cache for phase values to avoid repeated computation
+        self._phase_cache = {"wake": 0.1, "sleep": 0.9}
 
     def process_event(self, vector, moral_value):
         with self._lock:
@@ -25,14 +27,16 @@ class CognitiveController:
             if not self.rhythm.is_wake():
                 return self._build_state(rejected=True, note="sleep phase")
             self.synaptic.update(vector)
-            phase_val = 0.1 if self.rhythm.phase == "wake" else 0.9
+            # Optimize: use cached phase value
+            phase_val = self._phase_cache[self.rhythm.phase]
             self.qilm.entangle(vector.tolist(), phase=phase_val)
             self.rhythm.step()
             return self._build_state(rejected=False, note="processed")
 
     def retrieve_context(self, query_vector, top_k=5):
         with self._lock:
-            phase_val = 0.1 if self.rhythm.is_wake() else 0.9
+            # Optimize: use cached phase value
+            phase_val = self._phase_cache[self.rhythm.phase]
             return self.qilm.retrieve(query_vector.tolist(), current_phase=phase_val, 
                                      phase_tolerance=0.15, top_k=top_k)
 

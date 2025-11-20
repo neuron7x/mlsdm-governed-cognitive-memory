@@ -11,6 +11,11 @@ class MoralFilterV2:
         self.ema_accept_rate = 0.5
 
     def evaluate(self, moral_value: float) -> bool:
+        # Optimize: fast-path for clear accept/reject cases
+        if moral_value >= self.MAX_THRESHOLD:
+            return True
+        if moral_value < self.MIN_THRESHOLD:
+            return False
         return bool(moral_value >= self.threshold)
 
     def adapt(self, accepted: bool) -> None:

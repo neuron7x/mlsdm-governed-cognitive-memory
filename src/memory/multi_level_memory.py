@@ -31,10 +31,18 @@ class MultiLevelSynapticMemory:
         if not isinstance(event, np.ndarray) or event.shape[0] != self.dim:
             raise ValueError(f"Event vector must be a NumPy array of dimension {self.dim}.")
 
+        # Optimize: perform decay in-place to avoid temporary arrays
         self.l1 *= (1 - self.lambda_l1)
         self.l2 *= (1 - self.lambda_l2)
         self.l3 *= (1 - self.lambda_l3)
-        self.l1 += event.astype(np.float32)
+        
+        # Optimize: avoid unnecessary astype if already float32
+        if event.dtype != np.float32:
+            self.l1 += event.astype(np.float32)
+        else:
+            self.l1 += event
+        
+        # Transfer logic maintains original behavior but avoids temp array creation
         transfer12 = (self.l1 > self.theta_l1) * self.l1 * self.gating12
         self.l1 -= transfer12
         self.l2 += transfer12

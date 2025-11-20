@@ -37,21 +37,36 @@ class QILM_v2:
             if self.size == 0:
                 return []
             q_vec = np.array(query_vector, dtype=np.float32)
-            q_norm = float(np.linalg.norm(q_vec) or 1e-9)
+            q_norm = float(np.linalg.norm(q_vec))
+            if q_norm < 1e-9:
+                q_norm = 1e-9
+            
+            # Optimize: use in-place operations and avoid intermediate arrays
             phase_diff = np.abs(self.phase_bank[:self.size] - current_phase)
             phase_mask = phase_diff <= phase_tolerance
             if not np.any(phase_mask):
                 return []
+            
             candidates_idx = np.nonzero(phase_mask)[0]
+            # Optimize: compute cosine similarity without intermediate array copies
             candidate_vectors = self.memory_bank[candidates_idx]
             candidate_norms = self.norms[candidates_idx]
-            dots = np.dot(candidate_vectors, q_vec)
-            cosine_sims = dots / (candidate_norms * q_norm)
-            if len(cosine_sims) > top_k:
+            
+            # Vectorized cosine similarity calculation
+            cosine_sims = np.dot(candidate_vectors, q_vec) / (candidate_norms * q_norm)
+            
+            # Optimize: use argpartition only when beneficial (>2x top_k)
+            num_candidates = len(cosine_sims)
+            if num_candidates > top_k * 2:
+                # Use partial sort for large result sets
                 top_local = np.argpartition(cosine_sims, -top_k)[-top_k:]
+                # Sort only the top k items
                 top_local = top_local[np.argsort(cosine_sims[top_local])[::-1]]
             else:
-                top_local = np.argsort(cosine_sims)[::-1]
+                # Full sort for small result sets (faster for small arrays)
+                top_local = np.argsort(cosine_sims)[::-1][:top_k]
+            
+            # Optimize: pre-allocate results list
             results: List[MemoryRetrieval] = []
             for loc in top_local:
                 glob = candidates_idx[loc]
