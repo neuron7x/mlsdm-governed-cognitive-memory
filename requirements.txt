@@ -3,6 +3,7 @@ sentence-transformers>=3.0.0
 fastapi>=0.110.0
 uvicorn>=0.29.0
 pytest>=8.0.0
+pytest-asyncio>=0.23.0
 pyyaml==6.0.1
 configparser==7.0.0
 matplotlib==3.8.4
@@ -19,3 +20,7 @@ locust==2.29.1
 jupyter==1.0.0
 tenacity==8.2.3
 requests==2.32.3
+psutil>=5.9.0
+bandit>=1.7.0
+safety>=3.0.0
+pip-audit>=2.6.0

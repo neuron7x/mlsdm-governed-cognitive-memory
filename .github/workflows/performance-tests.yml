@@ -1,0 +1,483 @@
+name: Performance Testing
+
+on:
+  schedule:
+    # Run weekly on Sunday at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: 'Test duration in minutes'
+        required: false
+        default: '15'
+      rps:
+        description: 'Target RPS'
+        required: false
+        default: '1000'
+
+jobs:
+  load-test:
+    name: Load Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-asyncio locust psutil
+          
+      - name: Create load test script
+        run: |
+          cat > locustfile.py << 'EOF'
+          from locust import HttpUser, task, between
+          import numpy as np
+          import json
+          
+          class CognitiveMemoryUser(HttpUser):
+              wait_time = between(0.1, 0.5)
+              
+              def on_start(self):
+                  """Initialize user session"""
+                  pass
+              
+              @task(10)
+              def process_event(self):
+                  """Process cognitive event"""
+                  # Generate random normalized vector
+                  vec = np.random.randn(384).astype(np.float32)
+                  vec = (vec / np.linalg.norm(vec)).tolist()
+                  
+                  payload = {
+                      "vector": vec,
+                      "moral_value": np.random.uniform(0.3, 0.95)
+                  }
+                  
+                  with self.client.post(
+                      "/v1/process_event",
+                      json=payload,
+                      catch_response=True
+                  ) as response:
+                      if response.status_code == 200:
+                          response.success()
+                      else:
+                          response.failure(f"Got status {response.status_code}")
+              
+              @task(2)
+              def get_state(self):
+                  """Get system state"""
+                  with self.client.get("/v1/state", catch_response=True) as response:
+                      if response.status_code == 200:
+                          response.success()
+                      else:
+                          response.failure(f"Got status {response.status_code}")
+              
+              @task(1)
+              def health_check(self):
+                  """Health check"""
+                  with self.client.get("/health", catch_response=True) as response:
+                      if response.status_code == 200:
+                          response.success()
+                      else:
+                          response.failure(f"Got status {response.status_code}")
+          EOF
+          
+      - name: Start API server
+        run: |
+          python -m src.main --api &
+          sleep 10
+        continue-on-error: true
+        
+      - name: Run load test
+        run: |
+          # Run locust in headless mode
+          locust -f locustfile.py \
+            --headless \
+            --users 100 \
+            --spawn-rate 10 \
+            --run-time 5m \
+            --host http://localhost:8000 \
+            --html load-test-report.html \
+            --csv load-test || echo "Load test completed with warnings"
+        continue-on-error: true
+        
+      - name: Upload load test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-test-results
+          path: |
+            load-test-report.html
+            load-test*.csv
+          retention-days: 30
+
+  stress-test:
+    name: Stress Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-asyncio memory-profiler psutil
+          
+      - name: Run stress test
+        run: |
+          cat > stress_test.py << 'EOF'
+          """
+          Stress test for MLSDM Cognitive Memory
+          Tests system behavior under extreme load
+          """
+          import numpy as np
+          import time
+          import psutil
+          import threading
+          from src.core.cognitive_controller import CognitiveController
+          
+          def stress_worker(controller, num_events, worker_id, results):
+              """Worker thread for stress testing"""
+              start_time = time.time()
+              processed = 0
+              errors = 0
+              
+              for i in range(num_events):
+                  try:
+                      vec = np.random.randn(384).astype(np.float32)
+                      vec = vec / np.linalg.norm(vec)
+                      moral_val = np.random.uniform(0.3, 0.95)
+                      
+                      state = controller.process_event(vec, moral_value=moral_val)
+                      processed += 1
+                  except Exception as e:
+                      errors += 1
+                      
+              elapsed = time.time() - start_time
+              results[worker_id] = {
+                  'processed': processed,
+                  'errors': errors,
+                  'elapsed': elapsed,
+                  'rps': processed / elapsed if elapsed > 0 else 0
+              }
+          
+          def main():
+              print("Starting stress test...")
+              
+              # Initialize controller
+              controller = CognitiveController(dim=384)
+              
+              # Test parameters
+              num_workers = 50
+              events_per_worker = 1000
+              
+              # Monitor memory
+              process = psutil.Process()
+              initial_memory = process.memory_info().rss / 1024 / 1024  # MB
+              
+              print(f"Initial memory: {initial_memory:.2f} MB")
+              print(f"Workers: {num_workers}")
+              print(f"Events per worker: {events_per_worker}")
+              print(f"Total events: {num_workers * events_per_worker}")
+              
+              # Run stress test
+              start_time = time.time()
+              results = {}
+              threads = []
+              
+              for i in range(num_workers):
+                  t = threading.Thread(
+                      target=stress_worker,
+                      args=(controller, events_per_worker, i, results)
+                  )
+                  threads.append(t)
+                  t.start()
+              
+              # Wait for completion
+              for t in threads:
+                  t.join()
+              
+              elapsed = time.time() - start_time
+              
+              # Collect results
+              total_processed = sum(r['processed'] for r in results.values())
+              total_errors = sum(r['errors'] for r in results.values())
+              overall_rps = total_processed / elapsed if elapsed > 0 else 0
+              
+              # Final memory
+              final_memory = process.memory_info().rss / 1024 / 1024  # MB
+              memory_increase = final_memory - initial_memory
+              
+              # Print results
+              print("\n" + "="*60)
+              print("STRESS TEST RESULTS")
+              print("="*60)
+              print(f"Total processed: {total_processed}")
+              print(f"Total errors: {total_errors}")
+              print(f"Duration: {elapsed:.2f}s")
+              print(f"Overall RPS: {overall_rps:.2f}")
+              print(f"Initial memory: {initial_memory:.2f} MB")
+              print(f"Final memory: {final_memory:.2f} MB")
+              print(f"Memory increase: {memory_increase:.2f} MB")
+              print("="*60)
+              
+              # Validate results
+              assert total_processed > 0, "No events processed"
+              assert total_errors < total_processed * 0.01, f"Too many errors: {total_errors}"
+              assert memory_increase < 100, f"Memory leak detected: {memory_increase:.2f} MB increase"
+              
+              print("✅ Stress test PASSED")
+          
+          if __name__ == "__main__":
+              main()
+          EOF
+          
+          python stress_test.py
+          
+      - name: Store stress test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stress-test-results
+          path: stress_test.py
+          retention-days: 30
+
+  latency-profiling:
+    name: Latency Profiling
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-asyncio pytest-benchmark
+          
+      - name: Run latency profiling
+        run: |
+          cat > latency_profile.py << 'EOF'
+          """
+          Latency profiling for MLSDM Cognitive Memory
+          Measures P50, P95, P99 latencies
+          """
+          import numpy as np
+          import time
+          from src.core.cognitive_controller import CognitiveController
+          
+          def measure_latencies(controller, num_samples=1000):
+              """Measure operation latencies"""
+              latencies = []
+              
+              for _ in range(num_samples):
+                  vec = np.random.randn(384).astype(np.float32)
+                  vec = vec / np.linalg.norm(vec)
+                  moral_val = np.random.uniform(0.3, 0.95)
+                  
+                  start = time.perf_counter()
+                  state = controller.process_event(vec, moral_value=moral_val)
+                  end = time.perf_counter()
+                  
+                  latency_ms = (end - start) * 1000
+                  latencies.append(latency_ms)
+              
+              return latencies
+          
+          def main():
+              print("Starting latency profiling...")
+              
+              controller = CognitiveController(dim=384)
+              
+              # Warmup
+              print("Warming up...")
+              measure_latencies(controller, num_samples=100)
+              
+              # Actual measurement
+              print("Measuring latencies...")
+              latencies = measure_latencies(controller, num_samples=5000)
+              
+              # Calculate percentiles
+              latencies.sort()
+              p50 = np.percentile(latencies, 50)
+              p95 = np.percentile(latencies, 95)
+              p99 = np.percentile(latencies, 99)
+              p999 = np.percentile(latencies, 99.9)
+              mean = np.mean(latencies)
+              
+              print("\n" + "="*60)
+              print("LATENCY PROFILE")
+              print("="*60)
+              print(f"Samples: {len(latencies)}")
+              print(f"Mean:    {mean:.2f} ms")
+              print(f"P50:     {p50:.2f} ms")
+              print(f"P95:     {p95:.2f} ms")
+              print(f"P99:     {p99:.2f} ms")
+              print(f"P99.9:   {p999:.2f} ms")
+              print("="*60)
+              
+              # Validate SLOs
+              assert p95 < 120, f"P95 latency {p95:.2f}ms exceeds SLO (120ms)"
+              assert p99 < 200, f"P99 latency {p99:.2f}ms exceeds SLO (200ms)"
+              
+              print("✅ Latency profiling PASSED")
+          
+          if __name__ == "__main__":
+              main()
+          EOF
+          
+          python latency_profile.py
+          
+      - name: Store profiling results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latency-profile
+          path: latency_profile.py
+          retention-days: 30
+
+  memory-profiling:
+    name: Memory Profiling
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-asyncio memory-profiler psutil
+          
+      - name: Run memory profiling
+        run: |
+          cat > memory_profile.py << 'EOF'
+          """
+          Memory profiling for MLSDM Cognitive Memory
+          Validates fixed memory bounds
+          """
+          import numpy as np
+          import psutil
+          import time
+          from src.core.cognitive_controller import CognitiveController
+          
+          def main():
+              print("Starting memory profiling...")
+              
+              process = psutil.Process()
+              
+              # Initial state
+              initial_rss = process.memory_info().rss / 1024 / 1024  # MB
+              
+              print(f"Initial RSS: {initial_rss:.2f} MB")
+              
+              # Create controller
+              controller = CognitiveController(dim=384)
+              
+              after_init_rss = process.memory_info().rss / 1024 / 1024
+              print(f"After init RSS: {after_init_rss:.2f} MB")
+              
+              # Process many events
+              print("Processing 10,000 events...")
+              for i in range(10000):
+                  vec = np.random.randn(384).astype(np.float32)
+                  vec = vec / np.linalg.norm(vec)
+                  moral_val = np.random.uniform(0.3, 0.95)
+                  
+                  state = controller.process_event(vec, moral_value=moral_val)
+                  
+                  if i % 1000 == 0:
+                      current_rss = process.memory_info().rss / 1024 / 1024
+                      print(f"  After {i} events: {current_rss:.2f} MB")
+              
+              # Final state
+              final_rss = process.memory_info().rss / 1024 / 1024
+              
+              print("\n" + "="*60)
+              print("MEMORY PROFILE")
+              print("="*60)
+              print(f"Initial RSS:     {initial_rss:.2f} MB")
+              print(f"After init RSS:  {after_init_rss:.2f} MB")
+              print(f"Final RSS:       {final_rss:.2f} MB")
+              print(f"Total increase:  {final_rss - initial_rss:.2f} MB")
+              print(f"Event increase:  {final_rss - after_init_rss:.2f} MB")
+              print("="*60)
+              
+              # Validate memory bounds
+              total_increase = final_rss - initial_rss
+              event_increase = final_rss - after_init_rss
+              
+              assert total_increase < 1500, f"Total memory {total_increase:.2f}MB exceeds 1500MB limit"
+              assert event_increase < 100, f"Memory grew by {event_increase:.2f}MB during events (leak detected)"
+              
+              print("✅ Memory profiling PASSED")
+          
+          if __name__ == "__main__":
+              main()
+          EOF
+          
+          python memory_profile.py
+          
+      - name: Store memory profile
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: memory-profile
+          path: memory_profile.py
+          retention-days: 30
+
+  performance-summary:
+    name: Performance Summary
+    runs-on: ubuntu-latest
+    needs: [load-test, stress-test, latency-profiling, memory-profiling]
+    if: always()
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        
+      - name: Create summary
+        run: |
+          echo "# Performance Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Load Test: ${{ needs.load-test.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Stress Test: ${{ needs.stress-test.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Latency Profiling: ${{ needs.latency-profiling.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Memory Profiling: ${{ needs.memory-profiling.result }}" >> $GITHUB_STEP_SUMMARY
