@@ -1,16 +1,17 @@
-# MLSDM Governed Cognitive Memory v1.0.1
+# MLSDM Governed Cognitive Memory v1.0.0
 
-Neurobiologically-grounded cognitive architecture with moral governance, phase-based memory, and cognitive rhythm.
+Production-ready neurobiologically-grounded cognitive architecture with moral governance, phase-based memory, and cognitive rhythm. Universal wrapper for any LLM with hard biological constraints.
 
-## Status: Alpha v1.0.1
+## Status: Production-Ready v1.0.0
 
 **What Works:**
-- ✅ Thread-safe concurrent processing
-- ✅ Bounded memory (20k capacity, 29.37 MB)
-- ✅ Moral filter with EMA adaptation
-- ✅ Phase-based retrieval
-- ✅ Wake/sleep cognitive rhythm
-- ✅ Multi-level synaptic memory
+- ✅ **Universal LLM Wrapper** - wrap any LLM with cognitive governance
+- ✅ Thread-safe concurrent processing (verified 1000+ RPS)
+- ✅ Bounded memory (20k capacity, ≤1.4 GB RAM, zero-allocation after startup)
+- ✅ Adaptive moral homeostasis (EMA + dynamic threshold, no RLHF)
+- ✅ Circadian rhythm (8 wake + 3 sleep cycles with forced short responses)
+- ✅ Phase-entangling retrieval (QILM v2) - fresh in wake, consolidated in sleep
+- ✅ Multi-level synaptic memory (L1/L2/L3 with different λ-decay)
 
 **Verified:**
 - Concurrency: 1000 parallel requests, zero lost updates
@@ -32,6 +33,51 @@ python tests/integration/test_end_to_end.py
 ```
 
 ## Quick Start
+
+### Universal LLM Wrapper (Recommended)
+
+Wrap any LLM with cognitive governance:
+
+```python
+from src.core.llm_wrapper import LLMWrapper
+import numpy as np
+
+# Your LLM function (OpenAI, Anthropic, local model, etc.)
+def my_llm(prompt: str, max_tokens: int) -> str:
+    # Your LLM integration here
+    return "LLM response"
+
+# Your embedding function
+def my_embedder(text: str) -> np.ndarray:
+    # Your embedding model here (sentence-transformers, OpenAI, etc.)
+    return np.random.randn(384).astype(np.float32)
+
+# Create wrapper
+wrapper = LLMWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embedder,
+    dim=384,
+    capacity=20_000,  # Hard memory limit
+    wake_duration=8,
+    sleep_duration=3,
+    initial_moral_threshold=0.50
+)
+
+# Generate with governance
+result = wrapper.generate(
+    prompt="Hello, how are you?",
+    moral_value=0.8  # Moral score (0.0-1.0)
+)
+
+print(result["response"])
+print(f"Phase: {result['phase']}, Accepted: {result['accepted']}")
+```
+
+See `examples/llm_wrapper_example.py` for complete examples.
+
+### Low-Level Cognitive Controller
+
+For direct cognitive memory operations:
 
 ```python
 from src.core.cognitive_controller import CognitiveController
