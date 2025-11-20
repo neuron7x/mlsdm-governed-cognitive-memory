@@ -146,7 +146,7 @@ class TestPerformanceBenchmarks:
         total_ops = num_threads * ops_per_thread
         throughput = total_ops / elapsed
         
-        print(f"\nConcurrent Throughput:")
+        print("\nConcurrent Throughput:")
         print(f"  Threads: {num_threads}")
         print(f"  Total ops: {total_ops}")
         print(f"  Duration: {elapsed:.2f}s")
@@ -178,7 +178,7 @@ class TestPerformanceBenchmarks:
         
         final_rss = process.memory_info().rss / 1024 / 1024
         
-        print(f"\nMemory Footprint:")
+        print("\nMemory Footprint:")
         print(f"  Initial:     {initial_rss:.2f} MB")
         print(f"  After init:  {after_init_rss:.2f} MB")
         print(f"  Final:       {final_rss:.2f} MB")
@@ -225,7 +225,7 @@ class TestPerformanceBenchmarks:
         p95_variance = np.var(window_p95s)
         p95_mean = np.mean(window_p95s)
         
-        print(f"\nLatency Stability:")
+        print("\nLatency Stability:")
         print(f"  Windows: {num_windows}")
         print(f"  Mean P95: {p95_mean:.2f} ms")
         print(f"  Variance: {p95_variance:.2f}")
@@ -236,7 +236,7 @@ class TestPerformanceBenchmarks:
         assert p95_variance < 100, \
             f"P95 variance {p95_variance:.2f} too high (unstable latency)"
         
-        print(f"✅ Latency stable over time")
+        print("✅ Latency stable over time")
 
 
 def test_performance_suite():

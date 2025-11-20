@@ -121,8 +121,6 @@ class TestJailbreakResistance:
         """Test that sustained toxic input doesn't cause threshold drift to unsafe levels"""
         controller = CognitiveController(dim=384)
         
-        initial_threshold = 0.50
-        
         # 500 consecutive toxic inputs
         toxic_count = 0
         for _ in range(500):
