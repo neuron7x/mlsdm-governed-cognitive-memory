@@ -223,7 +223,7 @@ def test_llm_wrapper_memory_bounded():
     
     # Process more than capacity
     for i in range(150):
-        result = wrapper.generate(
+        _ = wrapper.generate(
             prompt=f"Message {i}",
             moral_value=0.9
         )

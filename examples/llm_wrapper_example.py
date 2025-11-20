@@ -13,7 +13,6 @@ The wrapper provides:
 """
 
 import numpy as np
-from typing import Optional
 import sys
 import os
 
@@ -106,7 +105,7 @@ def example_1_basic_usage():
     # Print final state
     print("\n" + "-"*70)
     state = wrapper.get_state()
-    print(f"Final State:")
+    print("Final State:")
     print(f"  Steps: {state['step']}")
     print(f"  Phase: {state['phase']}")
     print(f"  Accepted: {state['accepted_count']}")
@@ -220,7 +219,7 @@ def example_4_memory_consolidation():
         print(f"  Phase: {result['phase']}, Note: {result['note']}")
     
     state = wrapper.get_state()
-    print(f"\nConsolidation complete:")
+    print("\nConsolidation complete:")
     print(f"  Buffer size: {state['consolidation_buffer_size']}")
     print(f"  QILM used: {state['qilm_stats']['used']}")
 
@@ -236,7 +235,9 @@ def example_5_real_embeddings():
     print("="*70)
     
     try:
-        from sentence_transformers import SentenceTransformer
+        import importlib.util
+        if importlib.util.find_spec("sentence_transformers") is not None:
+            print("\n✓ sentence-transformers is installed")
         
         print("\nℹ️  Skipping model load for CI/demo")
         print("   In production, uncomment the code below:")

@@ -3,7 +3,6 @@ Unit tests for LLMWrapper - Universal LLM wrapper with cognitive governance.
 """
 
 import numpy as np
-import pytest
 from src.core.llm_wrapper import LLMWrapper
 
 
@@ -402,6 +401,7 @@ class TestLLMWrapperEdgeCases:
         # Should handle gracefully (norm check prevents division by zero)
         result = wrapper.generate("Test", moral_value=0.8)
         # Result depends on implementation - may accept or reject
+        assert "accepted" in result  # Just verify it returns a result dict
 
 
 class TestLLMWrapperIntegration:
@@ -412,7 +412,7 @@ class TestLLMWrapperIntegration:
         # Simulate realistic response
         if "toxic" in prompt.lower() or "harmful" in prompt.lower():
             return "I cannot help with that request."
-        return f"This is a helpful response to your query."
+        return "This is a helpful response to your query."
     
     @staticmethod
     def mock_embedding(text: str) -> np.ndarray:
