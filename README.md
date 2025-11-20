@@ -225,9 +225,49 @@ def test_moral_threshold_clamped(t):
 ### Toolchain
 - Hypothesis, pytest, chaos-toolkit, Locust/K6, ragas, TLA+, Coq, OpenTelemetry, Prometheus.
 
+## Documentation
+
+Complete documentation is available:
+
+- 📖 **[Documentation Index](DOCUMENTATION_INDEX.md)** - Complete documentation roadmap
+- 📚 **[Usage Guide](USAGE_GUIDE.md)** - Detailed usage examples and best practices
+- 📖 **[API Reference](API_REFERENCE.md)** - Complete API documentation
+- 🚀 **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Production deployment patterns
+- 🤝 **[Contributing Guide](CONTRIBUTING.md)** - How to contribute to the project
+- 🏗️ **[Architecture Spec](ARCHITECTURE_SPEC.md)** - System architecture details
+- ✅ **[Testing Strategy](TESTING_STRATEGY.md)** - Testing methodology
+- 📊 **[Effectiveness Report](EFFECTIVENESS_VALIDATION_REPORT.md)** - Validation results
+- 🔒 **[Security Policy](SECURITY_POLICY.md)** - Security guidelines
+
+**Quick Links by Role:**
+- **Developers**: Start with [Usage Guide](USAGE_GUIDE.md) → [API Reference](API_REFERENCE.md)
+- **DevOps**: Start with [Deployment Guide](DEPLOYMENT_GUIDE.md) → [SLO Spec](SLO_SPEC.md)
+- **Contributors**: Start with [Contributing Guide](CONTRIBUTING.md) → [Testing Strategy](TESTING_STRATEGY.md)
+
 ## Contributing
 
-PRs welcome. Please add tests for new features.
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
+- Development setup and workflow
+- Coding standards and style guide
+- Testing requirements (90%+ coverage)
+- Pull request process
+- Release procedures
+
+**Quick Start for Contributors:**
+```bash
+# Fork and clone the repository
+git clone https://github.com/YOUR_USERNAME/mlsdm-governed-cognitive-memory.git
+cd mlsdm-governed-cognitive-memory
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run tests
+pytest tests/ src/tests/ -v --cov=src
+
+# Run linting
+ruff check src/ tests/
+```
 
 ## License
 
