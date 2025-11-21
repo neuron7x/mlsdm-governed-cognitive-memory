@@ -36,10 +36,19 @@ class TestSystemConfig:
         config = SystemConfig(dimension=384)
         assert config.dimension == 384
         
-        config = SystemConfig(dimension=2)  # Minimum
+        # When changing dimension, must provide matching ontology vectors
+        config = SystemConfig(
+            dimension=2,
+            ontology_matcher=OntologyMatcherConfig(ontology_vectors=[[1.0, 0.0], [0.0, 1.0]])
+        )
         assert config.dimension == 2
         
-        config = SystemConfig(dimension=4096)  # Maximum
+        # Test maximum dimension with matching ontology vectors
+        large_vec = [1.0] + [0.0] * 4095
+        config = SystemConfig(
+            dimension=4096,
+            ontology_matcher=OntologyMatcherConfig(ontology_vectors=[large_vec, large_vec])
+        )
         assert config.dimension == 4096
 
     def test_invalid_dimension_too_small(self):
@@ -56,8 +65,9 @@ class TestSystemConfig:
 
     def test_invalid_dimension_type(self):
         """Non-integer dimension should raise error."""
+        # Pydantic v2 coerces strings to ints, so test with truly invalid type
         with pytest.raises(ValidationError):
-            SystemConfig(dimension="384")
+            SystemConfig(dimension="not-a-number")
 
     def test_strict_mode_boolean(self):
         """Strict mode should accept boolean values."""
@@ -119,10 +129,11 @@ class TestMultiLevelMemoryConfig:
 
     def test_decay_rates_range_valid(self):
         """Decay rates within [0.0, 1.0] should pass."""
-        config = MultiLevelMemoryConfig(lambda_l1=0.0)
+        # Must maintain hierarchy: l3 <= l2 <= l1
+        config = MultiLevelMemoryConfig(lambda_l1=0.0, lambda_l2=0.0, lambda_l3=0.0)
         assert config.lambda_l1 == 0.0
         
-        config = MultiLevelMemoryConfig(lambda_l1=1.0)
+        config = MultiLevelMemoryConfig(lambda_l1=1.0, lambda_l2=0.5, lambda_l3=0.1)
         assert config.lambda_l1 == 1.0
 
     def test_decay_rates_range_invalid(self):
@@ -203,7 +214,8 @@ class TestMoralFilterConfig:
                 threshold=0.95,
                 max_threshold=0.9
             )
-        assert "must be <=" in str(exc_info.value)
+        # Pydantic v2 error messages are different
+        assert "less than or equal" in str(exc_info.value) or "must be <=" in str(exc_info.value)
 
     def test_threshold_range_constraints(self):
         """Thresholds should be in valid ranges."""
@@ -360,22 +372,23 @@ class TestConfigSerialization:
 
     def test_model_dump(self):
         """Config should serialize to dictionary."""
-        config = SystemConfig(dimension=768)
+        # Use default dimension to avoid ontology mismatch
+        config = SystemConfig(dimension=384)
         data = config.model_dump()
         assert isinstance(data, dict)
-        assert data["dimension"] == 768
+        assert data["dimension"] == 384
 
     def test_model_dump_json(self):
         """Config should serialize to JSON."""
-        config = SystemConfig(dimension=768)
+        config = SystemConfig(dimension=384)
         json_str = config.model_dump_json()
         assert isinstance(json_str, str)
-        assert "768" in json_str
+        assert "384" in json_str
 
     def test_round_trip(self):
         """Config should round-trip through dict."""
         config1 = SystemConfig(
-            dimension=768,
+            dimension=384,
             moral_filter=MoralFilterConfig(threshold=0.7)
         )
         data = config1.model_dump()

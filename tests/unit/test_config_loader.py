@@ -134,7 +134,8 @@ class TestEnvironmentOverrides:
         
         monkeypatch.setenv("MLSDM_DIMENSION", "768")
         
-        config = ConfigLoader.load_config(str(config_file), env_override=True)
+        # Disable validation since we're changing dimension without updating ontology vectors
+        config = ConfigLoader.load_config(str(config_file), env_override=True, validate=False)
         assert config["dimension"] == 768
 
     def test_nested_override(self, tmp_path, monkeypatch):
@@ -167,7 +168,8 @@ moral_filter:
         
         monkeypatch.setenv("MLSDM_DIMENSION", "1024")
         
-        config = ConfigLoader.load_config(str(config_file), env_override=True)
+        # Disable validation since we're changing dimension without updating ontology vectors
+        config = ConfigLoader.load_config(str(config_file), env_override=True, validate=False)
         assert config["dimension"] == 1024
         assert isinstance(config["dimension"], int)
 

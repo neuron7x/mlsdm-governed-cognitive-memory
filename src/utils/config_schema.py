@@ -6,7 +6,7 @@ properly validated before use.
 """
 
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 import numpy as np
 
 
@@ -57,29 +57,29 @@ class MultiLevelMemoryConfig(BaseModel):
         description="Gating factor for L2 to L3 consolidation."
     )
 
-    @root_validator
-    def validate_decay_hierarchy(cls, values):
+    @model_validator(mode='after')
+    def validate_decay_hierarchy(self):
         """Ensure decay rates follow hierarchy: lambda_l3 < lambda_l2 < lambda_l1."""
-        l1, l2, l3 = values.get('lambda_l1'), values.get('lambda_l2'), values.get('lambda_l3')
+        l1, l2, l3 = self.lambda_l1, self.lambda_l2, self.lambda_l3
         if l1 is not None and l2 is not None and l3 is not None:
             if not (l3 <= l2 <= l1):
                 raise ValueError(
                     f"Decay rates must follow hierarchy: lambda_l3 ({l3}) <= "
                     f"lambda_l2 ({l2}) <= lambda_l1 ({l1})"
                 )
-        return values
+        return self
 
-    @root_validator
-    def validate_threshold_hierarchy(cls, values):
+    @model_validator(mode='after')
+    def validate_threshold_hierarchy(self):
         """Ensure theta_l2 > theta_l1 for proper consolidation."""
-        t1, t2 = values.get('theta_l1'), values.get('theta_l2')
+        t1, t2 = self.theta_l1, self.theta_l2
         if t1 is not None and t2 is not None:
             if t2 <= t1:
                 raise ValueError(
                     f"Consolidation threshold hierarchy violated: "
                     f"theta_l2 ({t2}) must be > theta_l1 ({t1})"
                 )
-        return values
+        return self
 
 
 class MoralFilterConfig(BaseModel):
@@ -113,12 +113,12 @@ class MoralFilterConfig(BaseModel):
         description="Maximum allowed moral threshold."
     )
 
-    @root_validator
-    def validate_threshold_bounds(cls, values):
+    @model_validator(mode='after')
+    def validate_threshold_bounds(self):
         """Ensure min <= threshold <= max."""
-        min_t = values.get('min_threshold')
-        max_t = values.get('max_threshold')
-        threshold = values.get('threshold')
+        min_t = self.min_threshold
+        max_t = self.max_threshold
+        threshold = self.threshold
         
         if min_t is not None and max_t is not None:
             if min_t >= max_t:
@@ -136,13 +136,13 @@ class MoralFilterConfig(BaseModel):
                     f"threshold ({threshold}) must be <= max_threshold ({max_t})"
                 )
         
-        return values
+        return self
 
 
 class OntologyMatcherConfig(BaseModel):
     """Ontology matcher configuration for semantic categorization."""
     ontology_vectors: List[List[float]] = Field(
-        default_factory=lambda: [[1.0] + [0.0] * 9, [0.0, 1.0] + [0.0] * 8],
+        default_factory=lambda: [[1.0] + [0.0] * 383, [0.0, 1.0] + [0.0] * 382],
         description="List of ontology category vectors. Must match dimension."
     )
     ontology_labels: Optional[List[str]] = Field(
@@ -150,7 +150,8 @@ class OntologyMatcherConfig(BaseModel):
         description="Human-readable labels for ontology categories."
     )
 
-    @validator('ontology_vectors')
+    @field_validator('ontology_vectors')
+    @classmethod
     def validate_vectors(cls, v):
         """Ensure all vectors have same dimension and are non-empty."""
         if not v:
@@ -164,11 +165,11 @@ class OntologyMatcherConfig(BaseModel):
         
         return v
 
-    @root_validator
-    def validate_labels_match(cls, values):
+    @model_validator(mode='after')
+    def validate_labels_match(self):
         """Ensure labels match number of vectors if provided."""
-        vectors = values.get('ontology_vectors', [])
-        labels = values.get('ontology_labels')
+        vectors = self.ontology_vectors
+        labels = self.ontology_labels
         
         if labels is not None and len(labels) != len(vectors):
             raise ValueError(
@@ -176,7 +177,7 @@ class OntologyMatcherConfig(BaseModel):
                 f"number of vectors ({len(vectors)})"
             )
         
-        return values
+        return self
 
 
 class CognitiveRhythmConfig(BaseModel):
@@ -197,11 +198,11 @@ class CognitiveRhythmConfig(BaseModel):
         description="Duration of sleep phase (in cycles). Typical: 2-5."
     )
 
-    @root_validator
-    def validate_durations(cls, values):
+    @model_validator(mode='after')
+    def validate_durations(self):
         """Warn if unusual wake/sleep ratio."""
-        wake = values.get('wake_duration')
-        sleep = values.get('sleep_duration')
+        wake = self.wake_duration
+        sleep = self.sleep_duration
         
         if wake is not None and sleep is not None:
             ratio = wake / sleep
@@ -210,7 +211,7 @@ class CognitiveRhythmConfig(BaseModel):
                 # In production, consider logging this
                 pass
         
-        return values
+        return self
 
 
 class SystemConfig(BaseModel):
@@ -245,11 +246,11 @@ class SystemConfig(BaseModel):
         description="Enable strict mode for enhanced validation. Not recommended for production."
     )
 
-    @root_validator
-    def validate_ontology_dimension(cls, values):
+    @model_validator(mode='after')
+    def validate_ontology_dimension(self):
         """Ensure ontology vectors match system dimension."""
-        dim = values.get('dimension')
-        onto_cfg = values.get('ontology_matcher')
+        dim = self.dimension
+        onto_cfg = self.ontology_matcher
         
         if dim is not None and onto_cfg is not None:
             vectors = onto_cfg.ontology_vectors
@@ -261,13 +262,12 @@ class SystemConfig(BaseModel):
                         f"system dimension ({dim})"
                     )
         
-        return values
+        return self
 
-    class Config:
-        """Pydantic model configuration."""
-        validate_assignment = True
-        extra = "forbid"  # Reject unknown fields
-        json_schema_extra = {
+    model_config = ConfigDict(
+        validate_assignment=True,
+        extra="forbid",  # Reject unknown fields
+        json_schema_extra={
             "examples": [
                 {
                     "dimension": 384,
@@ -294,6 +294,7 @@ class SystemConfig(BaseModel):
                 }
             ]
         }
+    )
 
 
 def validate_config_dict(config_dict: Dict[str, Any]) -> SystemConfig:
