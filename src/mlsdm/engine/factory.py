@@ -120,7 +120,13 @@ def build_neuro_engine_from_env(
     # Use provided config or create default with specified dim
     if config is None:
         config = NeuroEngineConfig(dim=dim)
-    # Note: We don't override config.dim if provided, to respect user's choice
+    else:
+        # If config provided, use its dim for consistency
+        dim = config.dim
+
+    # Rebuild embedding function with correct dim if config was provided
+    if config is not None:
+        embedding_fn = build_stub_embedding_fn(dim=dim)
 
     # Build and return engine
     return NeuroCognitiveEngine(

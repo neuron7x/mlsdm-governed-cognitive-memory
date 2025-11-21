@@ -26,8 +26,10 @@ import os
 import sys
 from typing import Any
 
-# Add src to path for local development
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+# For standalone execution when not installed as package
+if __name__ == "__main__":
+    # Add src to path only when running as script
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from mlsdm.engine import NeuroEngineConfig, build_neuro_engine_from_env
 

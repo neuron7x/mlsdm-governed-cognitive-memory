@@ -63,13 +63,9 @@ class TestNeuroCognitiveEngineE2EStubBackend:
 
         Validates:
         - Pre-flight moral check is executed
-        - Requests with low moral scores are rejected at MLSDM level
-        - Rejection happens properly
-        - Error is returned for rejected requests
-
-        Note: The current implementation doesn't have compute_moral_value on
-        the moral filter, so pre-flight checks are skipped. Instead, MLSDM's
-        internal moral.evaluate() method handles rejection during generation.
+        - High moral thresholds may lead to rejection
+        - Rejection errors are properly returned
+        - Validation steps are tracked
         """
         # Build engine from environment
         engine = build_neuro_engine_from_env()
