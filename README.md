@@ -232,6 +232,7 @@ Complete documentation is available:
 - 📖 **[Documentation Index](DOCUMENTATION_INDEX.md)** - Complete documentation roadmap
 - 📚 **[Usage Guide](USAGE_GUIDE.md)** - Detailed usage examples and best practices
 - 📖 **[API Reference](API_REFERENCE.md)** - Complete API documentation
+- ⚙️ **[Configuration Guide](CONFIGURATION_GUIDE.md)** - Configuration reference and validation
 - 🚀 **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Production deployment patterns
 - 🤝 **[Contributing Guide](CONTRIBUTING.md)** - How to contribute to the project
 - 🏗️ **[Architecture Spec](ARCHITECTURE_SPEC.md)** - System architecture details
@@ -240,8 +241,8 @@ Complete documentation is available:
 - 🔒 **[Security Policy](SECURITY_POLICY.md)** - Security guidelines
 
 **Quick Links by Role:**
-- **Developers**: Start with [Usage Guide](USAGE_GUIDE.md) → [API Reference](API_REFERENCE.md)
-- **DevOps**: Start with [Deployment Guide](DEPLOYMENT_GUIDE.md) → [SLO Spec](SLO_SPEC.md)
+- **Developers**: Start with [Usage Guide](USAGE_GUIDE.md) → [API Reference](API_REFERENCE.md) → [Configuration Guide](CONFIGURATION_GUIDE.md)
+- **DevOps**: Start with [Deployment Guide](DEPLOYMENT_GUIDE.md) → [Configuration Guide](CONFIGURATION_GUIDE.md) → [SLO Spec](SLO_SPEC.md)
 - **Contributors**: Start with [Contributing Guide](CONTRIBUTING.md) → [Testing Strategy](TESTING_STRATEGY.md)
 
 ## Contributing

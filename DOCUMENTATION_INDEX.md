@@ -52,6 +52,7 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.0.0.
 |----------|---------|----------|--------------|
 | [USAGE_GUIDE.md](USAGE_GUIDE.md) | How to use the system | Developers | 30 min |
 | [API_REFERENCE.md](API_REFERENCE.md) | API documentation | Developers | 20 min |
+| [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) | Configuration reference | Developers/DevOps | 25 min |
 | [examples/](examples/) | Code examples | Developers | 15 min |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development guide | Contributors | 25 min |
 
@@ -60,6 +61,7 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.0.0.
 | Document | Purpose | Audience | Time to Read |
 |----------|---------|----------|--------------|
 | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | Deployment patterns | DevOps | 30 min |
+| [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) | Configuration reference | DevOps | 25 min |
 | [SLO_SPEC.md](SLO_SPEC.md) | Service objectives | SRE/DevOps | 5 min |
 | [SECURITY_POLICY.md](SECURITY_POLICY.md) | Security practices | Security/DevOps | 5 min |
 
@@ -92,11 +94,13 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.0.0.
 2. Read [USAGE_GUIDE.md](USAGE_GUIDE.md) for integration examples
 3. Check [examples/llm_wrapper_example.py](examples/llm_wrapper_example.py) for code
 4. Reference [API_REFERENCE.md](API_REFERENCE.md) as needed
-5. See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for deployment options
+5. Configure your deployment with [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md)
+6. See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for deployment options
 
 **Key Documents:**
 - ✅ [USAGE_GUIDE.md](USAGE_GUIDE.md) - **Read First**
 - ✅ [API_REFERENCE.md](API_REFERENCE.md) - **Reference**
+- ✅ [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) - **Configuration**
 - ✅ [examples/](examples/) - **Code Examples**
 
 ---
