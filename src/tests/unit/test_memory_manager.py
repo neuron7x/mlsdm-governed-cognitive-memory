@@ -13,7 +13,7 @@ class TestMemoryManager:
         """Test initialization with default configuration."""
         config = {"dimension": 10}
         manager = MemoryManager(config)
-        
+
         assert manager.dimension == 10
         assert manager.memory is not None
         assert manager.filter is not None
@@ -47,9 +47,9 @@ class TestMemoryManager:
             },
             "strict_mode": True
         }
-        
+
         manager = MemoryManager(config)
-        
+
         assert manager.dimension == 20
         assert manager.filter.threshold == 0.6
         assert manager.rhythm.wake_duration == 10
@@ -60,12 +60,12 @@ class TestMemoryManager:
         """Test processing an accepted event."""
         config = {"dimension": 10}
         manager = MemoryManager(config)
-        
+
         event_vector = np.random.randn(10)
         moral_value = 0.8
-        
+
         await manager.process_event(event_vector, moral_value)
-        
+
         metrics = manager.metrics_collector.get_metrics()
         assert metrics["accepted_events_count"] == 1
 
@@ -74,12 +74,12 @@ class TestMemoryManager:
         """Test processing a rejected event."""
         config = {"dimension": 10}
         manager = MemoryManager(config)
-        
+
         event_vector = np.random.randn(10)
         moral_value = 0.1  # Low moral value should be rejected
-        
+
         await manager.process_event(event_vector, moral_value)
-        
+
         metrics = manager.metrics_collector.get_metrics()
         assert metrics["latent_events_count"] == 1
 
@@ -88,12 +88,12 @@ class TestMemoryManager:
         """Test processing multiple events."""
         config = {"dimension": 10}
         manager = MemoryManager(config)
-        
+
         for i in range(10):
             event_vector = np.random.randn(10)
             moral_value = 0.5 + (i % 2) * 0.3
             await manager.process_event(event_vector, moral_value)
-        
+
         metrics = manager.metrics_collector.get_metrics()
         total = metrics["total_events_processed"]
         assert total > 0
@@ -102,15 +102,15 @@ class TestMemoryManager:
         """Test the sensitivity heuristic."""
         config = {"dimension": 10}
         manager = MemoryManager(config)
-        
+
         # Normal vector
         normal_vec = np.array([1.0, 2.0, 3.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
         assert manager._is_sensitive(normal_vec) is False
-        
+
         # High norm vector
         high_norm_vec = np.array([10.0] * 10)
         assert manager._is_sensitive(high_norm_vec) is True
-        
+
         # Negative sum vector
         negative_vec = np.array([-2.0] * 10)
         assert manager._is_sensitive(negative_vec) is True
@@ -120,9 +120,9 @@ class TestMemoryManager:
         """Test that strict mode blocks sensitive data."""
         config = {"dimension": 10, "strict_mode": True}
         manager = MemoryManager(config)
-        
+
         sensitive_vec = np.array([10.0] * 10)  # High norm
-        
+
         with pytest.raises(ValueError, match="Sensitive data detected"):
             await manager.process_event(sensitive_vec, moral_value=0.8)
 
@@ -131,9 +131,9 @@ class TestMemoryManager:
         """Test that non-strict mode allows sensitive data."""
         config = {"dimension": 10, "strict_mode": False}
         manager = MemoryManager(config)
-        
+
         sensitive_vec = np.array([10.0] * 10)  # High norm
-        
+
         # Should not raise error
         await manager.process_event(sensitive_vec, moral_value=0.8)
 
@@ -142,13 +142,13 @@ class TestMemoryManager:
         """Test the simulate method."""
         config = {"dimension": 10}
         manager = MemoryManager(config)
-        
+
         def event_generator():
             for i in range(5):
                 yield np.random.randn(10), 0.7
-        
+
         await manager.simulate(5, event_generator())
-        
+
         metrics = manager.metrics_collector.get_metrics()
         assert len(metrics["time"]) > 0
 
@@ -156,9 +156,9 @@ class TestMemoryManager:
         """Test run_simulation with default event generator."""
         config = {"dimension": 10}
         manager = MemoryManager(config)
-        
+
         manager.run_simulation(num_steps=5)
-        
+
         metrics = manager.metrics_collector.get_metrics()
         assert len(metrics["time"]) > 0
 
@@ -166,13 +166,13 @@ class TestMemoryManager:
         """Test run_simulation with custom event generator."""
         config = {"dimension": 10}
         manager = MemoryManager(config)
-        
+
         def custom_generator():
             for i in range(3):
                 yield np.ones(10), 0.8
-        
+
         manager.run_simulation(num_steps=3, event_gen=custom_generator())
-        
+
         metrics = manager.metrics_collector.get_metrics()
         assert len(metrics["time"]) > 0
 
@@ -180,17 +180,17 @@ class TestMemoryManager:
         """Test saving and loading system state."""
         import tempfile
         import os
-        
+
         config = {"dimension": 10}
         manager = MemoryManager(config)
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
             filepath = f.name
-        
+
         try:
             manager.save_system_state(filepath)
             assert os.path.exists(filepath)
-            
+
             # Load (note: current implementation doesn't restore state)
             manager.load_system_state(filepath)
         finally:
@@ -202,10 +202,10 @@ class TestMemoryManager:
         """Test that dimension mismatch in simulate raises error."""
         config = {"dimension": 10}
         manager = MemoryManager(config)
-        
+
         def bad_generator():
             yield np.random.randn(5), 0.7  # Wrong dimension
-        
+
         with pytest.raises(ValueError, match="Event dimension mismatch"):
             await manager.simulate(1, bad_generator())
 
@@ -214,13 +214,13 @@ class TestMemoryManager:
         """Test that moral filter adapts based on acceptance rate."""
         config = {"dimension": 10}
         manager = MemoryManager(config)
-        
-        
+
+
         # Process events to trigger adaptation
         for _ in range(20):
             event_vector = np.random.randn(10)
             await manager.process_event(event_vector, moral_value=0.9)
-        
+
         # Threshold should have adapted (may increase or stay at bounds)
         assert manager.filter.min_threshold <= manager.filter.threshold <= manager.filter.max_threshold
 
@@ -235,13 +235,13 @@ class TestMemoryManager:
             }
         }
         manager = MemoryManager(config)
-        
+
         def event_gen():
             for i in range(10):
                 yield np.random.randn(10), 0.8
-        
+
         await manager.simulate(10, event_gen())
-        
+
         # Should have recorded phase transitions
         metrics = manager.metrics_collector.get_metrics()
         phases = metrics["phase"]
@@ -252,10 +252,10 @@ class TestMemoryManager:
         """Test that metrics are collected during processing."""
         config = {"dimension": 10}
         manager = MemoryManager(config)
-        
+
         event_vector = np.random.randn(10)
         await manager.process_event(event_vector, moral_value=0.8)
-        
+
         metrics = manager.metrics_collector.get_metrics()
         assert "total_events_processed" in metrics
         assert "accepted_events_count" in metrics
@@ -273,7 +273,7 @@ class TestMemoryManager:
             }
         }
         manager = MemoryManager(config)
-        
+
         assert manager.matcher.labels == ["A", "B"]
         assert manager.matcher.ontology.shape[0] == 2
 
@@ -282,10 +282,10 @@ class TestMemoryManager:
         """Test that event latency is tracked."""
         config = {"dimension": 10}
         manager = MemoryManager(config)
-        
+
         event_vector = np.random.randn(10)
         await manager.process_event(event_vector, moral_value=0.8)
-        
+
         metrics = manager.metrics_collector.get_metrics()
         assert len(metrics["latencies"]) > 0
         assert all(lat >= 0 for lat in metrics["latencies"])

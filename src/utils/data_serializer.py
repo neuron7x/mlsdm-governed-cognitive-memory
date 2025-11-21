@@ -1,3 +1,4 @@
+"""Data serialization utilities for JSON and NPZ formats."""
 import json
 import os
 from typing import Any, Dict

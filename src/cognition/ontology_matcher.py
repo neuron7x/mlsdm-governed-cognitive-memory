@@ -1,4 +1,5 @@
-from typing import List, Any, Tuple, Optional, Dict
+"""Ontology matching using cosine or euclidean similarity."""
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 

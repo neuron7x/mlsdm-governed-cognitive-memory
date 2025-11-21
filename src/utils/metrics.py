@@ -1,7 +1,8 @@
+"""Metrics collection and tracking for cognitive memory system."""
 from __future__ import annotations
 
 import time
-from typing import Dict, Any
+from typing import Any, Dict
 
 import numpy as np
 
@@ -55,7 +56,9 @@ class MetricsCollector:
         p = exp_v / s
         return float(-np.sum(p * np.log2(p + 1e-12)))
 
-    def record_memory_state(self, step: int, L1: np.ndarray, L2: np.ndarray, L3: np.ndarray, phase: str) -> None:
+    def record_memory_state(
+        self, step: int, L1: np.ndarray, L2: np.ndarray, L3: np.ndarray, phase: str
+    ) -> None:
         self.metrics["time"].append(step)
         self.metrics["phase"].append(phase)
         self.metrics["L1_norm"].append(float(np.linalg.norm(L1)))

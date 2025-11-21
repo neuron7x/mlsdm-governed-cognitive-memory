@@ -29,9 +29,9 @@ class TestCognitiveController:
         controller = CognitiveController(dim=384)
         vec = np.random.randn(384).astype(np.float32)
         vec = vec / np.linalg.norm(vec)
-        
+
         state = controller.process_event(vec, moral_value=0.9)
-        
+
         assert state["rejected"] is False
         assert state["note"] == "processed"
         assert state["step"] == 1
@@ -45,9 +45,9 @@ class TestCognitiveController:
         controller = CognitiveController(dim=384)
         vec = np.random.randn(384).astype(np.float32)
         vec = vec / np.linalg.norm(vec)
-        
+
         state = controller.process_event(vec, moral_value=0.1)
-        
+
         assert state["rejected"] is True
         assert state["note"] == "morally rejected"
         assert state["step"] == 1
@@ -57,14 +57,14 @@ class TestCognitiveController:
         controller = CognitiveController(dim=384)
         vec = np.random.randn(384).astype(np.float32)
         vec = vec / np.linalg.norm(vec)
-        
+
         # Step through wake phase to reach sleep phase
         for _ in range(8):
             controller.rhythm.step()
-        
+
         assert controller.rhythm.is_wake() is False
         state = controller.process_event(vec, moral_value=0.9)
-        
+
         assert state["rejected"] is True
         assert "sleep" in state["note"]
 
@@ -73,7 +73,7 @@ class TestCognitiveController:
         controller = CognitiveController(dim=384)
         vec = np.random.randn(384).astype(np.float32)
         vec = vec / np.linalg.norm(vec)
-        
+
         for i in range(5):
             state = controller.process_event(vec, moral_value=0.9)
             assert state["step"] == i + 1
@@ -83,16 +83,16 @@ class TestCognitiveController:
         controller = CognitiveController(dim=384)
         vec = np.random.randn(384).astype(np.float32)
         vec = vec / np.linalg.norm(vec)
-        
+
         # Add some events to memory
         controller.process_event(vec, moral_value=0.9)
         controller.process_event(vec, moral_value=0.9)
-        
+
         # Retrieve context
         query = np.random.randn(384).astype(np.float32)
         query = query / np.linalg.norm(query)
         results = controller.retrieve_context(query, top_k=5)
-        
+
         assert isinstance(results, list)
 
     def test_retrieve_context_with_different_top_k(self):
@@ -100,15 +100,15 @@ class TestCognitiveController:
         controller = CognitiveController(dim=384)
         vec = np.random.randn(384).astype(np.float32)
         vec = vec / np.linalg.norm(vec)
-        
+
         # Add events to memory
         for _ in range(10):
             controller.process_event(vec, moral_value=0.9)
-        
+
         # Test different top_k values
         results_3 = controller.retrieve_context(vec, top_k=3)
         results_7 = controller.retrieve_context(vec, top_k=7)
-        
+
         assert len(results_3) <= 3
         assert len(results_7) <= 7
 
@@ -117,9 +117,9 @@ class TestCognitiveController:
         controller = CognitiveController(dim=384)
         vec = np.random.randn(384).astype(np.float32)
         vec = vec / np.linalg.norm(vec)
-        
+
         state = controller.process_event(vec, moral_value=0.9)
-        
+
         assert "synaptic_norms" in state
         assert "L1" in state["synaptic_norms"]
         assert "L2" in state["synaptic_norms"]
@@ -131,31 +131,31 @@ class TestCognitiveController:
         controller = CognitiveController(dim=384)
         vec = np.random.randn(384).astype(np.float32)
         vec = vec / np.linalg.norm(vec)
-        
+
         state_before = controller.process_event(vec, moral_value=0.9)
         qilm_used_before = state_before["qilm_used"]
-        
+
         state_after = controller.process_event(vec, moral_value=0.9)
         qilm_used_after = state_after["qilm_used"]
-        
+
         assert qilm_used_after == qilm_used_before + 1
 
     def test_thread_safety(self):
         """Test that controller is thread-safe with concurrent access."""
         controller = CognitiveController(dim=384)
-        
+
         def process_events():
             for _ in range(100):
                 vec = np.random.randn(384).astype(np.float32)
                 vec = vec / np.linalg.norm(vec)
                 controller.process_event(vec, moral_value=0.8)
-        
+
         threads = [Thread(target=process_events) for _ in range(10)]
         for t in threads:
             t.start()
         for t in threads:
             t.join()
-        
+
         # Should have processed 1000 events
         assert controller.step_counter == 1000
 
@@ -164,17 +164,17 @@ class TestCognitiveController:
         controller = CognitiveController(dim=384)
         vec = np.random.randn(384).astype(np.float32)
         vec = vec / np.linalg.norm(vec)
-        
+
         initial_state = controller.process_event(vec, moral_value=0.9)
         initial_state["moral_threshold"]
-        
+
         # Process many high-moral events
         for _ in range(50):
             controller.process_event(vec, moral_value=0.9)
-        
+
         final_state = controller.process_event(vec, moral_value=0.9)
         final_threshold = final_state["moral_threshold"]
-        
+
         # Threshold should be within bounds
         assert 0.30 <= final_threshold <= 0.90
 
@@ -183,9 +183,9 @@ class TestCognitiveController:
         controller = CognitiveController(dim=384)
         vec = np.random.randn(384).astype(np.float32)
         vec = vec / np.linalg.norm(vec)
-        
+
         state = controller.process_event(vec, moral_value=0.9)
-        
+
         assert "moral_ema" in state
         assert 0.0 <= state["moral_ema"] <= 1.0
 
@@ -194,13 +194,13 @@ class TestCognitiveController:
         controller = CognitiveController(dim=384)
         vec = np.random.randn(384).astype(np.float32)
         vec = vec / np.linalg.norm(vec)
-        
+
         # Process events and track phase changes
         phases = []
         for _ in range(15):
             state = controller.process_event(vec, moral_value=0.9)
             phases.append(state["phase"])
-        
+
         # Should have both wake and sleep phases
         assert "wake" in phases
         # Note: May or may not have sleep depending on rejection
@@ -210,11 +210,11 @@ class TestCognitiveController:
         controller = CognitiveController(dim=384)
         vec = np.random.randn(384).astype(np.float32)
         vec = vec / np.linalg.norm(vec)
-        
+
         state = controller.process_event(vec, moral_value=0.9)
-        
+
         # Check all required fields
-        required_fields = ["step", "phase", "moral_threshold", "moral_ema", 
+        required_fields = ["step", "phase", "moral_threshold", "moral_ema",
                           "synaptic_norms", "qilm_used", "rejected", "note"]
         for field in required_fields:
             assert field in state
@@ -222,7 +222,7 @@ class TestCognitiveController:
     def test_multiple_events_sequence(self):
         """Test processing a sequence of multiple events."""
         controller = CognitiveController(dim=384)
-        
+
         events = [
             (np.random.randn(384).astype(np.float32), 0.9),
             (np.random.randn(384).astype(np.float32), 0.1),
@@ -230,7 +230,7 @@ class TestCognitiveController:
             (np.random.randn(384).astype(np.float32), 0.3),
             (np.random.randn(384).astype(np.float32), 0.8),
         ]
-        
+
         for vec, moral in events:
             vec = vec / np.linalg.norm(vec)
             state = controller.process_event(vec, moral_value=moral)
@@ -242,8 +242,8 @@ class TestCognitiveController:
         controller = CognitiveController(dim=384)
         query = np.random.randn(384).astype(np.float32)
         query = query / np.linalg.norm(query)
-        
+
         results = controller.retrieve_context(query, top_k=5)
-        
+
         assert isinstance(results, list)
         assert len(results) == 0

@@ -1,3 +1,4 @@
+"""Moral filtering with adaptive threshold for cognitive memory."""
 from typing import Dict
 
 

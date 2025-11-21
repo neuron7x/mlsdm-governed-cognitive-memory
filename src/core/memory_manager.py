@@ -1,22 +1,34 @@
-from typing import Dict, Any, Iterator, Tuple, Optional
-
+"""Memory manager orchestrating cognitive memory components."""
 import asyncio
 import logging
+from typing import Any, Dict, Iterator, Optional, Tuple
+
 import numpy as np
 
-from src.memory.multi_level_memory import MultiLevelSynapticMemory
 from src.cognition.moral_filter import MoralFilter
 from src.cognition.ontology_matcher import OntologyMatcher
+from src.memory.multi_level_memory import MultiLevelSynapticMemory
 from src.memory.qilm_module import QILM
 from src.rhythm.cognitive_rhythm import CognitiveRhythm
-from src.utils.metrics import MetricsCollector
 from src.utils.data_serializer import DataSerializer
+from src.utils.metrics import MetricsCollector
 
 logger = logging.getLogger(__name__)
 
 
 class MemoryManager:
+    """Orchestrates cognitive memory components.
+
+    Manages multi-level memory, moral filtering, ontology matching,
+    rhythm cycling, and metrics collection.
+    """
+
     def __init__(self, config: Dict[str, Any]) -> None:
+        """Initialize memory manager from configuration.
+
+        Args:
+            config: Configuration dictionary with component settings.
+        """
         self.dimension = int(config.get("dimension", 10))
 
         mem_cfg = config.get("multi_level_memory", {})
@@ -61,6 +73,12 @@ class MemoryManager:
         return False
 
     async def process_event(self, event_vector: np.ndarray, moral_value: float) -> None:
+        """Process an event through the cognitive pipeline.
+
+        Args:
+            event_vector: Event vector to process.
+            moral_value: Moral value of event (0-1).
+        """
         if self.strict_mode and self._is_sensitive(event_vector):
             raise ValueError("Sensitive data detected in strict mode.")
 
@@ -85,7 +103,15 @@ class MemoryManager:
         self.metrics_collector.add_accepted_event()
         self.metrics_collector.stop_event_timer_and_record_latency()
 
-    async def simulate(self, num_steps: int, event_gen: Iterator[Tuple[np.ndarray, float]]) -> None:
+    async def simulate(
+        self, num_steps: int, event_gen: Iterator[Tuple[np.ndarray, float]]
+    ) -> None:
+        """Run simulation with event generator.
+
+        Args:
+            num_steps: Number of steps (unused, for compatibility).
+            event_gen: Generator of (event_vector, moral_value) tuples.
+        """
         for step, (ev, mv) in enumerate(event_gen):
             if ev.shape[0] != self.dimension:
                 raise ValueError("Event dimension mismatch.")
@@ -99,7 +125,15 @@ class MemoryManager:
             self.rhythm.step()
             await asyncio.sleep(0)
 
-    def run_simulation(self, num_steps: int, event_gen: Optional[Iterator[Tuple[np.ndarray, float]]] = None) -> None:
+    def run_simulation(
+        self, num_steps: int, event_gen: Optional[Iterator[Tuple[np.ndarray, float]]] = None
+    ) -> None:
+        """Run synchronous simulation.
+
+        Args:
+            num_steps: Number of simulation steps.
+            event_gen: Optional event generator.
+        """
         if event_gen is None:
             def default_gen() -> Iterator[Tuple[np.ndarray, float]]:
                 for _ in range(num_steps):
@@ -112,7 +146,12 @@ class MemoryManager:
         asyncio.run(self.simulate(num_steps, event_gen))
 
     def save_system_state(self, filepath: str) -> None:
-        L1, L2, L3 = self.memory.get_state()
+        """Save system state to file.
+
+        Args:
+            filepath: Path to save state file.
+        """
+        l1, l2, l3 = self.memory.get_state()
         data = {
             "memory_state": self.memory.to_dict(),
             "qilm": self.qilm.to_dict(),
@@ -120,5 +159,10 @@ class MemoryManager:
         DataSerializer.save(data, filepath)
 
     def load_system_state(self, filepath: str) -> None:
+        """Load system state from file.
+
+        Args:
+            filepath: Path to state file.
+        """
         data = DataSerializer.load(filepath)
         _ = data  # In a full version, restore memory and qilm.

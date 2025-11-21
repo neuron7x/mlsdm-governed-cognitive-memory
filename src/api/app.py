@@ -1,11 +1,11 @@
-from typing import List, Dict
-
+"""FastAPI application for MLSDM Governed Cognitive Memory."""
+import hashlib
 import logging
 import os
-import hashlib
+from typing import Dict, List
 
 import numpy as np
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 
@@ -36,13 +36,13 @@ _validator = InputValidator()
 
 def _get_client_id(request: Request) -> str:
     """Get pseudonymized client identifier from request.
-    
+
     Uses SHA256 hash of IP + User-Agent to create a unique but
     non-PII identifier for rate limiting and audit logging.
     """
     client_ip = request.client.host if request.client else "unknown"
     user_agent = request.headers.get("user-agent", "")
-    
+
     # Create hash for pseudonymization (no PII stored)
     identifier = f"{client_ip}:{user_agent}"
     hashed = hashlib.sha256(identifier.encode()).hexdigest()[:16]
@@ -52,14 +52,14 @@ def _get_client_id(request: Request) -> str:
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
     """Authenticate user with enhanced security logging."""
     api_key = os.getenv("API_KEY")
-    
+
     if api_key and token != api_key:
         security_logger.log_auth_failure(
             client_id="unknown",
             reason="Invalid token"
         )
         raise HTTPException(status_code=401, detail="Invalid authentication")
-    
+
     security_logger.log_auth_success(client_id="unknown")
     return token
 
@@ -87,12 +87,12 @@ async def process_event(
     user: str = Depends(get_current_user)
 ) -> StateResponse:
     """Process event with comprehensive security validation.
-    
+
     Implements rate limiting, input validation, and audit logging
     as specified in SECURITY_POLICY.md.
     """
     client_id = _get_client_id(request)
-    
+
     # Rate limiting check (can be disabled for testing)
     if _rate_limiting_enabled and not _rate_limiter.is_allowed(client_id):
         security_logger.log_rate_limit_exceeded(client_id=client_id)
@@ -100,7 +100,7 @@ async def process_event(
             status_code=429,
             detail="Rate limit exceeded. Maximum 5 requests per second."
         )
-    
+
     # Validate moral value
     try:
         moral_value = _validator.validate_moral_value(event.moral_value)
@@ -110,7 +110,7 @@ async def process_event(
             error_message=str(e)
         )
         raise HTTPException(status_code=400, detail=str(e))
-    
+
     # Validate and convert vector
     try:
         vec = _validator.validate_vector(
@@ -124,10 +124,10 @@ async def process_event(
             error_message=str(e)
         )
         raise HTTPException(status_code=400, detail=str(e))
-    
+
     # Process the event
     await _manager.process_event(vec, moral_value)
-    
+
     return await get_state(request, user)
 
 
@@ -138,7 +138,7 @@ async def get_state(
 ) -> StateResponse:
     """Get system state with rate limiting."""
     client_id = _get_client_id(request)
-    
+
     # Rate limiting check (can be disabled for testing)
     if _rate_limiting_enabled and not _rate_limiter.is_allowed(client_id):
         security_logger.log_rate_limit_exceeded(client_id=client_id)
@@ -146,7 +146,7 @@ async def get_state(
             status_code=429,
             detail="Rate limit exceeded. Maximum 5 requests per second."
         )
-    
+
     L1, L2, L3 = _manager.memory.get_state()
     metrics = _manager.metrics_collector.get_metrics()
     return StateResponse(

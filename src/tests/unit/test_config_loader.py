@@ -15,7 +15,7 @@ class TestConfigLoader:
             f.write("threshold: 0.5\n")
             f.write("enabled: true\n")
             yaml_path = f.name
-        
+
         try:
             config = ConfigLoader.load_config(yaml_path)
             assert config["dimension"] == 384
@@ -29,7 +29,7 @@ class TestConfigLoader:
         with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
             f.write("test_key: test_value\n")
             yml_path = f.name
-        
+
         try:
             config = ConfigLoader.load_config(yml_path)
             assert config["test_key"] == "test_value"
@@ -45,7 +45,7 @@ class TestConfigLoader:
             f.write("enabled = true\n")
             f.write("name = test\n")
             ini_path = f.name
-        
+
         try:
             config = ConfigLoader.load_config(ini_path)
             assert config["dimension"] == 384
@@ -60,7 +60,7 @@ class TestConfigLoader:
         with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
             f.write("")
             yaml_path = f.name
-        
+
         try:
             config = ConfigLoader.load_config(yaml_path)
             assert config == {}
@@ -74,7 +74,7 @@ class TestConfigLoader:
             f.write("  host: localhost\n")
             f.write("  port: 5432\n")
             yaml_path = f.name
-        
+
         try:
             config = ConfigLoader.load_config(yaml_path)
             assert "database" in config
@@ -88,7 +88,7 @@ class TestConfigLoader:
         with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
             f.write("test")
             txt_path = f.name
-        
+
         try:
             with pytest.raises(ValueError, match="Unsupported configuration file format"):
                 ConfigLoader.load_config(txt_path)
@@ -109,7 +109,7 @@ class TestConfigLoader:
             f.write("flag3 = True\n")
             f.write("flag4 = FALSE\n")
             ini_path = f.name
-        
+
         try:
             config = ConfigLoader.load_config(ini_path)
             assert config["flag1"] is True
@@ -127,7 +127,7 @@ class TestConfigLoader:
             f.write("float_val = 3.14\n")
             f.write("string_val = abc\n")
             ini_path = f.name
-        
+
         try:
             config = ConfigLoader.load_config(ini_path)
             assert config["int_val"] == 42
@@ -144,7 +144,7 @@ class TestConfigLoader:
             f.write("  - item2\n")
             f.write("  - item3\n")
             yaml_path = f.name
-        
+
         try:
             config = ConfigLoader.load_config(yaml_path)
             assert "items" in config
@@ -161,7 +161,7 @@ class TestConfigLoader:
             f.write("[section2]\n")
             f.write("key2 = value2\n")
             ini_path = f.name
-        
+
         try:
             config = ConfigLoader.load_config(ini_path)
             assert "key1" in config
@@ -178,7 +178,7 @@ class TestConfigLoader:
             f.write("bool_key: true\n")
             f.write("null_key: null\n")
             yaml_path = f.name
-        
+
         try:
             config = ConfigLoader.load_config(yaml_path)
             assert config["string_key"] == "hello"
@@ -199,7 +199,7 @@ class TestConfigLoader:
         with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False, encoding='utf-8') as f:
             f.write("message: Привіт світ\n")  # Ukrainian: Hello world
             yaml_path = f.name
-        
+
         try:
             config = ConfigLoader.load_config(yaml_path)
             assert config["message"] == "Привіт світ"

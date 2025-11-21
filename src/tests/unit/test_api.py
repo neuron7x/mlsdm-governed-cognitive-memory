@@ -17,9 +17,9 @@ def test_config_file():
         f.write("  wake_duration: 5\n")
         f.write("  sleep_duration: 2\n")
         config_path = f.name
-    
+
     yield config_path
-    
+
     if os.path.exists(config_path):
         os.unlink(config_path)
 
@@ -153,7 +153,7 @@ class TestAPIEndpoints:
                 headers={"Authorization": "Bearer test_key"}
             )
             initial_count = response1.json()["total_events_processed"]
-            
+
             # Process an event
             event_data = {
                 "event_vector": [1.0] * 10,
@@ -164,7 +164,7 @@ class TestAPIEndpoints:
                 json=event_data,
                 headers={"Authorization": "Bearer test_key"}
             )
-            
+
             # Check state updated
             response2 = client.get(
                 "/v1/state/",
@@ -205,14 +205,14 @@ class TestAPIEndpoints:
                 headers={"Authorization": "Bearer test_key"}
             )
             data = response.json()
-            
+
             required_fields = [
                 "L1_norm", "L2_norm", "L3_norm",
                 "current_phase", "latent_events_count",
                 "accepted_events_count", "total_events_processed",
                 "moral_filter_threshold"
             ]
-            
+
             for field in required_fields:
                 assert field in data
 
@@ -220,7 +220,7 @@ class TestAPIEndpoints:
         """Test handling concurrent requests."""
         with patch.dict(os.environ, {"API_KEY": "test_key"}):
             import concurrent.futures
-            
+
             def make_request():
                 event_data = {
                     "event_vector": [1.0] * 10,
@@ -231,11 +231,11 @@ class TestAPIEndpoints:
                     json=event_data,
                     headers={"Authorization": "Bearer test_key"}
                 )
-            
+
             with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
                 futures = [executor.submit(make_request) for _ in range(10)]
                 results = [f.result() for f in futures]
-            
+
             # All requests should succeed
             assert all(r.status_code == 200 for r in results)
 
@@ -247,13 +247,13 @@ class TestAPIEndpoints:
                 headers={"Authorization": "Bearer test_key"}
             )
             data = response.json()
-            
+
             # Check numeric fields are valid
             assert isinstance(data["L1_norm"], (int, float))
             assert isinstance(data["L2_norm"], (int, float))
             assert isinstance(data["L3_norm"], (int, float))
             assert isinstance(data["moral_filter_threshold"], (int, float))
-            
+
             assert data["L1_norm"] >= 0
             assert data["L2_norm"] >= 0
             assert data["L3_norm"] >= 0

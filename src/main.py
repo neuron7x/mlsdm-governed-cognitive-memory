@@ -1,14 +1,24 @@
+"""Main entry point for MLSDM Governed Cognitive Memory system."""
 import argparse
-import logging
 import json
-
+import logging
 
 from src.core.memory_manager import MemoryManager
 from src.utils.config_loader import ConfigLoader
 
 
 class JSONFormatter(logging.Formatter):
-    def format(self, record):
+    """Custom JSON formatter for structured logging."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Format log record as JSON.
+
+        Args:
+            record: Log record to format.
+
+        Returns:
+            JSON-formatted log string.
+        """
         log_record = {
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,

@@ -1,16 +1,33 @@
-import numpy as np
-from typing import List
+"""Quantum-Inspired Learning Memory (QILM) v2 implementation."""
 from dataclasses import dataclass
 from threading import Lock
+from typing import List
+
+import numpy as np
 
 @dataclass
 class MemoryRetrieval:
+    """Memory retrieval result with vector, phase, and resonance score."""
+
     vector: np.ndarray
     phase: float
     resonance: float
 
-class QILM_v2:
+
+class QilmV2:
+    """Quantum-Inspired Learning Memory v2 with optimized retrieval.
+
+    Implements a circular buffer-based memory system with phase-based retrieval
+    and cosine similarity scoring.
+    """
+
     def __init__(self, dimension: int = 384, capacity: int = 20000) -> None:
+        """Initialize QILM v2 memory system.
+
+        Args:
+            dimension: Dimensionality of memory vectors.
+            capacity: Maximum number of vectors to store.
+        """
         # Validate inputs
         if dimension <= 0:
             raise ValueError(f"dimension must be positive, got {dimension}")
@@ -18,7 +35,7 @@ class QILM_v2:
             raise ValueError(f"capacity must be positive, got {capacity}")
         if capacity > 1_000_000:
             raise ValueError(f"capacity too large (max 1,000,000), got {capacity}")
-        
+
         self.dimension = dimension
         self.capacity = capacity
         self.pointer = 0
@@ -29,6 +46,15 @@ class QILM_v2:
         self.norms = np.zeros(capacity, dtype=np.float32)
 
     def entangle(self, vector: List[float], phase: float) -> int:
+        """Store a vector with associated phase in memory.
+
+        Args:
+            vector: Vector to store.
+            phase: Phase value associated with the vector.
+
+        Returns:
+            Index where the vector was stored.
+        """
         with self._lock:
             vec_np = np.array(vector, dtype=np.float32)
             norm = float(np.linalg.norm(vec_np) or 1e-9)
@@ -40,7 +66,24 @@ class QILM_v2:
             self.size = min(self.size + 1, self.capacity)
             return idx
 
-    def retrieve(self, query_vector: List[float], current_phase: float, phase_tolerance: float = 0.15, top_k: int = 5) -> List[MemoryRetrieval]:
+    def retrieve(
+        self,
+        query_vector: List[float],
+        current_phase: float,
+        phase_tolerance: float = 0.15,
+        top_k: int = 5,
+    ) -> List[MemoryRetrieval]:
+        """Retrieve top-k similar vectors within phase tolerance.
+
+        Args:
+            query_vector: Query vector for similarity search.
+            current_phase: Current phase value.
+            phase_tolerance: Maximum phase difference for candidates.
+            top_k: Number of top results to return.
+
+        Returns:
+            List of memory retrieval results.
+        """
         with self._lock:
             if self.size == 0:
                 return []
@@ -48,21 +91,21 @@ class QILM_v2:
             q_norm = float(np.linalg.norm(q_vec))
             if q_norm < 1e-9:
                 q_norm = 1e-9
-            
+
             # Optimize: use in-place operations and avoid intermediate arrays
             phase_diff = np.abs(self.phase_bank[:self.size] - current_phase)
             phase_mask = phase_diff <= phase_tolerance
             if not np.any(phase_mask):
                 return []
-            
+
             candidates_idx = np.nonzero(phase_mask)[0]
             # Optimize: compute cosine similarity without intermediate array copies
             candidate_vectors = self.memory_bank[candidates_idx]
             candidate_norms = self.norms[candidates_idx]
-            
+
             # Vectorized cosine similarity calculation
             cosine_sims = np.dot(candidate_vectors, q_vec) / (candidate_norms * q_norm)
-            
+
             # Optimize: use argpartition only when beneficial (>2x top_k)
             num_candidates = len(cosine_sims)
             if num_candidates > top_k * 2:
@@ -73,7 +116,7 @@ class QILM_v2:
             else:
                 # Full sort for small result sets (faster for small arrays)
                 top_local = np.argsort(cosine_sims)[::-1][:top_k]
-            
+
             # Optimize: pre-allocate results list
             results: List[MemoryRetrieval] = []
             for loc in top_local:
@@ -86,6 +129,11 @@ class QILM_v2:
             return results
 
     def get_state_stats(self) -> dict[str, int | float]:
+        """Get memory usage statistics.
+
+        Returns:
+            Dictionary with capacity, used size, and memory usage in MB.
+        """
         return {
             "capacity": self.capacity,
             "used": self.size,

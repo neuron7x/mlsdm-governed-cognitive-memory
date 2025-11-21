@@ -1,6 +1,8 @@
-import yaml
+"""Configuration loader for YAML and INI files."""
 import configparser
-from typing import Dict, Any
+from typing import Any, Dict
+
+import yaml
 
 
 class ConfigLoader:
