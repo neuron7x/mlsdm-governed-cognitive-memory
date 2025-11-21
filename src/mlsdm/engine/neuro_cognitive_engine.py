@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 try:
     # FSLGS як optional dependency
     from fslgs import FSLGSWrapper
-except Exception:  # pragma: no cover - optional
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - optional
     FSLGSWrapper = None
 
 
@@ -102,6 +102,8 @@ class NeuroCognitiveEngine:
         self._last_mlsdm_state: dict[str, Any] | None = None
 
         # 2) Опційна інтеграція FSLGS (dual-stream + UG + anti-schizo)
+        # Note: _fslgs stores FSLGSWrapper instance when available, otherwise None
+        # Using Any to avoid hard dependency on fslgs package types
         self._fslgs: Any | None = None
         if self.config.enable_fslgs and FSLGSWrapper is not None:
             self._fslgs = self._build_fslgs_wrapper()
