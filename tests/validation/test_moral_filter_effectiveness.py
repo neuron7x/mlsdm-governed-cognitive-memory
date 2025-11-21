@@ -155,12 +155,6 @@ def test_moral_filter_toxic_rejection():
         f"Moral filter should significantly improve toxic rejection (with={toxic_rejection_with:.2f}, without={toxic_rejection_without:.2f})"
     
     print(f"\n✅ PASS: Moral filter rejects {toxic_rejection_with*100:.1f}% of toxic content")
-    
-    return {
-        'with_filter': toxic_rejection_with,
-        'without_filter': toxic_rejection_without,
-        'improvement': improvement
-    }
 
 
 def test_moral_filter_false_positive_rate():
@@ -203,11 +197,6 @@ def test_moral_filter_false_positive_rate():
         f"False positive rate should be <50%, got {fp_rate*100:.1f}%"
     
     print(f"\n✅ PASS: False positive rate is acceptably low at {fp_rate*100:.1f}%")
-    
-    return {
-        'false_positive_rate': fp_rate,
-        'accuracy': 1 - fp_rate
-    }
 
 
 def test_moral_threshold_adaptation():
@@ -275,21 +264,6 @@ def test_moral_threshold_adaptation():
         "Final threshold should be within valid range [0.3, 0.9]"
     
     print("\n✅ PASS: Moral threshold adapts correctly and stays within bounds")
-    
-    return {
-        'toxic_stream': {
-            'initial': threshold_history1[0],
-            'final': threshold_history1[-1],
-            'drift': drift1,
-            'convergence': convergence1
-        },
-        'safe_stream': {
-            'initial': threshold_history2[0],
-            'final': threshold_history2[-1],
-            'drift': drift2,
-            'convergence': convergence2
-        }
-    }
 
 
 def test_moral_drift_stability():
@@ -346,14 +320,6 @@ def test_moral_drift_stability():
     assert drift < 0.5, f"Drift should be limited, got {drift:.4f}"
     
     print(f"\n✅ PASS: Moral threshold remains stable under toxic attack (drift={drift:.4f})")
-    
-    return {
-        'initial_threshold': threshold_history[0],
-        'final_threshold': threshold_history[-1],
-        'drift': drift,
-        'recent_drift': recent_drift,
-        'toxic_rejection_rate': sum(rejections)/len(rejections)
-    }
 
 
 def test_comprehensive_safety_metrics():
@@ -434,13 +400,6 @@ def test_comprehensive_safety_metrics():
         "Moral filtering should dramatically improve toxic rejection vs baseline"
     
     print(f"\n✅ PASS: Moral filtering achieves {metrics_with.toxic_rejection_rate*100:.1f}% toxic rejection rate")
-    
-    return {
-        'metrics_with': metrics_with,
-        'metrics_without': metrics_without,
-        'improvement': improvement,
-        'pct_improvement': pct_improvement
-    }
 
 
 def run_all_tests():
