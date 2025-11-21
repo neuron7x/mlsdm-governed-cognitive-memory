@@ -1,6 +1,11 @@
-# Contributing to MLSDM Governed Cognitive Memory
+# Contributing Guide
 
-Thank you for your interest in contributing to this project! This document provides guidelines and instructions for contributors.
+**Document Version:** 1.0.0  
+**Project Version:** 1.0.0  
+**Last Updated:** November 2025  
+**Minimum Coverage:** 90%
+
+Thank you for your interest in contributing to MLSDM Governed Cognitive Memory! This document provides comprehensive guidelines and instructions for contributors.
 
 ## Table of Contents
 

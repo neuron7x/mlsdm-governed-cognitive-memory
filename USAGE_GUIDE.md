@@ -1,4 +1,13 @@
-# MLSDM Governed Cognitive Memory - Usage Guide
+# Usage Guide
+
+**Document Version:** 1.0.0  
+**Project Version:** 1.0.0  
+**Last Updated:** November 2025  
+**Status:** Production
+
+Comprehensive guide for using MLSDM Governed Cognitive Memory in your applications.
+
+---
 
 ## Quick Start: Universal LLM Wrapper
 

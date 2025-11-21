@@ -1,5 +1,10 @@
 # Deployment Guide
 
+**Document Version:** 1.0.0  
+**Project Version:** 1.0.0  
+**Last Updated:** November 2025  
+**Status:** Production
+
 Production deployment guide for MLSDM Governed Cognitive Memory v1.0.0.
 
 ## Table of Contents
