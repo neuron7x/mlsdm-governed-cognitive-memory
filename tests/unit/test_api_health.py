@@ -12,7 +12,7 @@ from mlsdm.api import health
 def test_app():
     """Create a test FastAPI app with health router."""
     from fastapi import FastAPI
-    
+
     app = FastAPI()
     app.include_router(health.router)
     return app
@@ -36,7 +36,7 @@ class TestLivenessEndpoint:
         """Test liveness response has correct structure."""
         response = client.get("/health/liveness")
         data = response.json()
-        
+
         assert "status" in data
         assert "timestamp" in data
         assert data["status"] == "alive"
@@ -45,7 +45,7 @@ class TestLivenessEndpoint:
         """Test that liveness returns valid timestamp."""
         response = client.get("/health/liveness")
         data = response.json()
-        
+
         assert isinstance(data["timestamp"], (int, float))
         assert data["timestamp"] > 0
 
@@ -65,12 +65,12 @@ class TestReadinessEndpoint:
         """Test readiness response has correct structure."""
         response = client.get("/health/readiness")
         data = response.json()
-        
+
         assert "ready" in data
         assert "status" in data
         assert "timestamp" in data
         assert "checks" in data
-        
+
         assert isinstance(data["ready"], bool)
         assert isinstance(data["checks"], dict)
 
@@ -78,7 +78,7 @@ class TestReadinessEndpoint:
         """Test that readiness includes expected checks."""
         response = client.get("/health/readiness")
         data = response.json()
-        
+
         checks = data["checks"]
         assert "memory_manager" in checks
         assert "memory_available" in checks
@@ -88,10 +88,10 @@ class TestReadinessEndpoint:
         """Test that readiness is not ready without memory manager."""
         # Without setting a memory manager, should not be ready
         health.set_memory_manager(None)
-        
+
         response = client.get("/health/readiness")
         data = response.json()
-        
+
         assert data["ready"] is False
         assert data["checks"]["memory_manager"] is False
         assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
@@ -100,7 +100,7 @@ class TestReadinessEndpoint:
         """Test that readiness status matches HTTP status code."""
         response = client.get("/health/readiness")
         data = response.json()
-        
+
         if data["ready"]:
             assert response.status_code == status.HTTP_200_OK
             assert data["status"] == "ready"
@@ -124,12 +124,12 @@ class TestDetailedHealthEndpoint:
         """Test detailed response has correct structure."""
         response = client.get("/health/detailed")
         data = response.json()
-        
+
         assert "status" in data
         assert "timestamp" in data
         assert "uptime_seconds" in data
         assert "system" in data
-        
+
         assert isinstance(data["system"], dict)
         assert isinstance(data["uptime_seconds"], (int, float))
 
@@ -137,7 +137,7 @@ class TestDetailedHealthEndpoint:
         """Test that system info is included."""
         response = client.get("/health/detailed")
         data = response.json()
-        
+
         system = data["system"]
         # At least one of these should be present
         assert (
@@ -151,20 +151,20 @@ class TestDetailedHealthEndpoint:
         """Test that uptime is positive."""
         response = client.get("/health/detailed")
         data = response.json()
-        
+
         assert data["uptime_seconds"] >= 0
 
     def test_detailed_without_manager(self, client):
         """Test detailed health without memory manager."""
         health.set_memory_manager(None)
-        
+
         response = client.get("/health/detailed")
         data = response.json()
-        
+
         # Should return unhealthy status
         assert data["status"] == "unhealthy"
         assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
-        
+
         # Memory state should be None
         assert data["memory_state"] is None
         assert data["phase"] is None
@@ -177,7 +177,7 @@ class TestMemoryManagerIntegration:
     def mock_manager(self):
         """Create a mock memory manager."""
         import numpy as np
-        
+
         class MockMemory:
             def get_state(self):
                 return (
@@ -185,14 +185,14 @@ class TestMemoryManagerIntegration:
                     np.array([0.5, 0.5]),
                     np.array([0.1]),
                 )
-        
+
         class MockRhythm:
             def get_current_phase(self):
                 return "wake"
-        
+
         class MockFilter:
             threshold = 0.5
-        
+
         class MockMetricsCollector:
             def get_metrics(self):
                 return {
@@ -201,41 +201,41 @@ class TestMemoryManagerIntegration:
                     "latent_events_count": 20,
                     "latencies": [0.001, 0.002, 0.003],
                 }
-        
+
         class MockManager:
             def __init__(self):
                 self.memory = MockMemory()
                 self.rhythm = MockRhythm()
                 self.filter = MockFilter()
                 self.metrics_collector = MockMetricsCollector()
-        
+
         return MockManager()
 
     def test_readiness_with_manager(self, client, mock_manager):
         """Test readiness with memory manager set."""
         health.set_memory_manager(mock_manager)
-        
+
         response = client.get("/health/readiness")
         data = response.json()
-        
+
         assert data["checks"]["memory_manager"] is True
 
     def test_detailed_with_manager(self, client, mock_manager):
         """Test detailed health with memory manager."""
         health.set_memory_manager(mock_manager)
-        
+
         response = client.get("/health/detailed")
         data = response.json()
-        
+
         # Should have memory state
         assert data["memory_state"] is not None
         assert "L1_norm" in data["memory_state"]
         assert "L2_norm" in data["memory_state"]
         assert "L3_norm" in data["memory_state"]
-        
+
         # Should have phase
         assert data["phase"] == "wake"
-        
+
         # Should have statistics
         assert data["statistics"] is not None
         assert data["statistics"]["total_events_processed"] == 100
@@ -247,10 +247,10 @@ class TestMemoryManagerIntegration:
     def test_detailed_memory_norms(self, client, mock_manager):
         """Test that memory norms are calculated correctly."""
         health.set_memory_manager(mock_manager)
-        
+
         response = client.get("/health/detailed")
         data = response.json()
-        
+
         memory_state = data["memory_state"]
         # Check that norms are positive numbers
         assert memory_state["L1_norm"] > 0
@@ -265,19 +265,54 @@ class TestHealthManagerSetGet:
         """Test setting and getting memory manager."""
         class DummyManager:
             pass
-        
+
         manager = DummyManager()
         health.set_memory_manager(manager)
-        
+
         retrieved = health.get_memory_manager()
         assert retrieved is manager
 
     def test_get_manager_none(self):
         """Test getting manager when none is set."""
         health.set_memory_manager(None)
-        
+
         manager = health.get_memory_manager()
         assert manager is None
+
+
+class TestMetricsEndpoint:
+    """Test Prometheus metrics endpoint."""
+
+    def test_metrics_returns_200(self, client):
+        """Test that metrics endpoint returns 200."""
+        response = client.get("/health/metrics")
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_metrics_content_type(self, client):
+        """Test that metrics endpoint returns plain text."""
+        response = client.get("/health/metrics")
+        assert "text/plain" in response.headers.get("content-type", "")
+
+    def test_metrics_contains_mlsdm_metrics(self, client):
+        """Test that metrics output contains MLSDM metrics."""
+        response = client.get("/health/metrics")
+        content = response.text
+
+        # Check for expected metric names
+        assert "mlsdm_events_processed_total" in content
+        assert "mlsdm_events_rejected_total" in content
+        assert "mlsdm_memory_usage_bytes" in content
+        assert "mlsdm_moral_threshold" in content
+        assert "mlsdm_phase" in content
+
+    def test_metrics_prometheus_format(self, client):
+        """Test that metrics are in valid Prometheus format."""
+        response = client.get("/health/metrics")
+        content = response.text
+
+        # Check for Prometheus format markers
+        assert "# HELP" in content
+        assert "# TYPE" in content
 
 
 if __name__ == "__main__":

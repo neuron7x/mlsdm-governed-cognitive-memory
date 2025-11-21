@@ -10,7 +10,10 @@ from typing import Any
 
 import psutil
 from fastapi import APIRouter, Response, status
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
+
+from mlsdm.observability.metrics import get_metrics_exporter
 
 logger = logging.getLogger(__name__)
 
@@ -265,3 +268,16 @@ async def detailed_health(response: Response) -> DetailedHealthStatus:
         phase=phase,
         statistics=statistics,
     )
+
+
+@router.get("/metrics", response_class=PlainTextResponse)
+async def metrics() -> str:
+    """Prometheus metrics endpoint.
+
+    Exports metrics in Prometheus text format for scraping.
+
+    Returns:
+        Prometheus-formatted metrics as plain text
+    """
+    metrics_exporter = get_metrics_exporter()
+    return metrics_exporter.get_metrics_text()
