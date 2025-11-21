@@ -4,9 +4,11 @@ Unit Tests for Rate Limiter
 Tests leaky bucket rate limiting implementation.
 """
 
-import time
 import threading
+import time
+
 import pytest
+
 from src.utils.rate_limiter import RateLimiter
 
 

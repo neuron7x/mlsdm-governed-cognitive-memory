@@ -5,15 +5,16 @@ These tests validate that optimizations maintain correctness while
 improving performance characteristics of the system.
 """
 
-import numpy as np
 import time
 from threading import Thread
 from typing import List
 
-from src.memory.qilm_v2 import QILM_v2
-from src.memory.multi_level_memory import MultiLevelSynapticMemory
+import numpy as np
+
 from src.cognition.moral_filter_v2 import MoralFilterV2
 from src.core.cognitive_controller import CognitiveController
+from src.memory.multi_level_memory import MultiLevelSynapticMemory
+from src.memory.qilm_v2 import QILM_v2
 
 
 class TestQILM_v2Performance:

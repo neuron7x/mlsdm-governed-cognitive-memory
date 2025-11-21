@@ -4,12 +4,14 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.0.0.
 
 ## Quick Links
 
-- 🚀 **New Users**: Start with [README.md](README.md) and [USAGE_GUIDE.md](USAGE_GUIDE.md)
+- 🚀 **New Users**: Start with [README.md](README.md) → [SETUP_GUIDE.md](SETUP_GUIDE.md) → [USAGE_GUIDE.md](USAGE_GUIDE.md)
+- ⚡ **Quick Start**: Run `python quickstart.py` after installation
 - 📚 **API Reference**: See [API_REFERENCE.md](API_REFERENCE.md)
 - 🏗️ **Architecture**: See [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md)
 - 🚀 **Deployment**: See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
 - 🤝 **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md)
 - ✅ **Testing**: See [TESTING_STRATEGY.md](TESTING_STRATEGY.md)
+- 📝 **Release Notes**: See [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
@@ -19,13 +21,16 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.0.0.
 
 **For Users:**
 1. [README.md](README.md) - Project overview, features, quick start
-2. [USAGE_GUIDE.md](USAGE_GUIDE.md) - Detailed usage examples and best practices
-3. [examples/](examples/) - Working code examples
+2. [SETUP_GUIDE.md](SETUP_GUIDE.md) - **NEW!** 30-second setup with integration examples
+3. [quickstart.py](quickstart.py) - **NEW!** Interactive demo script
+4. [USAGE_GUIDE.md](USAGE_GUIDE.md) - Detailed usage examples and best practices
+5. [examples/](examples/) - Working code examples
 
 **For Developers:**
 1. [CONTRIBUTING.md](CONTRIBUTING.md) - How to contribute to the project
 2. [API_REFERENCE.md](API_REFERENCE.md) - Complete API documentation
 3. [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) - System architecture
+4. [CHANGELOG.md](CHANGELOG.md) - **NEW!** Version history and release notes
 
 **For Operators:**
 1. [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Production deployment
@@ -50,11 +55,14 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.0.0.
 
 | Document | Purpose | Audience | Time to Read |
 |----------|---------|----------|--------------|
+| [SETUP_GUIDE.md](SETUP_GUIDE.md) | **NEW!** 30-second setup | Developers | 5 min |
+| [quickstart.py](quickstart.py) | **NEW!** Interactive demo | Developers | 2 min |
 | [USAGE_GUIDE.md](USAGE_GUIDE.md) | How to use the system | Developers | 30 min |
 | [API_REFERENCE.md](API_REFERENCE.md) | API documentation | Developers | 20 min |
 | [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) | Configuration reference | Developers/DevOps | 25 min |
 | [examples/](examples/) | Code examples | Developers | 15 min |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development guide | Contributors | 25 min |
+| [CHANGELOG.md](CHANGELOG.md) | **NEW!** Version history | Everyone | 5 min |
 
 ### 🚀 Deployment & Operations
 

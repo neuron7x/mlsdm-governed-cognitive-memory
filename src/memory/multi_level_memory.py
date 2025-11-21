@@ -1,5 +1,6 @@
+from typing import Any, Dict, Tuple
+
 import numpy as np
-from typing import Dict, Tuple, Any
 
 
 class MultiLevelSynapticMemory:

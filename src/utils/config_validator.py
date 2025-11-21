@@ -8,8 +8,8 @@ Author: neuron7x
 License: MIT
 """
 
-from typing import Any, Dict, Optional
 from dataclasses import dataclass
+from typing import Any, Dict, Optional
 
 
 @dataclass

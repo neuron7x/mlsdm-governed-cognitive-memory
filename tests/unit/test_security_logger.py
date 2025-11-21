@@ -5,10 +5,10 @@ Tests structured security audit logging with PII protection.
 """
 
 import json
+
 import pytest
-from src.utils.security_logger import (
-    SecurityLogger, SecurityEventType, get_security_logger
-)
+
+from src.utils.security_logger import SecurityEventType, SecurityLogger, get_security_logger
 
 
 class TestSecurityEventType:

@@ -4,11 +4,13 @@ Unit Tests for Data Serializer
 Tests data serialization to JSON and NPZ formats.
 """
 
-import os
 import json
+import os
 import tempfile
-import pytest
+
 import numpy as np
+import pytest
+
 from src.utils.data_serializer import DataSerializer
 
 

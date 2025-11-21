@@ -4,8 +4,9 @@ Unit Tests for QILM (Quantum-Inspired Long-term Memory)
 Tests phase-entangled memory storage and retrieval.
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from src.memory.qilm_module import QILM
 
 

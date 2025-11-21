@@ -6,11 +6,8 @@ License: MIT
 """
 
 import pytest
-from src.utils.config_validator import (
-    ConfigValidator,
-    ValidationError,
-    validate_config
-)
+
+from src.utils.config_validator import ConfigValidator, ValidationError, validate_config
 
 
 class TestConfigValidator:

@@ -1,7 +1,10 @@
-import numpy as np
 import sys
+
+import numpy as np
+
 sys.path.insert(0, '.')
 from src.core.cognitive_controller import CognitiveController
+
 
 def test_basic_flow():
     controller = CognitiveController(dim=384)

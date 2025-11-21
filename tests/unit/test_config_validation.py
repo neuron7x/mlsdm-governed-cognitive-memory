@@ -12,13 +12,13 @@ import pytest
 from pydantic import ValidationError
 
 from src.utils.config_schema import (
-    SystemConfig,
-    MultiLevelMemoryConfig,
-    MoralFilterConfig,
-    OntologyMatcherConfig,
     CognitiveRhythmConfig,
-    validate_config_dict,
+    MoralFilterConfig,
+    MultiLevelMemoryConfig,
+    OntologyMatcherConfig,
+    SystemConfig,
     get_default_config,
+    validate_config_dict,
 )
 
 

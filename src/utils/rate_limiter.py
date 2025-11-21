@@ -5,10 +5,10 @@ Implements a 5 RPS (requests per second) limit per client as specified in
 SECURITY_POLICY.md.
 """
 
-import time
 import threading
-from typing import Dict, Tuple
+import time
 from collections import defaultdict
+from typing import Dict, Tuple
 
 
 class RateLimiter:

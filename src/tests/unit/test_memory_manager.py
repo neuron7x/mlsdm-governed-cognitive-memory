@@ -1,6 +1,7 @@
 """Comprehensive unit tests for MemoryManager."""
-import pytest
 import numpy as np
+import pytest
+
 from src.core.memory_manager import MemoryManager
 
 pytest_plugins = ('pytest_asyncio',)
@@ -178,8 +179,8 @@ class TestMemoryManager:
 
     def test_save_and_load_system_state(self):
         """Test saving and loading system state."""
-        import tempfile
         import os
+        import tempfile
         
         config = {"dimension": 10}
         manager = MemoryManager(config)

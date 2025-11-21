@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class MoralFilterV2:
     MIN_THRESHOLD = 0.30
     MAX_THRESHOLD = 0.90

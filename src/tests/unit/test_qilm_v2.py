@@ -1,7 +1,9 @@
 """Comprehensive unit tests for QILM_v2."""
-import numpy as np
 from threading import Thread
-from src.memory.qilm_v2 import QILM_v2, MemoryRetrieval
+
+import numpy as np
+
+from src.memory.qilm_v2 import MemoryRetrieval, QILM_v2
 
 
 class TestQILM_v2:

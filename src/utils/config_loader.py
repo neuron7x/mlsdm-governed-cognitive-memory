@@ -4,11 +4,12 @@ This module provides utilities for loading and validating configuration files
 with comprehensive error messages and type safety.
 """
 
-import yaml
 import configparser
 import os
-from typing import Dict, Any, Optional
 from pathlib import Path
+from typing import Any, Dict
+
+import yaml
 
 from src.utils.config_schema import SystemConfig, validate_config_dict
 

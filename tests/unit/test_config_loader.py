@@ -8,13 +8,11 @@ Tests cover:
 - File format support
 """
 
-import os
-import pytest
-import tempfile
 from pathlib import Path
 
+import pytest
+
 from src.utils.config_loader import ConfigLoader
-from pydantic import ValidationError
 
 
 class TestYAMLLoading:

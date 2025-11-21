@@ -5,6 +5,7 @@ Tests moral threshold filtering and adaptation.
 """
 
 import pytest
+
 from src.cognition.moral_filter import MoralFilter
 
 

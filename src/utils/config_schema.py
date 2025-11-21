@@ -5,9 +5,9 @@ type safety and validation. It ensures all configuration parameters are
 properly validated before use.
 """
 
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
-import numpy as np
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class MultiLevelMemoryConfig(BaseModel):

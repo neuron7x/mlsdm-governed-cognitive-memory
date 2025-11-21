@@ -1,7 +1,6 @@
 import argparse
-import logging
 import json
-
+import logging
 
 from src.core.memory_manager import MemoryManager
 from src.utils.config_loader import ConfigLoader
@@ -34,6 +33,7 @@ def main() -> None:
 
     if args.api:
         import uvicorn
+
         from src.api.app import app
 
         uvicorn.run(app, host="0.0.0.0", port=8000)

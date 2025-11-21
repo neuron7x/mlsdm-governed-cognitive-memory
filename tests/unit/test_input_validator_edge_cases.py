@@ -1,7 +1,8 @@
 """Additional edge case tests for InputValidator to increase coverage."""
 
-import pytest
 import numpy as np
+import pytest
+
 from src.utils.input_validator import InputValidator
 
 

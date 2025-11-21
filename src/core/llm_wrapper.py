@@ -11,13 +11,15 @@ This module provides a production-ready wrapper around any LLM that enforces:
 Prevents LLM degradation, memory bloat, toxicity, and identity loss.
 """
 
-import numpy as np
-from typing import List, Optional, Dict, Any, Callable
 from threading import Lock
+from typing import Any, Callable, Dict, List, Optional
+
+import numpy as np
+
 from ..cognition.moral_filter_v2 import MoralFilterV2
+from ..memory.multi_level_memory import MultiLevelSynapticMemory
 from ..memory.qilm_v2 import QILM_v2
 from ..rhythm.cognitive_rhythm import CognitiveRhythm
-from ..memory.multi_level_memory import MultiLevelSynapticMemory
 
 
 class LLMWrapper:

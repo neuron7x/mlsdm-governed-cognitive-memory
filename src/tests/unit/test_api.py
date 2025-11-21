@@ -1,9 +1,10 @@
 """Tests for the FastAPI application."""
-import pytest
 import os
 import tempfile
-from fastapi.testclient import TestClient
 from unittest.mock import patch
+
+import pytest
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture

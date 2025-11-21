@@ -7,8 +7,10 @@ from moral filtering using rigorous statistical validation.
 Principal System Architect level validation.
 """
 
-import numpy as np
 import sys
+
+import numpy as np
+
 sys.path.insert(0, '.')
 
 from src.core.cognitive_controller import CognitiveController

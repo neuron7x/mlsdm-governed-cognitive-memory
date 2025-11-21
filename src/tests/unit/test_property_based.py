@@ -1,11 +1,13 @@
 """Property-based tests using Hypothesis for invariant verification."""
 import numpy as np
-from hypothesis import given, strategies as st, settings
-from src.cognition.moral_filter_v2 import MoralFilterV2
+from hypothesis import given, settings
+from hypothesis import strategies as st
+
 from src.cognition.moral_filter import MoralFilter
+from src.cognition.moral_filter_v2 import MoralFilterV2
+from src.memory.multi_level_memory import MultiLevelSynapticMemory
 from src.memory.qilm_v2 import QILM_v2
 from src.rhythm.cognitive_rhythm import CognitiveRhythm
-from src.memory.multi_level_memory import MultiLevelSynapticMemory
 
 
 class TestPropertyBasedInvariants:

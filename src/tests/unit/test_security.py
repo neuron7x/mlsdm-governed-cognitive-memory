@@ -7,12 +7,14 @@ Tests cover:
 - Authentication
 """
 
-import pytest
 import time
+
 import numpy as np
-from src.utils.rate_limiter import RateLimiter
+import pytest
+
 from src.utils.input_validator import InputValidator
-from src.utils.security_logger import SecurityLogger, SecurityEventType
+from src.utils.rate_limiter import RateLimiter
+from src.utils.security_logger import SecurityEventType, SecurityLogger
 
 
 class TestRateLimiter:

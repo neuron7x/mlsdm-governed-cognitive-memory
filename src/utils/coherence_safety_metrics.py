@@ -8,9 +8,10 @@ This module provides quantitative metrics to measure the effectiveness of:
 Principal System Architect level implementation with statistical rigor.
 """
 
-import numpy as np
-from typing import List, Dict
 from dataclasses import dataclass
+from typing import Dict, List
+
+import numpy as np
 
 
 @dataclass

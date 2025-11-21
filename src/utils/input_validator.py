@@ -5,8 +5,9 @@ data corruption, and ensure data integrity as per SECURITY_POLICY.md.
 """
 
 import re
+from typing import Any, List, Optional
+
 import numpy as np
-from typing import List, Any, Optional
 
 
 class InputValidator:

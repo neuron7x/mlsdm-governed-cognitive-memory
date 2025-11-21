@@ -1,6 +1,8 @@
 """Comprehensive unit tests for CognitiveController."""
-import numpy as np
 from threading import Thread
+
+import numpy as np
+
 from src.core.cognitive_controller import CognitiveController
 
 

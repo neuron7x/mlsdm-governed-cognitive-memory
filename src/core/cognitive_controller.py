@@ -1,10 +1,13 @@
-import numpy as np
 from threading import Lock
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
+import numpy as np
+
 from ..cognition.moral_filter_v2 import MoralFilterV2
-from ..memory.qilm_v2 import QILM_v2, MemoryRetrieval
-from ..rhythm.cognitive_rhythm import CognitiveRhythm
 from ..memory.multi_level_memory import MultiLevelSynapticMemory
+from ..memory.qilm_v2 import MemoryRetrieval, QILM_v2
+from ..rhythm.cognitive_rhythm import CognitiveRhythm
+
 
 class CognitiveController:
     def __init__(self, dim: int = 384) -> None:
