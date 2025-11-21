@@ -42,6 +42,7 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.0.0.
 |----------|---------|----------|--------------|
 | [README.md](README.md) | High-level overview | Everyone | 10 min |
 | [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) | System design | Technical | 5 min |
+| [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md) | Scientific references | Researchers | 15 min |
 | [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) | Implementation details | Technical | 15 min |
 | [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md) | Validation results | Technical | 20 min |
 
@@ -140,12 +141,14 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.0.0.
 
 1. Read [README.md](README.md) for high-level overview
 2. Study [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md)
-3. Review [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) for design
-4. Check [TESTING_STRATEGY.md](TESTING_STRATEGY.md) for methodology
-5. See [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) for details
+3. Review [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md) for scientific foundations
+4. Review [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) for design
+5. Check [TESTING_STRATEGY.md](TESTING_STRATEGY.md) for methodology
+6. See [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) for details
 
 **Key Documents:**
 - ✅ [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md) - **Research Results**
+- ✅ [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md) - **Scientific References**
 - ✅ [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) - **System Design**
 - ✅ [TESTING_STRATEGY.md](TESTING_STRATEGY.md) - **Methodology**
 
