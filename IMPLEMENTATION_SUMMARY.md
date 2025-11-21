@@ -409,17 +409,19 @@ async def generate(prompt: str, moral_value: float = 0.8):
     return wrapper.generate(prompt, moral_value)
 ```
 
-## Future Enhancements (Optional)
+## Planned Improvements (v1.x+)
 
-The system is production-ready. Optional improvements:
+The system is production-ready. The following enhancements are planned but not yet implemented:
 
-- [ ] Prometheus metrics export
-- [ ] Structured JSON logging
-- [ ] Kubernetes deployment guide
-- [ ] Stress testing at 10k+ RPS
-- [ ] RAG hallucination testing (ragas)
-- [ ] Chaos engineering suite
-- [ ] TLA+ formal verification
+- [ ] **[PLANNED]** Prometheus metrics export
+- [ ] **[PLANNED]** OpenTelemetry distributed tracing
+- [ ] **[PLANNED]** Structured JSON logging
+- [ ] **[PLANNED]** Kubernetes deployment guide
+- [ ] **[PLANNED]** Stress testing at 10k+ RPS
+- [ ] **[PLANNED]** RAG hallucination testing (ragas)
+- [ ] **[PLANNED]** Chaos engineering suite (chaos-toolkit)
+- [ ] **[PLANNED]** TLA+ formal verification
+- [ ] **[PLANNED]** Coq algorithm proofs
 
 ## Conclusion
 

@@ -221,20 +221,22 @@ return bool(moral_value >= self.threshold)
 
 ## Recommendations for Future Work
 
-1. **Additional Optimizations**:
+**Status**: ⚠️ All items below are planned improvements and not yet implemented.
+
+1. **Additional Optimizations** [PLANNED]:
    - Consider vectorizing multi-level memory transfers for even better performance
    - Explore NumPy views to reduce copying in retrieval
    - Profile memory allocation patterns under high load
 
-2. **Extended Testing**:
-   - Add chaos engineering tests for fault injection
+2. **Extended Testing** [PLANNED]:
+   - Add chaos engineering tests for fault injection (chaos-toolkit)
    - Implement soak tests (48-72 hour runs)
-   - Add adversarial testing for moral filter
+   - Add adversarial testing for moral filter (red teaming)
    - Benchmark against previous versions
 
-3. **Performance Monitoring**:
-   - Add OpenTelemetry instrumentation
-   - Set up Prometheus metrics
+3. **Performance Monitoring** [PLANNED]:
+   - Add OpenTelemetry instrumentation for distributed tracing
+   - Set up Prometheus metrics export
    - Track P50/P95/P99 latencies in production
    - Monitor memory usage over time
 
@@ -243,6 +245,8 @@ return bool(moral_value >= self.threshold)
    - Document optimization rationale
    - Create performance tuning guide
    - Add profiling examples
+
+**Current State**: The system has comprehensive performance tests with benchmarks. Advanced monitoring and chaos testing represent planned enhancements for production deployments.
 
 ## Conclusion
 

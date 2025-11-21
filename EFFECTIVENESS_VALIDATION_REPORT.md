@@ -385,20 +385,24 @@ Typical cognitive architectures:
 
 ### 6.2 Future Enhancements
 
-1. **Advanced Metrics**
-   - RAG hallucination rate (ragas framework)
-   - Adversarial red teaming
-   - Multi-agent interaction fairness
+**Status**: ⚠️ All items below are planned for future versions (v1.x+) and are not yet implemented in the current codebase.
 
-2. **Formal Verification**
+1. **Advanced Metrics** (Planned)
+   - RAG hallucination rate using ragas framework
+   - Adversarial red teaming with attack corpus
+   - Multi-agent interaction fairness assessment
+
+2. **Formal Verification** (Planned)
    - TLA+ specification for state transitions
    - Coq proofs for threshold bounds
    - Model checking for liveness properties
 
-3. **Production Hardening**
-   - Chaos engineering (fault injection)
-   - Soak testing (48-72h continuous)
-   - Load shedding and backpressure
+3. **Production Hardening** (Planned)
+   - Chaos engineering suite with fault injection
+   - Soak testing (48-72h continuous load)
+   - Load shedding and backpressure testing
+
+**Current State**: The system has comprehensive unit, integration, and property-based tests with 92.65% coverage. The enhancements above represent the next phase of validation maturity.
 
 ---
 
@@ -451,11 +455,11 @@ This validation demonstrates **Principal System Architect level** contributions:
 4. ⚠️ Implement user feedback loops to reduce false positives
 5. ✅ Monitor drift metrics in production (Prometheus/OpenTelemetry)
 
-**For Research Extension**:
-1. Formal verification (TLA+, Coq)
-2. Adversarial red teaming
-3. RAG hallucination assessment
-4. Chaos engineering suite
+**For Research Extension** (⚠️ Planned, not yet implemented):
+1. Formal verification (TLA+, Coq) - planned for v1.x+
+2. Adversarial red teaming - planned for v1.x+
+3. RAG hallucination assessment (ragas) - planned for v1.x+
+4. Chaos engineering suite - planned for v1.x+
 
 ---
 
@@ -515,10 +519,12 @@ python tests/validation/test_moral_filter_effectiveness.py
 ## Appendix B: References
 
 1. MLSDM Governed Cognitive Memory Architecture (ARCHITECTURE_SPEC.md)
-2. Testing Strategy (TESTING_STRATEGY.md)
+2. Testing Strategy (TESTING_STRATEGY.md) - includes roadmap for planned enhancements
 3. Hypothesis Framework: Property-Based Testing
 4. Industry Standards: Perspective API, OpenAI Moderation API
 5. Neurobiological Inspiration: Circadian Rhythm, Sleep Consolidation
+
+**Note**: References to chaos engineering, formal verification (TLA+, Coq), OpenTelemetry tracing, and RAG hallucination testing (ragas) in this document refer to planned future enhancements and are not currently implemented in the repository.
 
 ---
 

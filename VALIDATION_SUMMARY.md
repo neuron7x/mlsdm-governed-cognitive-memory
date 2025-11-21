@@ -152,11 +152,11 @@ python scripts/generate_effectiveness_charts.py
 3. ⚠️ **Tune thresholds** per use case - Optimize false positive rate
 4. ✅ **Monitor drift metrics** - Use Prometheus/OpenTelemetry
 
-### For Research
-1. Formal verification (TLA+, Coq)
-2. Adversarial red teaming
-3. RAG hallucination assessment (ragas)
-4. Chaos engineering suite
+### For Research (⚠️ Planned, not yet implemented)
+1. Formal verification (TLA+, Coq) - planned for v1.x+
+2. Adversarial red teaming - planned for v1.x+
+3. RAG hallucination assessment (ragas) - planned for v1.x+
+4. Chaos engineering suite - planned for v1.x+
 
 ---
 
@@ -178,6 +178,8 @@ The implementation meets **Principal System Architect** standards with:
 **Status**: ✅ **Strong Contribution Delivered**
 
 ---
+
+**Note**: This validation report focuses on implemented features. References to chaos engineering, formal verification (TLA+, Coq), OpenTelemetry tracing, and RAG hallucination testing (ragas) refer to planned future enhancements and are not currently implemented in the repository.
 
 **Author**: Principal System Architect  
 **Date**: 2025-11-19  

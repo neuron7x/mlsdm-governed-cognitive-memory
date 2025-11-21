@@ -167,22 +167,26 @@ This project incorporates advanced system reliability, mathematical correctness,
 6. Observability of Tail Failure Modes
 
 ### Methodologies Implemented / Planned
-| Category | Method | Purpose | Tooling |
-|----------|--------|---------|---------|
-| Resilience | Chaos Engineering / Fault Injection | Validate graceful degradation under component failure (DB/network/pod kill) | chaos-toolkit, custom fault scripts |
-| Resilience | Soak Testing (48–72h) | Detect memory leaks, latent resource exhaustion | Locust / custom harness + Prometheus export |
-| Resilience | Load Shedding & Backpressure Testing | Ensure overload results in fast rejection, not collapse | Rate limit middleware + stress generators |
-| Correctness | Property-Based Testing | Assert mathematical invariants across wide input space | Hypothesis |
-| Correctness | State Machine Verification | Enforce legal cognitive rhythm transitions (Sleep→Wake→Processing) | pytest state model + TLA+ spec alignment |
-| AI Safety | Adversarial Red Teaming | Jailbreak & prompt-injection resistance for MoralFilter | Attack LLM harness + curated attack corpus |
-| AI Safety | Cognitive Drift Testing | Ensure moral thresholds remain stable under toxic sequence bombardment | Drift probes + statistical monitoring |
-| AI Safety | RAG Hallucination / Faithfulness Testing | Quantify grounding vs fabrication | ragas + retrieval audit logs |
-| Performance | Saturation Testing | Identify RPS inflection where latency spikes | Locust/K6 + SLO dashboards |
-| Performance | Tail Latency (P99/P99.9) Audits | Guarantee upper-bound latency SLOs | OpenTelemetry + Prometheus histograms |
-| Formal | Formal Specification (TLA+) | Prove liveness/safety of memory lifecycle | TLC model checker |
-| Formal | Algorithm Proof Fragments (Coq) | Prove correctness of address selection / neighbor threshold | Coq scripts |
-| Governance | Ethical Override Traceability | Ensure explainable policy decisions | Structured event logging |
-| Reliability | Drift & Anomaly Injection | Validate detection pipeline reaction | Synthetic anomaly injectors |
+
+| Category | Method | Purpose | Status | Tooling |
+|----------|--------|---------|--------|---------|
+| Correctness | Property-Based Testing | Assert mathematical invariants across wide input space | ✅ Implemented | Hypothesis |
+| Correctness | State Machine Verification | Enforce legal cognitive rhythm transitions (Sleep→Wake→Processing) | ✅ Implemented | pytest state model |
+| AI Safety | Cognitive Drift Testing | Ensure moral thresholds remain stable under toxic sequence bombardment | ✅ Implemented | Drift probes + statistical monitoring |
+| Performance | Unit Benchmarks | Verify performance characteristics meet requirements | ✅ Implemented | pytest benchmarks |
+| Governance | Effectiveness Validation | Quantify improvements in coherence and safety | ✅ Implemented | Custom metrics framework |
+| **Planned (v1.x+)** | **Advanced Validation Roadmap** | | | |
+| Resilience | Chaos Engineering / Fault Injection | Validate graceful degradation under component failure | ⚠️ Planned | chaos-toolkit, custom fault scripts |
+| Resilience | Soak Testing (48–72h) | Detect memory leaks, latent resource exhaustion | ⚠️ Planned | Locust / custom harness + Prometheus |
+| Resilience | Load Shedding & Backpressure Testing | Ensure overload results in fast rejection, not collapse | ⚠️ Planned | Rate limit middleware + stress generators |
+| AI Safety | Adversarial Red Teaming | Jailbreak & prompt-injection resistance for MoralFilter | ⚠️ Planned | Attack LLM harness + curated corpus |
+| AI Safety | RAG Hallucination / Faithfulness Testing | Quantify grounding vs fabrication | ⚠️ Planned | ragas + retrieval audit logs |
+| Performance | Saturation Testing | Identify RPS inflection where latency spikes | ⚠️ Planned | Locust/K6 + SLO dashboards |
+| Performance | Tail Latency (P99/P99.9) Audits | Guarantee upper-bound latency SLOs | ⚠️ Planned | OpenTelemetry + Prometheus histograms |
+| Formal | Formal Specification (TLA+) | Prove liveness/safety of memory lifecycle | ⚠️ Planned | TLC model checker |
+| Formal | Algorithm Proof Fragments (Coq) | Prove correctness of address selection / neighbor threshold | ⚠️ Planned | Coq scripts |
+| Governance | Ethical Override Traceability | Ensure explainable policy decisions | ⚠️ Planned | Structured event logging |
+| Reliability | Drift & Anomaly Injection | Validate detection pipeline reaction | ⚠️ Planned | Synthetic anomaly injectors |
 
 ### Core Invariants (Examples)
 - Moral filter threshold T always ∈ [0.1, 0.9].
@@ -201,11 +205,17 @@ def test_moral_threshold_clamped(t):
     assert 0.1 <= clamped <= 0.9
 ```
 
-### Chaos Scenarios (Initial Set)
-1. Kill vector DB container mid high-RPS retrieval.
-2. Introduce 3000ms network latency between memory and policy service.
-3. Randomly corrupt 0.5% of episodic entries → verify integrity alarms trigger & quarantine.
-4. Simulated clock skew in circadian scheduler.
+### Planned Chaos Scenarios (v1.x+)
+
+**Status**: ⚠️ Not yet implemented in this repository, planned for future versions.
+
+**Proposed Scenarios**:
+1. Kill vector DB container mid high-RPS retrieval
+2. Introduce 3000ms network latency between memory and policy service
+3. Randomly corrupt 0.5% of episodic entries → verify integrity alarms trigger & quarantine
+4. Simulated clock skew in circadian scheduler
+
+**Current State**: The system includes error handling and graceful degradation in code, but automated chaos testing infrastructure is not yet implemented.
 
 ### Performance SLO Focus
 - P95 composite memory retrieval < 120ms.
@@ -217,13 +227,20 @@ def test_moral_threshold_clamped(t):
 - Hallucination rate (ragas) < 0.15.
 - Successful jailbreak attempts < 0.5% of adversarial batch.
 
-### Observability Hooks
-- event_formal_violation, event_drift_alert, event_chaos_fault.
-- Prometheus histograms: retrieval_latency_bucket, moral_filter_eval_ms.
-- OpenTelemetry trace: MemoryRetrieve → SemanticMerge → PolicyCheck.
+### Planned Observability Hooks (v1.x+)
+
+**Status**: ⚠️ Planned for future versions. Current system has basic logging and state tracking.
+
+**Proposed Implementation**:
+- Events: event_formal_violation, event_drift_alert, event_chaos_fault
+- Prometheus histograms: retrieval_latency_bucket, moral_filter_eval_ms
+- OpenTelemetry trace: MemoryRetrieve → SemanticMerge → PolicyCheck
 
 ### Toolchain
-- Hypothesis, pytest, chaos-toolkit, Locust/K6, ragas, TLA+, Coq, OpenTelemetry, Prometheus.
+
+**Implemented**: Hypothesis, pytest, ruff, mypy, pytest-cov
+
+**Planned (v1.x+)**: chaos-toolkit, Locust/K6, ragas, TLA+, Coq, OpenTelemetry, Prometheus
 
 ## Documentation
 
