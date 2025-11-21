@@ -13,3 +13,7 @@ venv/
 results/
 htmlcov/
 .hypothesis/
+
+# Observability logs
+*.log
+*.log.*
