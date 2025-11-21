@@ -1,5 +1,11 @@
 # MLSDM Governed Cognitive Memory v1.0.0
 
+[![CI](https://github.com/neuron7x/mlsdm-governed-cognitive-memory/actions/workflows/ci.yml/badge.svg)](https://github.com/neuron7x/mlsdm-governed-cognitive-memory/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/neuron7x/mlsdm-governed-cognitive-memory/actions/workflows/codeql.yml/badge.svg)](https://github.com/neuron7x/mlsdm-governed-cognitive-memory/actions/workflows/codeql.yml)
+[![Documentation](https://github.com/neuron7x/mlsdm-governed-cognitive-memory/actions/workflows/docs.yml/badge.svg)](https://github.com/neuron7x/mlsdm-governed-cognitive-memory/actions/workflows/docs.yml)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Production-ready neurobiologically-grounded cognitive architecture with moral governance, phase-based memory, and cognitive rhythm. Universal wrapper for any LLM with hard biological constraints.
 
 ## Status: Production-Ready v1.0.0
