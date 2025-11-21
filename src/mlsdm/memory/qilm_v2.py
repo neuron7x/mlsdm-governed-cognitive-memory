@@ -162,20 +162,20 @@ class QILM_v2:  # noqa: N801
 
     def _rebuild_index(self) -> None:
         """Rebuild the index by recomputing norms and metadata."""
-        # Recompute norms for all stored vectors
-        for i in range(self.size):
-            vec = self.memory_bank[i]
-            self.norms[i] = float(np.linalg.norm(vec) or 1e-9)
-
-        # Validate and fix pointer if needed
-        if self.pointer < 0 or self.pointer >= self.capacity:
-            self.pointer = self.size % self.capacity
-
-        # Validate and fix size if needed
+        # Validate and fix size first before attempting to iterate
         if self.size < 0:
             self.size = 0
         elif self.size > self.capacity:
             self.size = self.capacity
+
+        # Validate and fix pointer
+        if self.pointer < 0 or self.pointer >= self.capacity:
+            self.pointer = self.size % self.capacity if self.size > 0 else 0
+
+        # Recompute norms for all stored vectors (now safe to iterate)
+        for i in range(self.size):
+            vec = self.memory_bank[i]
+            self.norms[i] = float(np.linalg.norm(vec) or 1e-9)
 
     def _auto_recover_unsafe(self) -> bool:
         """
