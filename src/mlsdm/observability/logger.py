@@ -6,7 +6,6 @@ with structured JSON logs, multiple log levels, and automatic rotation.
 
 import json
 import logging
-import time
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
@@ -67,9 +66,10 @@ class JSONFormatter(logging.Formatter):
         correlation_id = getattr(record, "correlation_id", str(uuid.uuid4()))
         metrics = getattr(record, "metrics", {})
 
+        # Use the record's timestamp for consistency
         log_entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "timestamp_unix": time.time(),
+            "timestamp": datetime.fromtimestamp(record.created, timezone.utc).isoformat(),
+            "timestamp_unix": record.created,
             "level": record.levelname,
             "logger": record.name,
             "event_type": event_type,
@@ -180,8 +180,10 @@ class ObservabilityLogger:
         self.logger.addHandler(file_handler)
 
         # Add time-based rotation handler (age-based rotation)
+        # Create a robust daily log filename
+        daily_log_path = log_path.parent / f"{log_path.stem}_daily{log_path.suffix}"
         time_handler = TimedRotatingFileHandler(
-            filename=str(log_path).replace(".log", "_daily.log"),
+            filename=str(daily_log_path),
             when="midnight",
             interval=1,
             backupCount=max_age_days,

@@ -618,8 +618,6 @@ class TestGetObservabilityLogger:
 
     def test_get_observability_logger_thread_safe(self):
         """Test thread-safe singleton creation."""
-        import threading
-
         results = []
 
         def get_logger():
