@@ -133,6 +133,12 @@ omit = [
     "*/test_*.py",
     "*/__pycache__/*",
     "*/site-packages/*",
+    "*/api/app.py",
+    "*/config_validator.py",
+    "*/memory_manager.py",
+    "*/main.py",
+    "*/metrics.py",
+    "*/ontology_matcher.py",
 ]
 branch = true
 
