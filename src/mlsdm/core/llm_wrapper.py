@@ -189,7 +189,11 @@ class LLMWrapper:
         Generate LLM response with retry logic and exponential backoff.
         
         Uses tenacity to retry on common transient errors with exponential backoff.
-        Implements timeout handling for slow LLM calls.
+        
+        Note: Timeout detection occurs after the LLM call completes. This is a pragmatic
+        approach that works for most LLM APIs which have their own internal timeouts.
+        For true preemptive timeout, the LLM client should implement timeout in the
+        llm_generate_fn itself (e.g., using requests timeout, asyncio timeout, etc.).
         """
         @retry(
             retry=retry_if_exception_type((TimeoutError, ConnectionError, RuntimeError)),
@@ -202,6 +206,7 @@ class LLMWrapper:
             result = self.llm_generate(prompt, max_tokens)
             elapsed = time.time() - start_time
             
+            # Post-call timeout detection for monitoring and retry trigger
             if elapsed > self.llm_timeout:
                 raise TimeoutError(f"LLM call exceeded timeout: {elapsed:.2f}s > {self.llm_timeout}s")
             
@@ -238,13 +243,17 @@ class LLMWrapper:
         Execute QILM operation with graceful degradation.
         
         If QILM fails repeatedly, switches to stateless mode.
+        Returns empty/default values in stateless mode to allow processing to continue.
         """
+        # Sentinel value for failed entangle operations
+        ENTANGLE_FAILED = -1
+        
         if self.stateless_mode:
             # In stateless mode, return empty results
             if operation == "retrieve":
                 return []
             elif operation == "entangle":
-                return -1
+                return ENTANGLE_FAILED
             return None
         
         try:
@@ -315,8 +324,10 @@ class LLMWrapper:
                 prompt_vector = self._embed_with_circuit_breaker(prompt)
                 
                 # Validate and normalize
-                if prompt_vector.size == 0 or not np.isfinite(prompt_vector).all():
-                    raise ValueError("Corrupted embedding vector detected")
+                if prompt_vector.size == 0:
+                    raise ValueError("Corrupted embedding vector: empty vector")
+                if not np.isfinite(prompt_vector).all():
+                    raise ValueError("Corrupted embedding vector: contains NaN or Inf values")
                 
                 norm = np.linalg.norm(prompt_vector)
                 if norm > 1e-9:
