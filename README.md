@@ -1,4 +1,4 @@
-# MLSDM Governed Cognitive Memory v1.0.0
+# MLSDM Governed Cognitive Memory
 
 Production-ready neurobiologically-grounded cognitive architecture with moral governance, phase-based memory, and cognitive rhythm. Universal wrapper for any LLM with hard biological constraints.
 
