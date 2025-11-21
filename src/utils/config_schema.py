@@ -61,24 +61,22 @@ class MultiLevelMemoryConfig(BaseModel):
     def validate_decay_hierarchy(self):
         """Ensure decay rates follow hierarchy: lambda_l3 < lambda_l2 < lambda_l1."""
         l1, l2, l3 = self.lambda_l1, self.lambda_l2, self.lambda_l3
-        if l1 is not None and l2 is not None and l3 is not None:
-            if not (l3 <= l2 <= l1):
-                raise ValueError(
-                    f"Decay rates must follow hierarchy: lambda_l3 ({l3}) <= "
-                    f"lambda_l2 ({l2}) <= lambda_l1 ({l1})"
-                )
+        if not (l3 <= l2 <= l1):
+            raise ValueError(
+                f"Decay rates must follow hierarchy: lambda_l3 ({l3}) <= "
+                f"lambda_l2 ({l2}) <= lambda_l1 ({l1})"
+            )
         return self
 
     @model_validator(mode='after')
     def validate_threshold_hierarchy(self):
         """Ensure theta_l2 > theta_l1 for proper consolidation."""
         t1, t2 = self.theta_l1, self.theta_l2
-        if t1 is not None and t2 is not None:
-            if t2 <= t1:
-                raise ValueError(
-                    f"Consolidation threshold hierarchy violated: "
-                    f"theta_l2 ({t2}) must be > theta_l1 ({t1})"
-                )
+        if t2 <= t1:
+            raise ValueError(
+                f"Consolidation threshold hierarchy violated: "
+                f"theta_l2 ({t2}) must be > theta_l1 ({t1})"
+            )
         return self
 
 

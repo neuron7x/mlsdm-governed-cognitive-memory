@@ -214,8 +214,8 @@ class TestMoralFilterConfig:
                 threshold=0.95,
                 max_threshold=0.9
             )
-        # Pydantic v2 error messages are different
-        assert "less than or equal" in str(exc_info.value) or "must be <=" in str(exc_info.value)
+        # Pydantic v2 uses "less than or equal" in error messages
+        assert "less than or equal" in str(exc_info.value).lower()
 
     def test_threshold_range_constraints(self):
         """Thresholds should be in valid ranges."""
