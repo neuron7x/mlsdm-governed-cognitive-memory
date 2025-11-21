@@ -11,16 +11,88 @@ This module provides a production-ready wrapper around any LLM that enforces:
 Prevents LLM degradation, memory bloat, toxicity, and identity loss.
 """
 
+import time
 from collections.abc import Callable
+from enum import Enum
 from threading import Lock
 from typing import Any
 
 import numpy as np
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from ..cognition.moral_filter_v2 import MoralFilterV2
 from ..memory.multi_level_memory import MultiLevelSynapticMemory
 from ..memory.qilm_v2 import QILM_v2
 from ..rhythm.cognitive_rhythm import CognitiveRhythm
+
+
+class CircuitBreakerState(Enum):
+    """Circuit breaker states for embedding function."""
+    CLOSED = "closed"  # Normal operation
+    OPEN = "open"      # Too many failures, blocking requests
+    HALF_OPEN = "half_open"  # Testing if service recovered
+
+
+class CircuitBreaker:
+    """Circuit breaker for embedding function failures."""
+    
+    def __init__(
+        self,
+        failure_threshold: int = 5,
+        recovery_timeout: float = 60.0,
+        success_threshold: int = 2
+    ):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.success_threshold = success_threshold
+        
+        self.failure_count = 0
+        self.success_count = 0
+        self.last_failure_time = 0.0
+        self.state = CircuitBreakerState.CLOSED
+        self._lock = Lock()
+    
+    def call(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+        """Execute function with circuit breaker protection."""
+        with self._lock:
+            if self.state == CircuitBreakerState.OPEN:
+                if time.time() - self.last_failure_time >= self.recovery_timeout:
+                    self.state = CircuitBreakerState.HALF_OPEN
+                    self.success_count = 0
+                else:
+                    raise RuntimeError("Circuit breaker is OPEN - too many embedding failures")
+        
+        try:
+            result = func(*args, **kwargs)
+            with self._lock:
+                if self.state == CircuitBreakerState.HALF_OPEN:
+                    self.success_count += 1
+                    if self.success_count >= self.success_threshold:
+                        self.state = CircuitBreakerState.CLOSED
+                        self.failure_count = 0
+                elif self.state == CircuitBreakerState.CLOSED:
+                    self.failure_count = 0
+            return result
+        except Exception as e:
+            with self._lock:
+                self.failure_count += 1
+                self.last_failure_time = time.time()
+                if self.failure_count >= self.failure_threshold:
+                    self.state = CircuitBreakerState.OPEN
+            raise e
+    
+    def reset(self) -> None:
+        """Reset circuit breaker to initial state."""
+        with self._lock:
+            self.state = CircuitBreakerState.CLOSED
+            self.failure_count = 0
+            self.success_count = 0
+            self.last_failure_time = 0.0
 
 
 class LLMWrapper:
@@ -36,6 +108,9 @@ class LLMWrapper:
     - Circadian rhythm with forced short responses during sleep
     - Context retrieval from phase-entangled memory
     - Thread-safe for concurrent requests
+    - Retry logic with exponential backoff for LLM calls
+    - Circuit breaker for embedding failures
+    - Graceful degradation to stateless mode on QILM failures
     
     Usage:
         wrapper = LLMWrapper(
@@ -61,7 +136,9 @@ class LLMWrapper:
         capacity: int = 20_000,
         wake_duration: int = 8,
         sleep_duration: int = 3,
-        initial_moral_threshold: float = 0.50
+        initial_moral_threshold: float = 0.50,
+        llm_timeout: float = 30.0,
+        llm_retry_attempts: int = 3
     ):
         """
         Initialize the LLM wrapper with cognitive governance.
@@ -74,9 +151,13 @@ class LLMWrapper:
             wake_duration: Wake cycle duration in steps (default 8)
             sleep_duration: Sleep cycle duration in steps (default 3)
             initial_moral_threshold: Starting moral threshold (default 0.50)
+            llm_timeout: Timeout for LLM calls in seconds (default 30.0)
+            llm_retry_attempts: Number of retry attempts for LLM calls (default 3)
         """
         self.dim = dim
         self._lock = Lock()
+        self.llm_timeout = llm_timeout
+        self.llm_retry_attempts = llm_retry_attempts
 
         # Core components
         self.llm_generate = llm_generate_fn
@@ -86,11 +167,99 @@ class LLMWrapper:
         self.rhythm = CognitiveRhythm(wake_duration=wake_duration, sleep_duration=sleep_duration)
         self.synaptic = MultiLevelSynapticMemory(dimension=dim)
 
+        # Reliability components
+        self.embedding_circuit_breaker = CircuitBreaker(
+            failure_threshold=5,
+            recovery_timeout=60.0,
+            success_threshold=2
+        )
+        self.stateless_mode = False  # Graceful degradation flag
+
         # State tracking
         self.step_counter = 0
         self.rejected_count = 0
         self.accepted_count = 0
         self.consolidation_buffer: list[np.ndarray] = []
+        self.qilm_failure_count = 0
+        self.embedding_failure_count = 0
+        self.llm_failure_count = 0
+
+    def _llm_generate_with_retry(self, prompt: str, max_tokens: int) -> str:
+        """
+        Generate LLM response with retry logic and exponential backoff.
+        
+        Uses tenacity to retry on common transient errors with exponential backoff.
+        Implements timeout handling for slow LLM calls.
+        """
+        @retry(
+            retry=retry_if_exception_type((TimeoutError, ConnectionError, RuntimeError)),
+            stop=stop_after_attempt(self.llm_retry_attempts),
+            wait=wait_exponential(multiplier=1, min=1, max=10),
+            reraise=True
+        )
+        def _generate_with_timeout() -> str:
+            start_time = time.time()
+            result = self.llm_generate(prompt, max_tokens)
+            elapsed = time.time() - start_time
+            
+            if elapsed > self.llm_timeout:
+                raise TimeoutError(f"LLM call exceeded timeout: {elapsed:.2f}s > {self.llm_timeout}s")
+            
+            return result
+        
+        try:
+            return _generate_with_timeout()
+        except Exception as e:
+            self.llm_failure_count += 1
+            raise e
+
+    def _embed_with_circuit_breaker(self, text: str) -> np.ndarray:
+        """
+        Embed text with circuit breaker protection.
+        
+        Circuit breaker prevents cascading failures from embedding service.
+        """
+        try:
+            result = self.embedding_circuit_breaker.call(self.embed, text)
+            if not isinstance(result, np.ndarray):
+                result = np.array(result, dtype=np.float32)
+            return result.astype(np.float32)
+        except Exception as e:
+            self.embedding_failure_count += 1
+            raise e
+
+    def _safe_qilm_operation(
+        self, 
+        operation: str, 
+        *args: Any, 
+        **kwargs: Any
+    ) -> Any:
+        """
+        Execute QILM operation with graceful degradation.
+        
+        If QILM fails repeatedly, switches to stateless mode.
+        """
+        if self.stateless_mode:
+            # In stateless mode, return empty results
+            if operation == "retrieve":
+                return []
+            elif operation == "entangle":
+                return -1
+            return None
+        
+        try:
+            if operation == "retrieve":
+                return self.qilm.retrieve(*args, **kwargs)
+            elif operation == "entangle":
+                return self.qilm.entangle(*args, **kwargs)
+            else:
+                raise ValueError(f"Unknown QILM operation: {operation}")
+        except (MemoryError, RuntimeError) as e:
+            self.qilm_failure_count += 1
+            if self.qilm_failure_count >= 3:
+                # Switch to stateless mode after repeated failures
+                self.stateless_mode = True
+            raise e
 
     def generate(
         self,
@@ -100,13 +269,13 @@ class LLMWrapper:
         context_top_k: int = 5
     ) -> dict[str, Any]:
         """
-        Generate LLM response with cognitive governance.
+        Generate LLM response with cognitive governance and reliability features.
         
         This method:
-        1. Embeds the prompt
+        1. Embeds the prompt (with circuit breaker)
         2. Checks moral acceptability
-        3. Retrieves relevant context from memory
-        4. Generates response with appropriate length limits
+        3. Retrieves relevant context from memory (with graceful degradation)
+        4. Generates response with retry and timeout handling
         5. Updates memory and cognitive state
         
         Args:
@@ -122,6 +291,7 @@ class LLMWrapper:
                 - phase: Current cognitive phase
                 - step: Current step counter
                 - note: Processing note
+                - stateless_mode: Whether running in degraded mode
         """
         with self._lock:
             self.step_counter += 1
@@ -140,29 +310,42 @@ class LLMWrapper:
                 # During sleep, reject new processing but allow consolidation
                 return self._build_rejection_response("sleep phase - consolidating")
 
-            # Step 3: Embed prompt
+            # Step 3: Embed prompt with circuit breaker
             try:
-                prompt_vector = self.embed(prompt)
-                if not isinstance(prompt_vector, np.ndarray):
-                    prompt_vector = np.array(prompt_vector, dtype=np.float32)
-                prompt_vector = prompt_vector.astype(np.float32)
-
-                # Normalize
+                prompt_vector = self._embed_with_circuit_breaker(prompt)
+                
+                # Validate and normalize
+                if prompt_vector.size == 0 or not np.isfinite(prompt_vector).all():
+                    raise ValueError("Corrupted embedding vector detected")
+                
                 norm = np.linalg.norm(prompt_vector)
                 if norm > 1e-9:
                     prompt_vector = prompt_vector / norm
+                else:
+                    raise ValueError("Zero-norm embedding vector")
 
+            except RuntimeError as e:
+                if "Circuit breaker is OPEN" in str(e):
+                    return self._build_error_response("embedding service unavailable (circuit breaker open)")
+                return self._build_error_response(f"embedding failed: {str(e)}")
             except Exception as e:
                 return self._build_error_response(f"embedding failed: {str(e)}")
 
-            # Step 4: Retrieve context from memory
+            # Step 4: Retrieve context from memory with graceful degradation
             phase_val = 0.1 if is_wake else 0.9
-            memories = self.qilm.retrieve(
-                query_vector=prompt_vector.tolist(),
-                current_phase=phase_val,
-                phase_tolerance=0.15,
-                top_k=context_top_k
-            )
+            memories = []
+            try:
+                memories = self._safe_qilm_operation(
+                    "retrieve",
+                    query_vector=prompt_vector.tolist(),
+                    current_phase=phase_val,
+                    phase_tolerance=0.15,
+                    top_k=context_top_k
+                )
+            except Exception as e:
+                # Continue in stateless mode if QILM fails
+                if not self.stateless_mode:
+                    memories = []
 
             # Step 5: Build context-aware prompt
             context_text = self._build_context_from_memories(memories)
@@ -176,36 +359,45 @@ class LLMWrapper:
                 if not is_wake:
                     max_tokens = min(max_tokens, self.MAX_SLEEP_TOKENS)
 
-            # Step 7: Generate response
+            # Step 7: Generate response with retry and timeout
             try:
-                response_text = self.llm_generate(enhanced_prompt, max_tokens)
+                response_text = self._llm_generate_with_retry(enhanced_prompt, max_tokens)
             except Exception as e:
                 return self._build_error_response(f"generation failed: {str(e)}")
 
-            # Step 8: Update memory
-            self.synaptic.update(prompt_vector)
-            self.qilm.entangle(prompt_vector.tolist(), phase=phase_val)
+            # Step 8: Update memory (skip if in stateless mode)
+            if not self.stateless_mode:
+                try:
+                    self.synaptic.update(prompt_vector)
+                    self._safe_qilm_operation("entangle", prompt_vector.tolist(), phase=phase_val)
+                    self.consolidation_buffer.append(prompt_vector)
+                except Exception:
+                    # Continue even if memory update fails
+                    pass
+            
             self.accepted_count += 1
-
-            # Add to consolidation buffer for sleep processing
-            self.consolidation_buffer.append(prompt_vector)
 
             # Step 9: Advance cognitive rhythm
             self.rhythm.step()
 
             # Step 10: Perform consolidation if entering sleep
-            if self.rhythm.is_sleep() and len(self.consolidation_buffer) > 0:
-                self._consolidate_memories()
+            if self.rhythm.is_sleep() and len(self.consolidation_buffer) > 0 and not self.stateless_mode:
+                try:
+                    self._consolidate_memories()
+                except Exception:
+                    # Consolidation failure is non-critical
+                    pass
 
             return {
                 "response": response_text,
                 "accepted": True,
                 "phase": self.rhythm.phase,
                 "step": self.step_counter,
-                "note": "processed",
+                "note": "processed (stateless mode)" if self.stateless_mode else "processed",
                 "moral_threshold": round(self.moral.threshold, 4),
                 "context_items": len(memories),
-                "max_tokens_used": max_tokens
+                "max_tokens_used": max_tokens,
+                "stateless_mode": self.stateless_mode
             }
 
     def _consolidate_memories(self) -> None:
@@ -275,7 +467,7 @@ class LLMWrapper:
 
     def get_state(self) -> dict[str, Any]:
         """
-        Get current cognitive state.
+        Get current cognitive state with reliability metrics.
         
         Returns:
             Dictionary with system state including memory usage, phase, and statistics.
@@ -296,7 +488,14 @@ class LLMWrapper:
                     "L3": float(np.linalg.norm(l3))
                 },
                 "qilm_stats": self.qilm.get_state_stats(),
-                "consolidation_buffer_size": len(self.consolidation_buffer)
+                "consolidation_buffer_size": len(self.consolidation_buffer),
+                "reliability": {
+                    "stateless_mode": self.stateless_mode,
+                    "circuit_breaker_state": self.embedding_circuit_breaker.state.value,
+                    "qilm_failure_count": self.qilm_failure_count,
+                    "embedding_failure_count": self.embedding_failure_count,
+                    "llm_failure_count": self.llm_failure_count
+                }
             }
 
     def reset(self) -> None:
@@ -313,3 +512,10 @@ class LLMWrapper:
                 sleep_duration=self.rhythm.sleep_duration
             )
             self.synaptic.reset_all()
+            
+            # Reset reliability components
+            self.embedding_circuit_breaker.reset()
+            self.stateless_mode = False
+            self.qilm_failure_count = 0
+            self.embedding_failure_count = 0
+            self.llm_failure_count = 0
