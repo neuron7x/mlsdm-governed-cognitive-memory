@@ -7,11 +7,7 @@ from wake/sleep cycles using rigorous statistical validation.
 Principal System Architect level validation.
 """
 
-import sys
-
 import numpy as np
-
-sys.path.insert(0, '.')
 
 from mlsdm.core.cognitive_controller import CognitiveController
 from mlsdm.utils.coherence_safety_metrics import CoherenceSafetyAnalyzer
