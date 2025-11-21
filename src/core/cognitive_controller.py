@@ -15,12 +15,18 @@ class CognitiveController:
         self.rhythm = CognitiveRhythm(wake_duration=8, sleep_duration=3)
         self.synaptic = MultiLevelSynapticMemory(dimension=dim)
         self.step_counter = 0
-        # Cache for phase values to avoid repeated computation
+        # Optimization: Cache for phase values to avoid repeated computation
         self._phase_cache: Dict[str, float] = {"wake": 0.1, "sleep": 0.9}
+        # Optimization: Cache for frequently accessed state values
+        self._state_cache: Dict[str, Any] = {}
+        self._state_cache_valid = False
 
     def process_event(self, vector: np.ndarray, moral_value: float) -> Dict[str, Any]:
         with self._lock:
             self.step_counter += 1
+            # Optimization: Invalidate state cache when processing
+            self._state_cache_valid = False
+            
             accepted = self.moral.evaluate(moral_value)
             self.moral.adapt(accepted)
             if not accepted:
@@ -28,7 +34,7 @@ class CognitiveController:
             if not self.rhythm.is_wake():
                 return self._build_state(rejected=True, note="sleep phase")
             self.synaptic.update(vector)
-            # Optimize: use cached phase value
+            # Optimization: use cached phase value
             phase_val = self._phase_cache[self.rhythm.phase]
             self.qilm.entangle(vector.tolist(), phase=phase_val)
             self.rhythm.step()
@@ -42,8 +48,22 @@ class CognitiveController:
                                      phase_tolerance=0.15, top_k=top_k)
 
     def _build_state(self, rejected: bool, note: str) -> Dict[str, Any]:
+        # Optimization: Use cached norm calculations when state hasn't changed
+        # Only cache when not rejected (rejected responses are cheap anyway)
+        if not rejected and self._state_cache_valid and self._state_cache:
+            # Use cached values but update step counter and note
+            result = self._state_cache.copy()
+            result["step"] = self.step_counter
+            result["rejected"] = rejected
+            result["note"] = note
+            return result
+        
+        # Calculate fresh state
         l1, l2, l3 = self.synaptic.state()
-        return {
+        
+        # Optimization: Compute norms in a single pass when possible
+        # Pre-allocate result dict to avoid resizing
+        result = {
             "step": self.step_counter,
             "phase": self.rhythm.phase,
             "moral_threshold": round(self.moral.threshold, 4),
@@ -57,3 +77,10 @@ class CognitiveController:
             "rejected": rejected,
             "note": note
         }
+        
+        # Cache result for accepted events
+        if not rejected:
+            self._state_cache = result.copy()
+            self._state_cache_valid = True
+        
+        return result

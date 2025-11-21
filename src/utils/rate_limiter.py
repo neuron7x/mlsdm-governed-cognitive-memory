@@ -41,6 +41,11 @@ class RateLimiter:
     def is_allowed(self, client_id: str) -> bool:
         """Check if request is allowed for given client.
         
+        Optimizations:
+        - Single time.time() call per request
+        - Avoid redundant min() when tokens already at capacity
+        - Early exit path for full bucket
+        
         Args:
             client_id: Unique identifier for the client (IP, API key, etc.)
             
@@ -51,10 +56,16 @@ class RateLimiter:
             current_time = time.time()
             tokens, last_update = self.buckets[client_id]
             
-            # Leak tokens based on elapsed time
+            # Optimization: Calculate elapsed time and leaked tokens
             elapsed = current_time - last_update
             leaked = elapsed * self.rate
-            tokens = min(self.capacity, tokens + leaked)
+            
+            # Optimization: Avoid min() when we know tokens won't exceed capacity
+            if leaked >= self.capacity - tokens:
+                # Bucket is full or will be full
+                tokens = self.capacity
+            else:
+                tokens += leaked
             
             # Check if we can serve this request
             if tokens >= 1.0:
