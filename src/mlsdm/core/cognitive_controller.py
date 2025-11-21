@@ -1,7 +1,9 @@
+import time
 from threading import Lock
 from typing import Any
 
 import numpy as np
+import psutil
 
 from ..cognition.moral_filter_v2 import MoralFilterV2
 from ..memory.multi_level_memory import MultiLevelSynapticMemory
@@ -10,7 +12,12 @@ from ..rhythm.cognitive_rhythm import CognitiveRhythm
 
 
 class CognitiveController:
-    def __init__(self, dim: int = 384) -> None:
+    def __init__(
+        self,
+        dim: int = 384,
+        memory_threshold_mb: float = 1024.0,
+        max_processing_time_ms: float = 1000.0
+    ) -> None:
         self.dim = dim
         self._lock = Lock()
         self.moral = MoralFilterV2(initial_threshold=0.50)
@@ -23,12 +30,28 @@ class CognitiveController:
         # Optimization: Cache for frequently accessed state values
         self._state_cache: dict[str, Any] = {}
         self._state_cache_valid = False
+        # Memory monitoring and limits
+        self.memory_threshold_mb = memory_threshold_mb
+        self.max_processing_time_ms = max_processing_time_ms
+        self.emergency_shutdown = False
+        self._process = psutil.Process()
 
     def process_event(self, vector: np.ndarray, moral_value: float) -> dict[str, Any]:
         with self._lock:
+            # Check emergency shutdown
+            if self.emergency_shutdown:
+                return self._build_state(rejected=True, note="emergency shutdown")
+
+            start_time = time.perf_counter()
             self.step_counter += 1
             # Optimization: Invalidate state cache when processing
             self._state_cache_valid = False
+
+            # Check memory usage before processing
+            memory_mb = self._check_memory_usage()
+            if memory_mb > self.memory_threshold_mb:
+                self.emergency_shutdown = True
+                return self._build_state(rejected=True, note="emergency shutdown: memory exceeded")
 
             accepted = self.moral.evaluate(moral_value)
             self.moral.adapt(accepted)
@@ -36,11 +59,18 @@ class CognitiveController:
                 return self._build_state(rejected=True, note="morally rejected")
             if not self.rhythm.is_wake():
                 return self._build_state(rejected=True, note="sleep phase")
+
             self.synaptic.update(vector)
             # Optimization: use cached phase value
             phase_val = self._phase_cache[self.rhythm.phase]
             self.qilm.entangle(vector.tolist(), phase=phase_val)
             self.rhythm.step()
+
+            # Check processing time
+            elapsed_ms = (time.perf_counter() - start_time) * 1000
+            if elapsed_ms > self.max_processing_time_ms:
+                return self._build_state(rejected=True, note=f"processing time exceeded: {elapsed_ms:.2f}ms")
+
             return self._build_state(rejected=False, note="processed")
 
     def retrieve_context(self, query_vector: np.ndarray, top_k: int = 5) -> list[MemoryRetrieval]:
@@ -49,6 +79,19 @@ class CognitiveController:
             phase_val = self._phase_cache[self.rhythm.phase]
             return self.qilm.retrieve(query_vector.tolist(), current_phase=phase_val,
                                      phase_tolerance=0.15, top_k=top_k)
+
+    def _check_memory_usage(self) -> float:
+        """Check current memory usage in MB."""
+        memory_info = self._process.memory_info()
+        return memory_info.rss / (1024 * 1024)  # Convert bytes to MB
+
+    def get_memory_usage(self) -> float:
+        """Public method to get current memory usage in MB."""
+        return self._check_memory_usage()
+
+    def reset_emergency_shutdown(self) -> None:
+        """Reset emergency shutdown flag (use with caution)."""
+        self.emergency_shutdown = False
 
     def _build_state(self, rejected: bool, note: str) -> dict[str, Any]:
         # Optimization: Use cached norm calculations when state hasn't changed
