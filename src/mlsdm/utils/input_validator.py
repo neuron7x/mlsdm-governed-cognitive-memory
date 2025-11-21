@@ -18,6 +18,8 @@ class InputValidator:
     MAX_ARRAY_ELEMENTS = 1_000_000  # Maximum array size
     MIN_MORAL_VALUE = 0.0
     MAX_MORAL_VALUE = 1.0
+    MAX_PROMPT_TOKENS = 2048  # Maximum tokens in a prompt (matching LLM MAX_WAKE_TOKENS)
+    CHARS_PER_TOKEN = 4  # Approximate characters per token for English text
 
     @staticmethod
     def validate_vector(
@@ -319,3 +321,54 @@ class InputValidator:
             )
 
         return size
+
+    @staticmethod
+    def validate_prompt_length(
+        prompt: str,
+        max_tokens: int | None = None,
+        sanitize: bool = True
+    ) -> str:
+        """Validate prompt length and optionally sanitize it.
+        
+        Validates that the prompt length does not exceed the maximum token limit.
+        Uses an approximation of 1 token per CHARS_PER_TOKEN characters.
+        
+        Args:
+            prompt: Input prompt text to validate
+            max_tokens: Maximum allowed tokens (default: MAX_PROMPT_TOKENS)
+            sanitize: Whether to sanitize the prompt (default: True)
+            
+        Returns:
+            Validated (and optionally sanitized) prompt
+            
+        Raises:
+            ValueError: If validation fails
+        """
+        if not isinstance(prompt, str):
+            raise ValueError(f"Prompt must be a string, got {type(prompt)}")
+        
+        # Sanitize first if requested
+        if sanitize:
+            prompt = InputValidator.sanitize_string(
+                prompt,
+                max_length=InputValidator.MAX_PROMPT_TOKENS * InputValidator.CHARS_PER_TOKEN,
+                allow_newlines=True
+            )
+        
+        if max_tokens is None:
+            max_tokens = InputValidator.MAX_PROMPT_TOKENS
+        
+        # Validate max_tokens parameter
+        if not isinstance(max_tokens, int) or max_tokens <= 0:
+            raise ValueError(f"max_tokens must be a positive integer, got {max_tokens}")
+        
+        # Approximate token count: 1 token per CHARS_PER_TOKEN characters
+        estimated_tokens = len(prompt) // InputValidator.CHARS_PER_TOKEN
+        
+        if estimated_tokens > max_tokens:
+            raise ValueError(
+                f"Prompt length exceeds maximum tokens. "
+                f"Estimated {estimated_tokens} tokens, maximum is {max_tokens}"
+            )
+        
+        return prompt
