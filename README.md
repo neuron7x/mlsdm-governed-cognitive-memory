@@ -1,5 +1,7 @@
 # MLSDM Governed Cognitive Memory
 
+![CI - Neuro Cognitive Engine](https://github.com/neuron7x/mlsdm/actions/workflows/ci-neuro-cognitive-engine.yml/badge.svg)
+
 Production-ready neurobiologically-grounded cognitive architecture with moral governance, phase-based memory, and cognitive rhythm. Universal wrapper for any LLM with hard biological constraints.
 
 ## Status: Production-Ready v1.0.0
