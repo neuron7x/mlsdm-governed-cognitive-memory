@@ -17,3 +17,8 @@ htmlcov/
 # Observability logs
 *.log
 *.log.*
+
+# Test reports and outputs
+baseline_comparison*.png
+baseline_comparison*.json
+load_test_report.json
