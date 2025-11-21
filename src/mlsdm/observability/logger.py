@@ -485,6 +485,9 @@ class ObservabilityLogger:
         Returns:
             Correlation ID
         """
+        # Calculate utilization, protecting against division by zero
+        utilization_percent = (current_size / capacity) * 100 if capacity > 0 else 0.0
+
         return self.warn(
             EventType.MEMORY_FULL,
             f"Memory capacity reached: {current_size}/{capacity} items ({memory_mb:.2f} MB)",
@@ -493,7 +496,7 @@ class ObservabilityLogger:
                 "current_size": current_size,
                 "capacity": capacity,
                 "memory_mb": memory_mb,
-                "utilization_percent": (current_size / capacity) * 100,
+                "utilization_percent": utilization_percent,
             },
         )
 
@@ -613,6 +616,7 @@ class ObservabilityLogger:
 
 # Global instance for convenience
 _observability_logger: ObservabilityLogger | None = None
+_observability_logger_lock = Lock()
 
 
 def get_observability_logger(
@@ -620,6 +624,9 @@ def get_observability_logger(
     **kwargs: Any,
 ) -> ObservabilityLogger:
     """Get or create the observability logger instance.
+
+    This function is thread-safe and implements the singleton pattern
+    with double-checked locking for optimal performance.
 
     Args:
         logger_name: Name for the logger instance
@@ -630,7 +637,13 @@ def get_observability_logger(
     """
     global _observability_logger
 
+    # Double-checked locking pattern for thread-safe singleton
     if _observability_logger is None:
-        _observability_logger = ObservabilityLogger(logger_name=logger_name, **kwargs)
+        with _observability_logger_lock:
+            # Check again inside the lock
+            if _observability_logger is None:
+                _observability_logger = ObservabilityLogger(
+                    logger_name=logger_name, **kwargs
+                )
 
     return _observability_logger

@@ -616,6 +616,33 @@ class TestGetObservabilityLogger:
             )
             assert isinstance(logger, ObservabilityLogger)
 
+    def test_get_observability_logger_thread_safe(self):
+        """Test thread-safe singleton creation."""
+        import threading
+
+        results = []
+
+        def get_logger():
+            logger = get_observability_logger(
+                logger_name="thread_safe_test", console_output=False
+            )
+            results.append(logger)
+
+        # Create multiple threads that try to get the logger simultaneously
+        threads = [threading.Thread(target=get_logger) for _ in range(10)]
+
+        for thread in threads:
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+
+        # All threads should have received the same instance
+        assert len(results) == 10
+        first_logger = results[0]
+        for logger in results[1:]:
+            assert logger is first_logger
+
 
 class TestThreadSafety:
     """Test thread safety of observability logger."""
@@ -712,6 +739,29 @@ class TestEdgeCases:
 
             assert "metrics" in data
             assert data["metrics"] == {}
+
+    def test_memory_full_with_zero_capacity(self):
+        """Test memory full logging with zero capacity."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            logger = ObservabilityLogger(
+                logger_name="test_logger",
+                log_dir=tmpdir,
+                log_file="test.log",
+                console_output=False,
+            )
+
+            # Should not raise ZeroDivisionError
+            correlation_id = logger.log_memory_full(
+                current_size=0, capacity=0, memory_mb=0.0
+            )
+
+            assert correlation_id is not None
+
+            log_file = Path(tmpdir) / "test.log"
+            content = log_file.read_text()
+            data = json.loads(content)
+
+            assert data["metrics"]["utilization_percent"] == 0.0
 
     def test_log_with_extra_kwargs(self):
         """Test logging with extra keyword arguments."""
