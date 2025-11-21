@@ -35,9 +35,7 @@ def build_openai_llm_adapter() -> Callable[[str, int], str]:
     """
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        raise ValueError(
-            "OPENAI_API_KEY environment variable is required for OpenAI adapter"
-        )
+        raise ValueError("OPENAI_API_KEY environment variable is required for OpenAI adapter")
 
     model = os.environ.get("OPENAI_MODEL", "gpt-3.5-turbo")
 
@@ -45,8 +43,7 @@ def build_openai_llm_adapter() -> Callable[[str, int], str]:
         import openai
     except ImportError as e:
         raise ImportError(
-            "openai package is required for OpenAI adapter. "
-            "Install it with: pip install openai"
+            "openai package is required for OpenAI adapter. Install it with: pip install openai"
         ) from e
 
     # Initialize OpenAI client
@@ -69,9 +66,7 @@ def build_openai_llm_adapter() -> Callable[[str, int], str]:
         try:
             response = client.chat.completions.create(
                 model=model,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
+                messages=[{"role": "user", "content": prompt}],
                 max_tokens=max_tokens,
                 temperature=0.7,
             )

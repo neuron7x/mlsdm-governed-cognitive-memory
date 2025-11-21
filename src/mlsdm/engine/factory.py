@@ -109,8 +109,7 @@ def build_neuro_engine_from_env(
         llm_generate_fn = build_local_stub_llm_adapter()
     else:
         raise ValueError(
-            f"Invalid LLM_BACKEND: {backend}. "
-            "Valid options are: 'openai', 'local_stub'"
+            f"Invalid LLM_BACKEND: {backend}. Valid options are: 'openai', 'local_stub'"
         )
 
     # Build embedding function (using stub for now)

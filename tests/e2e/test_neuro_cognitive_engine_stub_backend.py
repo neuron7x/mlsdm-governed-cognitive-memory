@@ -8,8 +8,6 @@ generation, ensuring all components work together correctly.
 import json
 import os
 
-import pytest
-
 from mlsdm.engine import build_neuro_engine_from_env
 
 
@@ -64,11 +62,11 @@ class TestNeuroCognitiveEngineE2EStubBackend:
         Test that moral pre-check correctly rejects immoral requests.
 
         Validates:
-        - Pre-flight moral check is executed  
+        - Pre-flight moral check is executed
         - Requests with low moral scores are rejected at MLSDM level
         - Rejection happens properly
         - Error is returned for rejected requests
-        
+
         Note: The current implementation doesn't have compute_moral_value on
         the moral filter, so pre-flight checks are skipped. Instead, MLSDM's
         internal moral.evaluate() method handles rejection during generation.
@@ -86,9 +84,7 @@ class TestNeuroCognitiveEngineE2EStubBackend:
 
         # The moral_precheck will be skipped (no compute_moral_value method)
         # but MLSDM's internal evaluate will reject it during generation
-        moral_steps = [
-            s for s in result["validation_steps"] if s["step"] == "moral_precheck"
-        ]
+        moral_steps = [s for s in result["validation_steps"] if s["step"] == "moral_precheck"]
         assert len(moral_steps) > 0
         # Should be skipped or passed (pre-flight doesn't have compute_moral_value)
         assert moral_steps[0].get("skipped", False) or moral_steps[0]["passed"]
@@ -176,12 +172,13 @@ class TestNeuroCognitiveEngineE2EStubBackend:
         - Engine can handle multiple requests
         - Each request has independent timing metrics
         - At least some requests succeed (adaptive moral filter may reject some)
-        
+
         Note: MLSDM has an adaptive moral filter that adjusts after each request.
         Some requests may be rejected due to this adaptation, which is expected behavior.
         """
         # Build engine from environment with lower moral threshold to reduce rejections
         from mlsdm.engine import NeuroEngineConfig
+
         config = NeuroEngineConfig(
             enable_fslgs=False,
             initial_moral_threshold=0.3,  # Lower threshold to accept more
@@ -219,6 +216,7 @@ class TestNeuroCognitiveEngineE2EStubBackend:
         """
         # Build engine from environment with low moral threshold
         from mlsdm.engine import NeuroEngineConfig
+
         config = NeuroEngineConfig(
             enable_fslgs=False,
             initial_moral_threshold=0.3,
@@ -255,7 +253,7 @@ class TestNeuroCognitiveEngineE2EStubBackend:
         - Custom config is respected for most parameters
         - Engine can be built with custom config
         - Generation works with custom config
-        
+
         Note: The factory may override the dim parameter based on EMBEDDING_DIM
         environment variable, so we don't strictly validate dim.
         """
@@ -297,13 +295,13 @@ class TestNeuroCognitiveEngineE2EStubBackend:
         engine = build_neuro_engine_from_env()
 
         # First request
-        result1 = engine.generate("First request", max_tokens=128)
+        engine.generate("First request", max_tokens=128)
         state1 = engine.get_last_states()
 
         assert state1["mlsdm"] is not None
 
         # Second request
-        result2 = engine.generate("Second request", max_tokens=128)
+        engine.generate("Second request", max_tokens=128)
         state2 = engine.get_last_states()
 
         assert state2["mlsdm"] is not None

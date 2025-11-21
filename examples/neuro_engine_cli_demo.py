@@ -92,9 +92,9 @@ def process_request(
         intent: User intent category.
         verbose: Whether to display verbose output.
     """
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * 80}")
     print(f"📝 Prompt: {prompt[:100]}{'...' if len(prompt) > 100 else ''}")
-    print(f"{'='*80}\n")
+    print(f"{'=' * 80}\n")
 
     # Generate response
     result = engine.generate(
