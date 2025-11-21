@@ -5,7 +5,7 @@ from src.cognition.moral_filter_v2 import MoralFilterV2
 class TestMoralFilterV2:
     """Test suite for MoralFilterV2."""
 
-    def test_initialization_default(self):
+    def test_initialization_default(self) -> None:
         """Test initialization with default threshold."""
         mf = MoralFilterV2()
         assert mf.threshold == 0.50
@@ -15,42 +15,42 @@ class TestMoralFilterV2:
         assert mf.DEAD_BAND == 0.05
         assert mf.EMA_ALPHA == 0.1
 
-    def test_initialization_custom_threshold(self):
+    def test_initialization_custom_threshold(self) -> None:
         """Test initialization with custom threshold."""
         mf = MoralFilterV2(initial_threshold=0.60)
         assert mf.threshold == 0.60
         assert mf.ema_accept_rate == 0.5
 
-    def test_initialization_threshold_clipping_low(self):
+    def test_initialization_threshold_clipping_low(self) -> None:
         """Test that threshold is clipped to minimum."""
         mf = MoralFilterV2(initial_threshold=0.10)
         assert mf.threshold == 0.30
 
-    def test_initialization_threshold_clipping_high(self):
+    def test_initialization_threshold_clipping_high(self) -> None:
         """Test that threshold is clipped to maximum."""
         mf = MoralFilterV2(initial_threshold=0.95)
         assert mf.threshold == 0.90
 
-    def test_evaluate_accept(self):
+    def test_evaluate_accept(self) -> None:
         """Test that values above threshold are accepted."""
         mf = MoralFilterV2(initial_threshold=0.50)
         assert mf.evaluate(0.60) is True
         assert mf.evaluate(0.50) is True
         assert mf.evaluate(0.90) is True
 
-    def test_evaluate_reject(self):
+    def test_evaluate_reject(self) -> None:
         """Test that values below threshold are rejected."""
         mf = MoralFilterV2(initial_threshold=0.50)
         assert mf.evaluate(0.40) is False
         assert mf.evaluate(0.30) is False
         assert mf.evaluate(0.10) is False
 
-    def test_evaluate_boundary(self):
+    def test_evaluate_boundary(self) -> None:
         """Test evaluation at exact threshold boundary."""
         mf = MoralFilterV2(initial_threshold=0.50)
         assert mf.evaluate(0.50) is True
 
-    def test_adapt_accepted_event(self):
+    def test_adapt_accepted_event(self) -> None:
         """Test adaptation when event is accepted."""
         mf = MoralFilterV2(initial_threshold=0.50)
         initial_ema = mf.ema_accept_rate
@@ -60,7 +60,7 @@ class TestMoralFilterV2:
         # EMA should move towards 1.0
         assert mf.ema_accept_rate > initial_ema or abs(mf.ema_accept_rate - 1.0) < 0.01
 
-    def test_adapt_rejected_event(self):
+    def test_adapt_rejected_event(self) -> None:
         """Test adaptation when event is rejected."""
         mf = MoralFilterV2(initial_threshold=0.50)
         mf.ema_accept_rate = 0.8  # Set high initial rate
@@ -70,7 +70,7 @@ class TestMoralFilterV2:
         # EMA should move towards 0.0
         assert mf.ema_accept_rate < 0.8
 
-    def test_ema_calculation(self):
+    def test_ema_calculation(self) -> None:
         """Test EMA calculation with known values."""
         mf = MoralFilterV2(initial_threshold=0.50)
         mf.ema_accept_rate = 0.5
@@ -79,7 +79,7 @@ class TestMoralFilterV2:
         mf.adapt(accepted=True)
         assert abs(mf.ema_accept_rate - 0.55) < 1e-6
 
-    def test_threshold_increase_high_acceptance(self):
+    def test_threshold_increase_high_acceptance(self) -> None:
         """Test that threshold increases with high acceptance rate."""
         mf = MoralFilterV2(initial_threshold=0.50)
         
@@ -90,7 +90,7 @@ class TestMoralFilterV2:
         # Threshold should increase (but might be capped at max)
         assert mf.threshold >= 0.50
 
-    def test_threshold_decrease_low_acceptance(self):
+    def test_threshold_decrease_low_acceptance(self) -> None:
         """Test that threshold decreases with low acceptance rate."""
         mf = MoralFilterV2(initial_threshold=0.50)
         
@@ -101,7 +101,7 @@ class TestMoralFilterV2:
         # Threshold should decrease
         assert mf.threshold <= 0.50
 
-    def test_threshold_stays_in_bounds(self):
+    def test_threshold_stays_in_bounds(self) -> None:
         """Test that threshold never goes below MIN or above MAX."""
         mf = MoralFilterV2(initial_threshold=0.50)
         
@@ -115,7 +115,7 @@ class TestMoralFilterV2:
             mf.adapt(accepted=False)
         assert mf.threshold >= mf.MIN_THRESHOLD
 
-    def test_dead_band_no_adaptation(self):
+    def test_dead_band_no_adaptation(self) -> None:
         """Test that small errors (within dead band) don't cause threshold changes."""
         mf = MoralFilterV2(initial_threshold=0.50)
         mf.ema_accept_rate = 0.52  # Within dead band of 0.05 from target 0.5
@@ -126,7 +126,7 @@ class TestMoralFilterV2:
         # But should stay within reasonable bounds
         assert mf.MIN_THRESHOLD <= mf.threshold <= mf.MAX_THRESHOLD
 
-    def test_threshold_convergence_to_min(self):
+    def test_threshold_convergence_to_min(self) -> None:
         """Test convergence to minimum threshold with consistent rejection."""
         mf = MoralFilterV2(initial_threshold=0.50)
         
@@ -136,7 +136,7 @@ class TestMoralFilterV2:
         
         assert mf.threshold == mf.MIN_THRESHOLD
 
-    def test_threshold_convergence_to_max(self):
+    def test_threshold_convergence_to_max(self) -> None:
         """Test convergence to maximum threshold with consistent acceptance."""
         mf = MoralFilterV2(initial_threshold=0.50)
         
@@ -146,7 +146,7 @@ class TestMoralFilterV2:
         
         assert mf.threshold == mf.MAX_THRESHOLD
 
-    def test_get_state(self):
+    def test_get_state(self) -> None:
         """Test getting current state."""
         mf = MoralFilterV2(initial_threshold=0.60)
         mf.ema_accept_rate = 0.7
@@ -158,7 +158,7 @@ class TestMoralFilterV2:
         assert state["threshold"] == 0.60
         assert state["ema"] == 0.7
 
-    def test_alternating_accept_reject(self):
+    def test_alternating_accept_reject(self) -> None:
         """Test behavior with alternating accept/reject pattern."""
         mf = MoralFilterV2(initial_threshold=0.50)
         
@@ -168,7 +168,7 @@ class TestMoralFilterV2:
         # EMA should stabilize around 0.5
         assert 0.3 <= mf.ema_accept_rate <= 0.7
 
-    def test_threshold_delta_magnitude(self):
+    def test_threshold_delta_magnitude(self) -> None:
         """Test that threshold changes by expected delta (0.05)."""
         mf = MoralFilterV2(initial_threshold=0.50)
         
@@ -183,7 +183,7 @@ class TestMoralFilterV2:
         delta = abs(mf.threshold - initial_threshold)
         assert delta <= 0.051  # Allow small floating point tolerance
 
-    def test_multiple_adaptations_stability(self):
+    def test_multiple_adaptations_stability(self) -> None:
         """Test stability over many adaptation cycles."""
         mf = MoralFilterV2(initial_threshold=0.50)
         
@@ -199,7 +199,7 @@ class TestMoralFilterV2:
             assert mf.MIN_THRESHOLD <= mf.threshold <= mf.MAX_THRESHOLD
             assert 0.0 <= mf.ema_accept_rate <= 1.0
 
-    def test_rapid_threshold_adaptation(self):
+    def test_rapid_threshold_adaptation(self) -> None:
         """Test threshold adapts correctly with rapid changes."""
         mf = MoralFilterV2(initial_threshold=0.50)
         
@@ -211,7 +211,7 @@ class TestMoralFilterV2:
         # Check thresholds are recorded and within bounds
         assert all(mf.MIN_THRESHOLD <= t <= mf.MAX_THRESHOLD for t in thresholds)
 
-    def test_ema_bounds(self):
+    def test_ema_bounds(self) -> None:
         """Test that EMA always stays between 0 and 1."""
         mf = MoralFilterV2(initial_threshold=0.50)
         
@@ -223,7 +223,7 @@ class TestMoralFilterV2:
             mf.adapt(accepted=False)
             assert 0.0 <= mf.ema_accept_rate <= 1.0
 
-    def test_extreme_initial_thresholds(self):
+    def test_extreme_initial_thresholds(self) -> None:
         """Test behavior with extreme initial thresholds."""
         # Very low (should be clipped to MIN)
         mf_low = MoralFilterV2(initial_threshold=0.0)
@@ -237,7 +237,7 @@ class TestMoralFilterV2:
         mf_neg = MoralFilterV2(initial_threshold=-0.5)
         assert mf_neg.threshold == 0.30
 
-    def test_consistent_evaluation(self):
+    def test_consistent_evaluation(self) -> None:
         """Test that evaluation is consistent for same input."""
         mf = MoralFilterV2(initial_threshold=0.50)
         

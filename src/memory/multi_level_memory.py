@@ -14,6 +14,24 @@ class MultiLevelSynapticMemory:
         gating12: float = 0.45,
         gating23: float = 0.30,
     ) -> None:
+        # Validate inputs
+        if dimension <= 0:
+            raise ValueError(f"dimension must be positive, got {dimension}")
+        if not (0 < lambda_l1 <= 1.0):
+            raise ValueError(f"lambda_l1 must be in (0, 1], got {lambda_l1}")
+        if not (0 < lambda_l2 <= 1.0):
+            raise ValueError(f"lambda_l2 must be in (0, 1], got {lambda_l2}")
+        if not (0 < lambda_l3 <= 1.0):
+            raise ValueError(f"lambda_l3 must be in (0, 1], got {lambda_l3}")
+        if theta_l1 <= 0:
+            raise ValueError(f"theta_l1 must be positive, got {theta_l1}")
+        if theta_l2 <= 0:
+            raise ValueError(f"theta_l2 must be positive, got {theta_l2}")
+        if not (0 <= gating12 <= 1.0):
+            raise ValueError(f"gating12 must be in [0, 1], got {gating12}")
+        if not (0 <= gating23 <= 1.0):
+            raise ValueError(f"gating23 must be in [0, 1], got {gating23}")
+        
         self.dim = int(dimension)
         self.lambda_l1 = float(lambda_l1)
         self.lambda_l2 = float(lambda_l2)

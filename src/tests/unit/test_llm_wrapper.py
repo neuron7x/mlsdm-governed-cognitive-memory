@@ -21,7 +21,7 @@ class TestLLMWrapper:
         vec = np.random.randn(384).astype(np.float32)
         return vec / np.linalg.norm(vec)
     
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         """Test wrapper initialization."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
@@ -35,7 +35,7 @@ class TestLLMWrapper:
         assert wrapper.rejected_count == 0
         assert len(wrapper.consolidation_buffer) == 0
     
-    def test_initialization_custom_params(self):
+    def test_initialization_custom_params(self) -> None:
         """Test wrapper initialization with custom parameters."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
@@ -53,7 +53,7 @@ class TestLLMWrapper:
         assert wrapper.rhythm.sleep_duration == 5
         assert wrapper.moral.threshold == 0.70
     
-    def test_generate_accepted_wake_phase(self):
+    def test_generate_accepted_wake_phase(self) -> None:
         """Test successful generation during wake phase."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
@@ -74,7 +74,7 @@ class TestLLMWrapper:
         assert wrapper.accepted_count == 1
         assert wrapper.rejected_count == 0
     
-    def test_generate_moral_rejection(self):
+    def test_generate_moral_rejection(self) -> None:
         """Test rejection due to low moral value."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
@@ -93,7 +93,7 @@ class TestLLMWrapper:
         assert wrapper.rejected_count == 1
         assert wrapper.accepted_count == 0
     
-    def test_generate_sleep_phase_rejection(self):
+    def test_generate_sleep_phase_rejection(self) -> None:
         """Test rejection during sleep phase."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
@@ -120,7 +120,7 @@ class TestLLMWrapper:
         assert result["phase"] == "sleep"
         assert "sleep phase" in result["note"]
     
-    def test_max_tokens_enforcement_sleep(self):
+    def test_max_tokens_enforcement_sleep(self) -> None:
         """Test that max tokens are limited during sleep phase."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
@@ -139,7 +139,7 @@ class TestLLMWrapper:
         # Transition to sleep happens after wake duration
         # Since we set wake_duration=1, next request should be rejected (sleep phase)
         
-    def test_context_retrieval(self):
+    def test_context_retrieval(self) -> None:
         """Test that context is retrieved from memory."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
@@ -157,7 +157,7 @@ class TestLLMWrapper:
         assert result["accepted"] is True
         assert result["context_items"] >= 0  # Should have retrieved some context
     
-    def test_consolidation_buffer(self):
+    def test_consolidation_buffer(self) -> None:
         """Test that consolidation buffer is populated and cleared."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
@@ -178,7 +178,7 @@ class TestLLMWrapper:
         # Buffer may be empty if consolidation happened
         assert state["consolidation_buffer_size"] >= 0
     
-    def test_get_state(self):
+    def test_get_state(self) -> None:
         """Test state retrieval."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
@@ -203,7 +203,7 @@ class TestLLMWrapper:
         assert state["accepted_count"] == 1
         assert state["rejected_count"] == 0
     
-    def test_reset(self):
+    def test_reset(self) -> None:
         """Test wrapper reset functionality."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
@@ -226,7 +226,7 @@ class TestLLMWrapper:
         assert wrapper.rejected_count == 0
         assert len(wrapper.consolidation_buffer) == 0
     
-    def test_thread_safety(self):
+    def test_thread_safety(self) -> None:
         """Test thread-safe operation."""
         import threading
         
@@ -254,7 +254,7 @@ class TestLLMWrapper:
         state = wrapper.get_state()
         assert state["step"] >= 10
     
-    def test_embedding_normalization(self):
+    def test_embedding_normalization(self) -> None:
         """Test that embeddings are normalized."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
@@ -266,7 +266,7 @@ class TestLLMWrapper:
         # Should still work due to normalization
         assert result["accepted"] is True
     
-    def test_moral_adaptation(self):
+    def test_moral_adaptation(self) -> None:
         """Test moral threshold adaptation over time."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
@@ -287,7 +287,7 @@ class TestLLMWrapper:
         assert state["moral_threshold"] <= initial_threshold
         assert state["moral_threshold"] >= 0.30  # MIN_THRESHOLD
     
-    def test_memory_capacity_bounded(self):
+    def test_memory_capacity_bounded(self) -> None:
         """Test that memory stays within capacity."""
         capacity = 100
         wrapper = LLMWrapper(
@@ -307,7 +307,7 @@ class TestLLMWrapper:
         assert qilm_stats["used"] <= capacity
         assert qilm_stats["capacity"] == capacity
     
-    def test_custom_max_tokens(self):
+    def test_custom_max_tokens(self) -> None:
         """Test custom max tokens parameter."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
@@ -324,7 +324,7 @@ class TestLLMWrapper:
         # During wake phase, custom max_tokens should be respected
         assert result["max_tokens_used"] == 512
     
-    def test_synaptic_memory_updates(self):
+    def test_synaptic_memory_updates(self) -> None:
         """Test that synaptic memory is updated."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
@@ -358,7 +358,7 @@ class TestLLMWrapperEdgeCases:
         vec = np.random.randn(384).astype(np.float32)
         return vec / np.linalg.norm(vec)
     
-    def test_embedding_error_handling(self):
+    def test_embedding_error_handling(self) -> None:
         """Test handling of embedding errors."""
         def failing_embed(text: str) -> np.ndarray:
             raise ValueError("Embedding failed")
@@ -373,7 +373,7 @@ class TestLLMWrapperEdgeCases:
         assert result["accepted"] is False
         assert "embedding failed" in result["note"]
     
-    def test_generation_error_handling(self):
+    def test_generation_error_handling(self) -> None:
         """Test handling of generation errors."""
         def failing_generate(prompt: str, max_tokens: int) -> str:
             raise RuntimeError("Generation failed")
@@ -388,7 +388,7 @@ class TestLLMWrapperEdgeCases:
         assert result["accepted"] is False
         assert "generation failed" in result["note"]
     
-    def test_zero_norm_embedding(self):
+    def test_zero_norm_embedding(self) -> None:
         """Test handling of zero-norm embeddings."""
         def zero_embed(text: str) -> np.ndarray:
             return np.zeros(384, dtype=np.float32)
@@ -421,7 +421,7 @@ class TestLLMWrapperIntegration:
         vec = np.random.randn(384).astype(np.float32)
         return vec / (np.linalg.norm(vec) + 1e-9)
     
-    def test_realistic_conversation_flow(self):
+    def test_realistic_conversation_flow(self) -> None:
         """Test a realistic conversation with multiple turns."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
@@ -448,7 +448,7 @@ class TestLLMWrapperIntegration:
         state = wrapper.get_state()
         assert state["accepted_count"] >= 2
     
-    def test_memory_coherence_across_interactions(self):
+    def test_memory_coherence_across_interactions(self) -> None:
         """Test that memory maintains coherence across interactions."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,

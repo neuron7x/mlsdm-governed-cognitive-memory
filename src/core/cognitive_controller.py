@@ -1,12 +1,13 @@
 import numpy as np
 from threading import Lock
+from typing import Dict, Any, List
 from ..cognition.moral_filter_v2 import MoralFilterV2
-from ..memory.qilm_v2 import QILM_v2
+from ..memory.qilm_v2 import QILM_v2, MemoryRetrieval
 from ..rhythm.cognitive_rhythm import CognitiveRhythm
 from ..memory.multi_level_memory import MultiLevelSynapticMemory
 
 class CognitiveController:
-    def __init__(self, dim=384):
+    def __init__(self, dim: int = 384) -> None:
         self.dim = dim
         self._lock = Lock()
         self.moral = MoralFilterV2(initial_threshold=0.50)
@@ -15,9 +16,9 @@ class CognitiveController:
         self.synaptic = MultiLevelSynapticMemory(dimension=dim)
         self.step_counter = 0
         # Cache for phase values to avoid repeated computation
-        self._phase_cache = {"wake": 0.1, "sleep": 0.9}
+        self._phase_cache: Dict[str, float] = {"wake": 0.1, "sleep": 0.9}
 
-    def process_event(self, vector, moral_value):
+    def process_event(self, vector: np.ndarray, moral_value: float) -> Dict[str, Any]:
         with self._lock:
             self.step_counter += 1
             accepted = self.moral.evaluate(moral_value)
@@ -33,14 +34,14 @@ class CognitiveController:
             self.rhythm.step()
             return self._build_state(rejected=False, note="processed")
 
-    def retrieve_context(self, query_vector, top_k=5):
+    def retrieve_context(self, query_vector: np.ndarray, top_k: int = 5) -> List[MemoryRetrieval]:
         with self._lock:
             # Optimize: use cached phase value
             phase_val = self._phase_cache[self.rhythm.phase]
             return self.qilm.retrieve(query_vector.tolist(), current_phase=phase_val, 
                                      phase_tolerance=0.15, top_k=top_k)
 
-    def _build_state(self, rejected, note):
+    def _build_state(self, rejected: bool, note: str) -> Dict[str, Any]:
         l1, l2, l3 = self.synaptic.state()
         return {
             "step": self.step_counter,

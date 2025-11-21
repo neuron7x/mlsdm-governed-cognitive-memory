@@ -8,7 +8,7 @@ from src.rhythm.cognitive_rhythm import CognitiveRhythm
 from src.utils.metrics import MetricsCollector
 
 
-def test_memory_update_and_get_state():
+def test_memory_update_and_get_state() -> None:
     mlm = MultiLevelSynapticMemory(dimension=3)
     event = np.array([1.0, 2.0, 3.0])
     mlm.update(event)
@@ -17,7 +17,7 @@ def test_memory_update_and_get_state():
     assert L3.shape == (3,)
 
 
-def test_moral_filter_basic():
+def test_moral_filter_basic() -> None:
     mf = MoralFilter()
     assert mf.evaluate(0.6)
     assert not mf.evaluate(0.4)
@@ -25,14 +25,14 @@ def test_moral_filter_basic():
     assert 0.3 <= mf.threshold <= 0.9
 
 
-def test_ontology_matcher():
+def test_ontology_matcher() -> None:
     om = OntologyMatcher(np.array([[1, 0, 0], [0, 1, 0]]), labels=["A", "B"])
     label, score = om.match(np.array([1, 0, 0], dtype=float))
     assert label == "A"
     assert score > 0.9
 
 
-def test_qilm_entangle_and_retrieve():
+def test_qilm_entangle_and_retrieve() -> None:
     q = QILM()
     v = np.array([1.0, 2.0])
     q.entangle_phase(v, phase=1.0)
@@ -40,7 +40,7 @@ def test_qilm_entangle_and_retrieve():
     assert len(res) == 1
 
 
-def test_cognitive_rhythm_cycles():
+def test_cognitive_rhythm_cycles() -> None:
     cr = CognitiveRhythm(wake_duration=2, sleep_duration=1)
     assert cr.is_wake()
     cr.step()
@@ -49,7 +49,7 @@ def test_cognitive_rhythm_cycles():
     assert cr.is_sleep()
 
 
-def test_metrics_collector_entropy_positive():
+def test_metrics_collector_entropy_positive() -> None:
     mc = MetricsCollector()
     L1 = np.array([1.0, 0.0])
     L2 = np.array([0.0, 1.0])

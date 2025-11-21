@@ -5,7 +5,6 @@ These tests validate that optimizations maintain correctness while
 improving performance characteristics of the system.
 """
 
-import pytest
 import numpy as np
 import time
 from threading import Thread
@@ -20,7 +19,7 @@ from src.core.cognitive_controller import CognitiveController
 class TestQILM_v2Performance:
     """Performance tests for QILM_v2 optimizations."""
     
-    def test_retrieve_performance_with_large_memory(self):
+    def test_retrieve_performance_with_large_memory(self) -> None:
         """Test retrieval performance with near-capacity memory."""
         qilm = QILM_v2(dimension=384, capacity=1000)
         
@@ -44,7 +43,7 @@ class TestQILM_v2Performance:
         assert len(results) <= 10
         assert len(results) > 0  # Should find at least some matches
     
-    def test_retrieve_with_varying_candidate_sizes(self):
+    def test_retrieve_with_varying_candidate_sizes(self) -> None:
         """Test retrieval optimization with different candidate set sizes."""
         qilm = QILM_v2(dimension=384, capacity=500)
         
@@ -67,7 +66,7 @@ class TestQILM_v2Performance:
                 for i in range(len(results) - 1):
                     assert results[i].resonance >= results[i+1].resonance
     
-    def test_entangle_performance_batch(self):
+    def test_entangle_performance_batch(self) -> None:
         """Test entangle performance with batch operations."""
         qilm = QILM_v2(dimension=384, capacity=10000)
         
@@ -87,7 +86,7 @@ class TestQILM_v2Performance:
 class TestMultiLevelMemoryPerformance:
     """Performance tests for MultiLevelSynapticMemory optimizations."""
     
-    def test_update_performance_with_frequent_transfers(self):
+    def test_update_performance_with_frequent_transfers(self) -> None:
         """Test update performance when transfers occur frequently."""
         synaptic = MultiLevelSynapticMemory(
             dimension=384,
@@ -111,9 +110,9 @@ class TestMultiLevelMemoryPerformance:
         assert np.all(np.isfinite(l2))
         assert np.all(np.isfinite(l3))
     
-    def test_update_with_already_float32_vectors(self):
+    def test_update_with_already_float32_vectors(self) -> None:
         """Test optimization path for pre-converted float32 vectors."""
-        synaptic = MultiLevelSynapticMemory(dimension=384)
+        _ = MultiLevelSynapticMemory(dimension=384)
         
         # Test with float32 vectors (should use optimized path)
         vec_f32 = np.random.randn(384).astype(np.float32)
@@ -134,7 +133,7 @@ class TestMultiLevelMemoryPerformance:
         assert np.allclose(l2_f32, l2_f64, rtol=1e-5)
         assert np.allclose(l3_f32, l3_f64, rtol=1e-5)
     
-    def test_update_memory_efficiency(self):
+    def test_update_memory_efficiency(self) -> None:
         """Test that update doesn't create excessive intermediate arrays."""
         synaptic = MultiLevelSynapticMemory(dimension=384)
         
@@ -153,7 +152,7 @@ class TestMultiLevelMemoryPerformance:
 class TestMoralFilterPerformance:
     """Performance tests for MoralFilterV2 optimizations."""
     
-    def test_evaluate_fast_path_extremes(self):
+    def test_evaluate_fast_path_extremes(self) -> None:
         """Test fast-path optimization for extreme moral values."""
         moral = MoralFilterV2(initial_threshold=0.50)
         
@@ -175,7 +174,7 @@ class TestMoralFilterPerformance:
         assert elapsed_high < 0.01, f"High value evaluations took {elapsed_high:.3f}s"
         assert elapsed_low < 0.01, f"Low value evaluations took {elapsed_low:.3f}s"
     
-    def test_evaluate_boundary_performance(self):
+    def test_evaluate_boundary_performance(self) -> None:
         """Test performance at threshold boundaries."""
         moral = MoralFilterV2(initial_threshold=0.50)
         
@@ -192,7 +191,7 @@ class TestMoralFilterPerformance:
 class TestCognitiveControllerPerformance:
     """Performance tests for CognitiveController optimizations."""
     
-    def test_process_event_with_phase_cache(self):
+    def test_process_event_with_phase_cache(self) -> None:
         """Test that phase cache improves performance."""
         controller = CognitiveController(dim=384)
         
@@ -208,7 +207,7 @@ class TestCognitiveControllerPerformance:
         # Should complete quickly with cache
         assert elapsed < 0.5, f"Processing 100 events took {elapsed:.3f}s"
     
-    def test_retrieve_context_with_phase_cache(self):
+    def test_retrieve_context_with_phase_cache(self) -> None:
         """Test context retrieval with phase cache."""
         controller = CognitiveController(dim=384)
         
@@ -233,7 +232,7 @@ class TestCognitiveControllerPerformance:
 class TestConcurrentPerformance:
     """Test performance under concurrent load."""
     
-    def test_qilm_concurrent_retrieval(self):
+    def test_qilm_concurrent_retrieval(self) -> None:
         """Test retrieval performance with concurrent threads."""
         qilm = QILM_v2(dimension=384, capacity=1000)
         
@@ -265,7 +264,7 @@ class TestConcurrentPerformance:
         assert elapsed < 1.0, f"Concurrent retrievals took {elapsed:.3f}s"
         assert len(results_list) == 100
     
-    def test_controller_concurrent_processing(self):
+    def test_controller_concurrent_processing(self) -> None:
         """Test controller performance with concurrent event processing."""
         controller = CognitiveController(dim=384)
         
@@ -292,7 +291,7 @@ class TestConcurrentPerformance:
 class TestMemoryEfficiency:
     """Test memory efficiency of optimizations."""
     
-    def test_qilm_memory_footprint(self):
+    def test_qilm_memory_footprint(self) -> None:
         """Test that QILM maintains expected memory footprint."""
         qilm = QILM_v2(dimension=384, capacity=20000)
         
@@ -306,7 +305,7 @@ class TestMemoryEfficiency:
         assert memory_mb <= expected_mb * 1.1  # Allow 10% overhead
         assert memory_mb >= expected_mb * 0.9
     
-    def test_synaptic_memory_footprint(self):
+    def test_synaptic_memory_footprint(self) -> None:
         """Test that synaptic memory uses expected space."""
         synaptic = MultiLevelSynapticMemory(dimension=384)
         

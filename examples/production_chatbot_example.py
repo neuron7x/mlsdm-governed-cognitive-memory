@@ -350,25 +350,25 @@ class ProductionChatbot:
         print("CHATBOT STATISTICS")
         print("="*60)
         
-        print(f"\nMessages:")
+        print("\nMessages:")
         print(f"  Total: {self.stats['total_messages']}")
         print(f"  Accepted: {self.stats['accepted']}")
         print(f"  Rejected: {self.stats['rejected']}")
         print(f"  Sleep waits: {self.stats['sleep_phase_waits']}")
         
-        print(f"\nCognitive State:")
+        print("\nCognitive State:")
         print(f"  Phase: {state['phase']}")
         print(f"  Step: {state['step']}")
         print(f"  Moral threshold: {state['moral_threshold']:.2f}")
         print(f"  Moral EMA: {state['moral_ema']:.2f}")
         
-        print(f"\nMemory:")
+        print("\nMemory:")
         qilm = state['qilm_stats']
         print(f"  Used: {qilm['used']:,}/{qilm['capacity']:,} vectors")
         print(f"  Usage: {(qilm['used']/qilm['capacity']*100):.1f}%")
         print(f"  Size: {qilm['memory_mb']:.2f} MB")
         
-        print(f"\nSynaptic Memory:")
+        print("\nSynaptic Memory:")
         synaptic = state['synaptic_norms']
         print(f"  L1 (fast): {synaptic['L1']:.4f}")
         print(f"  L2 (medium): {synaptic['L2']:.4f}")

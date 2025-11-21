@@ -5,10 +5,7 @@ These tests validate the LLM wrapper's cognitive governance without
 requiring actual LLM or embedding models.
 """
 
-import pytest
 import numpy as np
-from unittest.mock import Mock
-from typing import List
 
 from src.core.llm_wrapper import LLMWrapper
 

@@ -11,6 +11,14 @@ class MemoryRetrieval:
 
 class QILM_v2:
     def __init__(self, dimension: int = 384, capacity: int = 20000) -> None:
+        # Validate inputs
+        if dimension <= 0:
+            raise ValueError(f"dimension must be positive, got {dimension}")
+        if capacity <= 0:
+            raise ValueError(f"capacity must be positive, got {capacity}")
+        if capacity > 1_000_000:
+            raise ValueError(f"capacity too large (max 1,000,000), got {capacity}")
+        
         self.dimension = dimension
         self.capacity = capacity
         self.pointer = 0
