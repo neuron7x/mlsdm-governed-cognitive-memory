@@ -1,4 +1,46 @@
-# MLSDM Testing Guide
+# Testing Guide
+
+**Document Version:** 1.0.0  
+**Project Version:** 1.0.0  
+**Last Updated:** November 2025  
+**Test Coverage:** 97.63%
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [Test Structure](#test-structure)
+- [Coverage Requirements](#coverage-requirements)
+- [Writing New Tests](#writing-new-tests)
+- [Coverage Analysis](#coverage-analysis)
+- [Continuous Integration](#continuous-integration)
+- [Troubleshooting](#troubleshooting)
+- [Standards Compliance](#standards-compliance)
+
+---
+
+## Overview
+
+This guide provides comprehensive instructions for testing MLSDM Governed Cognitive Memory. The project maintains high test coverage (97.63%) and follows industry best practices for unit, integration, and validation testing.
+
+### Testing Philosophy
+
+1. **Comprehensive Coverage**: Maintain ≥90% code coverage
+2. **Test Pyramid**: More unit tests, fewer integration tests
+3. **Fast Execution**: Unit tests < 1ms, integration tests < 1s
+4. **Reproducibility**: Deterministic tests with fixed seeds
+5. **Clear Assertions**: Each test validates specific behavior
+
+### Test Categories
+
+| Category | Purpose | Location | Count | Execution Time |
+|----------|---------|----------|-------|----------------|
+| **Unit Tests** | Test individual components | `src/tests/unit/` | 150+ | <2s |
+| **Integration Tests** | Test component interactions | `tests/integration/` | 10+ | <5s |
+| **Validation Tests** | Test effectiveness claims | `tests/validation/` | 8+ | <10s |
+| **Property Tests** | Test invariants with fuzzing | `src/tests/unit/test_property_based.py` | 20+ | <3s |
+
+---
 
 ## Quick Start
 
