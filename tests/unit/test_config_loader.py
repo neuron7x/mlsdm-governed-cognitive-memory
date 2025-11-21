@@ -8,13 +8,11 @@ Tests cover:
 - File format support
 """
 
-import os
-import pytest
-import tempfile
 from pathlib import Path
 
-from src.utils.config_loader import ConfigLoader
-from pydantic import ValidationError
+import pytest
+
+from mlsdm.utils.config_loader import ConfigLoader
 
 
 class TestYAMLLoading:
@@ -29,7 +27,7 @@ strict_mode: false
 moral_filter:
   threshold: 0.6
 """)
-        
+
         config = ConfigLoader.load_config(str(config_file))
         assert config["dimension"] == 384
         assert config["strict_mode"] is False
@@ -39,7 +37,7 @@ moral_filter:
         """Load empty YAML file should use defaults."""
         config_file = tmp_path / "config.yaml"
         config_file.write_text("")
-        
+
         config = ConfigLoader.load_config(str(config_file))
         assert isinstance(config, dict)
 
@@ -50,7 +48,7 @@ moral_filter:
 dimension: 384
   invalid: indentation
 """)
-        
+
         with pytest.raises(ValueError) as exc_info:
             ConfigLoader.load_config(str(config_file))
         assert "Invalid YAML syntax" in str(exc_info.value)
@@ -64,7 +62,7 @@ dimension: 384
         """Unsupported file format should raise error."""
         config_file = tmp_path / "config.json"
         config_file.write_text("{}")
-        
+
         with pytest.raises(ValueError) as exc_info:
             ConfigLoader.load_config(str(config_file))
         assert "Unsupported configuration file format" in str(exc_info.value)
@@ -83,7 +81,7 @@ moral_filter:
   min_threshold: 0.3
   max_threshold: 0.9
 """)
-        
+
         config = ConfigLoader.load_config(str(config_file), validate=True)
         assert config["dimension"] == 384
 
@@ -93,7 +91,7 @@ moral_filter:
         config_file.write_text("""
 dimension: 1  # Too small
 """)
-        
+
         with pytest.raises(ValueError) as exc_info:
             ConfigLoader.load_config(str(config_file), validate=True)
         assert "Configuration validation failed" in str(exc_info.value)
@@ -104,7 +102,7 @@ dimension: 1  # Too small
         config_file.write_text("""
 dimension: 1  # Would be invalid
 """)
-        
+
         config = ConfigLoader.load_config(str(config_file), validate=False)
         assert config["dimension"] == 1
 
@@ -118,7 +116,7 @@ multi_level_memory:
   lambda_l2: 0.5  # Invalid: > lambda_l1
   lambda_l3: 0.01
 """)
-        
+
         with pytest.raises(ValueError) as exc_info:
             ConfigLoader.load_config(str(config_file), validate=True)
         assert "Decay rates must follow hierarchy" in str(exc_info.value)
@@ -131,9 +129,9 @@ class TestEnvironmentOverrides:
         """Environment variable should override top-level config."""
         config_file = tmp_path / "config.yaml"
         config_file.write_text("dimension: 384")
-        
+
         monkeypatch.setenv("MLSDM_DIMENSION", "768")
-        
+
         # Disable validation since we're changing dimension without updating ontology vectors
         config = ConfigLoader.load_config(str(config_file), env_override=True, validate=False)
         assert config["dimension"] == 768
@@ -145,9 +143,9 @@ class TestEnvironmentOverrides:
 moral_filter:
   threshold: 0.5
 """)
-        
+
         monkeypatch.setenv("MLSDM_MORAL_FILTER__THRESHOLD", "0.7")
-        
+
         config = ConfigLoader.load_config(str(config_file), env_override=True)
         assert config["moral_filter"]["threshold"] == 0.7
 
@@ -155,9 +153,9 @@ moral_filter:
         """Boolean environment variables should be parsed."""
         config_file = tmp_path / "config.yaml"
         config_file.write_text("strict_mode: false")
-        
+
         monkeypatch.setenv("MLSDM_STRICT_MODE", "true")
-        
+
         config = ConfigLoader.load_config(str(config_file), env_override=True)
         assert config["strict_mode"] is True
 
@@ -165,9 +163,9 @@ moral_filter:
         """Integer environment variables should be parsed."""
         config_file = tmp_path / "config.yaml"
         config_file.write_text("dimension: 384")
-        
+
         monkeypatch.setenv("MLSDM_DIMENSION", "1024")
-        
+
         # Disable validation since we're changing dimension without updating ontology vectors
         config = ConfigLoader.load_config(str(config_file), env_override=True, validate=False)
         assert config["dimension"] == 1024
@@ -180,9 +178,9 @@ moral_filter:
 moral_filter:
   threshold: 0.5
 """)
-        
+
         monkeypatch.setenv("MLSDM_MORAL_FILTER__THRESHOLD", "0.75")
-        
+
         config = ConfigLoader.load_config(str(config_file), env_override=True)
         assert config["moral_filter"]["threshold"] == 0.75
         assert isinstance(config["moral_filter"]["threshold"], float)
@@ -191,9 +189,9 @@ moral_filter:
         """Environment overrides can be disabled."""
         config_file = tmp_path / "config.yaml"
         config_file.write_text("dimension: 384")
-        
+
         monkeypatch.setenv("MLSDM_DIMENSION", "768")
-        
+
         config = ConfigLoader.load_config(str(config_file), env_override=False)
         assert config["dimension"] == 384  # Not overridden
 
@@ -201,9 +199,9 @@ moral_filter:
         """Non-MLSDM environment variables should be ignored."""
         config_file = tmp_path / "config.yaml"
         config_file.write_text("dimension: 384")
-        
+
         monkeypatch.setenv("DIMENSION", "768")  # No MLSDM_ prefix
-        
+
         config = ConfigLoader.load_config(str(config_file), env_override=True)
         assert config["dimension"] == 384
 
@@ -218,7 +216,7 @@ class TestLoadValidatedConfig:
 dimension: 384
 strict_mode: false
 """)
-        
+
         config_obj = ConfigLoader.load_validated_config(str(config_file))
         assert config_obj.dimension == 384
         assert config_obj.strict_mode is False
@@ -227,7 +225,7 @@ strict_mode: false
         """Should raise error for invalid config."""
         config_file = tmp_path / "config.yaml"
         config_file.write_text("dimension: -1")
-        
+
         with pytest.raises(ValueError):
             ConfigLoader.load_validated_config(str(config_file))
 
@@ -257,7 +255,7 @@ class TestErrorMessages:
         """Validation error should include file path."""
         config_file = tmp_path / "bad_config.yaml"
         config_file.write_text("dimension: -1")
-        
+
         with pytest.raises(ValueError) as exc_info:
             ConfigLoader.load_config(str(config_file), validate=True)
         assert "bad_config.yaml" in str(exc_info.value)
@@ -266,7 +264,7 @@ class TestErrorMessages:
         """Validation error should include reason."""
         config_file = tmp_path / "config.yaml"
         config_file.write_text("dimension: -1")
-        
+
         with pytest.raises(ValueError) as exc_info:
             ConfigLoader.load_config(str(config_file), validate=True)
         assert "greater than or equal" in str(exc_info.value)
@@ -275,7 +273,7 @@ class TestErrorMessages:
         """Validation error should include help message."""
         config_file = tmp_path / "config.yaml"
         config_file.write_text("dimension: -1")
-        
+
         with pytest.raises(ValueError) as exc_info:
             ConfigLoader.load_config(str(config_file), validate=True)
         assert "config_schema.py" in str(exc_info.value)

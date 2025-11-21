@@ -144,10 +144,10 @@ print('PASS')
 
 ```bash
 # Run simulation (legacy)
-python -m src.main --steps 100 --plot
+python -m mlsdm.main --steps 100 --plot
 
 # Run API (legacy)
-python -m src.main --api
+python -m mlsdm.main --api
 
 # Run unit tests (legacy)
 make test            # run unit + property tests

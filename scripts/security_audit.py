@@ -10,10 +10,10 @@ Usage:
     python scripts/security_audit.py [--fix] [--report]
 """
 
+import argparse
+import json
 import subprocess
 import sys
-import json
-import argparse
 from pathlib import Path
 
 
@@ -58,11 +58,11 @@ def run_pip_audit(fix: bool = False) -> tuple[bool, dict]:
     print("\n" + "=" * 60)
     print("Running dependency vulnerability scan with pip-audit...")
     print("=" * 60)
-    
+
     cmd = ["pip-audit", "--format", "json"]
     if fix:
         cmd.append("--fix")
-    
+
     try:
         result = subprocess.run(
             cmd,
@@ -70,7 +70,7 @@ def run_pip_audit(fix: bool = False) -> tuple[bool, dict]:
             text=True,
             check=False
         )
-        
+
         # Parse JSON output
         if result.stdout:
             try:
@@ -79,7 +79,7 @@ def run_pip_audit(fix: bool = False) -> tuple[bool, dict]:
                 audit_results = {"error": "Failed to parse pip-audit output"}
         else:
             audit_results = {}
-        
+
         if result.returncode == 0:
             print("✓ No vulnerabilities found!")
             return True, audit_results
@@ -93,7 +93,7 @@ def run_pip_audit(fix: bool = False) -> tuple[bool, dict]:
                         print(f"    - {vuln.get('id', 'N/A')}: {vuln.get('description', 'No description')}")
                         print(f"      Fix: {vuln.get('fix_versions', 'No fix available')}")
             return False, audit_results
-            
+
     except FileNotFoundError:
         print("✗ pip-audit not found")
         return False, {"error": "pip-audit not installed"}
@@ -111,12 +111,12 @@ def check_security_configs() -> bool:
     print("\n" + "=" * 60)
     print("Checking security configuration files...")
     print("=" * 60)
-    
+
     required_files = [
         "SECURITY_POLICY.md",
         "THREAT_MODEL.md"
     ]
-    
+
     all_present = True
     for file in required_files:
         filepath = Path(file)
@@ -125,7 +125,7 @@ def check_security_configs() -> bool:
         else:
             print(f"✗ {file} missing")
             all_present = False
-    
+
     return all_present
 
 
@@ -138,9 +138,9 @@ def check_security_implementations() -> tuple[bool, list[str]]:
     print("\n" + "=" * 60)
     print("Checking security feature implementations...")
     print("=" * 60)
-    
+
     findings = []
-    
+
     # Check for rate limiter
     rate_limiter_file = Path("src/utils/rate_limiter.py")
     if rate_limiter_file.exists():
@@ -148,7 +148,7 @@ def check_security_implementations() -> tuple[bool, list[str]]:
     else:
         print("✗ Rate limiter not found")
         findings.append("Missing: Rate limiter implementation")
-    
+
     # Check for input validator
     validator_file = Path("src/utils/input_validator.py")
     if validator_file.exists():
@@ -156,7 +156,7 @@ def check_security_implementations() -> tuple[bool, list[str]]:
     else:
         print("✗ Input validator not found")
         findings.append("Missing: Input validator implementation")
-    
+
     # Check for security logger
     logger_file = Path("src/utils/security_logger.py")
     if logger_file.exists():
@@ -164,7 +164,7 @@ def check_security_implementations() -> tuple[bool, list[str]]:
     else:
         print("✗ Security logger not found")
         findings.append("Missing: Security logger implementation")
-    
+
     # Check for security tests
     test_file = Path("src/tests/unit/test_security.py")
     if test_file.exists():
@@ -172,7 +172,7 @@ def check_security_implementations() -> tuple[bool, list[str]]:
     else:
         print("✗ Security tests not found")
         findings.append("Missing: Security tests")
-    
+
     return len(findings) == 0, findings
 
 
@@ -198,22 +198,22 @@ def generate_security_report(
     report.append("SECURITY AUDIT REPORT")
     report.append("=" * 60)
     report.append("")
-    
+
     # Summary
     report.append("SUMMARY")
     report.append("-" * 60)
-    
+
     vuln_count = 0
     if audit_results.get("dependencies"):
         for dep in audit_results["dependencies"]:
             vuln_count += len(dep.get("vulns", []))
-    
+
     report.append(f"Dependencies scanned: {len(audit_results.get('dependencies', []))}")
     report.append(f"Vulnerabilities found: {vuln_count}")
     report.append(f"Configuration files: {'✓ Present' if config_check else '✗ Missing'}")
     report.append(f"Security implementations: {'✓ Complete' if impl_check else '✗ Incomplete'}")
     report.append("")
-    
+
     # Details
     if vuln_count > 0:
         report.append("VULNERABILITIES")
@@ -224,14 +224,14 @@ def generate_security_report(
                 report.append(f"  {vuln.get('id', 'N/A')}: {vuln.get('description', 'No description')}")
                 report.append(f"  Fix: {vuln.get('fix_versions', 'No fix available')}")
                 report.append("")
-    
+
     if impl_findings:
         report.append("IMPLEMENTATION FINDINGS")
         report.append("-" * 60)
         for finding in impl_findings:
             report.append(f"• {finding}")
         report.append("")
-    
+
     # Recommendations
     report.append("RECOMMENDATIONS")
     report.append("-" * 60)
@@ -243,7 +243,7 @@ def generate_security_report(
         report.append("• Implement missing security features")
     if vuln_count == 0 and config_check and impl_check:
         report.append("• All security checks passed! ✓")
-    
+
     return "\n".join(report)
 
 
@@ -261,10 +261,10 @@ def main():
         help="Save report to file"
     )
     args = parser.parse_args()
-    
+
     print("MLSDM Governed Cognitive Memory - Security Audit")
     print("=" * 60)
-    
+
     # Ensure pip-audit is installed
     if not check_pip_audit_installed():
         print("pip-audit not found. Attempting to install...")
@@ -272,12 +272,12 @@ def main():
             print("\nERROR: Could not install pip-audit")
             print("Please install manually: pip install pip-audit")
             return 1
-    
+
     # Run checks
     audit_success, audit_results = run_pip_audit(fix=args.fix)
     config_check = check_security_configs()
     impl_check, impl_findings = check_security_implementations()
-    
+
     # Generate report
     report = generate_security_report(
         audit_results,
@@ -285,15 +285,15 @@ def main():
         impl_check,
         impl_findings
     )
-    
+
     print("\n" + report)
-    
+
     # Save report if requested
     if args.report:
         with open(args.report, 'w') as f:
             f.write(report)
         print(f"\n✓ Report saved to {args.report}")
-    
+
     # Exit with appropriate code
     all_passed = audit_success and config_check and impl_check
     return 0 if all_passed else 1

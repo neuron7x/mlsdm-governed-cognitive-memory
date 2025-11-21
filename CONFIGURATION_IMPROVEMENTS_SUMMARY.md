@@ -229,7 +229,7 @@ export MLSDM_MORAL_FILTER__THRESHOLD=0.7
 export MLSDM_COGNITIVE_RHYTHM__WAKE_DURATION=10
 
 # Load with env overrides
-python -m src.main --api
+python -m mlsdm.main --api
 ```
 
 ### Docker Deployment

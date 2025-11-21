@@ -52,4 +52,4 @@ ENV CONFIG_PATH=config/production.yaml \
     JSON_LOGGING=true
 
 # Run API server
-CMD ["python", "-m", "src.main", "--api"]
+CMD ["python", "-m", "mlsdm.main", "--api"]

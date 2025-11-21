@@ -11,14 +11,14 @@ Tests cover:
 import pytest
 from pydantic import ValidationError
 
-from src.utils.config_schema import (
-    SystemConfig,
-    MultiLevelMemoryConfig,
-    MoralFilterConfig,
-    OntologyMatcherConfig,
+from mlsdm.utils.config_schema import (
     CognitiveRhythmConfig,
-    validate_config_dict,
+    MoralFilterConfig,
+    MultiLevelMemoryConfig,
+    OntologyMatcherConfig,
+    SystemConfig,
     get_default_config,
+    validate_config_dict,
 )
 
 
@@ -35,14 +35,14 @@ class TestSystemConfig:
         """Test valid dimension values."""
         config = SystemConfig(dimension=384)
         assert config.dimension == 384
-        
+
         # When changing dimension, must provide matching ontology vectors
         config = SystemConfig(
             dimension=2,
             ontology_matcher=OntologyMatcherConfig(ontology_vectors=[[1.0, 0.0], [0.0, 1.0]])
         )
         assert config.dimension == 2
-        
+
         # Test maximum dimension with matching ontology vectors
         large_vec = [1.0] + [0.0] * 4095
         config = SystemConfig(
@@ -73,7 +73,7 @@ class TestSystemConfig:
         """Strict mode should accept boolean values."""
         config = SystemConfig(strict_mode=True)
         assert config.strict_mode is True
-        
+
         config = SystemConfig(strict_mode=False)
         assert config.strict_mode is False
 
@@ -132,7 +132,7 @@ class TestMultiLevelMemoryConfig:
         # Must maintain hierarchy: l3 <= l2 <= l1
         config = MultiLevelMemoryConfig(lambda_l1=0.0, lambda_l2=0.0, lambda_l3=0.0)
         assert config.lambda_l1 == 0.0
-        
+
         config = MultiLevelMemoryConfig(lambda_l1=1.0, lambda_l2=0.5, lambda_l3=0.1)
         assert config.lambda_l1 == 1.0
 
@@ -140,7 +140,7 @@ class TestMultiLevelMemoryConfig:
         """Decay rates outside [0.0, 1.0] should fail."""
         with pytest.raises(ValidationError):
             MultiLevelMemoryConfig(lambda_l1=-0.1)
-        
+
         with pytest.raises(ValidationError):
             MultiLevelMemoryConfig(lambda_l1=1.1)
 
@@ -167,10 +167,10 @@ class TestMultiLevelMemoryConfig:
         config = MultiLevelMemoryConfig(gating12=0.0, gating23=1.0)
         assert config.gating12 == 0.0
         assert config.gating23 == 1.0
-        
+
         with pytest.raises(ValidationError):
             MultiLevelMemoryConfig(gating12=-0.1)
-        
+
         with pytest.raises(ValidationError):
             MultiLevelMemoryConfig(gating23=1.1)
 
@@ -221,7 +221,7 @@ class TestMoralFilterConfig:
         """Thresholds should be in valid ranges."""
         with pytest.raises(ValidationError):
             MoralFilterConfig(threshold=0.05)  # Below 0.1
-        
+
         with pytest.raises(ValidationError):
             MoralFilterConfig(threshold=0.95)  # Above 0.9
 
@@ -229,13 +229,13 @@ class TestMoralFilterConfig:
         """Adapt rate should be in [0.0, 0.5]."""
         config = MoralFilterConfig(adapt_rate=0.0)
         assert config.adapt_rate == 0.0
-        
+
         config = MoralFilterConfig(adapt_rate=0.5)
         assert config.adapt_rate == 0.5
-        
+
         with pytest.raises(ValidationError):
             MoralFilterConfig(adapt_rate=-0.1)
-        
+
         with pytest.raises(ValidationError):
             MoralFilterConfig(adapt_rate=0.6)
 
@@ -300,13 +300,13 @@ class TestCognitiveRhythmConfig:
         """Durations should be in [1, 100]."""
         config = CognitiveRhythmConfig(wake_duration=1)
         assert config.wake_duration == 1
-        
+
         config = CognitiveRhythmConfig(sleep_duration=100)
         assert config.sleep_duration == 100
-        
+
         with pytest.raises(ValidationError):
             CognitiveRhythmConfig(wake_duration=0)
-        
+
         with pytest.raises(ValidationError):
             CognitiveRhythmConfig(sleep_duration=101)
 

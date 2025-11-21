@@ -12,15 +12,15 @@ The wrapper provides:
 5. Phase-entangling retrieval
 """
 
-import numpy as np
-import sys
 import os
+import sys
+
+import numpy as np
 
 # Add src to path for local development
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.core.llm_wrapper import LLMWrapper
-
+from mlsdm.core.llm_wrapper import LLMWrapper
 
 # =============================================================================
 # Example 1: Simple Mock LLM
@@ -37,12 +37,12 @@ def simple_mock_llm(prompt: str, max_tokens: int) -> str:
         "code": "Here's an example:\n\n```python\nprint('Hello, World!')\n```",
         "memory": "I use a cognitive memory system with wake/sleep cycles for optimal performance.",
     }
-    
+
     prompt_lower = prompt.lower()
     for key, response in responses.items():
         if key in prompt_lower:
             return response
-    
+
     return "I understand your question. Let me help you with that."
 
 
@@ -64,7 +64,7 @@ def example_1_basic_usage():
     print("\n" + "="*70)
     print("Example 1: Basic Usage")
     print("="*70)
-    
+
     # Initialize wrapper
     wrapper = LLMWrapper(
         llm_generate_fn=simple_mock_llm,
@@ -75,7 +75,7 @@ def example_1_basic_usage():
         sleep_duration=3,
         initial_moral_threshold=0.50
     )
-    
+
     # Simulate conversation
     messages = [
         ("Hello! Can you help me?", 0.95),
@@ -83,25 +83,25 @@ def example_1_basic_usage():
         ("Can you show me some code examples?", 0.85),
         ("What's your memory system like?", 0.90),
     ]
-    
+
     for i, (prompt, moral_value) in enumerate(messages, 1):
         print(f"\n--- Message {i} ---")
         print(f"User: {prompt}")
         print(f"Moral Value: {moral_value}")
-        
+
         result = wrapper.generate(prompt, moral_value)
-        
+
         print(f"Accepted: {result['accepted']}")
         print(f"Phase: {result['phase']}")
-        
+
         if result['accepted']:
             print(f"Assistant: {result['response']}")
             print(f"Context Items: {result['context_items']}")
         else:
             print(f"Note: {result['note']}")
-        
+
         print(f"Moral Threshold: {result['moral_threshold']}")
-    
+
     # Print final state
     print("\n" + "-"*70)
     state = wrapper.get_state()
@@ -123,13 +123,13 @@ def example_2_moral_filtering():
     print("\n" + "="*70)
     print("Example 2: Moral Filtering")
     print("="*70)
-    
+
     wrapper = LLMWrapper(
         llm_generate_fn=simple_mock_llm,
         embedding_fn=simple_mock_embedding,
         initial_moral_threshold=0.70  # Higher threshold = stricter
     )
-    
+
     # Test various moral values
     test_cases = [
         ("Tell me something nice", 0.95, "High moral - should accept"),
@@ -137,19 +137,19 @@ def example_2_moral_filtering():
         ("Questionable content", 0.65, "Below threshold - should reject"),
         ("Very low moral value", 0.20, "Very low - definitely reject"),
     ]
-    
+
     for prompt, moral_value, description in test_cases:
         print(f"\n{description}")
         print(f"  Prompt: {prompt}")
         print(f"  Moral Value: {moral_value}")
-        
+
         result = wrapper.generate(prompt, moral_value)
-        
+
         if result['accepted']:
             print(f"  ✅ ACCEPTED - Response: {result['response'][:50]}...")
         else:
             print(f"  ❌ REJECTED - {result['note']}")
-        
+
         print(f"  Threshold: {result['moral_threshold']}")
 
 
@@ -162,24 +162,24 @@ def example_3_wake_sleep_cycles():
     print("\n" + "="*70)
     print("Example 3: Wake/Sleep Cycles")
     print("="*70)
-    
+
     wrapper = LLMWrapper(
         llm_generate_fn=simple_mock_llm,
         embedding_fn=simple_mock_embedding,
         wake_duration=3,  # Short for demo
         sleep_duration=2
     )
-    
+
     print("\nProcessing 10 messages across multiple cycles...")
-    
+
     for i in range(10):
         result = wrapper.generate(f"Message {i+1}", moral_value=0.9)
-        
+
         status = "✅ ACCEPTED" if result['accepted'] else "❌ REJECTED"
         phase_emoji = "☀️" if result['phase'] == "wake" else "🌙"
-        
+
         print(f"{i+1:2d}. {phase_emoji} {result['phase']:5s} | {status:12s} | {result['note']}")
-    
+
     state = wrapper.get_state()
     print(f"\nFinal: {state['accepted_count']} accepted, {state['rejected_count']} rejected")
 
@@ -193,17 +193,17 @@ def example_4_memory_consolidation():
     print("\n" + "="*70)
     print("Example 4: Memory Consolidation")
     print("="*70)
-    
+
     wrapper = LLMWrapper(
         llm_generate_fn=simple_mock_llm,
         embedding_fn=simple_mock_embedding,
         wake_duration=4,
         sleep_duration=2
     )
-    
+
     print("\nBuilding memories during wake phase...")
     topics = ["AI", "Python", "Machine Learning", "Neural Networks"]
-    
+
     for topic in topics:
         result = wrapper.generate(f"Tell me about {topic}", moral_value=0.9)
         if result['accepted']:
@@ -211,13 +211,13 @@ def example_4_memory_consolidation():
             state = wrapper.get_state()
             print(f"    Buffer: {state['consolidation_buffer_size']}, "
                   f"QILM: {state['qilm_stats']['used']}")
-    
+
     # Advance to sleep phase and trigger consolidation
     print("\nAdvancing to sleep phase...")
     for _ in range(2):
         result = wrapper.generate("Sleep message", moral_value=0.9)
         print(f"  Phase: {result['phase']}, Note: {result['note']}")
-    
+
     state = wrapper.get_state()
     print("\nConsolidation complete:")
     print(f"  Buffer size: {state['consolidation_buffer_size']}")
@@ -233,16 +233,16 @@ def example_5_real_embeddings():
     print("\n" + "="*70)
     print("Example 5: Real Embeddings (Optional)")
     print("="*70)
-    
+
     try:
         import importlib.util
         if importlib.util.find_spec("sentence_transformers") is not None:
             print("\n✓ sentence-transformers is installed")
-        
+
         print("\nℹ️  Skipping model load for CI/demo")
         print("   In production, uncomment the code below:")
         print("   # model = SentenceTransformer('all-MiniLM-L6-v2')")
-        
+
         # Uncomment for real usage:
         # model = SentenceTransformer('all-MiniLM-L6-v2')
         # def real_embedding(text: str) -> np.ndarray:
@@ -252,7 +252,7 @@ def example_5_real_embeddings():
         #     embedding_fn=real_embedding,
         #     dim=384
         # )
-        
+
     except ImportError:
         print("\nℹ️  sentence-transformers not installed")
         print("   Install with: pip install sentence-transformers")
@@ -267,14 +267,14 @@ if __name__ == "__main__":
     print("MLSDM Governed Cognitive Memory - LLM Wrapper Examples")
     print("Production-Ready v1.0.0")
     print("="*70)
-    
+
     # Run examples
     example_1_basic_usage()
     example_2_moral_filtering()
     example_3_wake_sleep_cycles()
     example_4_memory_consolidation()
     example_5_real_embeddings()
-    
+
     print("\n" + "="*70)
     print("Examples Complete!")
     print("="*70)
