@@ -375,9 +375,31 @@ Brief description of changes
 ### Review Process
 
 1. **Automated Checks**: CI runs tests, linting, type checking
+   - See [Workflows Documentation](.github/WORKFLOWS.md) for details
+   - All GitHub Actions must pass before merge
+   - CodeQL security scan must complete without high-severity issues
+   - Code coverage must remain ≥ 90%
 2. **Code Review**: Maintainer reviews code quality and design
 3. **Testing**: Maintainer may test changes locally
 4. **Merge**: Once approved, changes are merged to main
+
+### CI/CD Workflows
+
+The project uses GitHub Actions for continuous integration. When you submit a PR:
+
+1. **CI Workflow** runs automatically:
+   - Lints code with ruff
+   - Type checks with mypy
+   - Runs unit tests with coverage
+   - Runs integration tests
+   - Runs validation tests
+
+2. **CodeQL** scans for security vulnerabilities
+3. **Dependency Review** checks for vulnerable dependencies
+
+Monitor your PR's Actions tab to see workflow status. All checks must pass before merge.
+
+For detailed workflow information, see [.github/WORKFLOWS.md](.github/WORKFLOWS.md).
 
 ### Review Criteria
 
