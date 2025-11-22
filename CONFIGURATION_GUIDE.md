@@ -652,21 +652,20 @@ ValidationError: Extra inputs are not permitted
 To see full schema and constraints:
 
 ```python
-from src.utils.config_schema import SystemConfig
+from mlsdm.utils.config_schema import SystemConfig, validate_config_dict
 
 # Print schema
 print(SystemConfig.model_json_schema())
 
 # Get default config
-from src.utils.config_schema import get_default_config
-default = get_default_config()
+default = validate_config_dict({})
 print(default.model_dump_json(indent=2))
 ```
 
 ### Debug Configuration Loading
 
 ```python
-from src.utils.config_loader import ConfigLoader
+from mlsdm.utils.config_loader import ConfigLoader
 
 # Load with validation to see detailed errors
 try:
@@ -681,8 +680,8 @@ except ValueError as e:
 - [Deployment Guide](DEPLOYMENT_GUIDE.md) - Production deployment patterns
 - [API Reference](API_REFERENCE.md) - API documentation
 - [Testing Strategy](TESTING_STRATEGY.md) - Testing configurations
-- Schema source: `src/utils/config_schema.py`
-- Loader source: `src/utils/config_loader.py`
+- Schema source: `mlsdm/utils/config_schema.py`
+- Loader source: `mlsdm/utils/config_loader.py`
 
 ---
 
