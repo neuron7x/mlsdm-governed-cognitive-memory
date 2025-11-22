@@ -6,6 +6,7 @@ Exposes NeuroCognitiveEngine as a single entry point that composes:
 - FSLGSWrapper (dual-stream language, anti-schizophrenia, UG constraints)
 """
 
+from .factory import build_neuro_engine_from_env, build_stub_embedding_fn
 from .neuro_cognitive_engine import (
     EmptyResponseError,
     MLSDMRejectionError,
@@ -18,4 +19,6 @@ __all__ = [
     "NeuroEngineConfig",
     "MLSDMRejectionError",
     "EmptyResponseError",
+    "build_neuro_engine_from_env",
+    "build_stub_embedding_fn",
 ]
