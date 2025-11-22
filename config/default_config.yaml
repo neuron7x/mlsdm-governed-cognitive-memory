@@ -41,3 +41,9 @@ cognitive_rhythm:
 
 # Enhanced validation (disable in production)
 strict_mode: false
+
+# Aphasia-Broca detection and repair configuration
+aphasia:
+  detect_enabled: true      # Enable/disable aphasia detection
+  repair_enabled: true      # Enable/disable aphasia repair
+  severity_threshold: 0.3   # Minimum severity for repair (0.0-1.0)
