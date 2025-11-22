@@ -359,6 +359,118 @@ if is_aphasic and phase == "sleep":
 - **Single-threaded**: ~5,000 analyses/sec (short texts)
 - **Parallel**: Linear scaling (stateless design)
 
+### NeuroLang Performance Modes
+
+The NeuroLangWrapper supports three operational modes to optimize resource usage:
+
+#### Mode Comparison
+
+| Mode | Training | Startup Time | Runtime Overhead | Memory | Production Use |
+|------|----------|-------------|------------------|--------|----------------|
+| **disabled** | None | Instant | Zero | ~50 MB | ✅ Recommended |
+| **eager_train** (checkpoint) | Pre-trained | Fast (~1s) | Low | ~150 MB | ⚠️ If NeuroLang needed |
+| **eager_train** (no checkpoint) | At init | Slow (~5-10s) | Low | ~150 MB | ❌ Development only |
+| **lazy_train** | First call | Instant | Medium (first call) | ~150 MB | ❌ Demo/testing only |
+
+#### Mode Descriptions
+
+**1. Disabled Mode (Recommended for Production)**
+```python
+wrapper = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embedder,
+    neurolang_mode="disabled"
+)
+```
+- **What's included**: CognitiveController + AphasiaBrocaDetector
+- **What's excluded**: NeuroLang grammar models (actor/critic/trainer)
+- **Resource impact**: Minimal (~50 MB memory, instant startup)
+- **Use case**: Production deployments prioritizing resource efficiency
+- **Trade-off**: No recursive grammar enhancement (Aphasia detection still works)
+
+**2. Eager Training Mode**
+```python
+# With pre-trained checkpoint (recommended if NeuroLang needed)
+wrapper = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embedder,
+    neurolang_mode="eager_train",
+    neurolang_checkpoint_path="config/neurolang_grammar.pt"
+)
+
+# Without checkpoint (development only)
+wrapper = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embedder,
+    neurolang_mode="eager_train"
+)
+```
+- **Training timing**: Initialization (before first request)
+- **Resource impact**: High CPU/GPU during startup
+- **Checkpoint option**: Skip training by loading pre-trained weights
+- **Use case**: R&D, development, or production if NeuroLang enhancement required
+
+**3. Lazy Training Mode**
+```python
+wrapper = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embedder,
+    neurolang_mode="lazy_train"
+)
+```
+- **Training timing**: First `generate()` call
+- **Thread-safe**: Uses lock to train exactly once
+- **Resource impact**: First request experiences 5-10s delay
+- **Use case**: Demo servers, testing environments with delayed initialization
+
+#### Creating Pre-trained Checkpoints
+
+For production deployments using `eager_train` mode, generate checkpoints offline:
+
+```bash
+# Train models offline (3 epochs recommended)
+python scripts/train_neurolang_grammar.py \
+    --epochs 3 \
+    --output config/neurolang_grammar.pt
+```
+
+Then configure in `config/production.yaml`:
+```yaml
+neurolang:
+  mode: "eager_train"
+  checkpoint_path: "config/neurolang_grammar.pt"
+```
+
+#### Resource Recommendations
+
+**Low-Resource Environments (< 1 GB available):**
+```yaml
+neurolang:
+  mode: "disabled"
+```
+- Provides full Aphasia-Broca functionality
+- Zero NeuroLang overhead
+- Suitable for serverless, edge devices, containers with memory limits
+
+**Standard Environments (> 2 GB available):**
+```yaml
+neurolang:
+  mode: "eager_train"
+  checkpoint_path: "config/neurolang_grammar.pt"
+```
+- Full NeuroLang + Aphasia-Broca functionality
+- Fast startup with pre-trained weights
+- Best quality for recursive grammar enhancement
+
+**Development/Research:**
+```yaml
+neurolang:
+  mode: "eager_train"
+  checkpoint_path: null  # Train from scratch
+```
+- Useful for model experimentation
+- Not recommended for production
+
 ---
 
 ## Validation

@@ -101,6 +101,25 @@ cognitive_rhythm:
 strict_mode: false
 
 # ============================================================
+# NeuroLang Performance Configuration
+# ============================================================
+# Controls NeuroLang training behavior and resource usage.
+# For low-resource production environments, use mode: "disabled"
+# to skip NeuroLang entirely and use only Aphasia-Broca detection.
+
+neurolang:
+  # Training mode: "eager_train", "lazy_train", or "disabled"
+  # - eager_train: Train at initialization (R&D/development)
+  # - lazy_train: Train on first generation call (demo/testing)
+  # - disabled: Skip NeuroLang entirely (production, low-resource)
+  mode: "disabled"
+  
+  # Path to pre-trained checkpoint file (optional)
+  # If provided and mode is not "disabled", loads pre-trained weights
+  # Use scripts/train_neurolang_grammar.py to generate checkpoints
+  checkpoint_path: "config/neurolang_grammar.pt"
+
+# ============================================================
 # Environment Variable Overrides
 # ============================================================
 # All settings can be overridden with environment variables:

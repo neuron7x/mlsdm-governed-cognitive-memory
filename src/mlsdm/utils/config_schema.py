@@ -241,6 +241,34 @@ class AphasiaConfig(BaseModel):
         return self
 
 
+class NeuroLangConfig(BaseModel):
+    """Configuration for NeuroLang performance modes.
+    
+    Controls NeuroLang training behavior and resource usage.
+    Three modes: eager_train, lazy_train, and disabled.
+    """
+    mode: str = Field(
+        default="eager_train",
+        description="Training mode: 'eager_train', 'lazy_train', or 'disabled'"
+    )
+    checkpoint_path: str | None = Field(
+        default=None,
+        description="Path to pre-trained checkpoint file (optional)"
+    )
+
+    @field_validator('mode')
+    @classmethod
+    def validate_mode(cls, v):
+        """Ensure mode is one of the allowed values."""
+        allowed_modes = {"eager_train", "lazy_train", "disabled"}
+        if v not in allowed_modes:
+            raise ValueError(
+                f"Invalid neurolang mode: '{v}'. "
+                f"Must be one of: {', '.join(sorted(allowed_modes))}"
+            )
+        return v
+
+
 class SystemConfig(BaseModel):
     """Complete system configuration.
 
@@ -271,6 +299,10 @@ class SystemConfig(BaseModel):
     aphasia: AphasiaConfig = Field(
         default_factory=AphasiaConfig,
         description="Aphasia-Broca detection and repair configuration."
+    )
+    neurolang: NeuroLangConfig = Field(
+        default_factory=NeuroLangConfig,
+        description="NeuroLang performance mode configuration."
     )
     strict_mode: bool = Field(
         default=False,
@@ -325,6 +357,10 @@ class SystemConfig(BaseModel):
                         "detect_enabled": True,
                         "repair_enabled": True,
                         "severity_threshold": 0.3
+                    },
+                    "neurolang": {
+                        "mode": "eager_train",
+                        "checkpoint_path": None
                     },
                     "strict_mode": False
                 }

@@ -102,7 +102,7 @@ print(f"Phase: {result['phase']}, Accepted: {result['accepted']}, Aphasia Flags:
 
 ### Loading Configuration from YAML
 
-You can also load aphasia configuration from a YAML file:
+You can also load aphasia and NeuroLang configuration from a YAML file:
 
 ```python
 from mlsdm.extensions import NeuroLangWrapper
@@ -112,6 +112,7 @@ import numpy as np
 # Load configuration
 config = ConfigLoader.load_config("config/production.yaml")
 aphasia_params = ConfigLoader.get_aphasia_config_from_dict(config)
+neurolang_params = ConfigLoader.get_neurolang_config_from_dict(config)
 
 # Your LLM and embedder functions
 def my_llm(prompt: str, max_tokens: int) -> str:
@@ -125,7 +126,8 @@ wrapper = NeuroLangWrapper(
     llm_generate_fn=my_llm,
     embedding_fn=my_embedder,
     dim=384,
-    **aphasia_params  # Unpack aphasia config from file
+    **aphasia_params,    # Unpack aphasia config from file
+    **neurolang_params   # Unpack NeuroLang config from file
 )
 
 result = wrapper.generate("Your prompt", moral_value=0.8)
@@ -178,6 +180,58 @@ wrapper = NeuroLangWrapper(
     aphasia_severity_threshold=0.5  # Only repair severe cases (>0.5)
 )
 ```
+
+### NeuroLang Performance Modes
+
+NeuroLang supports three performance modes to optimize resource usage for different deployment scenarios:
+
+**1. Eager Training (Default for R&D):**
+```python
+# Trains at initialization - good for development/experimentation
+wrapper = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embedder,
+    neurolang_mode="eager_train"  # Train immediately
+)
+```
+
+**2. Lazy Training (For Demos/Testing):**
+```python
+# Trains on first generation call - delayed initialization
+wrapper = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embedder,
+    neurolang_mode="lazy_train"  # Train on first use
+)
+```
+
+**3. Disabled Mode (Recommended for Production):**
+```python
+# Skip NeuroLang entirely - minimal resource usage
+# Keeps Aphasia-Broca detection and cognitive controller
+wrapper = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embedder,
+    neurolang_mode="disabled"  # No NeuroLang overhead
+)
+```
+
+**Using Pre-trained Checkpoints:**
+```python
+# Generate checkpoint offline:
+# python scripts/train_neurolang_grammar.py --epochs 3 --output config/neurolang_grammar.pt
+
+# Then load it in production:
+wrapper = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embedder,
+    neurolang_mode="eager_train",  # or "lazy_train"
+    neurolang_checkpoint_path="config/neurolang_grammar.pt"
+)
+# No training occurs - loads pre-trained weights instead
+```
+
+**Recommendation:** For production low-resource environments, use `neurolang_mode="disabled"` as configured in `config/production.yaml`. This provides full Aphasia-Broca functionality with zero NeuroLang overhead.
 
 For basic usage without NeuroLang extension:
 ```python
