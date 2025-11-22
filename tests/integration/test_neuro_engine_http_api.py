@@ -7,13 +7,11 @@ from fastapi.testclient import TestClient
 
 from mlsdm.service.neuro_engine_service import create_app
 
-
 @pytest.fixture
 def client():
     """Create a test client for the FastAPI app."""
     app = create_app()
     return TestClient(app)
-
 
 class TestHealthEndpoint:
     """Test health check endpoint."""
@@ -32,7 +30,6 @@ class TestHealthEndpoint:
         assert "backend" in data
         assert data["status"] == "ok"
         assert isinstance(data["backend"], str)
-
 
 class TestMetricsEndpoint:
     """Test metrics endpoint."""
@@ -55,7 +52,6 @@ class TestMetricsEndpoint:
         # Should contain prometheus comment lines
         assert "# HELP" in text
         assert "# TYPE" in text
-
 
 class TestGenerateEndpoint:
     """Test generate endpoint."""
@@ -144,7 +140,6 @@ class TestGenerateEndpoint:
         # Should have at least some timing info
         assert len(data["timing"]) > 0
 
-
 class TestEndToEnd:
     """End-to-end integration tests."""
 
@@ -181,9 +176,6 @@ class TestEndToEnd:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "ok"
-
-
-
 
 class TestRateLimiting:
     """Test rate limiting functionality."""

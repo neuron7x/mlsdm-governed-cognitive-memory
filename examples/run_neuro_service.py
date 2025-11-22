@@ -26,14 +26,12 @@ Usage:
 import os
 import sys
 
-# For standalone execution when not installed as package
 if __name__ == "__main__":
     # Add src to path only when running as script
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from mlsdm.service.neuro_engine_service import main
-
-if __name__ == "__main__":
+    from mlsdm.service.neuro_engine_service import main
+    
     print("🚀 Starting NeuroCognitiveEngine HTTP API Service...")
     print(f"   Backend: {os.environ.get('LLM_BACKEND', 'local_stub')}")
     print(f"   Host: {os.environ.get('HOST', '0.0.0.0')}")

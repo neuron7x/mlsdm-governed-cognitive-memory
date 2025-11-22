@@ -274,7 +274,7 @@ def create_app() -> FastAPI:
                 lines.append(f'{metric_name}{{quantile="0.5"}} {stats["p50"]:.2f}')
                 lines.append(f'{metric_name}{{quantile="0.95"}} {stats["p95"]:.2f}')
                 lines.append(f'{metric_name}{{quantile="0.99"}} {stats["p99"]:.2f}')
-                lines.append(f'{metric_name}_sum {sum([stats["min"], stats["max"]]):.2f}')
+                lines.append(f'{metric_name}_sum {stats["mean"] * stats["count"]:.2f}')
                 lines.append(f'{metric_name}_count {stats["count"]}')
                 lines.append("")
         
