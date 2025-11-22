@@ -376,7 +376,7 @@ class NeuroLangWrapper(LLMWrapper):
 
     def generate(self, prompt: str, moral_value: float = 0.5, max_tokens: int = 50) -> dict:
         neuro_response = self.integrator.interact(prompt, prompt)
-        embedding = self.embedding_fn(neuro_response)
+        embedding = self.embed(neuro_response)
         state = self.controller.process_event(embedding, moral_value)
 
         if not state["accepted"]:
@@ -389,7 +389,7 @@ class NeuroLangWrapper(LLMWrapper):
             }
 
         enhanced_prompt = f"{prompt}\n\n[NeuroLang enhancement]: {neuro_response}"
-        base_response = self.llm_generate_fn(enhanced_prompt, max_tokens)
+        base_response = self.llm_generate(enhanced_prompt, max_tokens)
 
         aphasia_report = self.aphasia_detector.analyze(base_response)
 
@@ -399,7 +399,7 @@ class NeuroLangWrapper(LLMWrapper):
                 f"(telegraphic style, broken syntax). Rewrite it in coherent, full sentences, "
                 f"preserving all technical details and reasoning steps.\n\nDraft answer:\n{base_response}"
             )
-            final_response = self.llm_generate_fn(repair_prompt, max_tokens)
+            final_response = self.llm_generate(repair_prompt, max_tokens)
         else:
             final_response = base_response
 
