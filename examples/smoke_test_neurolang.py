@@ -29,7 +29,8 @@ def dummy_llm(prompt: str, max_tokens: int) -> str:
 
 
 def dummy_embedder(text: str) -> np.ndarray:
-    """Dummy embedder that returns normalized random vectors."""
+    """Dummy embedder that returns normalized deterministic vectors."""
+    np.random.seed(hash(text) % (2**32))
     vec = np.random.randn(384).astype(np.float32)
     return vec / np.linalg.norm(vec)
 
@@ -139,7 +140,6 @@ def main():
         print("ALL SMOKE TESTS PASSED ✓")
         print("=" * 70)
         print("\nThe NeuroLang + Aphasia-Broca integration is working correctly.")
-        print("PR #47 is ready for merge.")
         print()
 
     except Exception as e:
