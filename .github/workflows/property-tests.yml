@@ -148,13 +148,13 @@ jobs:
           echo "## Invariant Coverage" > invariant_coverage.md
           echo "" >> invariant_coverage.md
           echo "### Safety Invariants" >> invariant_coverage.md
-          grep -c "^**INV-.*-S[0-9]" docs/FORMAL_INVARIANTS.md >> invariant_coverage.md || echo "0" >> invariant_coverage.md
+          grep -c '\*\*INV-.*-S[0-9]' docs/FORMAL_INVARIANTS.md >> invariant_coverage.md || echo "0" >> invariant_coverage.md
           echo "" >> invariant_coverage.md
           echo "### Liveness Invariants" >> invariant_coverage.md
-          grep -c "^**INV-.*-L[0-9]" docs/FORMAL_INVARIANTS.md >> invariant_coverage.md || echo "0" >> invariant_coverage.md
+          grep -c '\*\*INV-.*-L[0-9]' docs/FORMAL_INVARIANTS.md >> invariant_coverage.md || echo "0" >> invariant_coverage.md
           echo "" >> invariant_coverage.md
           echo "### Metamorphic Invariants" >> invariant_coverage.md
-          grep -c "^**INV-.*-M[0-9]" docs/FORMAL_INVARIANTS.md >> invariant_coverage.md || echo "0" >> invariant_coverage.md
+          grep -c '\*\*INV-.*-M[0-9]' docs/FORMAL_INVARIANTS.md >> invariant_coverage.md || echo "0" >> invariant_coverage.md
           cat invariant_coverage.md
       
       - name: Upload coverage report

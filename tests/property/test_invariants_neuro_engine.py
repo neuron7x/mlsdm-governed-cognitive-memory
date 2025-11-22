@@ -13,6 +13,10 @@ from hypothesis import assume
 
 from mlsdm.engine import NeuroCognitiveEngine, NeuroEngineConfig
 
+# Test tolerances
+MORAL_SCORE_TOLERANCE = 0.15  # Tolerance for moral score estimation
+COHERENCE_TOLERANCE = 0.15  # Tolerance for coherence variations
+
 
 # ============================================================================
 # Test Strategies
@@ -187,7 +191,7 @@ def test_moral_threshold_enforcement(prompt, moral_threshold):
         )
         
         # Should meet threshold (with some tolerance for estimation error)
-        assert moral_score >= moral_threshold - 0.15, \
+        assert moral_score >= moral_threshold - MORAL_SCORE_TOLERANCE, \
             f"Accepted response has moral score {moral_score} below threshold {moral_threshold}"
 
 
@@ -347,9 +351,9 @@ def test_neutral_phrase_stability(prompt):
     score1 = get_moral_score_estimate(response1["response"], prompt)
     score2 = get_moral_score_estimate(response2["response"], prompt_with_please)
     
-    # Scores should be similar (within 0.15 tolerance)
+    # Scores should be similar (within tolerance)
     score_diff = abs(score1 - score2)
-    assert score_diff < 0.15, \
+    assert score_diff < COHERENCE_TOLERANCE, \
         f"Neutral phrase changed moral score by {score_diff} (from {score1} to {score2})"
 
 

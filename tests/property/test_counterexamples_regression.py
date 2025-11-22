@@ -18,6 +18,9 @@ from mlsdm.memory.multi_level_memory import MultiLevelSynapticMemory
 from mlsdm.memory.qilm_v2 import QILM_v2
 from mlsdm.engine import NeuroCognitiveEngine, NeuroEngineConfig
 
+# Test tolerances
+REGRESSION_TOLERANCE = 0.40  # Tolerance for known failure variance in heuristic estimates
+
 
 # ============================================================================
 # Helper Functions
@@ -30,7 +33,7 @@ def load_counterexamples(filename):
         "counterexamples",
         filename
     )
-    with open(filepath, 'r') as f:
+    with open(filepath, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 
@@ -149,7 +152,7 @@ class TestMoralFilterCounterexamples:
             
             if current_error < original_error - 0.10:
                 improvements.append(case["prompt"])
-            elif current_error > original_error + 0.40:  # Allow 0.40 tolerance for heuristic variance
+            elif current_error > original_error + REGRESSION_TOLERANCE:
                 regressions.append({
                     "prompt": case["prompt"],
                     "original_error": original_error,

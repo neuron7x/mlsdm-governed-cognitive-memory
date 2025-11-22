@@ -12,6 +12,9 @@ from hypothesis import given, settings, strategies as st, assume
 from mlsdm.memory.multi_level_memory import MultiLevelSynapticMemory
 from mlsdm.memory.qilm_v2 import QILM_v2
 
+# Test tolerances
+RESONANCE_ORDERING_TOLERANCE = 1e-6  # Tolerance for floating point comparison in ordering
+
 
 # ============================================================================
 # Test Strategies
@@ -20,7 +23,6 @@ from mlsdm.memory.qilm_v2 import QILM_v2
 @st.composite
 def vector_strategy(draw, dim=10):
     """Generate random vectors of specified dimension."""
-    size = draw(st.integers(min_value=dim, max_value=dim))
     vector = draw(st.lists(
         st.floats(
             min_value=-10.0,
@@ -28,8 +30,8 @@ def vector_strategy(draw, dim=10):
             allow_nan=False,
             allow_infinity=False
         ),
-        min_size=size,
-        max_size=size
+        min_size=dim,
+        max_size=dim
     ))
     return np.array(vector, dtype=np.float32)
 
@@ -381,7 +383,7 @@ def test_qilm_retrieval_relevance_ordering(dim, k):
     resonances = [retrieval.resonance for retrieval in neighbors]
     
     for i in range(len(resonances) - 1):
-        assert resonances[i] >= resonances[i + 1] - 1e-6, \
+        assert resonances[i] >= resonances[i + 1] - RESONANCE_ORDERING_TOLERANCE, \
             f"Neighbors not ordered by resonance: {resonances[i]} < {resonances[i+1]}"
 
 
