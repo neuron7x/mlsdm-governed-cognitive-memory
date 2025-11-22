@@ -515,6 +515,13 @@ class NeuroCognitiveEngine:
                     if "total" in timing:
                         self._metrics.record_latency_total(timing["total"])
                 
+                # Build metadata even for rejections
+                meta: dict[str, Any] = {}
+                if self._selected_provider_id is not None:
+                    meta["backend_id"] = self._selected_provider_id
+                if self._selected_variant is not None:
+                    meta["variant"] = self._selected_variant
+                
                 return {
                     "response": "",
                     "governance": None,
@@ -526,6 +533,7 @@ class NeuroCognitiveEngine:
                         "message": str(e),
                     },
                     "rejected_at": "generation",
+                    "meta": meta,
                 }
             except EmptyResponseError as e:
                 # Record metrics
@@ -536,6 +544,13 @@ class NeuroCognitiveEngine:
                         self._metrics.record_latency_generation(timing["generation"])
                     if "total" in timing:
                         self._metrics.record_latency_total(timing["total"])
+                
+                # Build metadata even for rejections
+                meta_empty: dict[str, Any] = {}
+                if self._selected_provider_id is not None:
+                    meta_empty["backend_id"] = self._selected_provider_id
+                if self._selected_variant is not None:
+                    meta_empty["variant"] = self._selected_variant
                 
                 return {
                     "response": "",
@@ -548,6 +563,7 @@ class NeuroCognitiveEngine:
                         "message": str(e),
                     },
                     "rejected_at": "generation",
+                    "meta": meta_empty,
                 }
 
         # Успішний шлях
