@@ -101,6 +101,7 @@ class CognitiveController:
             result = self._state_cache.copy()
             result["step"] = self.step_counter
             result["rejected"] = rejected
+            result["accepted"] = not rejected
             result["note"] = note
             return result
 
@@ -121,6 +122,7 @@ class CognitiveController:
             },
             "qilm_used": self.qilm.get_state_stats()["used"],
             "rejected": rejected,
+            "accepted": not rejected,
             "note": note
         }
 
