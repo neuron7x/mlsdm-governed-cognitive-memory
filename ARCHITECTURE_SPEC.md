@@ -89,9 +89,11 @@ MLSDM (Multi-Level Synaptic Dynamic Memory) Governed Cognitive Memory is a neuro
    - **Memory System**: Multi-level storage with phase entanglement
    - **Ontology Matcher**: Semantic classification and matching
 
-4. **Language Processing Extensions** (`src/extensions/neuro_lang_extension.py`)
+4. **Language Processing Extensions** (`src/extensions/neuro_lang_extension.py` - in development)
    - **NeuroLang Modules**: Bio-inspired language processing
    - **Aphasia-Broca Detector**: Speech pathology detection and correction
+   
+   > **Note:** Implementation will be added in a separate PR following this specification update.
 
 ---
 
@@ -358,8 +360,10 @@ class OntologyMatcher:
 
 ### 8. NeuroLangWrapper
 
-**Location:** `src/extensions/neuro_lang_extension.py`  
+**Location:** `src/extensions/neuro_lang_extension.py` (planned implementation)  
 **Purpose:** Enhanced LLM wrapper with NeuroLang language processing and Aphasia-Broca detection
+
+> **Implementation Note:** This component specification reflects the planned API. Implementation will be added in a subsequent PR.
 
 **Key Responsibilities:**
 - Extend base LLMWrapper with language-specific processing
@@ -400,8 +404,10 @@ class NeuroLangWrapper(LLMWrapper):
 
 ### 9. AphasiaBrocaDetector
 
-**Location:** `src/extensions/neuro_lang_extension.py`  
+**Location:** `src/extensions/neuro_lang_extension.py` (planned implementation)  
 **Purpose:** Detect and quantify telegraphic speech patterns in LLM outputs
+
+> **Implementation Note:** This component specification reflects the planned API. Implementation will be added in a subsequent PR.
 
 **Key Responsibilities:**
 - Analyze text for Broca-like aphasia characteristics

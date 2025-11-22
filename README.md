@@ -44,6 +44,8 @@ python tests/integration/test_end_to_end.py
 
 Wrap any LLM with cognitive governance and Aphasia-Broca speech pathology detection:
 
+> **Note:** The NeuroLang extension implementation (`src/extensions/neuro_lang_extension.py`) is currently in development and will be added in an upcoming PR. This documentation reflects the planned API.
+
 ```python
 from src.extensions.neuro_lang_extension import NeuroLangWrapper
 import numpy as np
@@ -154,15 +156,15 @@ python tests/validation/test_aphasia_detection.py
 # Generate visualization charts
 python scripts/generate_effectiveness_charts.py
 
-# Aphasia-Broca detection (quick test)
-python -c "
-from src.extensions.neuro_lang_extension import AphasiaBrocaDetector
-detector = AphasiaBrocaDetector()
-report = detector.analyze('This short. No connect. Bad.')
-assert report['is_aphasic'] == True
-assert report['severity'] > 0.5
-print('PASS')
-"
+# Aphasia-Broca detection (quick test - available after implementation PR)
+# python -c "
+# from src.extensions.neuro_lang_extension import AphasiaBrocaDetector
+# detector = AphasiaBrocaDetector()
+# report = detector.analyze('This short. No connect. Bad.')
+# assert report['is_aphasic'] == True
+# assert report['severity'] > 0.5
+# print('PASS')
+# "
 
 # Moral convergence (quick test)
 python -c "
@@ -290,6 +292,8 @@ def test_moral_threshold_clamped(t):
 **Planned (v1.x+)**: chaos-toolkit, Locust/K6, ragas, TLA+, Coq, OpenTelemetry, Prometheus
 
 ## Aphasia-Broca Model for LLM Speech Governance
+
+> **Note:** This section describes the planned NeuroLang extension with Aphasia-Broca Model. The implementation will be added in a separate PR following this documentation update.
 
 MLSDM Governed Cognitive Memory integrates a neurobiologically-inspired **Aphasia-Broca Controller**, which models speech deficits similar to Broca's aphasia to detect and "treat" generation pathologies in LLMs.
 

@@ -1,8 +1,10 @@
 # Aphasia-Broca Model Specification
 
 **Version:** 1.1.0  
-**Status:** Beta  
+**Status:** Specification (Implementation Planned)  
 **Last Updated:** November 22, 2025
+
+> **Note:** This document provides the complete specification for the Aphasia-Broca Model. The implementation (`src/extensions/neuro_lang_extension.py`) will be added in a separate PR following this documentation update.
 
 ## Table of Contents
 
