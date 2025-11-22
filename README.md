@@ -333,3 +333,110 @@ All sources include DOI/arXiv identifiers for traceability and relevance annotat
 ## Legacy Documentation
 
 For information about advanced testing methodologies and verification strategies, see the sections below.
+
+---
+
+## Release & Versioning
+
+### Version Management
+
+MLSDM follows [Semantic Versioning](https://semver.org/):
+- **MAJOR** version for incompatible API changes
+- **MINOR** version for backwards-compatible functionality additions
+- **PATCH** version for backwards-compatible bug fixes
+
+Current version: **0.1.0**
+
+### Creating a Release
+
+1. **Update Version**:
+   ```bash
+   # Edit src/mlsdm/__init__.py
+   __version__ = "0.2.0"
+   ```
+
+2. **Update CHANGELOG.md**:
+   ```markdown
+   ## [0.2.0] - 2025-12-01
+   ### Added
+   - New feature description
+   ### Fixed
+   - Bug fix description
+   ```
+
+3. **Create and Push Tag**:
+   ```bash
+   git add src/mlsdm/__init__.py CHANGELOG.md
+   git commit -m "Bump version to 0.2.0"
+   git tag -a v0.2.0 -m "Release v0.2.0"
+   git push origin main
+   git push origin v0.2.0
+   ```
+
+4. **Automated Release Process**:
+   The GitHub Actions `release.yml` workflow will automatically:
+   - Run full test suite on Python 3.10 and 3.11
+   - Build multi-platform Docker image
+   - Push to GitHub Container Registry as:
+     - `ghcr.io/neuron7x/mlsdm-neuro-engine:0.2.0`
+     - `ghcr.io/neuron7x/mlsdm-neuro-engine:latest`
+   - Create GitHub Release with notes from CHANGELOG
+   - (Optional) Publish to TestPyPI
+
+### Using Released Versions
+
+**Docker Image**:
+```bash
+# Latest version
+docker pull ghcr.io/neuron7x/mlsdm-neuro-engine:latest
+
+# Specific version
+docker pull ghcr.io/neuron7x/mlsdm-neuro-engine:0.1.0
+
+# Run the service
+docker run -p 8000:8000 ghcr.io/neuron7x/mlsdm-neuro-engine:latest
+```
+
+**Docker Compose**:
+```yaml
+services:
+  neuro-engine:
+    image: ghcr.io/neuron7x/mlsdm-neuro-engine:0.1.0
+    ports:
+      - "8000:8000"
+    environment:
+      - LLM_BACKEND=local_stub
+```
+
+**Kubernetes**:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neuro-engine
+spec:
+  template:
+    spec:
+      containers:
+      - name: neuro-engine
+        image: ghcr.io/neuron7x/mlsdm-neuro-engine:0.1.0
+```
+
+**Python Package** (when published to PyPI):
+```bash
+pip install mlsdm-governed-cognitive-memory==0.1.0
+```
+
+### Release Artifacts
+
+Each release includes:
+- **Source Code**: Tagged commit in GitHub
+- **Docker Image**: Multi-arch container image in GHCR
+- **GitHub Release**: Release notes extracted from CHANGELOG
+- **Security Scan**: Trivy vulnerability scan results
+
+### Version History
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed version history and release notes.
+
+---
