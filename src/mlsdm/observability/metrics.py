@@ -368,19 +368,46 @@ class MetricsRegistry:
         self._rejections_total: dict[str, int] = {}  # rejected_at -> count
         self._errors_total: dict[str, int] = {}  # error_type -> count
         
+        # Multi-LLM counters (Phase 8)
+        self._requests_by_provider: dict[str, int] = {}  # provider_id -> count
+        self._requests_by_variant: dict[str, int] = {}  # variant (control/treatment) -> count
+        
         # Latency storage (milliseconds)
         self._latency_total_ms: list[float] = []
         self._latency_pre_flight_ms: list[float] = []
         self._latency_generation_ms: list[float] = []
+        
+        # Latency by provider/variant (Phase 8)
+        self._latency_by_provider: dict[str, list[float]] = {}
+        self._latency_by_variant: dict[str, list[float]] = {}
 
-    def increment_requests_total(self, count: int = 1) -> None:
+    def increment_requests_total(
+        self,
+        count: int = 1,
+        provider_id: str | None = None,
+        variant: str | None = None
+    ) -> None:
         """Increment total requests counter.
         
         Args:
             count: Number to increment by (default: 1)
+            provider_id: Provider identifier (for multi-LLM tracking)
+            variant: Variant name (control/treatment/canary, for A/B testing)
         """
         with self._lock:
             self._requests_total += count
+            
+            # Track by provider
+            if provider_id is not None:
+                self._requests_by_provider[provider_id] = (
+                    self._requests_by_provider.get(provider_id, 0) + count
+                )
+            
+            # Track by variant
+            if variant is not None:
+                self._requests_by_variant[variant] = (
+                    self._requests_by_variant.get(variant, 0) + count
+                )
 
     def increment_rejections_total(self, rejected_at: str, count: int = 1) -> None:
         """Increment rejections counter with label.
@@ -420,14 +447,33 @@ class MetricsRegistry:
         with self._lock:
             self._latency_pre_flight_ms.append(latency_ms)
 
-    def record_latency_generation(self, latency_ms: float) -> None:
+    def record_latency_generation(
+        self,
+        latency_ms: float,
+        provider_id: str | None = None,
+        variant: str | None = None
+    ) -> None:
         """Record generation latency.
         
         Args:
             latency_ms: Generation latency in milliseconds
+            provider_id: Provider identifier (for multi-LLM tracking)
+            variant: Variant name (control/treatment/canary, for A/B testing)
         """
         with self._lock:
             self._latency_generation_ms.append(latency_ms)
+            
+            # Track by provider
+            if provider_id is not None:
+                if provider_id not in self._latency_by_provider:
+                    self._latency_by_provider[provider_id] = []
+                self._latency_by_provider[provider_id].append(latency_ms)
+            
+            # Track by variant
+            if variant is not None:
+                if variant not in self._latency_by_variant:
+                    self._latency_by_variant[variant] = []
+                self._latency_by_variant[variant].append(latency_ms)
 
     def get_snapshot(self) -> dict[str, Any]:
         """Get current snapshot of all metrics.
@@ -443,6 +489,15 @@ class MetricsRegistry:
                 "latency_total_ms": list(self._latency_total_ms),
                 "latency_pre_flight_ms": list(self._latency_pre_flight_ms),
                 "latency_generation_ms": list(self._latency_generation_ms),
+                # Multi-LLM metrics (Phase 8)
+                "requests_by_provider": dict(self._requests_by_provider),
+                "requests_by_variant": dict(self._requests_by_variant),
+                "latency_by_provider": {
+                    k: list(v) for k, v in self._latency_by_provider.items()
+                },
+                "latency_by_variant": {
+                    k: list(v) for k, v in self._latency_by_variant.items()
+                },
             }
 
     def get_summary(self) -> dict[str, Any]:
@@ -532,3 +587,8 @@ class MetricsRegistry:
             self._latency_total_ms.clear()
             self._latency_pre_flight_ms.clear()
             self._latency_generation_ms.clear()
+            # Multi-LLM metrics (Phase 8)
+            self._requests_by_provider.clear()
+            self._requests_by_variant.clear()
+            self._latency_by_provider.clear()
+            self._latency_by_variant.clear()

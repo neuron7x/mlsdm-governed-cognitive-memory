@@ -125,6 +125,7 @@ class TestNeuroCognitiveEngineE2EStubBackend:
             "validation_steps",
             "error",
             "rejected_at",
+            "meta",  # Added in Phase 8 for multi-LLM tracking
         }
         assert set(result.keys()) == expected_keys
 
