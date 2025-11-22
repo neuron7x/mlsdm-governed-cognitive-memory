@@ -71,6 +71,13 @@ aphasia_params = ConfigLoader.get_aphasia_config_from_dict(config)
 #   "aphasia_repair_enabled": bool,
 #   "aphasia_severity_threshold": float
 # }
+
+# Extract NeuroLang config for NeuroLangWrapper (convenience helper)
+neurolang_params = ConfigLoader.get_neurolang_config_from_dict(config)
+# Returns: {
+#   "neurolang_mode": str,
+#   "neurolang_checkpoint_path": str | None
+# }
 ```
 
 ## Configuration Schema
@@ -409,6 +416,122 @@ aphasia:
 
 All aphasia metrics in `EFFECTIVENESS_VALIDATION_REPORT.md` were measured with default configuration (detect=true, repair=true, threshold=0.3).
 
+### NeuroLang Performance Configuration
+
+Configuration for NeuroLang training behavior and resource usage in NeuroLangWrapper.
+
+**Note:** These settings only apply when using `NeuroLangWrapper` from `mlsdm.extensions`. The base `LLMWrapper` does not use these settings.
+
+#### `mode` (string)
+
+Training mode for NeuroLang grammar models.
+
+- **Type**: String (enum)
+- **Allowed values**: `"eager_train"`, `"lazy_train"`, `"disabled"`
+- **Default**: `"eager_train"`
+- **Production recommendation**: `"disabled"` (minimal resource usage)
+
+**Mode descriptions:**
+
+1. **`eager_train`** - Trains models immediately at initialization
+   - **Use case**: R&D, development, experimentation
+   - **Resource impact**: High initial CPU/GPU usage during startup
+   - **Best for**: Local development, model research
+
+2. **`lazy_train`** - Trains models on first generation call
+   - **Use case**: Demo servers, testing environments
+   - **Resource impact**: Delayed training until first request
+   - **Best for**: Delayed initialization scenarios
+
+3. **`disabled`** - Skips NeuroLang entirely (recommended for production)
+   - **Use case**: Production deployments, low-resource environments
+   - **Resource impact**: Zero NeuroLang overhead
+   - **What's included**: Cognitive controller + Aphasia-Broca detection
+   - **What's excluded**: NeuroLang grammar models, training
+   - **Best for**: Production with minimal resource footprint
+
+#### `checkpoint_path` (string or null)
+
+Path to pre-trained checkpoint file.
+
+- **Type**: String (file path) or null
+- **Default**: null
+- **Description**: When provided, loads pre-trained model weights instead of training
+- **Requires**: `mode` must be `"eager_train"` or `"lazy_train"` (ignored if `"disabled"`)
+
+**Creating checkpoints:**
+
+```bash
+# Train models offline and save checkpoint
+python scripts/train_neurolang_grammar.py --epochs 3 --output config/neurolang_grammar.pt
+```
+
+**When checkpoint is provided:**
+- No training occurs at initialization or runtime
+- Models are loaded from checkpoint file
+- Significantly faster startup
+- Recommended for production if not using `disabled` mode
+
+**Example:**
+
+```yaml
+neurolang:
+  mode: "disabled"              # Recommended for production
+  checkpoint_path: "config/neurolang_grammar.pt"
+```
+
+**Common Configurations:**
+
+1. **Production (Recommended):**
+   ```yaml
+   neurolang:
+     mode: "disabled"
+     checkpoint_path: null  # Not used when disabled
+   ```
+
+2. **Production with NeuroLang (Pre-trained):**
+   ```yaml
+   neurolang:
+     mode: "eager_train"
+     checkpoint_path: "config/neurolang_grammar.pt"
+   ```
+
+3. **Development (Train on startup):**
+   ```yaml
+   neurolang:
+     mode: "eager_train"
+     checkpoint_path: null  # Train from scratch
+   ```
+
+4. **Demo (Lazy loading):**
+   ```yaml
+   neurolang:
+     mode: "lazy_train"
+     checkpoint_path: null  # Train on first request
+   ```
+
+**Resource Comparison:**
+
+| Mode | Startup Time | Runtime Overhead | Memory Usage | Production Ready |
+|------|-------------|------------------|--------------|------------------|
+| `disabled` | Instant | Zero | Minimal | ✅ Yes |
+| `eager_train` (checkpoint) | Fast | Low | Moderate | ⚠️ Maybe |
+| `eager_train` (no checkpoint) | Slow | Low | Moderate | ❌ No |
+| `lazy_train` | Instant | Medium (first call) | Moderate | ❌ No |
+
+**Using with ConfigLoader:**
+
+```python
+from mlsdm.utils.config_loader import ConfigLoader
+
+config = ConfigLoader.load_config("config/production.yaml")
+neurolang_params = ConfigLoader.get_neurolang_config_from_dict(config)
+# Returns: {
+#   "neurolang_mode": str,
+#   "neurolang_checkpoint_path": str | None
+# }
+```
+
 ## Environment Variables
 
 All configuration parameters can be overridden using environment variables with the `MLSDM_` prefix.
@@ -444,6 +567,10 @@ export MLSDM_COGNITIVE_RHYTHM__SLEEP_DURATION=4
 export MLSDM_APHASIA__DETECT_ENABLED=true
 export MLSDM_APHASIA__REPAIR_ENABLED=true
 export MLSDM_APHASIA__SEVERITY_THRESHOLD=0.3
+
+# NeuroLang performance configuration (NeuroLangWrapper only)
+export MLSDM_NEUROLANG__MODE=disabled
+export MLSDM_NEUROLANG__CHECKPOINT_PATH=config/neurolang_grammar.pt
 ```
 
 ### Using .env File
