@@ -527,6 +527,19 @@ These metrics confirm that AphasiaBrocaDetector reliably detects telegraphic spe
 **Validation Approach**:
 The evaluation uses a synthetic corpus (tests/eval/aphasia_corpus.json) with 5 telegraphic and 5 normal samples, balanced to test both sensitivity (detecting broken syntax) and specificity (preserving coherent speech). The test suite (tests/eval/test_aphasia_eval_suite.py) enforces minimum thresholds: TPR ≥ 0.80, TNR ≥ 0.80, severity ≥ 0.30.
 
+**Configuration Note**:
+All metrics in this section were measured using the **default Aphasia-Broca configuration**:
+- Detection enabled: `aphasia_detect_enabled=True`
+- Repair enabled: `aphasia_repair_enabled=True`
+- Severity threshold: `aphasia_severity_threshold=0.3`
+
+These settings can now be configured in `NeuroLangWrapper` (as of PR #49) to support:
+- Monitoring-only mode (detection without repair)
+- Disabled mode (no detection or repair)
+- Custom severity thresholds for different use cases
+
+See `CONFIGURATION_GUIDE.md` for details on aphasia configuration options.
+
 ---
 
 ## Appendix A: Metric Definitions

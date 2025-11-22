@@ -344,6 +344,9 @@ class NeuroLangWrapper(LLMWrapper):
         wake_duration=8,
         sleep_duration=3,
         initial_moral_threshold=0.50,
+        aphasia_detect_enabled=True,
+        aphasia_repair_enabled=True,
+        aphasia_severity_threshold=0.3,
     ):
         super().__init__(
             llm_generate_fn=llm_generate_fn,
@@ -373,6 +376,11 @@ class NeuroLangWrapper(LLMWrapper):
 
         self.controller = CognitiveController(dim)
         self.aphasia_detector = AphasiaBrocaDetector()
+        
+        # Aphasia-Broca configuration flags
+        self.aphasia_detect_enabled = bool(aphasia_detect_enabled)
+        self.aphasia_repair_enabled = bool(aphasia_repair_enabled)
+        self.aphasia_severity_threshold = float(aphasia_severity_threshold)
 
     def generate(self, prompt: str, moral_value: float = 0.5, max_tokens: int = 50) -> dict:
         neuro_response = self.integrator.interact(prompt, prompt)
@@ -391,9 +399,28 @@ class NeuroLangWrapper(LLMWrapper):
         enhanced_prompt = f"{prompt}\n\n[NeuroLang enhancement]: {neuro_response}"
         base_response = self.llm_generate(enhanced_prompt, max_tokens)
 
+        # Aphasia detection gate
+        if not self.aphasia_detect_enabled:
+            # Detection disabled: return base response without analysis
+            return {
+                "response": base_response,
+                "phase": state["phase"],
+                "accepted": True,
+                "neuro_enhancement": neuro_response,
+                "aphasia_flags": None,
+            }
+
+        # Detection enabled: analyze response
         aphasia_report = self.aphasia_detector.analyze(base_response)
 
-        if aphasia_report["is_aphasic"]:
+        # Aphasia repair gate
+        should_repair = (
+            self.aphasia_repair_enabled
+            and aphasia_report["is_aphasic"]
+            and aphasia_report["severity"] >= self.aphasia_severity_threshold
+        )
+
+        if should_repair:
             repair_prompt = (
                 f"{prompt}\n\nThe following draft answer shows Broca-like aphasia "
                 f"(telegraphic style, broken syntax). Rewrite it in coherent, full sentences, "

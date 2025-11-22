@@ -75,7 +75,7 @@ def my_embedder(text: str) -> np.ndarray:
     # Your embedding model here (sentence-transformers, OpenAI, etc.)
     return np.random.randn(384).astype(np.float32)
 
-# Create wrapper with NeuroLang + Aphasia-Broca
+# Create wrapper with NeuroLang + Aphasia-Broca (with defaults)
 wrapper = NeuroLangWrapper(
     llm_generate_fn=my_llm,
     embedding_fn=my_embedder,
@@ -83,7 +83,11 @@ wrapper = NeuroLangWrapper(
     capacity=20_000,  # Hard memory limit
     wake_duration=8,
     sleep_duration=3,
-    initial_moral_threshold=0.50
+    initial_moral_threshold=0.50,
+    # Aphasia-Broca config (all enabled by default):
+    aphasia_detect_enabled=True,      # Enable detection
+    aphasia_repair_enabled=True,      # Enable repair
+    aphasia_severity_threshold=0.3    # Repair threshold
 )
 
 # Generate with governance + speech pathology detection
@@ -94,6 +98,53 @@ result = wrapper.generate(
 
 print(result["response"])
 print(f"Phase: {result['phase']}, Accepted: {result['accepted']}, Aphasia Flags: {result['aphasia_flags']}")
+```
+
+#### Aphasia-Broca Configuration Modes
+
+The Aphasia-Broca system supports three modes:
+
+**1. Full Detection + Repair (Default):**
+```python
+wrapper = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embedder,
+    aphasia_detect_enabled=True,   # Analyze responses
+    aphasia_repair_enabled=True    # Fix telegraphic speech
+)
+```
+
+**2. Monitoring Only (Detect but Don't Repair):**
+```python
+# Useful for observability without modifying responses
+wrapper = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embedder,
+    aphasia_detect_enabled=True,   # Analyze responses
+    aphasia_repair_enabled=False   # Don't fix, just report
+)
+# Result will include aphasia_flags for monitoring
+```
+
+**3. Disabled (No Detection or Repair):**
+```python
+# Bypass aphasia detection entirely
+wrapper = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embedder,
+    aphasia_detect_enabled=False   # Skip analysis
+)
+# Result will have aphasia_flags=None
+```
+
+**Severity Threshold:**
+Control when repair triggers based on severity (0.0-1.0):
+```python
+wrapper = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embedder,
+    aphasia_severity_threshold=0.5  # Only repair severe cases (>0.5)
+)
 ```
 
 For basic usage without NeuroLang extension:

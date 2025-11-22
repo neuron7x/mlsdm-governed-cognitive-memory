@@ -302,6 +302,106 @@ Enable enhanced validation.
 strict_mode: false
 ```
 
+### Aphasia-Broca Configuration
+
+Configuration for Aphasia-Broca detection and repair in NeuroLangWrapper.
+
+**Note:** These settings only apply when using `NeuroLangWrapper` from `mlsdm.extensions`. The base `LLMWrapper` does not use these settings.
+
+#### `detect_enabled` (boolean)
+
+Enable/disable aphasia detection.
+
+- **Type**: Boolean
+- **Default**: true
+- **Description**: When enabled, analyzes LLM responses for Broca-like aphasia symptoms (telegraphic speech, broken syntax)
+
+**When disabled:**
+- No aphasia analysis is performed
+- `aphasia_flags` in response will be `None`
+- Response text is returned as-is from LLM
+
+#### `repair_enabled` (boolean)
+
+Enable/disable automatic repair of detected aphasia.
+
+- **Type**: Boolean
+- **Default**: true
+- **Requires**: `detect_enabled` must be true
+- **Description**: When enabled, automatically regenerates responses that show aphasia symptoms
+
+**When disabled (monitoring mode):**
+- Aphasia is detected and reported in `aphasia_flags`
+- Response text is NOT modified
+- Useful for observability without altering outputs
+
+#### `severity_threshold` (float)
+
+Minimum severity score required to trigger repair.
+
+- **Type**: Float
+- **Range**: 0.0 to 1.0
+- **Default**: 0.3
+- **Description**: Only repairs responses with severity >= threshold
+
+**Severity interpretation:**
+- `0.0`: No aphasia symptoms
+- `0.0-0.3`: Mild symptoms (default: no repair)
+- `0.3-0.7`: Moderate symptoms (default: repair)
+- `0.7-1.0`: Severe symptoms (default: repair)
+
+**Tuning guidance:**
+- Lower threshold (e.g., 0.1): More aggressive repair, fewer telegraphic responses
+- Higher threshold (e.g., 0.7): Less aggressive repair, only fix severe cases
+- Default (0.3): Balanced approach validated in effectiveness testing
+
+**Example:**
+
+```yaml
+aphasia:
+  detect_enabled: true      # Enable detection
+  repair_enabled: true      # Enable repair
+  severity_threshold: 0.3   # Repair moderate-to-severe cases
+```
+
+**Common Configurations:**
+
+1. **Full Protection (Default):**
+   ```yaml
+   aphasia:
+     detect_enabled: true
+     repair_enabled: true
+     severity_threshold: 0.3
+   ```
+
+2. **Monitoring Only:**
+   ```yaml
+   aphasia:
+     detect_enabled: true
+     repair_enabled: false
+     severity_threshold: 0.3  # Ignored when repair disabled
+   ```
+
+3. **Disabled:**
+   ```yaml
+   aphasia:
+     detect_enabled: false
+     repair_enabled: false  # Ignored when detect disabled
+     severity_threshold: 0.3  # Ignored when detect disabled
+   ```
+
+4. **Aggressive Repair:**
+   ```yaml
+   aphasia:
+     detect_enabled: true
+     repair_enabled: true
+     severity_threshold: 0.1  # Repair even mild symptoms
+   ```
+
+**Metrics:**
+
+All aphasia metrics in `EFFECTIVENESS_VALIDATION_REPORT.md` were measured with default configuration (detect=true, repair=true, threshold=0.3).
+
 ## Environment Variables
 
 All configuration parameters can be overridden using environment variables with the `MLSDM_` prefix.
@@ -332,6 +432,11 @@ export MLSDM_MORAL_FILTER__ADAPT_RATE=0.1
 # Cognitive rhythm
 export MLSDM_COGNITIVE_RHYTHM__WAKE_DURATION=10
 export MLSDM_COGNITIVE_RHYTHM__SLEEP_DURATION=4
+
+# Aphasia-Broca configuration (NeuroLangWrapper only)
+export MLSDM_APHASIA__DETECT_ENABLED=true
+export MLSDM_APHASIA__REPAIR_ENABLED=true
+export MLSDM_APHASIA__SEVERITY_THRESHOLD=0.3
 ```
 
 ### Using .env File

@@ -211,6 +211,36 @@ class CognitiveRhythmConfig(BaseModel):
         return self
 
 
+class AphasiaConfig(BaseModel):
+    """Configuration for Aphasia-Broca detection and repair.
+    
+    Controls whether telegraphic speech patterns are detected and/or repaired
+    in LLM outputs.
+    """
+    detect_enabled: bool = Field(
+        default=True,
+        description="Enable aphasia detection analysis"
+    )
+    repair_enabled: bool = Field(
+        default=True,
+        description="Enable automatic repair when aphasia is detected"
+    )
+    severity_threshold: float = Field(
+        default=0.3,
+        ge=0.0,
+        le=1.0,
+        description="Minimum severity (0.0-1.0) to trigger repair"
+    )
+
+    @model_validator(mode='after')
+    def validate_threshold(self):
+        """Validate severity threshold is in valid range."""
+        if self.severity_threshold is not None:
+            if not (0.0 <= self.severity_threshold <= 1.0):
+                raise ValueError("severity_threshold must be in [0.0, 1.0]")
+        return self
+
+
 class SystemConfig(BaseModel):
     """Complete system configuration.
 
@@ -237,6 +267,10 @@ class SystemConfig(BaseModel):
     cognitive_rhythm: CognitiveRhythmConfig = Field(
         default_factory=CognitiveRhythmConfig,
         description="Cognitive rhythm (wake/sleep cycle) configuration."
+    )
+    aphasia: AphasiaConfig = Field(
+        default_factory=AphasiaConfig,
+        description="Aphasia-Broca detection and repair configuration."
     )
     strict_mode: bool = Field(
         default=False,
@@ -287,6 +321,11 @@ class SystemConfig(BaseModel):
                         "wake_duration": 8,
                         "sleep_duration": 3
                     },
+                    "aphasia": {
+                        "detect_enabled": True,
+                        "repair_enabled": True,
+                        "severity_threshold": 0.3
+                    },
                     "strict_mode": False
                 }
             ]
@@ -309,7 +348,17 @@ def validate_config_dict(config_dict: dict[str, Any]) -> SystemConfig:
     try:
         return SystemConfig(**config_dict)
     except Exception as e:
-        raise ValueError(f"Configuration validation failed: {str(e)}") from e
+        err_str = str(e)
+        # Provide helpful error message for unknown fields (extra_forbidden)
+        if 'extra_forbidden' in err_str or 'Extra inputs are not permitted' in err_str:
+            allowed = set(SystemConfig.model_fields.keys())
+            unknown = set(config_dict.keys()) - allowed
+            raise ValueError(
+                f"Configuration validation failed: unknown top-level keys: {sorted(list(unknown))}. "
+                f"Allowed keys: {sorted(list(allowed))}.\n"
+                f"Original error: {err_str}"
+            ) from e
+        raise ValueError(f"Configuration validation failed: {err_str}") from e
 
 
 def get_default_config() -> SystemConfig:

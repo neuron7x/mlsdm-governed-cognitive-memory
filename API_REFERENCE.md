@@ -174,6 +174,147 @@ wrapper.reset()
 
 ---
 
+## NeuroLangWrapper
+
+Extended LLM wrapper with NeuroLang + Aphasia-Broca detection and repair capabilities.
+
+### Constructor
+
+```python
+NeuroLangWrapper(
+    llm_generate_fn: Callable[[str, int], str],
+    embedding_fn: Callable[[str], np.ndarray],
+    dim: int = 384,
+    capacity: int = 20000,
+    wake_duration: int = 8,
+    sleep_duration: int = 3,
+    initial_moral_threshold: float = 0.50,
+    aphasia_detect_enabled: bool = True,
+    aphasia_repair_enabled: bool = True,
+    aphasia_severity_threshold: float = 0.3
+)
+```
+
+**Parameters:**
+
+All parameters from `LLMWrapper`, plus:
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `aphasia_detect_enabled` | bool | True | Enable/disable Aphasia-Broca detection |
+| `aphasia_repair_enabled` | bool | True | Enable/disable automatic repair of detected aphasia |
+| `aphasia_severity_threshold` | float | 0.3 | Minimum severity (0.0-1.0) to trigger repair |
+
+**Raises:**
+- `ValueError`: If parameters are invalid
+
+**Example:**
+```python
+from mlsdm.extensions import NeuroLangWrapper
+import numpy as np
+
+def my_llm(prompt: str, max_tokens: int) -> str:
+    return "Generated response"
+
+def my_embed(text: str) -> np.ndarray:
+    return np.random.randn(384).astype(np.float32)
+
+# Full detection + repair (default)
+wrapper = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embed,
+    dim=384,
+    aphasia_detect_enabled=True,
+    aphasia_repair_enabled=True,
+    aphasia_severity_threshold=0.3
+)
+
+# Monitoring only (detect but don't repair)
+wrapper_monitor = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embed,
+    dim=384,
+    aphasia_detect_enabled=True,
+    aphasia_repair_enabled=False
+)
+
+# Detection disabled
+wrapper_disabled = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embed,
+    dim=384,
+    aphasia_detect_enabled=False
+)
+```
+
+### Methods
+
+#### generate
+
+Generate text with cognitive governance and Aphasia-Broca detection/repair.
+
+```python
+def generate(
+    prompt: str,
+    moral_value: float = 0.5,
+    max_tokens: int = 50
+) -> dict
+```
+
+**Parameters:**
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `prompt` | str | Required | Input prompt text |
+| `moral_value` | float | 0.5 | Moral acceptability score (0.0-1.0) |
+| `max_tokens` | int | 50 | Maximum tokens for generation |
+
+**Returns:** Dictionary with keys:
+- `response` (str): Generated (and possibly repaired) text
+- `accepted` (bool): Whether request was accepted by moral filter
+- `phase` (str): Current phase ("wake" or "sleep")
+- `neuro_enhancement` (str): NeuroLang processing result
+- `aphasia_flags` (dict or None): Aphasia detection report (None if detection disabled)
+  - `is_aphasic` (bool): Whether text shows aphasia symptoms
+  - `severity` (float): Severity score (0.0-1.0)
+  - `avg_sentence_len` (float): Average sentence length
+  - `function_word_ratio` (float): Ratio of function words
+  - `fragment_ratio` (float): Ratio of sentence fragments
+  - `flags` (list): List of specific issues detected
+
+**Behavior based on configuration:**
+
+1. **Detection disabled** (`aphasia_detect_enabled=False`):
+   - Returns base LLM response without analysis
+   - `aphasia_flags` will be `None`
+
+2. **Detection enabled, repair disabled** (`aphasia_detect_enabled=True`, `aphasia_repair_enabled=False`):
+   - Analyzes response and includes `aphasia_flags`
+   - Does not modify response text (monitoring mode)
+
+3. **Both enabled** (default):
+   - Analyzes response
+   - Repairs if `is_aphasic=True` and `severity >= aphasia_severity_threshold`
+   - Always includes final `aphasia_flags` (reflects original analysis)
+
+**Example:**
+```python
+# Full detection + repair
+result = wrapper.generate(
+    prompt="Explain the system",
+    moral_value=0.8,
+    max_tokens=100
+)
+
+if result["accepted"]:
+    print(result["response"])
+    if result["aphasia_flags"]:
+        print(f"Aphasia detected: {result['aphasia_flags']['is_aphasic']}")
+        print(f"Severity: {result['aphasia_flags']['severity']:.2f}")
+```
+
+---
+
 ## CognitiveController
 
 Low-level cognitive controller for direct memory operations.
