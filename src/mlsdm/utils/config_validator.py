@@ -33,14 +33,14 @@ class ConfigValidator:
     @staticmethod
     def validate_dimension(dim: Any, component: str = "Component") -> int:
         """Validate embedding dimension parameter.
-        
+
         Args:
             dim: Dimension value to validate
             component: Component name for error messages
-            
+
         Returns:
             Validated dimension as integer
-            
+
         Raises:
             ValidationError: If dimension is invalid
         """
@@ -73,14 +73,14 @@ class ConfigValidator:
     @staticmethod
     def validate_capacity(capacity: Any, component: str = "Component") -> int:
         """Validate memory capacity parameter.
-        
+
         Args:
             capacity: Capacity value to validate
             component: Component name for error messages
-            
+
         Returns:
             Validated capacity as integer
-            
+
         Raises:
             ValidationError: If capacity is invalid
         """
@@ -118,16 +118,16 @@ class ConfigValidator:
         component: str = "Component"
     ) -> float:
         """Validate threshold parameter.
-        
+
         Args:
             threshold: Threshold value to validate
             min_val: Minimum allowed value
             max_val: Maximum allowed value
             component: Component name for error messages
-            
+
         Returns:
             Validated threshold as float
-            
+
         Raises:
             ValidationError: If threshold is invalid
         """
@@ -158,15 +158,15 @@ class ConfigValidator:
         component: str = "Component"
     ) -> int:
         """Validate duration parameter (wake/sleep).
-        
+
         Args:
             duration: Duration value to validate
             parameter_name: Parameter name for error messages
             component: Component name for error messages
-            
+
         Returns:
             Validated duration as integer
-            
+
         Raises:
             ValidationError: If duration is invalid
         """
@@ -203,15 +203,15 @@ class ConfigValidator:
         component: str = "Component"
     ) -> float:
         """Validate rate parameter (learning rate, decay rate, etc.).
-        
+
         Args:
             rate: Rate value to validate
             parameter_name: Parameter name for error messages
             component: Component name for error messages
-            
+
         Returns:
             Validated rate as float
-            
+
         Raises:
             ValidationError: If rate is invalid
         """
@@ -243,16 +243,16 @@ class ConfigValidator:
         max_val: int | None = None
     ) -> int:
         """Validate positive integer parameter.
-        
+
         Args:
             value: Value to validate
             parameter_name: Parameter name for error messages
             component: Component name for error messages
             max_val: Optional maximum value
-            
+
         Returns:
             Validated value as integer
-            
+
         Raises:
             ValidationError: If value is invalid
         """
@@ -297,17 +297,17 @@ class ConfigValidator:
         component: str = "Component"
     ) -> float:
         """Validate float in specific range.
-        
+
         Args:
             value: Value to validate
             parameter_name: Parameter name for error messages
             min_val: Minimum allowed value (inclusive)
             max_val: Maximum allowed value (inclusive)
             component: Component name for error messages
-            
+
         Returns:
             Validated value as float
-            
+
         Raises:
             ValidationError: If value is invalid
         """
@@ -334,13 +334,13 @@ class ConfigValidator:
     @classmethod
     def validate_llm_wrapper_config(cls, config: dict[str, Any]) -> dict[str, Any]:
         """Validate LLMWrapper configuration.
-        
+
         Args:
             config: Configuration dictionary
-            
+
         Returns:
             Validated configuration
-            
+
         Raises:
             ValidationError: If any parameter is invalid
         """
@@ -415,13 +415,13 @@ class ConfigValidator:
     @classmethod
     def validate_moral_filter_config(cls, config: dict[str, Any]) -> dict[str, Any]:
         """Validate MoralFilter configuration.
-        
+
         Args:
             config: Configuration dictionary
-            
+
         Returns:
             Validated configuration
-            
+
         Raises:
             ValidationError: If any parameter is invalid
         """
@@ -452,13 +452,13 @@ class ConfigValidator:
     @classmethod
     def validate_qilm_config(cls, config: dict[str, Any]) -> dict[str, Any]:
         """Validate QILM configuration.
-        
+
         Args:
             config: Configuration dictionary
-            
+
         Returns:
             Validated configuration
-            
+
         Raises:
             ValidationError: If any parameter is invalid
         """
@@ -483,14 +483,14 @@ def validate_config(
     component_type: str
 ) -> dict[str, Any]:
     """Validate configuration for a component.
-    
+
     Args:
         config: Configuration dictionary
         component_type: Type of component ("llm_wrapper", "moral_filter", "qilm")
-        
+
     Returns:
         Validated configuration
-        
+
     Raises:
         ValidationError: If configuration is invalid
         ValueError: If component_type is unknown

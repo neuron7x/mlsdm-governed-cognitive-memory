@@ -57,7 +57,7 @@ class TestQILM_v2:
         """Test that pointer wraps around after reaching capacity."""
         qilm = QILM_v2(dimension=10, capacity=5)
 
-        for i in range(7):
+        for _i in range(7):
             vec = [float(j) for j in range(10)]
             qilm.entangle(vec, phase=0.1)
 
@@ -352,6 +352,6 @@ class TestQILM_v2:
 
         # Should get same results
         assert len(results1) == len(results2)
-        for r1, r2 in zip(results1, results2):
+        for r1, r2 in zip(results1, results2, strict=False):
             assert r1.phase == r2.phase
             assert abs(r1.resonance - r2.resonance) < 1e-6

@@ -21,8 +21,10 @@ class QILM:
     def retrieve(self, phase: float | Any, tolerance: float = 0.1) -> list[np.ndarray]:
         if tolerance < 0:
             raise ValueError("Tolerance must be non-negative.")
+        # Note: memory and phases are kept in sync by entangle_phase method
+        # Using strict=False for backward compatibility, but lengths should match
         results: list[np.ndarray] = []
-        for v, ph in zip(self.memory, self.phases):
+        for v, ph in zip(self.memory, self.phases, strict=False):
             if isinstance(ph, (float, int)) and isinstance(phase, (float, int)):
                 if abs(float(ph) - float(phase)) <= tolerance:
                     results.append(v)

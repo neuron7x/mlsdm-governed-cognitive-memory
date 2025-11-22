@@ -350,11 +350,11 @@ def get_metrics_exporter(registry: CollectorRegistry | None = None) -> MetricsEx
 
 class MetricsRegistry:
     """Simple metrics registry for NeuroCognitiveEngine, not tied to specific TSDB.
-    
+
     Provides:
     - Counters: requests_total, rejections_total, errors_total
     - Histograms/lists: latency_total_ms, latency_pre_flight_ms, latency_generation_ms
-    
+
     This is a lightweight alternative to the Prometheus-based MetricsExporter,
     suitable for collecting metrics without external dependencies.
     """
@@ -362,21 +362,21 @@ class MetricsRegistry:
     def __init__(self) -> None:
         """Initialize the metrics registry."""
         self._lock = Lock()
-        
+
         # Counters
         self._requests_total = 0
         self._rejections_total: dict[str, int] = {}  # rejected_at -> count
         self._errors_total: dict[str, int] = {}  # error_type -> count
-        
+
         # Multi-LLM counters (Phase 8)
         self._requests_by_provider: dict[str, int] = {}  # provider_id -> count
         self._requests_by_variant: dict[str, int] = {}  # variant (control/treatment) -> count
-        
+
         # Latency storage (milliseconds)
         self._latency_total_ms: list[float] = []
         self._latency_pre_flight_ms: list[float] = []
         self._latency_generation_ms: list[float] = []
-        
+
         # Latency by provider/variant (Phase 8)
         self._latency_by_provider: dict[str, list[float]] = {}
         self._latency_by_variant: dict[str, list[float]] = {}
@@ -388,7 +388,7 @@ class MetricsRegistry:
         variant: str | None = None
     ) -> None:
         """Increment total requests counter.
-        
+
         Args:
             count: Number to increment by (default: 1)
             provider_id: Provider identifier (for multi-LLM tracking)
@@ -396,13 +396,13 @@ class MetricsRegistry:
         """
         with self._lock:
             self._requests_total += count
-            
+
             # Track by provider
             if provider_id is not None:
                 self._requests_by_provider[provider_id] = (
                     self._requests_by_provider.get(provider_id, 0) + count
                 )
-            
+
             # Track by variant
             if variant is not None:
                 self._requests_by_variant[variant] = (
@@ -411,7 +411,7 @@ class MetricsRegistry:
 
     def increment_rejections_total(self, rejected_at: str, count: int = 1) -> None:
         """Increment rejections counter with label.
-        
+
         Args:
             rejected_at: Stage at which rejection occurred (e.g., 'pre_flight', 'generation')
             count: Number to increment by (default: 1)
@@ -421,7 +421,7 @@ class MetricsRegistry:
 
     def increment_errors_total(self, error_type: str, count: int = 1) -> None:
         """Increment errors counter with type label.
-        
+
         Args:
             error_type: Type of error (e.g., 'moral_precheck', 'mlsdm_rejection', 'empty_response')
             count: Number to increment by (default: 1)
@@ -431,7 +431,7 @@ class MetricsRegistry:
 
     def record_latency_total(self, latency_ms: float) -> None:
         """Record total latency.
-        
+
         Args:
             latency_ms: Total latency in milliseconds
         """
@@ -440,7 +440,7 @@ class MetricsRegistry:
 
     def record_latency_pre_flight(self, latency_ms: float) -> None:
         """Record pre-flight check latency.
-        
+
         Args:
             latency_ms: Pre-flight latency in milliseconds
         """
@@ -454,7 +454,7 @@ class MetricsRegistry:
         variant: str | None = None
     ) -> None:
         """Record generation latency.
-        
+
         Args:
             latency_ms: Generation latency in milliseconds
             provider_id: Provider identifier (for multi-LLM tracking)
@@ -462,13 +462,13 @@ class MetricsRegistry:
         """
         with self._lock:
             self._latency_generation_ms.append(latency_ms)
-            
+
             # Track by provider
             if provider_id is not None:
                 if provider_id not in self._latency_by_provider:
                     self._latency_by_provider[provider_id] = []
                 self._latency_by_provider[provider_id].append(latency_ms)
-            
+
             # Track by variant
             if variant is not None:
                 if variant not in self._latency_by_variant:
@@ -477,7 +477,7 @@ class MetricsRegistry:
 
     def get_snapshot(self) -> dict[str, Any]:
         """Get current snapshot of all metrics.
-        
+
         Returns:
             Dictionary containing all metric values
         """
@@ -502,7 +502,7 @@ class MetricsRegistry:
 
     def get_summary(self) -> dict[str, Any]:
         """Get summary statistics of metrics.
-        
+
         Returns:
             Dictionary with summary statistics including counts and percentiles
         """
@@ -520,10 +520,10 @@ class MetricsRegistry:
 
     def _compute_percentiles(self, values: list[float]) -> dict[str, float | int]:
         """Compute percentiles for a list of values.
-        
+
         Args:
             values: List of values
-            
+
         Returns:
             Dictionary with count, min, max, mean, p50, p95, p99
         """
@@ -540,7 +540,7 @@ class MetricsRegistry:
 
         sorted_values = sorted(values)
         count = len(sorted_values)
-        
+
         return {
             "count": count,
             "min": sorted_values[0],
@@ -554,27 +554,27 @@ class MetricsRegistry:
     @staticmethod
     def _percentile(sorted_values: list[float], p: float) -> float:
         """Calculate percentile from sorted values.
-        
+
         Args:
             sorted_values: Pre-sorted list of values
             p: Percentile (0.0 to 1.0)
-            
+
         Returns:
             Percentile value
         """
         if not sorted_values:
             return 0.0
-        
+
         k = (len(sorted_values) - 1) * p
         f = int(k)
         c = f + 1
-        
+
         if c >= len(sorted_values):
             return sorted_values[-1]
-        
+
         if f == k:
             return sorted_values[f]
-        
+
         # Linear interpolation
         return sorted_values[f] + (k - f) * (sorted_values[c] - sorted_values[f])
 

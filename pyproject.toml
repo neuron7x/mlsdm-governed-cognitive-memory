@@ -170,11 +170,16 @@ select = [
 ]
 ignore = [
     "E501",  # line too long (handled by formatter)
+    "N806",  # Allow uppercase variable names (L1, L2, L3 are scientific notation for memory levels)
+    "SIM105",  # contextlib.suppress is less explicit than try-except-pass
+    "SIM102",  # Nested ifs can be more readable in some contexts
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]  # unused imports
-"tests/**/*.py" = ["N802", "N803"]  # test function naming
+"tests/**/*.py" = ["N802", "N803", "N801", "B017", "B007"]  # test naming and test patterns
+"src/mlsdm/tests/**/*.py" = ["N802", "N803", "N801", "B017", "B007"]  # test naming and test patterns
+"src/mlsdm/utils/metrics.py" = ["N803"]  # Allow L1, L2, L3 parameter names
 
 [tool.ruff.format]
 quote-style = "double"

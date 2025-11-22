@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 class MultiLevelMemoryConfig(BaseModel):
     """Multi-level synaptic memory configuration.
-    
+
     Defines decay rates and gating parameters for the three-level
     memory hierarchy (L1, L2, L3).
     """
@@ -82,7 +82,7 @@ class MultiLevelMemoryConfig(BaseModel):
 
 class MoralFilterConfig(BaseModel):
     """Moral filter configuration for content governance.
-    
+
     Adaptive moral threshold system that adjusts based on content
     quality to maintain homeostatic balance.
     """
@@ -118,11 +118,10 @@ class MoralFilterConfig(BaseModel):
         max_t = self.max_threshold
         threshold = self.threshold
 
-        if min_t is not None and max_t is not None:
-            if min_t >= max_t:
-                raise ValueError(
-                    f"min_threshold ({min_t}) must be < max_threshold ({max_t})"
-                )
+        if min_t is not None and max_t is not None and min_t >= max_t:
+            raise ValueError(
+                f"min_threshold ({min_t}) must be < max_threshold ({max_t})"
+            )
 
         if threshold is not None:
             if min_t is not None and threshold < min_t:
@@ -180,7 +179,7 @@ class OntologyMatcherConfig(BaseModel):
 
 class CognitiveRhythmConfig(BaseModel):
     """Cognitive rhythm configuration for wake/sleep cycles.
-    
+
     Controls the circadian-like rhythm that governs processing modes.
     """
     wake_duration: int = Field(
@@ -214,7 +213,7 @@ class CognitiveRhythmConfig(BaseModel):
 
 class SystemConfig(BaseModel):
     """Complete system configuration.
-    
+
     Root configuration object that encompasses all subsystem configurations.
     """
     dimension: int = Field(
@@ -297,25 +296,25 @@ class SystemConfig(BaseModel):
 
 def validate_config_dict(config_dict: dict[str, Any]) -> SystemConfig:
     """Validate a configuration dictionary against the schema.
-    
+
     Args:
         config_dict: Dictionary containing configuration parameters
-        
+
     Returns:
         Validated SystemConfig instance
-        
+
     Raises:
         ValueError: If configuration is invalid
     """
     try:
         return SystemConfig(**config_dict)
     except Exception as e:
-        raise ValueError(f"Configuration validation failed: {str(e)}")
+        raise ValueError(f"Configuration validation failed: {str(e)}") from e
 
 
 def get_default_config() -> SystemConfig:
     """Get default system configuration.
-    
+
     Returns:
         SystemConfig with all default values
     """

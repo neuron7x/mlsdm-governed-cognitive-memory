@@ -7,6 +7,7 @@ with different LLM backends based on environment variables.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import os
 from typing import TYPE_CHECKING
@@ -106,7 +107,7 @@ def build_neuro_engine_from_env(
     # Use provided config or create default
     if config is None:
         config = NeuroEngineConfig()
-    
+
     # Get embedding dimension
     dim = config.dim
 
@@ -119,11 +120,11 @@ def build_neuro_engine_from_env(
     router_mode = config.router_mode
     router: LLMRouter | None = None
     llm_generate_fn: Callable[[str, int], str] | None = None
-    
+
     if router_mode == "single":
         # Single provider mode (backwards compatible)
         backend = os.environ.get("LLM_BACKEND", "local_stub").lower()
-        
+
         if backend == "openai":
             llm_generate_fn = build_openai_llm_adapter()
         elif backend == "local_stub":
@@ -132,14 +133,14 @@ def build_neuro_engine_from_env(
             raise ValueError(
                 f"Invalid LLM_BACKEND: {backend}. Valid options are: 'openai', 'local_stub'"
             )
-    
+
     elif router_mode == "rule_based":
         # Rule-based routing
         providers = build_multiple_providers_from_env()
         rules = config.rule_based_config
         default = rules.get("default", next(iter(providers.keys())))
         router = RuleBasedRouter(providers, rules, default)
-    
+
     elif router_mode == "ab_test":
         # A/B testing
         providers = build_multiple_providers_from_env()
@@ -147,34 +148,32 @@ def build_neuro_engine_from_env(
         control = ab_config.get("control", "default")
         treatment = ab_config.get("treatment", "default")
         treatment_ratio = ab_config.get("treatment_ratio", 0.1)
-        
+
         # Ensure control and treatment are in providers
         if control not in providers:
             # Try to build from env
-            try:
+            with contextlib.suppress(Exception):
                 providers[control] = build_provider_from_env()
-            except Exception:
-                pass
         if treatment not in providers:
             # Use default as fallback
             if "default" in providers:
                 providers[treatment] = providers["default"]
-        
+
         router = ABTestRouter(
             providers,
             control=control,
             treatment=treatment,
             treatment_ratio=treatment_ratio
         )
-    
+
     elif router_mode == "ab_test_canary":
         # A/B testing with canary deployment
         # Import canary manager here to avoid circular dependency
         from mlsdm.deploy import CanaryManager
-        
+
         providers = build_multiple_providers_from_env()
         canary_config = config.canary_config
-        
+
         # Build canary manager
         canary_manager = CanaryManager(
             current_version=canary_config.get("current_version", "default"),
@@ -183,20 +182,20 @@ def build_neuro_engine_from_env(
             error_budget_threshold=canary_config.get("error_budget_threshold", 0.05),
             min_requests_before_decision=canary_config.get("min_requests_before_decision", 100),
         )
-        
+
         # Use ABTestRouter with canary-selected providers
         # For now, simplified: use control/treatment from ab_test_config
         ab_config = config.ab_test_config
         control = ab_config.get("control", canary_config.get("current_version", "default"))
         treatment = ab_config.get("treatment", canary_config.get("candidate_version", "default"))
-        
+
         router = ABTestRouter(
             providers,
             control=control,
             treatment=treatment,
             treatment_ratio=canary_manager.candidate_ratio
         )
-    
+
     else:
         raise ValueError(f"Invalid router_mode: {router_mode}")
 

@@ -12,7 +12,7 @@ from collections import defaultdict
 
 class RateLimiter:
     """Thread-safe rate limiter using leaky bucket algorithm.
-    
+
     Attributes:
         rate: Maximum requests per second allowed (default: 5)
         capacity: Maximum burst capacity (default: 10)
@@ -20,7 +20,7 @@ class RateLimiter:
 
     def __init__(self, rate: float = 5.0, capacity: int = 10):
         """Initialize rate limiter.
-        
+
         Args:
             rate: Requests per second allowed (default: 5 RPS)
             capacity: Maximum burst capacity (default: 10 requests)
@@ -39,15 +39,15 @@ class RateLimiter:
 
     def is_allowed(self, client_id: str) -> bool:
         """Check if request is allowed for given client.
-        
+
         Optimizations:
         - Single time.time() call per request
         - Avoid redundant min() when tokens already at capacity
         - Early exit path for full bucket
-        
+
         Args:
             client_id: Unique identifier for the client (IP, API key, etc.)
-            
+
         Returns:
             True if request is allowed, False if rate limit exceeded
         """
@@ -78,7 +78,7 @@ class RateLimiter:
 
     def reset(self, client_id: str) -> None:
         """Reset rate limit for a specific client.
-        
+
         Args:
             client_id: Client identifier to reset
         """
@@ -88,10 +88,10 @@ class RateLimiter:
 
     def get_stats(self, client_id: str) -> dict[str, float]:
         """Get current rate limit stats for a client.
-        
+
         Args:
             client_id: Client identifier
-            
+
         Returns:
             Dictionary with 'tokens' and 'last_update' keys
         """
@@ -109,10 +109,10 @@ class RateLimiter:
 
     def cleanup_old_entries(self, max_age_seconds: float = 3600.0) -> int:
         """Remove entries that haven't been accessed recently.
-        
+
         Args:
             max_age_seconds: Maximum age in seconds for entries (default: 1 hour)
-            
+
         Returns:
             Number of entries cleaned up
         """

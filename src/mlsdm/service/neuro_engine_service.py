@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 from mlsdm.engine import NeuroEngineConfig, build_neuro_engine_from_env
 from mlsdm.observability.metrics import MetricsRegistry
-from mlsdm.security import get_rate_limiter, scrub_dict, should_log_payload
+from mlsdm.security import get_rate_limiter
 
 # ---------------------------------------------------------------------------
 # Request/Response Models
@@ -181,11 +181,11 @@ def create_app() -> FastAPI:
                 elapsed_ms = (time.time() - start_time) * 1000
                 request.app.state.metrics.increment_requests_total()
                 request.app.state.metrics.record_latency_total(elapsed_ms)
-                
+
                 if result.get("error") is not None:
                     error_type = result["error"].get("type", "unknown")
                     request.app.state.metrics.increment_errors_total(error_type)
-                
+
                 if result.get("rejected_at") is not None:
                     request.app.state.metrics.increment_rejections_total(result["rejected_at"])
 
@@ -244,26 +244,26 @@ def create_app() -> FastAPI:
 
         # Get metrics summary
         summary = request.app.state.metrics.get_summary()
-        
+
         # Format as Prometheus-compatible text
         lines = []
         lines.append("# HELP neuro_requests_total Total number of requests")
         lines.append("# TYPE neuro_requests_total counter")
         lines.append(f"neuro_requests_total {summary['requests_total']}")
         lines.append("")
-        
+
         lines.append("# HELP neuro_rejections_total Total number of rejections by stage")
         lines.append("# TYPE neuro_rejections_total counter")
         for stage, count in summary['rejections_total'].items():
             lines.append(f'neuro_rejections_total{{stage="{stage}"}} {count}')
         lines.append("")
-        
+
         lines.append("# HELP neuro_errors_total Total number of errors by type")
         lines.append("# TYPE neuro_errors_total counter")
         for error_type, count in summary['errors_total'].items():
             lines.append(f'neuro_errors_total{{type="{error_type}"}} {count}')
         lines.append("")
-        
+
         # Latency metrics
         latency_stats = summary['latency_stats']
         for latency_type, stats in latency_stats.items():
@@ -277,7 +277,7 @@ def create_app() -> FastAPI:
                 lines.append(f'{metric_name}_sum {stats["mean"] * stats["count"]:.2f}')
                 lines.append(f'{metric_name}_count {stats["count"]}')
                 lines.append("")
-        
+
         return "\n".join(lines)
 
     return app

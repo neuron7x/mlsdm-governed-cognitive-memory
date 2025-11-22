@@ -175,12 +175,12 @@ class NeuroCognitiveEngine:
     ) -> None:
         self.config = config or NeuroEngineConfig()
         self._embedding_fn = embedding_fn
-        
+
         # Multi-LLM routing support (Phase 8)
         self._router = router
         self._selected_provider_id: str | None = None
         self._selected_variant: str | None = None
-        
+
         # If router is provided, create a wrapper function
         if router is not None:
             def routed_llm_fn(prompt: str, max_tokens: int, **kwargs: Any) -> str:
@@ -189,14 +189,14 @@ class NeuroCognitiveEngine:
                     "user_intent": self._runtime_user_intent,
                     "priority_tier": getattr(self, "_runtime_priority_tier", "normal"),
                 }
-                
+
                 # Select provider
                 provider_name = router.select_provider(prompt, metadata)
                 provider = router.get_provider(provider_name)
-                
+
                 # Track for metadata (use getattr for safety)
                 self._selected_provider_id = getattr(provider, "provider_id", None)
-                
+
                 # Track variant if ABTestRouter
                 if hasattr(router, "get_variant"):
                     try:
@@ -207,7 +207,7 @@ class NeuroCognitiveEngine:
                         self._selected_variant = router.get_variant(provider_name)
                 else:
                     self._selected_variant = None
-                
+
                 # Generate response - handle both kwargs and non-kwargs providers
                 try:
                     return provider.generate(prompt, max_tokens, **kwargs)
@@ -223,7 +223,7 @@ class NeuroCognitiveEngine:
                     # Handle other unexpected errors
                     fallback = f"[provider_error:{self._selected_provider_id}] {str(e)}"
                     return fallback
-            
+
             actual_llm_fn = routed_llm_fn
         else:
             if llm_generate_fn is None:
@@ -231,7 +231,7 @@ class NeuroCognitiveEngine:
                     "Either llm_generate_fn or router must be provided"
                 )
             actual_llm_fn = llm_generate_fn
-        
+
         if embedding_fn is None:
             raise ValueError("embedding_fn is required")
 
@@ -266,7 +266,7 @@ class NeuroCognitiveEngine:
             # Import lazily to avoid circular dependencies
             # This is safe as metrics module has no dependencies on engine
             from mlsdm.observability.metrics import MetricsRegistry
-            
+
             self._metrics = MetricsRegistry()
 
     # ------------------------------------------------------------------ #
@@ -369,11 +369,11 @@ class NeuroCognitiveEngine:
 
         # Update runtime parameters for router
         self._runtime_user_intent = user_intent
-        
+
         # Reset provider/variant tracking
         self._selected_provider_id = None
         self._selected_variant = None
-        
+
         # If using router, pre-select provider/variant for metrics tracking
         # This ensures we track even rejected requests
         if self._router is not None:
@@ -428,14 +428,14 @@ class NeuroCognitiveEngine:
                                 self._metrics.record_latency_pre_flight(timing["moral_precheck"])
                             if "total" in timing:
                                 self._metrics.record_latency_total(timing["total"])
-                        
+
                         # Build metadata for pre-flight rejections
                         meta_precheck: dict[str, Any] = {}
                         if self._selected_provider_id is not None:
                             meta_precheck["backend_id"] = self._selected_provider_id
                         if self._selected_variant is not None:
                             meta_precheck["variant"] = self._selected_variant
-                        
+
                         return {
                             "response": "",
                             "governance": None,
@@ -486,7 +486,7 @@ class NeuroCognitiveEngine:
                                     self._metrics.record_latency_pre_flight(timing["grammar_precheck"])
                                 if "total" in timing:
                                     self._metrics.record_latency_total(timing["total"])
-                            
+
                             return {
                                 "response": "",
                                 "governance": None,
@@ -564,14 +564,14 @@ class NeuroCognitiveEngine:
                         self._metrics.record_latency_generation(timing["generation"])
                     if "total" in timing:
                         self._metrics.record_latency_total(timing["total"])
-                
+
                 # Build metadata even for rejections
                 meta: dict[str, Any] = {}
                 if self._selected_provider_id is not None:
                     meta["backend_id"] = self._selected_provider_id
                 if self._selected_variant is not None:
                     meta["variant"] = self._selected_variant
-                
+
                 return {
                     "response": "",
                     "governance": None,
@@ -598,14 +598,14 @@ class NeuroCognitiveEngine:
                         self._metrics.record_latency_generation(timing["generation"])
                     if "total" in timing:
                         self._metrics.record_latency_total(timing["total"])
-                
+
                 # Build metadata even for rejections
                 meta_empty: dict[str, Any] = {}
                 if self._selected_provider_id is not None:
                     meta_empty["backend_id"] = self._selected_provider_id
                 if self._selected_variant is not None:
                     meta_empty["variant"] = self._selected_variant
-                
+
                 return {
                     "response": "",
                     "governance": fslgs_result,
@@ -628,7 +628,7 @@ class NeuroCognitiveEngine:
                 provider_id=self._selected_provider_id,
                 variant=self._selected_variant
             )
-            
+
             if "moral_precheck" in timing or "grammar_precheck" in timing:
                 pre_flight_time = timing.get("moral_precheck", 0) + timing.get("grammar_precheck", 0)
                 if pre_flight_time > 0:
@@ -641,14 +641,14 @@ class NeuroCognitiveEngine:
                 )
             if "total" in timing:
                 self._metrics.record_latency_total(timing["total"])
-        
+
         # Build metadata with provider/variant info
         meta: dict[str, Any] = {}
         if self._selected_provider_id is not None:
             meta["backend_id"] = self._selected_provider_id
         if self._selected_variant is not None:
             meta["variant"] = self._selected_variant
-        
+
         return {
             "response": response_text,
             "governance": fslgs_result,
@@ -673,7 +673,7 @@ class NeuroCognitiveEngine:
 
     def get_metrics(self) -> Any | None:
         """Get MetricsRegistry instance if metrics are enabled.
-        
+
         Returns:
             MetricsRegistry instance or None if metrics are disabled
         """

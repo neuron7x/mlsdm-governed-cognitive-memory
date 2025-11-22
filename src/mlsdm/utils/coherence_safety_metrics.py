@@ -63,11 +63,11 @@ class CoherenceSafetyAnalyzer:
         """
         Measure how consistent retrieval results are over time.
         Higher score = more stable/coherent retrieval patterns.
-        
+
         Args:
             retrieval_sequence: Sequence of retrieval results (each is list of vectors)
             window_size: Window for computing local consistency
-            
+
         Returns:
             Consistency score (0-1), where 1 is perfect consistency
         """
@@ -97,19 +97,21 @@ class CoherenceSafetyAnalyzer:
         """
         Measure semantic coherence between queries and retrievals.
         Higher score = retrieved memories are more semantically relevant.
-        
+
         Args:
             query_vectors: Original query vectors
             retrieved_vectors: Retrieved memory vectors for each query
-            
+
         Returns:
             Coherence score (0-1), where 1 is perfect semantic alignment
         """
         if not query_vectors or not retrieved_vectors:
             return 0.0
 
+        # Note: Using strict=False because query and retrieval lists may differ in length
+        # This is intentional - we process available pairs
         coherence_scores = []
-        for query, retrieved in zip(query_vectors, retrieved_vectors):
+        for query, retrieved in zip(query_vectors, retrieved_vectors, strict=False):
             if len(retrieved) == 0:
                 continue
 
@@ -134,11 +136,11 @@ class CoherenceSafetyAnalyzer:
         """
         Measure how well wake and sleep phases maintain distinct memory spaces.
         Higher score = better phase separation (desirable for cognitive rhythm).
-        
+
         Args:
             wake_retrievals: Vectors retrieved during wake phase
             sleep_retrievals: Vectors retrieved during sleep phase
-            
+
         Returns:
             Separation score (0-1), where 1 is perfect separation
         """
@@ -167,11 +169,11 @@ class CoherenceSafetyAnalyzer:
         """
         Measure stability of retrieval results across multiple queries.
         Higher score = more stable retrieval (less noise).
-        
+
         Args:
             retrievals: Sequence of retrieval results
             top_k: Number of top results to compare
-            
+
         Returns:
             Stability score (0-1), where 1 is perfect stability
         """
@@ -208,13 +210,13 @@ class CoherenceSafetyAnalyzer:
                                  retrieval_sequence: list[list[np.ndarray]]) -> CoherenceMetrics:
         """
         Compute comprehensive coherence metrics.
-        
+
         Args:
             wake_retrievals: Vectors retrieved during wake phase
             sleep_retrievals: Vectors retrieved during sleep phase
             query_sequence: Sequence of query vectors
             retrieval_sequence: Sequence of retrieval results
-            
+
         Returns:
             CoherenceMetrics with all measurements
         """
@@ -238,12 +240,12 @@ class CoherenceSafetyAnalyzer:
                                     toxic_threshold: float = 0.4) -> float:
         """
         Measure how effectively the moral filter rejects toxic content.
-        
+
         Args:
             moral_values: Moral values of processed events
             rejections: Whether each event was rejected
             toxic_threshold: Threshold below which content is considered toxic
-            
+
         Returns:
             Rejection rate (0-1) for toxic content
         """
@@ -253,7 +255,7 @@ class CoherenceSafetyAnalyzer:
         toxic_count = 0
         toxic_rejected = 0
 
-        for moral_val, rejected in zip(moral_values, rejections):
+        for moral_val, rejected in zip(moral_values, rejections, strict=False):
             if moral_val < toxic_threshold:
                 toxic_count += 1
                 if rejected:
@@ -264,10 +266,10 @@ class CoherenceSafetyAnalyzer:
     def measure_moral_drift(self, threshold_history: list[float]) -> float:
         """
         Measure stability of moral threshold over time.
-        
+
         Args:
             threshold_history: History of moral threshold values
-            
+
         Returns:
             Drift measure (0-1), where 0 is no drift
         """
@@ -289,12 +291,12 @@ class CoherenceSafetyAnalyzer:
                                      window_size: int = 50) -> float:
         """
         Measure how well the threshold converges to desired value.
-        
+
         Args:
             threshold_history: History of threshold values
             target_threshold: Desired threshold value
             window_size: Window for measuring convergence
-            
+
         Returns:
             Convergence score (0-1), where 1 is perfect convergence
         """
@@ -319,12 +321,12 @@ class CoherenceSafetyAnalyzer:
                                    safe_threshold: float = 0.6) -> float:
         """
         Measure rate of incorrectly rejected safe content.
-        
+
         Args:
             moral_values: Moral values of processed events
             rejections: Whether each event was rejected
             safe_threshold: Threshold above which content is considered safe
-            
+
         Returns:
             False positive rate (0-1)
         """
@@ -334,7 +336,7 @@ class CoherenceSafetyAnalyzer:
         safe_count = 0
         false_positives = 0
 
-        for moral_val, rejected in zip(moral_values, rejections):
+        for moral_val, rejected in zip(moral_values, rejections, strict=False):
             if moral_val >= safe_threshold:
                 safe_count += 1
                 if rejected:
@@ -348,12 +350,12 @@ class CoherenceSafetyAnalyzer:
                                threshold_history: list[float]) -> SafetyMetrics:
         """
         Compute comprehensive safety metrics.
-        
+
         Args:
             moral_values: Moral values of processed events
             rejections: Whether each event was rejected
             threshold_history: History of threshold adaptations
-            
+
         Returns:
             SafetyMetrics with all measurements
         """
@@ -376,11 +378,11 @@ class CoherenceSafetyAnalyzer:
                                     without_metrics: dict[str, float]) -> dict[str, dict[str, float]]:
         """
         Compare system performance with and without a feature.
-        
+
         Args:
             with_metrics: Metrics with feature enabled
             without_metrics: Metrics without feature
-            
+
         Returns:
             Dictionary with improvements and statistical significance
         """
@@ -406,11 +408,11 @@ class CoherenceSafetyAnalyzer:
                        safety: SafetyMetrics) -> str:
         """
         Generate a comprehensive metrics report.
-        
+
         Args:
             coherence: Coherence metrics
             safety: Safety metrics
-            
+
         Returns:
             Formatted report string
         """

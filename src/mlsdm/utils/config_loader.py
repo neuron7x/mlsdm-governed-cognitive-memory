@@ -24,15 +24,15 @@ class ConfigLoader:
         env_override: bool = True
     ) -> dict[str, Any]:
         """Load configuration from file with optional validation.
-        
+
         Args:
             path: Path to configuration file (YAML or INI)
             validate: If True, validate against schema
             env_override: If True, allow environment variable overrides
-            
+
         Returns:
             Configuration dictionary
-            
+
         Raises:
             TypeError: If path is not a string
             ValueError: If file format is unsupported or validation fails
@@ -74,7 +74,7 @@ class ConfigLoader:
                     f"Configuration validation failed for '{path}':\n{str(e)}\n\n"
                     f"Please check your configuration file against the schema "
                     f"documentation in src/utils/config_schema.py"
-                )
+                ) from e
 
         return config
 
@@ -86,9 +86,9 @@ class ConfigLoader:
                 config = yaml.safe_load(f) or {}
             return config
         except yaml.YAMLError as e:
-            raise ValueError(f"Invalid YAML syntax in '{path}': {str(e)}")
+            raise ValueError(f"Invalid YAML syntax in '{path}': {str(e)}") from e
         except Exception as e:
-            raise ValueError(f"Error reading YAML file '{path}': {str(e)}")
+            raise ValueError(f"Error reading YAML file '{path}': {str(e)}") from e
 
     @staticmethod
     def _load_ini(path: str) -> dict[str, Any]:
@@ -114,12 +114,12 @@ class ConfigLoader:
 
             return config
         except Exception as e:
-            raise ValueError(f"Error reading INI file '{path}': {str(e)}")
+            raise ValueError(f"Error reading INI file '{path}': {str(e)}") from e
 
     @staticmethod
     def _apply_env_overrides(config: dict[str, Any]) -> dict[str, Any]:
         """Apply environment variable overrides to configuration.
-        
+
         Environment variables should be prefixed with MLSDM_ and use
         double underscores for nested keys. For example:
         - MLSDM_DIMENSION=768
@@ -176,13 +176,13 @@ class ConfigLoader:
     @staticmethod
     def load_validated_config(path: str) -> SystemConfig:
         """Load and return validated configuration as SystemConfig object.
-        
+
         Args:
             path: Path to configuration file
-            
+
         Returns:
             Validated SystemConfig instance
-            
+
         Raises:
             ValueError: If configuration is invalid
             FileNotFoundError: If file does not exist

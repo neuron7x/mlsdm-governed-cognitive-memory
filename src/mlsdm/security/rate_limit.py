@@ -11,7 +11,6 @@ from __future__ import annotations
 import time
 from collections import defaultdict
 from threading import Lock
-from typing import Literal
 
 
 class RateLimiter:

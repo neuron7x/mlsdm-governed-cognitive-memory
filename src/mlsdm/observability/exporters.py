@@ -11,13 +11,13 @@ from typing import Any
 
 class PrometheusPullExporter:
     """Exporter for Prometheus pull-based scraping.
-    
+
     Converts MetricsRegistry data to Prometheus text format.
     """
 
     def __init__(self, metrics_registry: Any) -> None:
         """Initialize exporter with metrics registry.
-        
+
         Args:
             metrics_registry: MetricsRegistry instance to export
         """
@@ -25,7 +25,7 @@ class PrometheusPullExporter:
 
     def render_text(self) -> str:
         """Render metrics in Prometheus text exposition format.
-        
+
         Returns:
             String in Prometheus format
         """
@@ -58,12 +58,12 @@ class PrometheusPullExporter:
 
         # Latency histograms
         summary = self.metrics_registry.get_summary()
-        
+
         for latency_type, stats in summary["latency_stats"].items():
             metric_name = f"neurocognitive_latency_{latency_type}"
             lines.append(f"# HELP {metric_name} Latency for {latency_type}")
             lines.append(f"# TYPE {metric_name} summary")
-            
+
             if stats["count"] > 0:
                 lines.append(f'{metric_name}{{quantile="0.5"}} {stats["p50"]:.2f}')
                 lines.append(f'{metric_name}{{quantile="0.95"}} {stats["p95"]:.2f}')
@@ -83,13 +83,13 @@ class PrometheusPullExporter:
 
 class StdoutJsonExporter:
     """Exporter that outputs metrics summary as JSON to stdout.
-    
+
     Useful for debugging and logging.
     """
 
     def __init__(self, metrics_registry: Any) -> None:
         """Initialize exporter with metrics registry.
-        
+
         Args:
             metrics_registry: MetricsRegistry instance to export
         """
@@ -97,22 +97,22 @@ class StdoutJsonExporter:
 
     def export(self, pretty: bool = True) -> str:
         """Export metrics as JSON string.
-        
+
         Args:
             pretty: If True, format JSON with indentation
-            
+
         Returns:
             JSON string representation of metrics
         """
         summary = self.metrics_registry.get_summary()
-        
+
         if pretty:
             return json.dumps(summary, indent=2, sort_keys=True)
         return json.dumps(summary, sort_keys=True)
 
     def print(self, pretty: bool = True) -> None:
         """Print metrics to stdout as JSON.
-        
+
         Args:
             pretty: If True, format JSON with indentation
         """

@@ -145,7 +145,7 @@ class TestMemoryManager:
         manager = MemoryManager(config)
 
         def event_generator():
-            for i in range(5):
+            for _i in range(5):
                 yield np.random.randn(10), 0.7
 
         await manager.simulate(5, event_generator())
@@ -169,7 +169,7 @@ class TestMemoryManager:
         manager = MemoryManager(config)
 
         def custom_generator():
-            for i in range(3):
+            for _i in range(3):
                 yield np.ones(10), 0.8
 
         manager.run_simulation(num_steps=3, event_gen=custom_generator())
@@ -238,7 +238,7 @@ class TestMemoryManager:
         manager = MemoryManager(config)
 
         def event_gen():
-            for i in range(10):
+            for _i in range(10):
                 yield np.random.randn(10), 0.8
 
         await manager.simulate(10, event_gen())

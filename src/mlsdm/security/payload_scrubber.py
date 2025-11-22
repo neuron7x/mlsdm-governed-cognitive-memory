@@ -8,34 +8,33 @@ log messages and payloads before they are logged or exported.
 import re
 from typing import Any
 
-
 # Patterns for common secrets
 SECRET_PATTERNS = [
     # API keys (common patterns)
     (re.compile(r'(api[_-]?key["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_\-]{20,})(["\']?)', re.IGNORECASE), r'\1***REDACTED***\3'),
     (re.compile(r'(sk-[a-zA-Z0-9]{20,})'), r'sk-***REDACTED***'),
     (re.compile(r'(Bearer\s+)([a-zA-Z0-9_\-\.]{20,})', re.IGNORECASE), r'\1***REDACTED***'),
-    
+
     # Passwords
     (re.compile(r'(password["\']?\s*[:=]\s*["\']?)([^\s"\']{8,})(["\']?)', re.IGNORECASE), r'\1***REDACTED***\3'),
     (re.compile(r'(passwd["\']?\s*[:=]\s*["\']?)([^\s"\']{8,})(["\']?)', re.IGNORECASE), r'\1***REDACTED***\3'),
     (re.compile(r'(pwd["\']?\s*[:=]\s*["\']?)([^\s"\']{8,})(["\']?)', re.IGNORECASE), r'\1***REDACTED***\3'),
-    
+
     # Tokens
     (re.compile(r'(token["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_\-\.]{20,})(["\']?)', re.IGNORECASE), r'\1***REDACTED***\3'),
     (re.compile(r'(access[_-]?token["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_\-\.]{20,})(["\']?)', re.IGNORECASE), r'\1***REDACTED***\3'),
     (re.compile(r'(refresh[_-]?token["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_\-\.]{20,})(["\']?)', re.IGNORECASE), r'\1***REDACTED***\3'),
-    
+
     # AWS keys
     (re.compile(r'(AKIA[0-9A-Z]{16})'), r'AKIA***REDACTED***'),
     (re.compile(r'(aws[_-]?secret[_-]?access[_-]?key["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9/+=]{40})(["\']?)', re.IGNORECASE), r'\1***REDACTED***\3'),
-    
+
     # Private keys
     (re.compile(r'(-----BEGIN.*PRIVATE KEY-----).*?(-----END.*PRIVATE KEY-----)', re.DOTALL), r'\1\n***REDACTED***\n\2'),
-    
+
     # Credit card numbers (simple pattern)
     (re.compile(r'\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b'), r'****-****-****-****'),
-    
+
     # Email addresses (optional, depending on privacy requirements)
     # (re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'), r'***@***.***'),
 ]

@@ -126,7 +126,7 @@ class TestPropertyBasedInvariants:
         """Property: Memory state norms are always non-negative."""
         mlm = MultiLevelSynapticMemory(dimension=dimension)
 
-        for i in range(num_updates):
+        for _i in range(num_updates):
             event = np.random.randn(dimension).astype(np.float32)
             mlm.update(event)
 

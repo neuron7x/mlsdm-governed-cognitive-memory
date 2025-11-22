@@ -72,7 +72,7 @@ class TestQILM_v2Performance:
 
         # Batch entangle
         start = time.perf_counter()
-        for i in range(1000):
+        for _i in range(1000):
             vec = np.random.randn(384).astype(np.float32)
             vec = vec / (np.linalg.norm(vec) or 1e-9)
             qilm.entangle(vec.tolist(), phase=0.1)
@@ -96,7 +96,7 @@ class TestMultiLevelMemoryPerformance:
 
         # Perform many updates to trigger transfers
         start = time.perf_counter()
-        for i in range(1000):
+        for _i in range(1000):
             vec = np.random.randn(384).astype(np.float32) * 0.1
             synaptic.update(vec)
         elapsed = time.perf_counter() - start
@@ -138,7 +138,7 @@ class TestMultiLevelMemoryPerformance:
         synaptic = MultiLevelSynapticMemory(dimension=384)
 
         # Perform updates and check state consistency
-        for i in range(100):
+        for _i in range(100):
             vec = np.random.randn(384).astype(np.float32)
             synaptic.update(vec)
 
@@ -197,7 +197,7 @@ class TestCognitiveControllerPerformance:
 
         # Process many events
         start = time.perf_counter()
-        for i in range(100):
+        for _i in range(100):
             vec = np.random.randn(384).astype(np.float32)
             vec = vec / (np.linalg.norm(vec) or 1e-9)
             moral_value = 0.6
@@ -212,7 +212,7 @@ class TestCognitiveControllerPerformance:
         controller = CognitiveController(dim=384)
 
         # Add some data
-        for i in range(50):
+        for _i in range(50):
             vec = np.random.randn(384).astype(np.float32)
             vec = vec / (np.linalg.norm(vec) or 1e-9)
             controller.process_event(vec, 0.7)
@@ -237,7 +237,7 @@ class TestConcurrentPerformance:
         qilm = QILM_v2(dimension=384, capacity=1000)
 
         # Populate memory
-        for i in range(500):
+        for _i in range(500):
             vec = np.random.randn(384).astype(np.float32)
             vec = vec / (np.linalg.norm(vec) or 1e-9)
             qilm.entangle(vec.tolist(), phase=0.1)

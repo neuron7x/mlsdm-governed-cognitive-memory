@@ -51,7 +51,7 @@ class SecurityLogger:
 
     def __init__(self, logger_name: str = "security_audit"):
         """Initialize security logger.
-        
+
         Args:
             logger_name: Name for the logger instance
         """
@@ -76,7 +76,7 @@ class SecurityLogger:
         additional_data: dict[str, Any] | None = None
     ) -> str:
         """Internal method to log security event.
-        
+
         Args:
             event_type: Type of security event
             level: Logging level (INFO, WARNING, ERROR)
@@ -84,7 +84,7 @@ class SecurityLogger:
             correlation_id: Optional correlation ID for request tracking
             client_id: Optional pseudonymized client identifier (no PII)
             additional_data: Additional structured data (no PII)
-            
+
         Returns:
             Correlation ID used for this event
         """
@@ -125,11 +125,11 @@ class SecurityLogger:
         correlation_id: str | None = None
     ) -> str:
         """Log successful authentication.
-        
+
         Args:
             client_id: Pseudonymized client identifier
             correlation_id: Optional correlation ID
-            
+
         Returns:
             Correlation ID
         """
@@ -148,12 +148,12 @@ class SecurityLogger:
         correlation_id: str | None = None
     ) -> str:
         """Log failed authentication attempt.
-        
+
         Args:
             client_id: Pseudonymized client identifier
             reason: Reason for failure
             correlation_id: Optional correlation ID
-            
+
         Returns:
             Correlation ID
         """
@@ -172,11 +172,11 @@ class SecurityLogger:
         correlation_id: str | None = None
     ) -> str:
         """Log rate limit exceeded event.
-        
+
         Args:
             client_id: Pseudonymized client identifier
             correlation_id: Optional correlation ID
-            
+
         Returns:
             Correlation ID
         """
@@ -195,12 +195,12 @@ class SecurityLogger:
         correlation_id: str | None = None
     ) -> str:
         """Log invalid input validation error.
-        
+
         Args:
             client_id: Pseudonymized client identifier
             error_message: Validation error message
             correlation_id: Optional correlation ID
-            
+
         Returns:
             Correlation ID
         """
@@ -220,12 +220,12 @@ class SecurityLogger:
         correlation_id: str | None = None
     ) -> str:
         """Log important state change.
-        
+
         Args:
             change_type: Type of state change
             details: Details about the change (no PII)
             correlation_id: Optional correlation ID
-            
+
         Returns:
             Correlation ID
         """
@@ -245,13 +245,13 @@ class SecurityLogger:
         correlation_id: str | None = None
     ) -> str:
         """Log anomaly detection event.
-        
+
         Args:
             anomaly_type: Type of anomaly detected
             description: Description of the anomaly
             severity: Severity level (low, medium, high)
             correlation_id: Optional correlation ID
-            
+
         Returns:
             Correlation ID
         """
@@ -276,12 +276,12 @@ class SecurityLogger:
         additional_data: dict[str, Any] | None = None
     ) -> str:
         """Log system-level event.
-        
+
         Args:
             event_type: Type of system event
             message: Event message
             additional_data: Additional data (no PII)
-            
+
         Returns:
             Correlation ID
         """
@@ -299,7 +299,7 @@ _security_logger = SecurityLogger()
 
 def get_security_logger() -> SecurityLogger:
     """Get the global security logger instance.
-    
+
     Returns:
         Global SecurityLogger instance
     """
