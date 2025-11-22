@@ -341,3 +341,194 @@ def get_metrics_exporter(registry: CollectorRegistry | None = None) -> MetricsEx
                 _metrics_exporter = MetricsExporter(registry=registry)
 
     return _metrics_exporter
+
+
+# ---------------------------------------------------------------------------
+# Simple MetricsRegistry for NeuroCognitiveEngine
+# ---------------------------------------------------------------------------
+
+
+class MetricsRegistry:
+    """Simple metrics registry for NeuroCognitiveEngine, not tied to specific TSDB.
+    
+    Provides:
+    - Counters: requests_total, rejections_total, errors_total
+    - Histograms/lists: latency_total_ms, latency_pre_flight_ms, latency_generation_ms
+    
+    This is a lightweight alternative to the Prometheus-based MetricsExporter,
+    suitable for collecting metrics without external dependencies.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the metrics registry."""
+        self._lock = Lock()
+        
+        # Counters
+        self._requests_total = 0
+        self._rejections_total: dict[str, int] = {}  # rejected_at -> count
+        self._errors_total: dict[str, int] = {}  # error_type -> count
+        
+        # Latency storage (milliseconds)
+        self._latency_total_ms: list[float] = []
+        self._latency_pre_flight_ms: list[float] = []
+        self._latency_generation_ms: list[float] = []
+
+    def increment_requests_total(self, count: int = 1) -> None:
+        """Increment total requests counter.
+        
+        Args:
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self._requests_total += count
+
+    def increment_rejections_total(self, rejected_at: str, count: int = 1) -> None:
+        """Increment rejections counter with label.
+        
+        Args:
+            rejected_at: Stage at which rejection occurred (e.g., 'pre_flight', 'generation')
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self._rejections_total[rejected_at] = self._rejections_total.get(rejected_at, 0) + count
+
+    def increment_errors_total(self, error_type: str, count: int = 1) -> None:
+        """Increment errors counter with type label.
+        
+        Args:
+            error_type: Type of error (e.g., 'moral_precheck', 'mlsdm_rejection', 'empty_response')
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self._errors_total[error_type] = self._errors_total.get(error_type, 0) + count
+
+    def record_latency_total(self, latency_ms: float) -> None:
+        """Record total latency.
+        
+        Args:
+            latency_ms: Total latency in milliseconds
+        """
+        with self._lock:
+            self._latency_total_ms.append(latency_ms)
+
+    def record_latency_pre_flight(self, latency_ms: float) -> None:
+        """Record pre-flight check latency.
+        
+        Args:
+            latency_ms: Pre-flight latency in milliseconds
+        """
+        with self._lock:
+            self._latency_pre_flight_ms.append(latency_ms)
+
+    def record_latency_generation(self, latency_ms: float) -> None:
+        """Record generation latency.
+        
+        Args:
+            latency_ms: Generation latency in milliseconds
+        """
+        with self._lock:
+            self._latency_generation_ms.append(latency_ms)
+
+    def get_snapshot(self) -> dict[str, Any]:
+        """Get current snapshot of all metrics.
+        
+        Returns:
+            Dictionary containing all metric values
+        """
+        with self._lock:
+            return {
+                "requests_total": self._requests_total,
+                "rejections_total": dict(self._rejections_total),
+                "errors_total": dict(self._errors_total),
+                "latency_total_ms": list(self._latency_total_ms),
+                "latency_pre_flight_ms": list(self._latency_pre_flight_ms),
+                "latency_generation_ms": list(self._latency_generation_ms),
+            }
+
+    def get_summary(self) -> dict[str, Any]:
+        """Get summary statistics of metrics.
+        
+        Returns:
+            Dictionary with summary statistics including counts and percentiles
+        """
+        with self._lock:
+            return {
+                "requests_total": self._requests_total,
+                "rejections_total": dict(self._rejections_total),
+                "errors_total": dict(self._errors_total),
+                "latency_stats": {
+                    "total_ms": self._compute_percentiles(self._latency_total_ms),
+                    "pre_flight_ms": self._compute_percentiles(self._latency_pre_flight_ms),
+                    "generation_ms": self._compute_percentiles(self._latency_generation_ms),
+                },
+            }
+
+    def _compute_percentiles(self, values: list[float]) -> dict[str, float | int]:
+        """Compute percentiles for a list of values.
+        
+        Args:
+            values: List of values
+            
+        Returns:
+            Dictionary with count, min, max, mean, p50, p95, p99
+        """
+        if not values:
+            return {
+                "count": 0,
+                "min": 0.0,
+                "max": 0.0,
+                "mean": 0.0,
+                "p50": 0.0,
+                "p95": 0.0,
+                "p99": 0.0,
+            }
+
+        sorted_values = sorted(values)
+        count = len(sorted_values)
+        
+        return {
+            "count": count,
+            "min": sorted_values[0],
+            "max": sorted_values[-1],
+            "mean": sum(sorted_values) / count,
+            "p50": self._percentile(sorted_values, 0.50),
+            "p95": self._percentile(sorted_values, 0.95),
+            "p99": self._percentile(sorted_values, 0.99),
+        }
+
+    @staticmethod
+    def _percentile(sorted_values: list[float], p: float) -> float:
+        """Calculate percentile from sorted values.
+        
+        Args:
+            sorted_values: Pre-sorted list of values
+            p: Percentile (0.0 to 1.0)
+            
+        Returns:
+            Percentile value
+        """
+        if not sorted_values:
+            return 0.0
+        
+        k = (len(sorted_values) - 1) * p
+        f = int(k)
+        c = f + 1
+        
+        if c >= len(sorted_values):
+            return sorted_values[-1]
+        
+        if f == k:
+            return sorted_values[f]
+        
+        # Linear interpolation
+        return sorted_values[f] + (k - f) * (sorted_values[c] - sorted_values[f])
+
+    def reset(self) -> None:
+        """Reset all metrics to initial state."""
+        with self._lock:
+            self._requests_total = 0
+            self._rejections_total.clear()
+            self._errors_total.clear()
+            self._latency_total_ms.clear()
+            self._latency_pre_flight_ms.clear()
+            self._latency_generation_ms.clear()

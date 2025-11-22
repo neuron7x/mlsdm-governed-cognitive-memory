@@ -128,6 +128,9 @@ class NeuroEngineConfig:
     default_cognitive_load: float = 0.5
     default_user_intent: str = "conversational"
 
+    # Observability / Metrics
+    enable_metrics: bool = False
+
 
 # ---------------------------------------------------------------------------
 # Engine
@@ -179,6 +182,15 @@ class NeuroCognitiveEngine:
         self._fslgs: Any | None = None
         if self.config.enable_fslgs and FSLGSWrapper is not None:
             self._fslgs = self._build_fslgs_wrapper()
+
+        # Опційна система метрик
+        self._metrics: Any | None = None
+        if self.config.enable_metrics:
+            # Import lazily to avoid circular dependencies
+            # This is safe as metrics module has no dependencies on engine
+            from mlsdm.observability.metrics import MetricsRegistry
+            
+            self._metrics = MetricsRegistry()
 
     # ------------------------------------------------------------------ #
     # Internal builders                                                   #
@@ -264,6 +276,10 @@ class NeuroCognitiveEngine:
         timing: dict[str, float] = {}
         validation_steps: list[dict[str, Any]] = []
 
+        # Increment requests counter
+        if self._metrics is not None:
+            self._metrics.increment_requests_total()
+
         # Заповнюємо рантайм за замовчуванням
         user_intent = user_intent or self.config.default_user_intent
         cognitive_load = (
@@ -304,6 +320,15 @@ class NeuroCognitiveEngine:
                     )
                     if not passed:
                         # Швидка відмова: не вантажимо FSLGS/LLM
+                        # Record metrics
+                        if self._metrics is not None:
+                            self._metrics.increment_rejections_total("pre_flight")
+                            self._metrics.increment_errors_total("moral_precheck")
+                            if "moral_precheck" in timing:
+                                self._metrics.record_latency_pre_flight(timing["moral_precheck"])
+                            if "total" in timing:
+                                self._metrics.record_latency_total(timing["total"])
+                        
                         return {
                             "response": "",
                             "governance": None,
@@ -345,6 +370,15 @@ class NeuroCognitiveEngine:
                             }
                         )
                         if not passed:
+                            # Record metrics
+                            if self._metrics is not None:
+                                self._metrics.increment_rejections_total("pre_flight")
+                                self._metrics.increment_errors_total("grammar_precheck")
+                                if "grammar_precheck" in timing:
+                                    self._metrics.record_latency_pre_flight(timing["grammar_precheck"])
+                                if "total" in timing:
+                                    self._metrics.record_latency_total(timing["total"])
+                            
                             return {
                                 "response": "",
                                 "governance": None,
@@ -410,6 +444,15 @@ class NeuroCognitiveEngine:
                             )
 
             except MLSDMRejectionError as e:
+                # Record metrics
+                if self._metrics is not None:
+                    self._metrics.increment_rejections_total("generation")
+                    self._metrics.increment_errors_total("mlsdm_rejection")
+                    if "generation" in timing:
+                        self._metrics.record_latency_generation(timing["generation"])
+                    if "total" in timing:
+                        self._metrics.record_latency_total(timing["total"])
+                
                 return {
                     "response": "",
                     "governance": None,
@@ -423,6 +466,15 @@ class NeuroCognitiveEngine:
                     "rejected_at": "generation",
                 }
             except EmptyResponseError as e:
+                # Record metrics
+                if self._metrics is not None:
+                    self._metrics.increment_rejections_total("generation")
+                    self._metrics.increment_errors_total("empty_response")
+                    if "generation" in timing:
+                        self._metrics.record_latency_generation(timing["generation"])
+                    if "total" in timing:
+                        self._metrics.record_latency_total(timing["total"])
+                
                 return {
                     "response": "",
                     "governance": fslgs_result,
@@ -437,6 +489,17 @@ class NeuroCognitiveEngine:
                 }
 
         # Успішний шлях
+        # Record metrics for successful generation
+        if self._metrics is not None:
+            if "moral_precheck" in timing or "grammar_precheck" in timing:
+                pre_flight_time = timing.get("moral_precheck", 0) + timing.get("grammar_precheck", 0)
+                if pre_flight_time > 0:
+                    self._metrics.record_latency_pre_flight(pre_flight_time)
+            if "generation" in timing:
+                self._metrics.record_latency_generation(timing["generation"])
+            if "total" in timing:
+                self._metrics.record_latency_total(timing["total"])
+        
         return {
             "response": response_text,
             "governance": fslgs_result,
@@ -457,3 +520,11 @@ class NeuroCognitiveEngine:
             "mlsdm": self._last_mlsdm_state,
             "has_fslgs": self._fslgs is not None,
         }
+
+    def get_metrics(self) -> Any | None:
+        """Get MetricsRegistry instance if metrics are enabled.
+        
+        Returns:
+            MetricsRegistry instance or None if metrics are disabled
+        """
+        return self._metrics

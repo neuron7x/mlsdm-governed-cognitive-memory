@@ -148,6 +148,82 @@ rate(process_cpu_seconds_total[5m])
 
 ---
 
+### SLI-6: NeuroCognitiveEngine Request Latency
+
+**Definition:** End-to-end latency for NeuroCognitiveEngine requests
+
+**Measurement:**
+```python
+# From MetricsRegistry
+metrics = engine.get_metrics()
+summary = metrics.get_summary()
+latency_p95 = summary["latency_stats"]["total_ms"]["p95"]
+```
+
+**Components Tracked:**
+- **Total**: Complete request processing time
+- **Pre-flight**: Moral and grammar precheck time
+- **Generation**: LLM generation and FSLGS governance time
+
+**Percentiles Tracked:**
+- **P50**: Median latency
+- **P95**: 95th percentile (primary SLO target)
+- **P99**: 99th percentile
+
+**Data Source:**
+- `MetricsRegistry` in NeuroCognitiveEngine
+- Accessible via `engine.get_metrics().get_summary()`
+
+---
+
+### SLI-7: NeuroCognitiveEngine Request Success Rate
+
+**Definition:** Percentage of successful (non-rejected) requests
+
+**Measurement:**
+```python
+# From MetricsRegistry
+metrics = engine.get_metrics()
+summary = metrics.get_summary()
+total_requests = summary["requests_total"]
+total_rejections = sum(summary["rejections_total"].values())
+success_rate = (total_requests - total_rejections) / total_requests
+```
+
+**Rejection Types Tracked:**
+- **pre_flight**: Rejected during moral/grammar precheck
+- **generation**: Rejected during LLM generation or FSLGS validation
+
+**Data Source:**
+- `MetricsRegistry` counters: `requests_total`, `rejections_total`
+
+---
+
+### SLI-8: NeuroCognitiveEngine Error Rate
+
+**Definition:** Percentage of requests resulting in errors
+
+**Measurement:**
+```python
+# From MetricsRegistry
+metrics = engine.get_metrics()
+summary = metrics.get_summary()
+total_requests = summary["requests_total"]
+total_errors = sum(summary["errors_total"].values())
+error_rate = total_errors / total_requests
+```
+
+**Error Types Tracked:**
+- **moral_precheck**: Failed moral validation
+- **grammar_precheck**: Failed grammar validation
+- **mlsdm_rejection**: MLSDM rejected request
+- **empty_response**: Empty response from generation
+
+**Data Source:**
+- `MetricsRegistry` counters: `requests_total`, `errors_total`
+
+---
+
 ## Service Level Objectives (SLOs)
 
 SLOs define target reliability levels for each SLI.
@@ -271,6 +347,114 @@ Memory Compliance =
 - Current RSS: 29.37 MB (fixed)
 - Alert threshold: 45 MB (90% of limit)
 - Hard limit: 50 MB (deployment constraint)
+
+---
+
+### SLO-6: NeuroCognitiveEngine End-to-End Latency
+
+**Target:** P95 latency < 500ms for end-to-end request processing
+
+**Rationale:**
+- 500ms provides acceptable user experience for cognitive processing
+- Includes pre-flight checks, LLM generation, and FSLGS validation
+- Verified achievable via benchmarks (P95 ~23ms with stub backend)
+- Real-world performance depends on actual LLM latency
+
+**Measurement:**
+```python
+# Check if within SLO
+summary = metrics.get_summary()
+p95_latency = summary["latency_stats"]["total_ms"]["p95"]
+within_slo = p95_latency < 500.0
+```
+
+**Breakdown (stub backend benchmarks):**
+- Pre-flight checks: P95 < 1ms
+- Generation (50 tokens): P95 < 23ms
+- Total overhead: Minimal (< 5ms)
+
+**Status:** ✅ Well within SLO (benchmark P95: 23ms << 500ms target)
+
+---
+
+### SLO-7: NeuroCognitiveEngine Pre-Flight Latency
+
+**Target:** P95 pre-flight latency < 20ms
+
+**Rationale:**
+- Pre-flight checks (moral + grammar) should be very fast
+- Enables quick rejection of inappropriate requests
+- Minimal overhead before expensive LLM calls
+- Verified achievable via benchmarks (P95 < 1ms)
+
+**Measurement:**
+```python
+# Check if within SLO
+summary = metrics.get_summary()
+p95_preflight = summary["latency_stats"]["pre_flight_ms"]["p95"]
+within_slo = p95_preflight < 20.0
+```
+
+**Components:**
+- Moral value computation
+- Grammar structure validation
+
+**Status:** ✅ Well within SLO (benchmark P95: < 1ms << 20ms target)
+
+---
+
+### SLO-8: NeuroCognitiveEngine Error Rate
+
+**Target:** Error rate < 0.5% for stable backend
+
+**Rationale:**
+- Errors should be rare in production
+- Most rejections should be intentional (moral/grammar)
+- Excludes intentional rejections from error budget
+- Tracks system errors and failures
+
+**Measurement:**
+```python
+# Check if within SLO
+summary = metrics.get_summary()
+total_requests = summary["requests_total"]
+total_errors = sum(summary["errors_total"].values())
+error_rate = (total_errors / total_requests) * 100 if total_requests > 0 else 0
+within_slo = error_rate < 0.5
+```
+
+**Error Types (tracked separately):**
+- System errors (count toward SLO)
+- Intentional rejections (do NOT count toward SLO)
+
+**Status:** ⚠️ To be measured in production
+
+---
+
+### SLO-9: NeuroCognitiveEngine Rejection Rate (Informational)
+
+**Target:** Track rejection rate for monitoring (no hard SLO)
+
+**Rationale:**
+- Rejections are expected and intentional
+- Track to understand system behavior
+- Sudden changes may indicate issues
+- Separate from error rate
+
+**Measurement:**
+```python
+# Calculate rejection rate
+summary = metrics.get_summary()
+total_requests = summary["requests_total"]
+total_rejections = sum(summary["rejections_total"].values())
+rejection_rate = (total_rejections / total_requests) * 100 if total_requests > 0 else 0
+```
+
+**Rejection Types:**
+- Pre-flight: Moral or grammar validation failed
+- Generation: MLSDM/FSLGS rejected during processing
+
+**Expected Range:** 5-30% depending on input quality
 
 ---
 
