@@ -1,9 +1,10 @@
 """Observability module for MLSDM Governed Cognitive Memory.
 
-This module provides structured logging and monitoring capabilities
-for the cognitive architecture system.
+This module provides structured logging, monitoring, and cost tracking
+capabilities for the cognitive architecture system.
 """
 
+from .cost import CostTracker, estimate_tokens
 from .logger import (
     EventType,
     ObservabilityLogger,
@@ -22,4 +23,6 @@ __all__ = [
     "MetricsExporter",
     "PhaseType",
     "get_metrics_exporter",
+    "CostTracker",
+    "estimate_tokens",
 ]

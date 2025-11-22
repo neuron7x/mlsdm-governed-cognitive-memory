@@ -131,23 +131,23 @@ class NeuroEngineConfig:
 
     # Observability / Metrics
     enable_metrics: bool = False
-    
+
     # Phase 7: Cost tracking and efficiency
     enable_cost_tracking: bool = True
     pricing: dict[str, float] | None = None  # Optional pricing config
-    
+
     # Phase 7: Semantic cache
     enable_semantic_cache: bool = True
     cache_max_entries: int = 1000
     cache_similarity_threshold: float = 0.85
     cache_moral_tolerance: float = 0.1
-    
+
     # Phase 7: Adaptive context management
     min_context_top_k: int = 3
     max_context_top_k: int = 10
     target_latency_ms: float = 1000.0
     max_memory_tokens: int = 100_000  # Trigger summarization
-    
+
     # Phase 7: QoS and graceful degradation
     priority_tier: Literal["low", "normal", "high"] = "normal"
     degradation_policy: dict[str, Any] = field(default_factory=lambda: {
@@ -214,15 +214,15 @@ class NeuroCognitiveEngine:
             # Import lazily to avoid circular dependencies
             # This is safe as metrics module has no dependencies on engine
             from mlsdm.observability.metrics import MetricsRegistry
-            
+
             self._metrics = MetricsRegistry()
-        
+
         # Phase 7: Cost tracking
         self._cost_tracker: Any | None = None
         if self.config.enable_cost_tracking:
             from mlsdm.observability.cost import CostTracker
             self._cost_tracker = CostTracker()
-        
+
         # Phase 7: Semantic cache
         self._semantic_cache: Any | None = None
         if self.config.enable_semantic_cache:
@@ -232,7 +232,7 @@ class NeuroCognitiveEngine:
                 similarity_threshold=self.config.cache_similarity_threshold,
                 moral_tolerance=self.config.cache_moral_tolerance,
             )
-        
+
         # Phase 7: Adaptive context - track recent latencies
         self._recent_latencies: deque[float] = deque(maxlen=10)
         self._under_load = False
@@ -290,42 +290,42 @@ class NeuroCognitiveEngine:
             enable_temporal_validation=self.config.enable_temporal_validation,
             enable_causal_checking=self.config.enable_causal_checking,
         )
-    
+
     def _adapt_context_parameters(
         self,
         timing: dict[str, float],
         cognitive_load: float
     ) -> int:
         """Adapt context_top_k based on recent latency and cognitive load.
-        
+
         Phase 7: Adaptive context management
         - If recent requests are slow (> target_latency_ms), reduce context_top_k
         - If fast and cognitive_load is high, increase up to max_context_top_k
         - Never go below min_context_top_k
-        
+
         Args:
             timing: Timing dict from recent request
             cognitive_load: Current cognitive load (0.0-1.0)
-            
+
         Returns:
             Adapted context_top_k value
         """
         # Track recent latency
         if "total" in timing:
             self._recent_latencies.append(timing["total"])
-        
+
         # Calculate average recent latency
         if not self._recent_latencies:
             return self.config.default_context_top_k
-        
+
         avg_latency = sum(self._recent_latencies) / len(self._recent_latencies)
-        
+
         # Determine if under load
         self._under_load = avg_latency > self.config.target_latency_ms
-        
+
         # Adapt context_top_k
         current_k = self._runtime_context_top_k
-        
+
         if self._under_load:
             # Reduce context under load
             new_k = max(
@@ -341,7 +341,7 @@ class NeuroCognitiveEngine:
         else:
             # Keep current
             new_k = current_k
-        
+
         return new_k
 
     # ------------------------------------------------------------------ #
@@ -394,11 +394,11 @@ class NeuroCognitiveEngine:
 
         mlsdm_state: dict[str, Any] | None = None
         fslgs_result: dict[str, Any] | None = None
-        
+
         # Phase 7: QoS - Apply degradation if under load
         effective_fslgs = self.config.enable_fslgs
         effective_max_tokens = max_tokens
-        
+
         if self._under_load:
             if self.config.priority_tier == "low":
                 # Low priority: apply aggressive degradation
@@ -417,7 +417,7 @@ class NeuroCognitiveEngine:
             # Phase 7: Semantic cache lookup
             cached_response: str | None = None
             query_embedding: Any = None
-            
+
             if self._semantic_cache is not None:
                 with TimingContext(timing, "cache_lookup"):
                     try:
@@ -428,7 +428,7 @@ class NeuroCognitiveEngine:
                     except Exception:
                         # Cache lookup failure shouldn't break the request
                         cached_response = None
-                    
+
                     if cached_response is not None:
                         # Cache hit - return immediately
                         return {
@@ -477,7 +477,7 @@ class NeuroCognitiveEngine:
                                 self._metrics.record_latency_pre_flight(timing["moral_precheck"])
                             if "total" in timing:
                                 self._metrics.record_latency_total(timing["total"])
-                        
+
                         return {
                             "response": "",
                             "governance": None,
@@ -527,7 +527,7 @@ class NeuroCognitiveEngine:
                                     self._metrics.record_latency_pre_flight(timing["grammar_precheck"])
                                 if "total" in timing:
                                     self._metrics.record_latency_total(timing["total"])
-                            
+
                             return {
                                 "response": "",
                                 "governance": None,
@@ -601,7 +601,7 @@ class NeuroCognitiveEngine:
                         self._metrics.record_latency_generation(timing["generation"])
                     if "total" in timing:
                         self._metrics.record_latency_total(timing["total"])
-                
+
                 return {
                     "response": "",
                     "governance": None,
@@ -623,7 +623,7 @@ class NeuroCognitiveEngine:
                         self._metrics.record_latency_generation(timing["generation"])
                     if "total" in timing:
                         self._metrics.record_latency_total(timing["total"])
-                
+
                 return {
                     "response": "",
                     "governance": fslgs_result,
@@ -648,7 +648,7 @@ class NeuroCognitiveEngine:
                 self._metrics.record_latency_generation(timing["generation"])
             if "total" in timing:
                 self._metrics.record_latency_total(timing["total"])
-        
+
         # Phase 7: Cost tracking
         cost_info = {
             "prompt_tokens": 0,
@@ -656,21 +656,21 @@ class NeuroCognitiveEngine:
             "total_tokens": 0,
             "estimated_cost_usd": 0.0,
         }
-        
+
         if self._cost_tracker is not None:
             from mlsdm.observability.cost import estimate_tokens
-            
+
             prompt_tokens = estimate_tokens(prompt)
             completion_tokens = estimate_tokens(response_text)
-            
+
             cost_info["prompt_tokens"] = prompt_tokens
             cost_info["completion_tokens"] = completion_tokens
             cost_info["total_tokens"] = prompt_tokens + completion_tokens
-            
+
             # Update tracker with pricing if configured
             self._cost_tracker.update(prompt, response_text, self.config.pricing)
             cost_info["estimated_cost_usd"] = self._cost_tracker.estimated_cost_usd
-        
+
         # Phase 7: Store in semantic cache
         if self._semantic_cache is not None and query_embedding is not None:
             try:
@@ -680,11 +680,11 @@ class NeuroCognitiveEngine:
             except Exception:
                 # Cache store failure shouldn't break the response
                 pass
-        
+
         # Phase 7: Adaptive context management
         new_context_k = self._adapt_context_parameters(timing, cognitive_load)
         self._runtime_context_top_k = new_context_k
-        
+
         return {
             "response": response_text,
             "governance": fslgs_result,
@@ -710,32 +710,32 @@ class NeuroCognitiveEngine:
 
     def get_metrics(self) -> Any | None:
         """Get MetricsRegistry instance if metrics are enabled.
-        
+
         Returns:
             MetricsRegistry instance or None if metrics are disabled
         """
         return self._metrics
-    
+
     def get_cache_stats(self) -> dict[str, Any] | None:
         """Get semantic cache statistics.
-        
+
         Returns:
             Cache statistics dict or None if cache is disabled
         """
         if self._semantic_cache is not None:
             return self._semantic_cache.get_stats()
         return None
-    
+
     def get_cost_summary(self) -> dict[str, Any] | None:
         """Get cost tracking summary.
-        
+
         Returns:
             Cost summary dict or None if cost tracking is disabled
         """
         if self._cost_tracker is not None:
             return self._cost_tracker.to_dict()
         return None
-    
+
     def clear_cache(self) -> None:
         """Clear the semantic cache."""
         if self._semantic_cache is not None:
