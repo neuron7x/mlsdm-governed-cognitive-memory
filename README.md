@@ -100,6 +100,38 @@ print(result["response"])
 print(f"Phase: {result['phase']}, Accepted: {result['accepted']}, Aphasia Flags: {result['aphasia_flags']}")
 ```
 
+### Loading Configuration from YAML
+
+You can also load aphasia configuration from a YAML file:
+
+```python
+from mlsdm.extensions import NeuroLangWrapper
+from mlsdm.utils.config_loader import ConfigLoader
+import numpy as np
+
+# Load configuration
+config = ConfigLoader.load_config("config/production.yaml")
+aphasia_params = ConfigLoader.get_aphasia_config_from_dict(config)
+
+# Your LLM and embedder functions
+def my_llm(prompt: str, max_tokens: int) -> str:
+    return "LLM response"
+
+def my_embedder(text: str) -> np.ndarray:
+    return np.random.randn(384).astype(np.float32)
+
+# Create wrapper with config
+wrapper = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embedder,
+    dim=384,
+    **aphasia_params  # Unpack aphasia config from file
+)
+
+result = wrapper.generate("Your prompt", moral_value=0.8)
+print(result["response"])
+```
+
 #### Aphasia-Broca Configuration Modes
 
 The Aphasia-Broca system supports three modes:

@@ -320,5 +320,77 @@ class TestErrorMessages:
         assert "aphasia" in error_msg
 
 
+class TestAphasiaConfigExtraction:
+    """Tests for aphasia configuration extraction helper."""
+
+    def test_extract_aphasia_config_from_dict(self):
+        """Test extracting aphasia config from loaded config dict."""
+        config_dict = {
+            "dimension": 384,
+            "aphasia": {
+                "detect_enabled": True,
+                "repair_enabled": False,
+                "severity_threshold": 0.5,
+            }
+        }
+
+        aphasia_params = ConfigLoader.get_aphasia_config_from_dict(config_dict)
+
+        assert aphasia_params == {
+            "aphasia_detect_enabled": True,
+            "aphasia_repair_enabled": False,
+            "aphasia_severity_threshold": 0.5,
+        }
+
+    def test_extract_aphasia_config_missing_section(self):
+        """Test extraction with missing aphasia section uses defaults."""
+        config_dict = {
+            "dimension": 384,
+        }
+
+        aphasia_params = ConfigLoader.get_aphasia_config_from_dict(config_dict)
+
+        # Should return defaults
+        assert aphasia_params == {
+            "aphasia_detect_enabled": True,
+            "aphasia_repair_enabled": True,
+            "aphasia_severity_threshold": 0.3,
+        }
+
+    def test_extract_aphasia_config_partial(self):
+        """Test extraction with partial aphasia config uses defaults for missing keys."""
+        config_dict = {
+            "dimension": 384,
+            "aphasia": {
+                "detect_enabled": False,
+                # repair_enabled and severity_threshold missing
+            }
+        }
+
+        aphasia_params = ConfigLoader.get_aphasia_config_from_dict(config_dict)
+
+        assert aphasia_params["aphasia_detect_enabled"] is False
+        assert aphasia_params["aphasia_repair_enabled"] is True  # default
+        assert aphasia_params["aphasia_severity_threshold"] == 0.3  # default
+
+    def test_extract_aphasia_config_from_file(self, tmp_path):
+        """Test extraction from actual YAML file."""
+        config_file = tmp_path / "config.yaml"
+        config_file.write_text("""
+dimension: 384
+aphasia:
+  detect_enabled: true
+  repair_enabled: false
+  severity_threshold: 0.7
+""")
+
+        config_dict = ConfigLoader.load_config(str(config_file), validate=False)
+        aphasia_params = ConfigLoader.get_aphasia_config_from_dict(config_dict)
+
+        assert aphasia_params["aphasia_detect_enabled"] is True
+        assert aphasia_params["aphasia_repair_enabled"] is False
+        assert aphasia_params["aphasia_severity_threshold"] == 0.7
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

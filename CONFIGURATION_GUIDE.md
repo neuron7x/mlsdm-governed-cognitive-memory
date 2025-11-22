@@ -53,7 +53,7 @@ multi_level_memory:
 ### Loading Configuration
 
 ```python
-from src.utils.config_loader import ConfigLoader
+from mlsdm.utils.config_loader import ConfigLoader
 
 # Load with validation (recommended)
 config = ConfigLoader.load_config("config/production.yaml", validate=True)
@@ -62,8 +62,15 @@ config = ConfigLoader.load_config("config/production.yaml", validate=True)
 config = ConfigLoader.load_config("config/custom.yaml", validate=False)
 
 # Get validated config object
-from src.utils.config_loader import ConfigLoader
 config_obj = ConfigLoader.load_validated_config("config/production.yaml")
+
+# Extract aphasia config for NeuroLangWrapper (convenience helper)
+aphasia_params = ConfigLoader.get_aphasia_config_from_dict(config)
+# Returns: {
+#   "aphasia_detect_enabled": bool,
+#   "aphasia_repair_enabled": bool,
+#   "aphasia_severity_threshold": float
+# }
 ```
 
 ## Configuration Schema
