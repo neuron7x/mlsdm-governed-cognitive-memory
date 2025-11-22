@@ -1,0 +1,16 @@
+{
+  "telegraphic": [
+    "This short. No connect. Bad.",
+    "Answer small. No details. Fragment only.",
+    "Plan good. Words broken. Syntax missing.",
+    "System ok. Text weird. Telegraphic.",
+    "Data fine. Explanation short. No linking words."
+  ],
+  "normal": [
+    "This is a coherent answer that uses normal grammar and function words.",
+    "The system explanation is clear, connected, and written in full sentences.",
+    "This response provides a detailed, well-structured description of the behaviour.",
+    "The answer flows logically and maintains proper syntax and function words.",
+    "This sentence demonstrates fluent language without telegraphic patterns."
+  ]
+}
