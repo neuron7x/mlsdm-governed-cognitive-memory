@@ -69,12 +69,13 @@ def create_test_engine(config=None):
             enable_fslgs=False,  # Disable FSLGS for simpler tests
         )
     
-    # Mock LLM function
-    def mock_llm(prompt, **kwargs):
-        # Simulate moral filtering based on content
-        if any(word in prompt.lower() for word in ["hate", "violence", "attack"]):
-            return "I cannot respond to harmful requests."
-        return f"Response to: {prompt[:20]}..."
+    # Mock LLM function - signature must match LLMWrapper expectations
+    class MockLLM:
+        def __call__(self, prompt_text, system_prompt="", temperature=0.7, max_tokens=150):
+            # Simulate moral filtering based on content
+            if any(word in prompt_text.lower() for word in ["hate", "violence", "attack"]):
+                return "I cannot respond to harmful requests."
+            return f"Response to: {prompt_text[:20]}..."
     
     # Mock embedding function
     def mock_embedding(text):
@@ -84,7 +85,7 @@ def create_test_engine(config=None):
         return vec / (np.linalg.norm(vec) + 1e-8)  # Normalize
     
     return NeuroCognitiveEngine(
-        llm_generate_fn=mock_llm,
+        llm_generate_fn=MockLLM(),
         embedding_fn=mock_embedding,
         config=config,
     )
@@ -223,17 +224,18 @@ def test_rejection_reason_validity(prompt):
     error = response.get("error")
     
     if rejected_at is not None:
-        # Valid rejection stages
+        # Valid rejection stages (from actual NCE implementation)
         valid_stages = {
             "pre_moral",
             "pre_grammar", 
             "fslgs",
             "mlsdm",
-            "post_validation"
+            "post_validation",
+            "generation"  # Can be rejected during generation phase
         }
         
         assert rejected_at in valid_stages, \
-            f"Invalid rejection stage: {rejected_at}"
+            f"Invalid rejection stage: {rejected_at}. Valid stages: {valid_stages}"
         
         assert error is not None, \
             "Rejection without error message"
@@ -295,8 +297,9 @@ def test_error_propagation(prompt):
     assume(len(prompt.strip()) > 0)
     
     # Create engine with intentionally failing LLM
-    def failing_llm(prompt, **kwargs):
-        raise RuntimeError("Simulated LLM failure")
+    class FailingLLM:
+        def __call__(self, prompt_text, system_prompt="", temperature=0.7, max_tokens=150):
+            raise RuntimeError("Simulated LLM failure")
     
     def mock_embedding(text):
         np.random.seed(42)
@@ -304,7 +307,7 @@ def test_error_propagation(prompt):
     
     config = NeuroEngineConfig(enable_fslgs=False)
     engine = NeuroCognitiveEngine(
-        llm_generate_fn=failing_llm,
+        llm_generate_fn=FailingLLM(),
         embedding_fn=mock_embedding,
         config=config,
     )
