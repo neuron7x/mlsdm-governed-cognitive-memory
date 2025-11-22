@@ -411,10 +411,20 @@ class NeuroLangWrapper(LLMWrapper):
             if self.neurolang_checkpoint_path is not None:
                 checkpoint_path = Path(self.neurolang_checkpoint_path)
                 if checkpoint_path.exists():
-                    checkpoint = torch.load(checkpoint_path, map_location=device)
-                    self.actor.load_state_dict(checkpoint["actor"])
-                    self.critic.load_state_dict(checkpoint["critic"])
-                    checkpoint_loaded = True
+                    try:
+                        checkpoint = torch.load(checkpoint_path, map_location=device)
+                        if "actor" not in checkpoint or "critic" not in checkpoint:
+                            raise ValueError(
+                                f"Invalid checkpoint file: missing 'actor' or 'critic' keys. "
+                                f"Expected keys: ['actor', 'critic'], found: {list(checkpoint.keys())}"
+                            )
+                        self.actor.load_state_dict(checkpoint["actor"])
+                        self.critic.load_state_dict(checkpoint["critic"])
+                        checkpoint_loaded = True
+                    except Exception as e:
+                        raise ValueError(
+                            f"Failed to load NeuroLang checkpoint from '{self.neurolang_checkpoint_path}': {str(e)}"
+                        ) from e
             
             # Train based on mode and checkpoint availability
             if not checkpoint_loaded:
@@ -431,7 +441,7 @@ class NeuroLangWrapper(LLMWrapper):
 
     def generate(self, prompt: str, moral_value: float = 0.5, max_tokens: int = 50) -> dict:
         # Handle lazy training: train on first generation if not yet trained
-        if self.neurolang_mode == "lazy_train" and hasattr(self, '_trained') and not self._trained:
+        if self.neurolang_mode == "lazy_train" and not self._trained:
             with self._train_lock:
                 # Double-check after acquiring lock
                 if not self._trained:

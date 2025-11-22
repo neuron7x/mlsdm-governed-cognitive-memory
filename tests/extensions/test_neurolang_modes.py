@@ -252,5 +252,50 @@ def test_neurolang_disabled_preserves_aphasia_functionality():
     assert result["aphasia_flags"]["severity"] > 0.0
 
 
+def test_neurolang_checkpoint_invalid_format_raises_error():
+    """Test that loading an invalid checkpoint raises a clear error."""
+    # Create a checkpoint with wrong format
+    with tempfile.NamedTemporaryFile(suffix=".pt", delete=False) as tmp_file:
+        checkpoint_path = tmp_file.name
+    
+    try:
+        # Save invalid checkpoint (missing required keys)
+        invalid_checkpoint = {"wrong_key": "wrong_value"}
+        torch.save(invalid_checkpoint, checkpoint_path)
+        
+        # Should raise clear error about missing keys
+        with pytest.raises(ValueError, match="Invalid checkpoint file.*missing 'actor' or 'critic'"):
+            NeuroLangWrapper(
+                llm_generate_fn=dummy_llm,
+                embedding_fn=dummy_embedder,
+                dim=384,
+                neurolang_mode="eager_train",
+                neurolang_checkpoint_path=checkpoint_path,
+            )
+    finally:
+        Path(checkpoint_path).unlink(missing_ok=True)
+
+
+def test_neurolang_checkpoint_corrupted_raises_error():
+    """Test that loading a corrupted checkpoint raises a clear error."""
+    # Create a corrupted file
+    with tempfile.NamedTemporaryFile(suffix=".pt", delete=False) as tmp_file:
+        checkpoint_path = tmp_file.name
+        tmp_file.write(b"corrupted data that is not a valid torch checkpoint")
+    
+    try:
+        # Should raise clear error about loading failure
+        with pytest.raises(ValueError, match="Failed to load NeuroLang checkpoint"):
+            NeuroLangWrapper(
+                llm_generate_fn=dummy_llm,
+                embedding_fn=dummy_embedder,
+                dim=384,
+                neurolang_mode="eager_train",
+                neurolang_checkpoint_path=checkpoint_path,
+            )
+    finally:
+        Path(checkpoint_path).unlink(missing_ok=True)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
