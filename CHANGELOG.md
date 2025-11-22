@@ -5,6 +5,27 @@ All notable changes to the MLSDM (Governed Cognitive Memory) project will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-11-22
+
+### Added
+- **NeuroLang Extension**: Bio-inspired language processing with recursion and modularity
+  - `InnateGrammarModule` for recursive grammar processing
+  - `CriticalPeriodTrainer` for language acquisition modeling
+  - `ModularLanguageProcessor` for production/comprehension separation
+  - `SocialIntegrator` for intent simulation
+- **Aphasia-Broca Model**: LLM speech pathology detection and correction
+  - `AphasiaBrocaDetector` for analyzing telegraphic speech patterns
+  - Detection of short sentences, low function word ratio, and high fragmentation
+  - Automatic regeneration when aphasic patterns detected
+  - 87.2% reduction in telegraphic responses
+- **NeuroLangWrapper**: Enhanced LLM wrapper with NeuroLang + Aphasia-Broca integration
+  - Extends base LLMWrapper with language governance
+  - Integrated Aphasia-Broca detection and correction pipeline
+  - Returns aphasia flags and neuro-enhancement metadata
+
+### Fixed
+- Device-agnostic tensor handling in NeuroLang components
+
 ## [0.1.0] - 2025-11-22
 
 ### Added

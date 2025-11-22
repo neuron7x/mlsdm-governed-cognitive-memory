@@ -1,9 +1,9 @@
 # Architecture Specification
 
-**Document Version:** 1.0.0  
-**Project Version:** 1.0.0  
+**Document Version:** 1.1.0  
+**Project Version:** 1.1.0  
 **Last Updated:** November 2025  
-**Status:** Production
+**Status:** Beta
 
 ## Table of Contents
 
@@ -21,7 +21,7 @@
 
 ## Overview
 
-MLSDM (Multi-Level Synaptic Dynamic Memory) Governed Cognitive Memory is a production-ready neurobiologically-grounded cognitive architecture that provides universal LLM wrapping with moral governance, phase-based memory, and cognitive rhythm enforcement.
+MLSDM (Multi-Level Synaptic Dynamic Memory) Governed Cognitive Memory is a neurobiologically-grounded cognitive architecture that provides universal LLM wrapping with moral governance, phase-based memory, cognitive rhythm enforcement, and language pathology detection via the Aphasia-Broca model.
 
 ### Architecture Goals
 
@@ -88,6 +88,12 @@ MLSDM (Multi-Level Synaptic Dynamic Memory) Governed Cognitive Memory is a produ
    - **Cognitive Rhythm**: Wake/sleep cycle management
    - **Memory System**: Multi-level storage with phase entanglement
    - **Ontology Matcher**: Semantic classification and matching
+
+4. **Language Processing Extensions** (`src/mlsdm/extensions/neuro_lang_extension.py` - in development)
+   - **NeuroLang Modules**: Bio-inspired language processing
+   - **Aphasia-Broca Detector**: Speech pathology detection and correction
+   
+   > **Note:** Implementation will be added in a separate PR following this specification update.
 
 ---
 
@@ -352,9 +358,106 @@ class OntologyMatcher:
 
 ---
 
+### 8. NeuroLangWrapper
+
+**Location:** `src/mlsdm/extensions/neuro_lang_extension.py` (planned implementation)  
+**Purpose:** Enhanced LLM wrapper with NeuroLang language processing and Aphasia-Broca detection
+
+> **Implementation Note:** This component specification reflects the planned API. Implementation will be added in a subsequent PR.
+
+**Key Responsibilities:**
+- Extend base LLMWrapper with language-specific processing
+- Apply NeuroLang grammar enrichment to prompts
+- Detect aphasic speech patterns in LLM outputs
+- Trigger regeneration when telegraphic responses detected
+- Return structured metadata about language processing
+
+**Interface:**
+```python
+class NeuroLangWrapper(LLMWrapper):
+    def __init__(
+        llm_generate_fn: Callable[[str, int], str],
+        embedding_fn: Callable[[str], np.ndarray],
+        dim: int = 384,
+        capacity: int = 20_000,
+        wake_duration: int = 8,
+        sleep_duration: int = 3,
+        initial_moral_threshold: float = 0.50
+    ) -> None
+    
+    def generate(
+        prompt: str,
+        moral_value: float,
+        max_tokens: Optional[int] = None,
+        context_top_k: int = 5
+    ) -> dict  # Includes aphasia_flags and neuro_enhancement
+```
+
+**Components:**
+- `InnateGrammarModule`: Provides recursive grammar templates
+- `CriticalPeriodTrainer`: Models language acquisition windows
+- `ModularLanguageProcessor`: Separates production/comprehension
+- `SocialIntegrator`: Simulates pragmatic intent
+- `AphasiaBrocaDetector`: Analyzes speech quality
+
+---
+
+### 9. AphasiaBrocaDetector
+
+**Location:** `src/mlsdm/extensions/neuro_lang_extension.py` (planned implementation)  
+**Purpose:** Detect and quantify telegraphic speech patterns in LLM outputs
+
+> **Implementation Note:** This component specification reflects the planned API. Implementation will be added in a subsequent PR.
+
+**Key Responsibilities:**
+- Analyze text for Broca-like aphasia characteristics
+- Measure sentence length, function word ratio, fragmentation
+- Calculate severity score (0.0 = healthy, 1.0 = severe)
+- Provide structured diagnostic output
+- Support regeneration decisions
+
+**Interface:**
+```python
+class AphasiaBrocaDetector:
+    def __init__() -> None  # Stateless
+    
+    def analyze(text: str) -> dict:
+        return {
+            "is_aphasic": bool,
+            "severity": float,
+            "avg_sentence_len": float,
+            "function_word_ratio": float,
+            "fragment_ratio": float,
+            "flags": List[str]
+        }
+```
+
+**Detection Criteria:**
+- **Non-Aphasic**: avg_sentence_len ≥ 6, function_word_ratio ≥ 0.15, fragment_ratio ≤ 0.5
+- **Aphasic**: Any threshold violated
+
+**Algorithm:**
+```python
+# Severity calculation
+σ = min(1.0, (
+    (MIN_LEN - avg_len) / MIN_LEN +
+    (MIN_FUNC - func_ratio) / MIN_FUNC +
+    (frag_ratio - MAX_FRAG) / MAX_FRAG
+) / 3)
+```
+
+**Performance:**
+- Latency: ~1-2ms for 100-word text
+- Thread-safe (stateless, pure functional)
+- O(n) time complexity
+
+For detailed specification, see [APHASIA_SPEC.md](APHASIA_SPEC.md).
+
+---
+
 ## Component Interactions
 
-### Event Processing Flow
+### Event Processing Flow (Base LLMWrapper)
 
 ```
 1. User calls wrapper.generate(prompt, moral_value)
@@ -380,6 +483,42 @@ class OntologyMatcher:
 10. Wrapper calls LLM with enriched prompt + phase-adjusted tokens
     │
 11. Response returned with governance metadata
+```
+
+### NeuroLang Processing Flow (NeuroLangWrapper)
+
+```
+1. User calls wrapper.generate(prompt, moral_value)
+   │
+2. NeuroLang enrichment
+   │   ├─ InnateGrammarModule processes prompt
+   │   ├─ ModularLanguageProcessor adds structure
+   │   └─ SocialIntegrator adds pragmatic context
+   │
+3. Wrapper creates embedding of enriched prompt
+   │
+4. Controller receives process_event(embedding, moral_value)
+   │   ├─ MoralFilter evaluation
+   │   ├─ CognitiveRhythm phase management
+   │   └─ Memory storage (QILM + MultiLevelMemory)
+   │
+5. If accepted: LLM generates base_response
+   │
+6. AphasiaBrocaDetector analyzes base_response
+   │   ├─ Check: avg_sentence_len ≥ 6?
+   │   ├─ Check: function_word_ratio ≥ 0.15?
+   │   └─ Check: fragment_ratio ≤ 0.5?
+   │
+7. If aphasic detected:
+   │   ├─ Construct correction prompt
+   │   ├─ Regenerate with grammar requirements
+   │   └─ Re-analyze until healthy
+   │
+8. Response returned with extended metadata:
+   │   ├─ response (corrected if needed)
+   │   ├─ phase, accepted
+   │   ├─ neuro_enhancement (NeuroLang additions)
+   │   └─ aphasia_flags (detection results)
 ```
 
 ### Concurrent Access Pattern
@@ -550,6 +689,8 @@ All components derive from established neuroscience principles:
 - **Synaptic Decay:** Multi-level memory with forgetting
 - **Moral Homeostasis:** Adaptive threshold regulation
 - **Phase Entanglement:** Hippocampal replay and consolidation
+- **Broca's Area Model:** Speech production and grammar processing (Aphasia-Broca detection)
+- **Modular Language Processing:** Separate comprehension and production pathways
 
 ### 2. Bounded Resources
 
@@ -560,9 +701,11 @@ System designed for production environments with strict limits:
 
 ### 3. Safety and Governance
 
-Moral governance without external training:
+Moral governance and language quality without external training:
 - **Adaptive Thresholds:** Self-regulating based on patterns
 - **No RLHF Required:** Built-in moral evaluation
+- **Speech Pathology Detection:** Automatic identification of telegraphic responses
+- **Self-Correction:** Regeneration when quality thresholds violated
 - **Transparent Decisions:** Observable threshold and reasoning
 - **Drift Resistance:** Bounded adaptation steps
 
@@ -591,10 +734,11 @@ For detailed scientific foundations and implementation decisions, see:
 - [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md) - Scientific references
 - [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) - Implementation details
 - [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md) - Empirical validation
+- [APHASIA_SPEC.md](APHASIA_SPEC.md) - Aphasia-Broca Model specification
 
 ---
 
-**Document Status:** Production  
-**Review Cycle:** Quarterly  
-**Last Reviewed:** November 2025  
-**Next Review:** February 2026
+**Document Status:** Beta  
+**Review Cycle:** Per minor version  
+**Last Reviewed:** November 22, 2025  
+**Next Review:** Version 1.2.0 release
