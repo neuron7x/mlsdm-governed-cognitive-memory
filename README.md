@@ -38,16 +38,31 @@ pip install -r requirements.txt
 python tests/integration/test_end_to_end.py
 ```
 
+### Optional: NeuroLang Extension
+
+The **NeuroLang + Aphasia-Broca extension is optional** and requires PyTorch:
+
+```bash
+pip install torch>=2.0.0  # Only if using NeuroLangWrapper
+```
+
+**Core MLSDM functionality works without PyTorch.** The base `LLMWrapper` and `CognitiveController` do not require the NeuroLang extension. Only use `NeuroLangWrapper` if you need:
+- Bio-inspired language processing with recursive grammar
+- Aphasia-Broca detection for telegraphic speech patterns
+- Advanced language pathology correction
+
+For most use cases, the base `LLMWrapper` is sufficient.
+
 ## Quick Start
 
 ### Universal LLM Wrapper (Recommended)
 
 Wrap any LLM with cognitive governance and Aphasia-Broca speech pathology detection:
 
-> **Note:** The NeuroLang extension implementation (`src/mlsdm/extensions/neuro_lang_extension.py`) is currently in development and will be added in an upcoming PR. This documentation reflects the planned API.
+> **Note:** This requires PyTorch. See [Optional: NeuroLang Extension](#optional-neurolang-extension) section above.
 
 ```python
-from mlsdm.extensions.neuro_lang_extension import NeuroLangWrapper
+from mlsdm.extensions import NeuroLangWrapper
 import numpy as np
 
 # Your LLM function (OpenAI, Anthropic, local model, etc.)
