@@ -9,6 +9,7 @@ Usage:
 """
 
 import sys
+import traceback
 from pathlib import Path
 
 import numpy as np
@@ -30,7 +31,7 @@ def dummy_llm(prompt: str, max_tokens: int) -> str:
 
 def dummy_embedder(text: str) -> np.ndarray:
     """Dummy embedder that returns normalized deterministic vectors."""
-    np.random.seed(hash(text) % (2**32))
+    np.random.seed(hash(text) & 0xFFFFFFFF)
     vec = np.random.randn(384).astype(np.float32)
     return vec / np.linalg.norm(vec)
 
@@ -147,7 +148,6 @@ def main():
         print("SMOKE TEST FAILED ✗")
         print("=" * 70)
         print(f"\nError: {e}")
-        import traceback
         traceback.print_exc()
         sys.exit(1)
 

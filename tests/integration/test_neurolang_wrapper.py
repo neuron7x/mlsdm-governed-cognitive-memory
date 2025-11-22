@@ -19,7 +19,9 @@ def dummy_llm(prompt: str, max_tokens: int) -> str:
 
 
 def dummy_embedder(text: str):
-    vec = np.ones(384, dtype=np.float32)
+    """Generate deterministic embeddings based on text hash."""
+    np.random.seed(hash(text) & 0xFFFFFFFF)
+    vec = np.random.randn(384).astype(np.float32)
     return vec / np.linalg.norm(vec)
 
 
