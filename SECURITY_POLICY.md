@@ -761,3 +761,145 @@ HEALTHCHECK --interval=30s --timeout=3s \
 **Review Cycle:** Quarterly  
 **Last Reviewed:** November 2025  
 **Next Review:** February 2026
+
+---
+
+## Phase 6: API Security Baseline (2025 Practices)
+
+### Secret Management
+
+**Environment-Only Secrets**
+- All secrets (API keys, tokens, credentials) MUST be passed via environment variables
+- Secrets MUST NEVER be hardcoded in source code or configuration files
+- Use `.env` files only for local development (excluded from version control)
+
+**Supported Secrets:**
+- `OPENAI_API_KEY`: OpenAI API key (when using OpenAI backend)
+- `RATE_LIMIT_REQUESTS`: Maximum requests per window (default: 100)
+- `RATE_LIMIT_WINDOW`: Time window in seconds (default: 60)
+- `LOG_PAYLOADS`: Enable payload logging (default: false, see below)
+
+### Payload Logging Control
+
+**Default Behavior (LOG_PAYLOADS=false)**
+- Raw prompts and responses are NOT logged to stdout/stderr
+- Only metadata (timing, status, errors) is logged
+- Secret scrubbing is applied to all logged content
+
+**Explicit Logging (LOG_PAYLOADS=true)**
+- Enables logging of request/response payloads for debugging
+- Secrets are automatically scrubbed using regex patterns
+- Should only be used in development or controlled environments
+- NOT recommended for production due to privacy/compliance concerns
+
+**Secret Scrubbing Patterns:**
+- API keys (various formats including `sk-*`, `Bearer`, generic patterns)
+- Passwords and tokens
+- AWS credentials (AKIA*, secret keys)
+- Private keys (PEM format)
+- Credit card numbers
+- Configurable via `mlsdm.security.payload_scrubber` module
+
+### Rate Limiting
+
+**In-Memory Rate Limiter**
+- Simple token bucket implementation per client IP
+- Default: 100 requests per 60-second window
+- Configurable via `RATE_LIMIT_REQUESTS` and `RATE_LIMIT_WINDOW`
+
+**Limitations (Known, Documented):**
+- **Single-Process Only**: Rate limits are per-instance, not distributed
+- Each application instance maintains its own rate limit state
+- In multi-instance deployments, actual limit = configured_limit × number_of_instances
+- No persistence across restarts
+
+**Production Recommendations:**
+- For single-instance deployments: Current implementation is adequate
+- For multi-instance deployments: 
+  - Use external rate limiting (nginx, API gateway, Kong, etc.)
+  - OR implement Redis-based distributed rate limiting
+  - Current implementation provides defense-in-depth even with external limiting
+
+**Rate Limit Response:**
+- HTTP 429 (Too Many Requests) when limit exceeded
+- Includes standard headers (future enhancement: Retry-After, X-RateLimit-*)
+
+### HTTP API Security Headers
+
+**Recommended Headers (to be added by reverse proxy/ingress):**
+```
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 1; mode=block
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+Content-Security-Policy: default-src 'self'
+```
+
+### Docker Security
+
+**Container Security:**
+- Non-root user (UID 1000 "neuro")
+- Minimal base image (python:3.11-slim)
+- Read-only root filesystem where possible
+- Dropped capabilities (ALL)
+- Security contexts in Kubernetes manifests
+
+**Health Checks:**
+- Liveness probe: `/healthz` endpoint
+- Readiness probe: `/healthz` endpoint
+- Startup probe recommended for slow-starting instances
+
+### Kubernetes Security
+
+**Pod Security:**
+- `runAsNonRoot: true`
+- `runAsUser: 1000`
+- `allowPrivilegeEscalation: false`
+- `capabilities.drop: [ALL]`
+
+**Secrets Management:**
+- Use Kubernetes Secrets for sensitive configuration
+- Example provided for `OPENAI_API_KEY` in deployment manifest
+- Consider external secret management (Vault, AWS Secrets Manager, etc.)
+
+### Known Security Limitations
+
+**Documented for Transparency:**
+
+1. **In-Memory Rate Limiting**
+   - Not suitable for distributed deployments without external rate limiting
+   - State lost on restart
+   - No cross-instance coordination
+
+2. **Secret Scrubbing**
+   - Regex-based, may not catch all custom secret formats
+   - Best-effort approach, not guaranteed to catch 100% of secrets
+   - Regular updates to patterns recommended
+
+3. **No Built-in Authentication**
+   - HTTP API has no built-in user authentication/authorization
+   - Intended to be deployed behind authenticated API gateway or proxy
+   - Consider implementing API keys or OAuth2 for production
+
+4. **No TLS/HTTPS Termination**
+   - Application serves HTTP only
+   - TLS must be terminated at load balancer/ingress level
+   - Never expose port 8000 directly to internet
+
+5. **Limited Request Validation**
+   - Basic Pydantic validation only
+   - No sophisticated attack pattern detection
+   - WAF recommended for production deployments
+
+### Security Checklist for Production Deployment
+
+- [ ] All secrets provided via environment variables or Kubernetes Secrets
+- [ ] `LOG_PAYLOADS=false` (or removed, defaults to false)
+- [ ] TLS termination configured at load balancer/ingress
+- [ ] Rate limiting configured (external system recommended for multi-instance)
+- [ ] Security headers added at reverse proxy level
+- [ ] Health check endpoints accessible to orchestration system
+- [ ] Resource limits configured (CPU, memory)
+- [ ] Monitoring and alerting configured
+- [ ] Regular security updates applied (dependencies, base images)
+- [ ] Incident response procedures documented

@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from mlsdm.engine import NeuroEngineConfig, build_neuro_engine_from_env
 from mlsdm.observability.metrics import MetricsRegistry
+from mlsdm.security import get_rate_limiter, scrub_dict, should_log_payload
 
 # ---------------------------------------------------------------------------
 # Request/Response Models
@@ -111,11 +112,19 @@ def create_app() -> FastAPI:
     metrics_registry = None
     if enable_metrics:
         metrics_registry = MetricsRegistry()
+    # Initialize rate limiter
+    rate_limiter_requests = int(os.environ.get("RATE_LIMIT_REQUESTS", "100"))
+    rate_limiter_window = int(os.environ.get("RATE_LIMIT_WINDOW", "60"))
+    rate_limiter = get_rate_limiter(
+        requests_per_window=rate_limiter_requests,
+        window_seconds=rate_limiter_window,
+    )
 
     # Store in app state
     app.state.engine = engine
     app.state.backend = backend
     app.state.metrics = metrics_registry
+    app.state.rate_limiter = rate_limiter
 
     @app.post(
         "/v1/neuro/generate",
@@ -141,6 +150,14 @@ def create_app() -> FastAPI:
             HTTPException: If generation fails due to invalid input or internal error.
         """
         start_time = time.time()
+
+        # Rate limiting check
+        client_ip = request.client.host if request.client else "unknown"
+        if request.app.state.rate_limiter and not request.app.state.rate_limiter.is_allowed(client_ip):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Rate limit exceeded. Please try again later.",
+            )
 
         try:
             # Build kwargs for engine
