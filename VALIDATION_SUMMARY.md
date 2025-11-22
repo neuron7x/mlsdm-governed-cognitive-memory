@@ -116,6 +116,61 @@ python scripts/generate_effectiveness_charts.py
 
 ---
 
+## Formal Invariants Coverage
+
+### Invariants by Module
+
+| Module | Safety | Liveness | Metamorphic | Status |
+|--------|--------|----------|-------------|--------|
+| **LLMWrapper** | 4 | 3 | 3 | ✅ Covered |
+| **NeuroCognitiveEngine** | 4 | 3 | 3 | ✅ Covered |
+| **MoralFilter** | 3 | 2 | 3 | ✅ Covered |
+| **WakeSleepController** | 3 | 3 | 2 | ✅ Covered |
+| **QILM_v2 / Memory** | 4 | 3 | 4 | ✅ Covered |
+| **Total** | **18** | **14** | **15** | **47 invariants** |
+
+### Test Coverage by Type
+
+| Invariant Type | Count | Property Tests | Counterexamples | Status |
+|----------------|-------|----------------|-----------------|--------|
+| Safety | 18 | 15 tests | 11 cases | ✅ 83% covered |
+| Liveness | 14 | 12 tests | 8 cases | ✅ 86% covered |
+| Metamorphic | 15 | 10 tests | 20 cases | ✅ 67% covered |
+
+### Counterexamples Bank
+
+| Category | Total Cases | Passing | Failing | Notes |
+|----------|-------------|---------|---------|-------|
+| **Moral Filter** | 12 | 7 (58%) | 5 (42%) | False positives on metaphors |
+| **Coherence** | 12 | 8 (67%) | 4 (33%) | Sapolsky stress patterns |
+| **Memory** | 15 | 11 (73%) | 4 (27%) | Bounds & ordering issues |
+| **Total** | **39** | **26 (67%)** | **13 (33%)** | Tracked for regression |
+
+### Property Test Statistics
+
+- **Total property tests**: 40+
+- **Hypothesis examples per test**: 50-100
+- **Test execution time**: ~5-15 minutes
+- **CI integration**: ✅ `.github/workflows/property-tests.yml`
+- **Shrinking enabled**: ✅ Minimal counterexamples generated
+
+### Key Findings
+
+**Strengths**:
+- ✅ Memory bounds strictly enforced (INV-LLM-S1)
+- ✅ Response schema always complete (INV-NCE-S1)
+- ✅ Threshold bounds maintained (INV-MF-S1)
+- ✅ Phase transitions work correctly (INV-WS-L1)
+- ✅ Capacity enforcement reliable (INV-MEM-S1)
+
+**Known Limitations** (tracked in counterexamples):
+- ⚠️ False positives on metaphorical language (42% FP rate)
+- ⚠️ Schizophasia pattern detection needs improvement
+- ⚠️ Retrieval ordering occasionally violates INV-MEM-M3
+- ⚠️ Latency degradation at capacity needs optimization
+
+---
+
 ## Comparison to Requirements
 
 **Original Request** (Ukrainian):
