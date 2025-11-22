@@ -222,3 +222,37 @@ class ConfigLoader:
             "aphasia_repair_enabled": aphasia_section.get("repair_enabled", True),
             "aphasia_severity_threshold": aphasia_section.get("severity_threshold", 0.3),
         }
+
+    @staticmethod
+    def get_neurolang_config_from_dict(config_dict: dict[str, Any]) -> dict[str, Any]:
+        """Extract NeuroLang configuration parameters for NeuroLangWrapper.
+
+        This is a convenience method to extract NeuroLang configuration
+        from a loaded config dict and return it in a format suitable
+        for passing to NeuroLangWrapper constructor.
+
+        Args:
+            config_dict: Configuration dictionary (from load_config)
+
+        Returns:
+            Dictionary with keys matching NeuroLangWrapper neurolang parameters:
+            - neurolang_mode: str
+            - neurolang_checkpoint_path: str | None
+
+        Example:
+            >>> config = ConfigLoader.load_config("config/production.yaml")
+            >>> neu_params = ConfigLoader.get_neurolang_config_from_dict(config)
+            >>> aphasia_params = ConfigLoader.get_aphasia_config_from_dict(config)
+            >>> wrapper = NeuroLangWrapper(
+            ...     llm_generate_fn=my_llm,
+            ...     embedding_fn=my_embed,
+            ...     dim=384,
+            ...     **aphasia_params,
+            ...     **neu_params
+            ... )
+        """
+        neurolang_section = config_dict.get("neurolang", {})
+        return {
+            "neurolang_mode": neurolang_section.get("mode", "eager_train"),
+            "neurolang_checkpoint_path": neurolang_section.get("checkpoint_path"),
+        }

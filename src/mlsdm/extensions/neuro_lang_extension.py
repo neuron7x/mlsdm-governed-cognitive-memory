@@ -1,5 +1,8 @@
+import os
 import random
 import re
+import threading
+from pathlib import Path
 
 import torch
 import torch.nn as nn
@@ -348,6 +351,8 @@ class NeuroLangWrapper(LLMWrapper):
         aphasia_detect_enabled=True,
         aphasia_repair_enabled=True,
         aphasia_severity_threshold=0.3,
+        neurolang_mode="eager_train",
+        neurolang_checkpoint_path=None,
     ):
         super().__init__(
             llm_generate_fn=llm_generate_fn,
@@ -358,34 +363,91 @@ class NeuroLangWrapper(LLMWrapper):
             sleep_duration=sleep_duration,
             initial_moral_threshold=initial_moral_threshold,
         )
-        self.dataset = LanguageDataset(all_sentences)
-        vocab_size = len(self.dataset.vocab)
-
-        self.actor = InnateGrammarModule(vocab_size)
-        self.critic = InnateGrammarModule(vocab_size)
-
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.actor.to(device)
-        self.critic.to(device)
-
-        self.trainer = CriticalPeriodTrainer(self.actor, self.critic, self.dataset, epochs=3)
-        self.trainer.train()
-
-        self.processor1 = ModularLanguageProcessor(self.actor, self.critic, self.dataset)
-        self.processor2 = ModularLanguageProcessor(self.critic, self.actor, self.dataset)
-        self.integrator = SocialIntegrator(self.processor1, self.processor2)
-
-        self.controller = CognitiveController(dim)
-        self.aphasia_detector = AphasiaBrocaDetector()
         
         # Aphasia-Broca configuration flags
         self.aphasia_detect_enabled = bool(aphasia_detect_enabled)
         self.aphasia_repair_enabled = bool(aphasia_repair_enabled)
         self.aphasia_severity_threshold = float(aphasia_severity_threshold)
+        
+        # NeuroLang mode configuration
+        if neurolang_mode not in ("eager_train", "lazy_train", "disabled"):
+            raise ValueError(
+                f"Invalid neurolang_mode: {neurolang_mode}. "
+                "Must be one of: 'eager_train', 'lazy_train', 'disabled'"
+            )
+        self.neurolang_mode = neurolang_mode
+        self.neurolang_checkpoint_path = neurolang_checkpoint_path
+        
+        # Always initialize controller and aphasia detector
+        self.controller = CognitiveController(dim)
+        self.aphasia_detector = AphasiaBrocaDetector()
+        
+        # Initialize NeuroLang components based on mode
+        if self.neurolang_mode == "disabled":
+            # Disabled mode: skip NeuroLang components entirely
+            self.actor = None
+            self.critic = None
+            self.trainer = None
+            self.processor1 = None
+            self.processor2 = None
+            self.integrator = None
+            self.dataset = None
+        else:
+            # Eager or lazy training mode: initialize components
+            self.dataset = LanguageDataset(all_sentences)
+            vocab_size = len(self.dataset.vocab)
+
+            self.actor = InnateGrammarModule(vocab_size)
+            self.critic = InnateGrammarModule(vocab_size)
+
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            self.actor.to(device)
+            self.critic.to(device)
+
+            self.trainer = CriticalPeriodTrainer(self.actor, self.critic, self.dataset, epochs=3)
+            
+            # Load checkpoint if provided
+            checkpoint_loaded = False
+            if self.neurolang_checkpoint_path is not None:
+                checkpoint_path = Path(self.neurolang_checkpoint_path)
+                if checkpoint_path.exists():
+                    checkpoint = torch.load(checkpoint_path, map_location=device)
+                    self.actor.load_state_dict(checkpoint["actor"])
+                    self.critic.load_state_dict(checkpoint["critic"])
+                    checkpoint_loaded = True
+            
+            # Train based on mode and checkpoint availability
+            if not checkpoint_loaded:
+                if self.neurolang_mode == "eager_train":
+                    self.trainer.train()
+                elif self.neurolang_mode == "lazy_train":
+                    # For lazy training, set up state tracking
+                    self._trained = False
+                    self._train_lock = threading.Lock()
+
+            self.processor1 = ModularLanguageProcessor(self.actor, self.critic, self.dataset)
+            self.processor2 = ModularLanguageProcessor(self.critic, self.actor, self.dataset)
+            self.integrator = SocialIntegrator(self.processor1, self.processor2)
 
     def generate(self, prompt: str, moral_value: float = 0.5, max_tokens: int = 50) -> dict:
-        neuro_response = self.integrator.interact(prompt, prompt)
-        embedding = self.embed(neuro_response)
+        # Handle lazy training: train on first generation if not yet trained
+        if self.neurolang_mode == "lazy_train" and hasattr(self, '_trained') and not self._trained:
+            with self._train_lock:
+                # Double-check after acquiring lock
+                if not self._trained:
+                    self.trainer.train()
+                    self._trained = True
+        
+        # Generate NeuroLang enhancement based on mode
+        if self.neurolang_mode == "disabled":
+            # Disabled mode: skip NeuroLang enhancement
+            neuro_response = "NeuroLang disabled"
+            embedding = self.embed(prompt)
+        else:
+            # Enabled mode: use NeuroLang integrator
+            neuro_response = self.integrator.interact(prompt, prompt)
+            embedding = self.embed(neuro_response)
+        
         state = self.controller.process_event(embedding, moral_value)
 
         if not state["accepted"]:
@@ -397,8 +459,12 @@ class NeuroLangWrapper(LLMWrapper):
                 "aphasia_flags": None,
             }
 
-        enhanced_prompt = f"{prompt}\n\n[NeuroLang enhancement]: {neuro_response}"
-        base_response = self.llm_generate(enhanced_prompt, max_tokens)
+        # Generate LLM response with or without NeuroLang enhancement
+        if self.neurolang_mode == "disabled":
+            base_response = self.llm_generate(prompt, max_tokens)
+        else:
+            enhanced_prompt = f"{prompt}\n\n[NeuroLang enhancement]: {neuro_response}"
+            base_response = self.llm_generate(enhanced_prompt, max_tokens)
 
         # Aphasia detection gate
         if not self.aphasia_detect_enabled:
