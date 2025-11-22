@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader, Dataset, Sampler
 
 from mlsdm.core.cognitive_controller import CognitiveController
 from mlsdm.core.llm_wrapper import LLMWrapper
+from mlsdm.observability.aphasia_logging import AphasiaLogEvent, log_aphasia_event
 
 simple_sentences = [
     "The cat ran.",
@@ -419,6 +420,26 @@ class NeuroLangWrapper(LLMWrapper):
             and aphasia_report["is_aphasic"]
             and aphasia_report["severity"] >= self.aphasia_severity_threshold
         )
+
+        # Determine decision for logging
+        if should_repair:
+            decision = "repaired"
+        elif aphasia_report["is_aphasic"]:
+            decision = "detected_no_repair"
+        else:
+            decision = "skip"
+
+        # Log aphasia event for observability
+        log_event = AphasiaLogEvent(
+            decision=decision,
+            is_aphasic=aphasia_report["is_aphasic"],
+            severity=aphasia_report["severity"],
+            flags=aphasia_report["flags"],
+            detect_enabled=self.aphasia_detect_enabled,
+            repair_enabled=self.aphasia_repair_enabled,
+            severity_threshold=self.aphasia_severity_threshold,
+        )
+        log_aphasia_event(log_event)
 
         if should_repair:
             repair_prompt = (
