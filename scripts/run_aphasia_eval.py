@@ -13,10 +13,11 @@ import argparse
 import sys
 from pathlib import Path
 
-# Add src to path for imports
+# Add src and tests/eval to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "tests" / "eval"))
 
-from tests.eval.aphasia_eval_suite import AphasiaEvalSuite
+from aphasia_eval_suite import AphasiaEvalSuite
 
 
 def parse_args(argv=None):
