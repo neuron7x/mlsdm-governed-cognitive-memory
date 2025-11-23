@@ -201,7 +201,8 @@ The project uses three specialized CI workflows plus a comprehensive release pip
 #### 1. **CI - Neuro Cognitive Engine** (`.github/workflows/ci-neuro-cognitive-engine.yml`)
 - **When it runs**: Every push/PR to `main` or `feature/*` branches
 - **What it tests**:
-  - `tests-core`: All unit, integration, and eval tests (Python 3.10 & 3.11)
+  - `tests-core`: Unit, integration, eval, validation, security, aphasia tests (Python 3.10 & 3.11)
+  - Property tests run separately in their own workflow
   - `tests-benchmarks`: Performance benchmarks (advisory)
   - `tests-eval-sapolsky`: Cognitive safety evaluation (advisory)
   - `security-trivy`: Docker vulnerability scanning (advisory)
@@ -209,13 +210,14 @@ The project uses three specialized CI workflows plus a comprehensive release pip
 - **Status badge**: Shows overall health of core functionality
 
 #### 2. **Property-Based Tests** (`.github/workflows/property-tests.yml`)
-- **When it runs**: Push/PR when property tests or invariants change
+- **When it runs**: Every push/PR to `main` or `feature/*` branches (runs in parallel with core tests)
 - **What it tests**:
   - `property-tests`: Hypothesis-based invariant verification (Python 3.10 & 3.11)
   - `counterexamples-regression`: Known issue regression tests
   - `invariant-coverage`: Invariant documentation validation
 - **Required for PR merge**: `property-tests` for both Python versions
 - **Determinism**: Uses `PYTHONHASHSEED=0` and `HYPOTHESIS_PROFILE=ci`
+- **Separation rationale**: Property tests are separated to provide distinct status signal and avoid duplication
 
 #### 3. **Aphasia / NeuroLang CI** (`.github/workflows/aphasia-ci.yml`)
 - **When it runs**: Push/PR when Aphasia/NeuroLang code changes
@@ -243,15 +245,20 @@ Run the same commands that CI uses to catch issues early:
 ```bash
 # Core tests (same as CI tests-core job)
 export PYTHONHASHSEED=0
-pytest -q --ignore=tests/load --ignore=benchmarks
+pytest -q --ignore=tests/load --ignore=benchmarks --ignore=tests/property
 
 # Property tests (same as CI property-tests job)
 export PYTHONHASHSEED=0
 export HYPOTHESIS_PROFILE=ci
 pytest tests/property/ -q --maxfail=5
 
-# Full suite with coverage
-pytest --cov=src --cov-fail-under=90 --cov-report=term-missing -v --ignore=tests/load
+# Full suite with coverage (excluding property tests which run separately)
+pytest --cov=src --cov-fail-under=90 --cov-report=term-missing -v --ignore=tests/load --ignore=tests/property
+
+# Run both core and property tests together
+export PYTHONHASHSEED=0
+export HYPOTHESIS_PROFILE=ci
+pytest -q --ignore=tests/load --ignore=benchmarks && pytest tests/property/ -q --maxfail=5
 ```
 
 ### CI Status Checks

@@ -5,20 +5,10 @@ on:
     branches:
       - main
       - 'feature/*'
-    paths:
-      - 'src/mlsdm/**'
-      - 'tests/property/**'
-      - 'docs/FORMAL_INVARIANTS.md'
-      - '.github/workflows/property-tests.yml'
   pull_request:
     branches:
       - main
       - 'feature/*'
-    paths:
-      - 'src/mlsdm/**'
-      - 'tests/property/**'
-      - 'docs/FORMAL_INVARIANTS.md'
-      - '.github/workflows/property-tests.yml'
 
 permissions:
   contents: read

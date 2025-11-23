@@ -40,7 +40,7 @@ jobs:
       
       - name: Run core test suite
         run: |
-          pytest -q --ignore=tests/load --ignore=benchmarks
+          pytest -q --ignore=tests/load --ignore=benchmarks --ignore=tests/property
         env:
           PYTHONHASHSEED: "0"
   

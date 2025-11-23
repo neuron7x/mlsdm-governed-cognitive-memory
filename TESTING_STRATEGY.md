@@ -145,8 +145,9 @@ The project uses GitHub Actions for automated testing on every PR and push to ma
 **Jobs**:
 
 1. **tests-core** (Python 3.10, 3.11)
-   - Runs all unit, integration, and evaluation tests
-   - Command: `pytest -q --ignore=tests/load --ignore=benchmarks`
+   - Runs all unit, integration, evaluation, validation, security, and aphasia tests
+   - Property tests run in separate workflow (see property-tests.yml below)
+   - Command: `pytest -q --ignore=tests/load --ignore=benchmarks --ignore=tests/property`
    - Environment: `PYTHONHASHSEED=0` for determinism
    - Uses pip caching for faster builds
 
@@ -178,11 +179,8 @@ The project uses GitHub Actions for automated testing on every PR and push to ma
 
 **Triggers**:
 - Push/PR to `main` or `feature/*` branches
-- Only when these paths change:
-  - `src/mlsdm/**`
-  - `tests/property/**`
-  - `docs/FORMAL_INVARIANTS.md`
-  - The workflow file itself
+- Runs on all pushes/PRs (no path filtering)
+- Property tests are separated from main CI to provide clear status signal
 
 **Jobs**:
 
@@ -286,7 +284,7 @@ To replicate CI behavior locally:
 ```bash
 # Core tests (matches tests-core job)
 export PYTHONHASHSEED=0
-pytest -q --ignore=tests/load --ignore=benchmarks
+pytest -q --ignore=tests/load --ignore=benchmarks --ignore=tests/property
 
 # Property tests (matches property-tests job)
 export PYTHONHASHSEED=0
@@ -331,10 +329,10 @@ pytest tests/validation/test_aphasia_detection.py \
 
 ### CI Design Principles
 
-1. **No Duplication**: Each test runs in exactly one workflow. No redundant test execution.
+1. **No Duplication**: Each test runs in exactly one workflow per PR/push. Property tests are separate from core tests to provide distinct status signals.
 2. **Clear Signals**: Each job has a clear purpose. Failure means specific type of issue.
 3. **Determinism**: All tests use fixed seeds (`PYTHONHASHSEED=0`) and Hypothesis CI profile.
-4. **Fast Feedback**: Core tests run first. Heavy jobs (benchmarks, eval) run in parallel after core passes.
+4. **Fast Feedback**: Core tests and property tests run in parallel. Heavy jobs (benchmarks, eval, security) run after core passes.
 5. **Path Filtering**: Specialized workflows (property-tests, aphasia-ci) only trigger on relevant changes.
 6. **Artifact Preservation**: All evaluation results, benchmarks, and security scans preserved as artifacts.
 7. **Consistent Commands**: CI commands match documented local commands exactly.
