@@ -13,9 +13,11 @@ MLSDM Governed Cognitive Memory has evolved from a research prototype into a **f
 
 **Current Phase**: Beta v1.2+ - Functional completion and validation phase
 - Core cognitive subsystems validated with property tests
-- 805 tests passing (including 59 new validation tests)
+- 824 tests passing (including 78 new validation tests)
 - Comprehensive edge case coverage for Aphasia-Broca detection
 - Phase-aware memory behavior verified
+- MultiLevelSynapticMemory invariants verified
+- CognitiveController integration tested
 - Documentation aligned with implementation reality
 
 ---
@@ -25,7 +27,7 @@ MLSDM Governed Cognitive Memory has evolved from a research prototype into a **f
 | Category | Status | Details |
 |----------|--------|---------|
 | **Code Quality** | ✅ Complete | 0 linting errors, proper exception chaining |
-| **Test Pass Rate** | ✅ 805/805 (100%) | Includes unit, integration, property, validation tests |
+| **Test Pass Rate** | ✅ 824/824 (100%) | Includes unit, integration, property, validation tests |
 | **Test Coverage** | ✅ 90%+ maintained | Coverage maintained across all modules |
 | **Linting** | ✅ All passing | Ruff, mypy configured for scientific notation |
 | **Core Invariants** | ✅ Verified | Property tests for PELM, moral filter, rhythm |

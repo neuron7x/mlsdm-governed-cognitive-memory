@@ -251,18 +251,19 @@ Periodic recalibration during circadian Consolidation phase.
 
 | Purpose | Tool | Status | Coverage |
 |---------|------|--------|----------|
-| Property Testing | Hypothesis | ✅ Implemented | 40+ invariants |
+| Property Testing | Hypothesis | ✅ Implemented | 50+ invariants |
 | Counterexamples | JSON Bank | ✅ Implemented | 39 cases |
-| Unit/Integration Tests | pytest | ✅ Implemented | 240 tests |
-| Code Coverage | pytest-cov | ✅ Implemented | 92.65% |
+| Unit/Integration Tests | pytest | ✅ Implemented | 824 tests (v1.2+) |
+| Code Coverage | pytest-cov | ✅ Implemented | 90%+ |
 | Linting | ruff | ✅ Implemented | Full codebase |
 | Type Checking | mypy | ✅ Implemented | Full codebase |
-| Formal Specs | TLA+, Coq | ⚠️ Planned (v1.x+) | N/A |
-| Chaos | chaos-toolkit | ⚠️ Planned (v1.x+) | N/A |
-| Load / Soak | Locust, K6 | ⚠️ Planned (v1.x+) | N/A |
-| Safety (RAG) | ragas | ⚠️ Planned (v1.x+) | N/A |
-| Tracing | OpenTelemetry | ⚠️ Planned (v1.x+) | N/A |
-| Metrics | Prometheus | ⚠️ Planned (v1.x+) | N/A |
+| Invariant Traceability | docs/INVARIANT_TRACEABILITY.md | ✅ Implemented | 31 invariants mapped |
+| Formal Specs | TLA+, Coq | ⚠️ Planned (v1.3+) | N/A |
+| Chaos | chaos-toolkit | ⚠️ Planned (v1.3+) | N/A |
+| Load / Soak | Locust, K6 | ⚠️ Planned (v1.3+) | N/A |
+| Safety (RAG) | ragas | ⚠️ Planned (v1.3+) | N/A |
+| Tracing | OpenTelemetry | ✅ Baseline | Metrics exported |
+| Metrics | Prometheus | ✅ Baseline | SLO_SPEC.md defined |
 | CI | GitHub Actions | ✅ Implemented | 2 workflows |
 
 ---

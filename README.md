@@ -26,7 +26,7 @@ Neurobiologically-grounded cognitive architecture with moral governance, phase-b
 - **Moral filter:** Bounded drift (stays within [0.30, 0.90]), EMA convergence, dead-band stability
 - **Cognitive rhythm:** Deterministic state machine, counter bounds, cycle consistency
 - **Aphasia detection:** 27 edge cases tested (empty text, unicode, code, URLs, punctuation, etc.)
-- **Test suite:** 805 tests passing (unit, integration, property, validation) as of v1.2+
+- **Test suite:** 824 tests passing (unit, integration, property, validation) as of v1.2+
 - **Language coherence:** 92.7% improvement in syntactic integrity via Aphasia-Broca correction
 
 **Effectiveness Validation (Principal System Architect Level):**
