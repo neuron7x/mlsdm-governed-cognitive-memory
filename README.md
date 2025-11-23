@@ -1,6 +1,7 @@
 # MLSDM Governed Cognitive Memory
 
 ![CI - Neuro Cognitive Engine](https://github.com/neuron7x/mlsdm/actions/workflows/ci-neuro-cognitive-engine.yml/badge.svg)
+![Aphasia / NeuroLang CI](https://github.com/neuron7x/mlsdm/actions/workflows/aphasia-ci.yml/badge.svg)
 
 Neurobiologically-grounded cognitive architecture with moral governance, phase-based memory, and cognitive rhythm. Universal wrapper for any LLM with hard biological constraints.
 
