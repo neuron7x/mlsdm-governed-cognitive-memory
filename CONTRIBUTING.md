@@ -384,6 +384,62 @@ Brief description of changes
 3. **Testing**: Maintainer may test changes locally
 4. **Merge**: Once approved, changes are merged to main
 
+### Aphasia / NeuroLang CI Gate
+
+Each PR that modifies NeuroLang/Aphasia-Broca components triggers a dedicated CI job (`aphasia-neurolang`) that:
+
+- **Runs all Aphasia/NeuroLang tests**, including:
+  - `tests/validation/test_aphasia_detection.py` - Core aphasia detection tests
+  - `tests/eval/test_aphasia_eval_suite.py` - Evaluation suite tests
+  - `tests/observability/test_aphasia_logging.py` - Logging tests
+  - `tests/security/test_aphasia_*` - Security-related tests
+  - `tests/packaging/test_neurolang_optional_dependency.py` - Dependency tests
+  - `tests/scripts/test_*neurolang*` - NeuroLang script tests
+
+- **Runs AphasiaEvalSuite quality gate** (`scripts/run_aphasia_eval.py --fail-on-low-metrics`) which verifies:
+  - True Positive Rate (TPR) ≥ 0.8
+  - True Negative Rate (TNR) ≥ 0.8
+  - Mean severity for telegraphic samples ≥ 0.3
+
+- **Blocks merge** if:
+  - Any aphasia/neurolang test fails
+  - Metrics fall below required thresholds
+
+**Local Reproduction:**
+
+To run the same checks locally before pushing:
+
+```bash
+# Install with neurolang extras
+pip install '.[neurolang]'
+
+# Run aphasia/neurolang tests
+pytest tests/validation/test_aphasia_detection.py
+pytest tests/eval/test_aphasia_eval_suite.py
+pytest tests/observability/test_aphasia_logging.py
+pytest tests/security/test_aphasia_*
+pytest tests/packaging/test_neurolang_optional_dependency.py
+pytest tests/scripts/test_*neurolang*
+
+# Run quality gate
+python scripts/run_aphasia_eval.py \
+  --corpus tests/eval/aphasia_corpus.json \
+  --fail-on-low-metrics
+```
+
+**Trigger Conditions:**
+
+The Aphasia/NeuroLang CI job is triggered when PRs modify:
+- `src/mlsdm/extensions/**` - NeuroLang extension code
+- `src/mlsdm/observability/**` - Observability components
+- `tests/eval/**` - Evaluation tests and data
+- `tests/validation/test_aphasia_*` - Aphasia validation tests
+- `tests/observability/test_aphasia_*` - Aphasia observability tests
+- `tests/security/test_aphasia_*` - Aphasia security tests
+- `tests/packaging/test_neurolang_optional_dependency.py` - Dependency tests
+- `scripts/*neurolang*` - NeuroLang-related scripts
+- `scripts/run_aphasia_eval.py` - Evaluation script
+
 ### Review Criteria
 
 Reviewers will check:
