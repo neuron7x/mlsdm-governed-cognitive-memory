@@ -28,10 +28,7 @@ from mlsdm.extensions.neuro_lang_extension import (
 )
 
 
-def main():
-    # Security: Block training when secure mode is enabled
-    if is_secure_mode_enabled():
-        raise SystemExit("Secure mode enabled: offline training is not permitted.")
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description="Train NeuroLang grammar models offline"
     )
@@ -47,8 +44,15 @@ def main():
         default="config/neurolang_grammar.pt",
         help="Output path for checkpoint file (default: config/neurolang_grammar.pt)"
     )
+    return parser.parse_args(argv)
+
+
+def main(argv=None):
+    # Security: Block training when secure mode is enabled
+    if is_secure_mode_enabled():
+        raise SystemExit("Secure mode enabled: offline training is not permitted.")
     
-    args = parser.parse_args()
+    args = parse_args(argv)
     
     # Ensure output directory exists
     output_path = Path(args.output)
@@ -101,5 +105,5 @@ def main():
     return 0
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())
