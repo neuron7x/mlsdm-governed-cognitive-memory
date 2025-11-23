@@ -422,6 +422,17 @@ Configuration for NeuroLang training behavior and resource usage in NeuroLangWra
 
 **Note:** These settings only apply when using `NeuroLangWrapper` from `mlsdm.extensions`. The base `LLMWrapper` does not use these settings.
 
+**⚠️ DEPENDENCY WARNING:** NeuroLang modes (`eager_train`, `lazy_train`) require PyTorch to be installed. If you attempt to use NeuroLangWrapper with `neurolang_mode != "disabled"` without PyTorch installed, the system will raise a clear `RuntimeError`:
+
+```
+RuntimeError: NeuroLang mode requires 'mlsdm[neurolang]' extra (PyTorch not installed).
+Either install extras with 'pip install mlsdm[neurolang]' or set neurolang_mode='disabled'.
+```
+
+**Installation:**
+- **With NeuroLang**: `pip install mlsdm[neurolang]` or `pip install -r requirements.txt -r requirements-neurolang.txt`
+- **Without NeuroLang**: `pip install mlsdm` or `pip install -r requirements.txt` (core only, no PyTorch)
+
 #### `mode` (string)
 
 Training mode for NeuroLang grammar models.
@@ -429,25 +440,28 @@ Training mode for NeuroLang grammar models.
 - **Type**: String (enum)
 - **Allowed values**: `"eager_train"`, `"lazy_train"`, `"disabled"`
 - **Default**: `"eager_train"`
-- **Production recommendation**: `"disabled"` (minimal resource usage)
+- **Production recommendation**: `"disabled"` (minimal resource usage, no PyTorch required)
 
 **Mode descriptions:**
 
 1. **`eager_train`** - Trains models immediately at initialization
+   - **Requires**: PyTorch installed (`mlsdm[neurolang]`)
    - **Use case**: R&D, development, experimentation
    - **Resource impact**: High initial CPU/GPU usage during startup
    - **Best for**: Local development, model research
 
 2. **`lazy_train`** - Trains models on first generation call
+   - **Requires**: PyTorch installed (`mlsdm[neurolang]`)
    - **Use case**: Demo servers, testing environments
    - **Resource impact**: Delayed training until first request
    - **Best for**: Delayed initialization scenarios
 
 3. **`disabled`** - Skips NeuroLang entirely (recommended for production)
+   - **Requires**: No PyTorch required (works with core installation)
    - **Use case**: Production deployments, low-resource environments
    - **Resource impact**: Zero NeuroLang overhead
-   - **What's included**: Cognitive controller + Aphasia-Broca detection
-   - **What's excluded**: NeuroLang grammar models, training
+   - **What's included**: Cognitive controller + Aphasia-Broca detection (pure Python)
+   - **What's excluded**: NeuroLang grammar models, training, PyTorch dependencies
    - **Best for**: Production with minimal resource footprint
 
 #### `checkpoint_path` (string or null)

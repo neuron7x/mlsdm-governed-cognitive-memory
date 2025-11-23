@@ -33,25 +33,54 @@ Neurobiologically-grounded cognitive architecture with moral governance, phase-b
 
 ## Installation
 
+### Installation Profiles
+
+MLSDM supports two installation profiles to optimize dependencies for your use case:
+
+#### Core Installation (Recommended for most users)
+
+Install core MLSDM without PyTorch - lightweight and fast:
+
 ```bash
+pip install mlsdm-governed-cognitive-memory
+# or from source:
 pip install -r requirements.txt
+```
+
+**What you get:**
+- ✅ Universal LLM wrapper with cognitive governance
+- ✅ Moral homeostasis and circadian rhythm
+- ✅ Multi-level synaptic memory (L1/L2/L3)
+- ✅ Phase-entangling retrieval (QILM v2)
+- ✅ **AphasiaBrocaDetector** for detecting telegraphic speech (pure Python, no torch)
+- ✅ All core cognitive architecture features
+
+#### Full Installation with NeuroLang (Advanced)
+
+Install with NeuroLang + bio-inspired language processing (requires PyTorch):
+
+```bash
+pip install 'mlsdm-governed-cognitive-memory[neurolang]'
+# or from source:
+pip install -r requirements.txt -r requirements-neurolang.txt
+```
+
+**Additional features:**
+- ✅ Bio-inspired recursive grammar module
+- ✅ Critical period language learning simulation  
+- ✅ Modular language processing with actor-critic architecture
+- ✅ Advanced Aphasia-Broca repair (automatic LLM-based correction)
+
+**Note:** NeuroLang mode requires PyTorch (torch>=2.0.0) and is compute-intensive. **For most use cases, the core installation is sufficient.** Only use NeuroLang if you specifically need:
+- Bio-inspired language processing with recursive grammar
+- Critical period learning simulation
+- Advanced language pathology correction with neural models
+
+### Quick Test
+
+```bash
 python tests/integration/test_end_to_end.py
 ```
-
-### Optional: NeuroLang Extension
-
-The **NeuroLang + Aphasia-Broca extension is optional** and requires PyTorch:
-
-```bash
-pip install torch>=2.0.0  # Only if using NeuroLangWrapper
-```
-
-**Core MLSDM functionality works without PyTorch.** The base `LLMWrapper` and `CognitiveController` do not require the NeuroLang extension. Only use `NeuroLangWrapper` if you need:
-- Bio-inspired language processing with recursive grammar
-- Aphasia-Broca detection for telegraphic speech patterns
-- Advanced language pathology correction
-
-For most use cases, the base `LLMWrapper` is sufficient.
 
 ## Quick Start
 

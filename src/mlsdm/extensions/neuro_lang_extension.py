@@ -3,16 +3,30 @@ import random
 import re
 import threading
 from pathlib import Path
-from typing import Optional
-
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader, Dataset, Sampler
+from typing import Any
 
 from mlsdm.core.cognitive_controller import CognitiveController
 from mlsdm.core.llm_wrapper import LLMWrapper
 from mlsdm.observability.aphasia_logging import AphasiaLogEvent, log_aphasia_event
+
+# Lazy import of PyTorch dependencies - only needed for NeuroLang mode
+try:
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+    from torch.utils.data import DataLoader, Dataset, Sampler
+    TORCH_AVAILABLE = True
+except ImportError:
+    # PyTorch not installed - NeuroLang features will be disabled
+    TORCH_AVAILABLE = False
+    # Provide None as placeholders when torch is not available
+    # These will never be used at runtime due to TORCH_AVAILABLE checks
+    Dataset = None  # type: ignore
+    DataLoader = None  # type: ignore
+    Sampler = None  # type: ignore
+    nn = None  # type: ignore
+    optim = None  # type: ignore
+    torch = None  # type: ignore
 
 
 ALLOWED_CHECKPOINT_DIR = Path("config").resolve()
@@ -21,44 +35,51 @@ ALLOWED_CHECKPOINT_DIR = Path("config").resolve()
 def is_secure_mode_enabled() -> bool:
     """
     Check if MLSDM secure mode is enabled via environment variable.
-    
+
     When secure mode is enabled (MLSDM_SECURE_MODE=1 or true), the system:
     - Disables NeuroLang training and checkpoint loading
     - Disables aphasia repair (detection only)
     - Prevents any offline training operations
-    
+
     Returns:
         bool: True if secure mode is enabled, False otherwise
     """
     return os.getenv("MLSDM_SECURE_MODE", "0") in {"1", "true", "TRUE"}
 
 
-def safe_load_neurolang_checkpoint(path: Optional[str], device: torch.device):
+def safe_load_neurolang_checkpoint(path: str | None, device: Any) -> dict[str, Any] | None:
     """
     Safely load a NeuroLang checkpoint with path validation and structure verification.
-    
+
     Security controls:
     - Restricts checkpoint loading to the configured ALLOWED_CHECKPOINT_DIR
     - Validates checkpoint file structure (must be dict with 'actor' and 'critic' keys)
     - Prevents path traversal attacks (including symlinks)
     - Uses weights_only=True to prevent arbitrary code execution
-    
+
     Args:
         path: Path to checkpoint file, or None to skip loading
         device: PyTorch device for loading the checkpoint
-        
+
     Returns:
         dict: Checkpoint dictionary with 'actor' and 'critic' state dicts, or None if path is None
-        
+
     Raises:
         ValueError: If path is outside allowed directory or checkpoint structure is invalid
         FileNotFoundError: If checkpoint file doesn't exist
+        RuntimeError: If PyTorch is not available
     """
+    if not TORCH_AVAILABLE:
+        raise RuntimeError(
+            "NeuroLang checkpoint loading requires 'mlsdm[neurolang]' extra (PyTorch not installed). "
+            "Install with 'pip install mlsdm[neurolang]' or 'pip install torch>=2.0.0'."
+        )
+
     if not path:
         return None
-    
+
     p = Path(path).expanduser().resolve()
-    
+
     # Prevent symlink-based path traversal: check if path is within allowed directory
     try:
         # is_relative_to is available in Python 3.9+
@@ -67,11 +88,11 @@ def safe_load_neurolang_checkpoint(path: Optional[str], device: torch.device):
     except AttributeError:
         # Fallback for Python < 3.9: use string comparison on resolved paths
         if not str(p).startswith(str(ALLOWED_CHECKPOINT_DIR)):
-            raise ValueError(f"Refusing to load checkpoint outside {ALLOWED_CHECKPOINT_DIR}")
-    
+            raise ValueError(f"Refusing to load checkpoint outside {ALLOWED_CHECKPOINT_DIR}") from None
+
     if not p.is_file():
         raise FileNotFoundError(f"Checkpoint not found: {p}")
-    
+
     # Load with weights_only=True to prevent arbitrary code execution from pickle
     # Note: This requires PyTorch >= 2.0.0
     try:
@@ -79,16 +100,16 @@ def safe_load_neurolang_checkpoint(path: Optional[str], device: torch.device):
     except TypeError:
         # Fallback for older PyTorch versions that don't support weights_only
         obj = torch.load(p, map_location=device)
-    
+
     if not isinstance(obj, dict):
         raise ValueError("Invalid neurolang checkpoint format: expected dict")
-    
+
     if "actor" not in obj or "critic" not in obj:
         raise ValueError(
             f"Invalid checkpoint structure: missing 'actor' or 'critic' keys. "
             f"Found keys: {list(obj.keys())}"
         )
-    
+
     return obj
 
 simple_sentences = [
@@ -115,191 +136,194 @@ complex_sentences = [
 all_sentences = simple_sentences + complex_sentences
 
 
-class LanguageDataset(Dataset):
-    def __init__(self, sentences):
-        self.sentences = sentences
-        self.vocab = sorted(set(" ".join(sentences).split() + ["<PAD>", "<EOS>", "<BOS>"]))
-        self.word_to_idx = {word: idx for idx, word in enumerate(self.vocab)}
-        self.idx_to_word = {idx: word for word, idx in self.word_to_idx.items()}
-        self.max_len = max(len(s.split()) for s in sentences) + 2
+# Define torch-dependent classes only when torch is available
+if TORCH_AVAILABLE:
+    class LanguageDataset(Dataset):  # type: ignore
+        def __init__(self, sentences):
+            self.sentences = sentences
+            self.vocab = sorted(set(" ".join(sentences).split() + ["<PAD>", "<EOS>", "<BOS>"]))
+            self.word_to_idx = {word: idx for idx, word in enumerate(self.vocab)}
+            self.idx_to_word = {idx: word for word, idx in self.word_to_idx.items()}
+            self.max_len = max(len(s.split()) for s in sentences) + 2
 
-    def __len__(self):
-        return len(self.sentences)
+        def __len__(self):
+            return len(self.sentences)
 
-    def __getitem__(self, idx):
-        sentence = ["<BOS>"] + self.sentences[idx].split() + ["<EOS>"]
-        padded = sentence + ["<PAD>"] * (self.max_len - len(sentence))
-        return torch.tensor([self.word_to_idx[w] for w in padded], dtype=torch.long)
-
-
-class CurriculumSampler(Sampler):
-    def __init__(self, dataset, simple_count=None):
-        if simple_count is None:
-            simple_count = len(simple_sentences)
-        self.indices = list(range(len(dataset)))
-        self.simple_indices = self.indices[:simple_count]
-        self.complex_indices = self.indices[simple_count:]
-
-    def __iter__(self):
-        phase1 = random.sample(self.simple_indices, len(self.simple_indices))
-        phase2 = random.sample(self.complex_indices, len(self.complex_indices))
-        return iter(phase1 + phase2)
-
-    def __len__(self):
-        return len(self.indices)
+        def __getitem__(self, idx):
+            sentence = ["<BOS>"] + self.sentences[idx].split() + ["<EOS>"]
+            padded = sentence + ["<PAD>"] * (self.max_len - len(sentence))
+            return torch.tensor([self.word_to_idx[w] for w in padded], dtype=torch.long)
 
 
-class TransformerBlock(nn.Module):
-    def __init__(self, embed_size, heads=4):
-        super().__init__()
-        self.attention = nn.MultiheadAttention(embed_size, heads, batch_first=True)
-        self.norm1 = nn.LayerNorm(embed_size)
-        self.feed_forward = nn.Sequential(
-            nn.Linear(embed_size, 4 * embed_size),
-            nn.ReLU(),
-            nn.Linear(4 * embed_size, embed_size)
-        )
-        self.norm2 = nn.LayerNorm(embed_size)
+    class CurriculumSampler(Sampler):  # type: ignore
+        def __init__(self, dataset, simple_count=None):
+            if simple_count is None:
+                simple_count = len(simple_sentences)
+            self.indices = list(range(len(dataset)))
+            self.simple_indices = self.indices[:simple_count]
+            self.complex_indices = self.indices[simple_count:]
 
-    def forward(self, x):
-        seq_len = x.size(1)
-        mask = torch.triu(torch.ones(seq_len, seq_len, device=x.device) * float("-inf"), diagonal=1)
-        attn_out, _ = self.attention(x, x, x, attn_mask=mask)
-        x = self.norm1(x + attn_out)
-        ff_out = self.feed_forward(x)
-        return self.norm2(x + ff_out)
+        def __iter__(self):
+            phase1 = random.sample(self.simple_indices, len(self.simple_indices))
+            phase2 = random.sample(self.complex_indices, len(self.complex_indices))
+            return iter(phase1 + phase2)
+
+        def __len__(self):
+            return len(self.indices)
 
 
-class InnateGrammarModule(nn.Module):
-    def __init__(self, vocab_size, embed_size=64, layers=2):
-        super().__init__()
-        self.embedding = nn.Embedding(vocab_size, embed_size)
-        self.positional = nn.Parameter(torch.zeros(1, 512, embed_size))
-        self.blocks = nn.ModuleList([TransformerBlock(embed_size) for _ in range(layers)])
-        self.fc = nn.Linear(embed_size, vocab_size)
+    class TransformerBlock(nn.Module):  # type: ignore
+        def __init__(self, embed_size, heads=4):
+            super().__init__()
+            self.attention = nn.MultiheadAttention(embed_size, heads, batch_first=True)
+            self.norm1 = nn.LayerNorm(embed_size)
+            self.feed_forward = nn.Sequential(
+                nn.Linear(embed_size, 4 * embed_size),
+                nn.ReLU(),
+                nn.Linear(4 * embed_size, embed_size)
+            )
+            self.norm2 = nn.LayerNorm(embed_size)
 
-    def forward(self, x):
-        seq_len = x.size(1)
-        embed = self.embedding(x) + self.positional[:, :seq_len, :]
-        for block in self.blocks:
-            embed = block(embed)
-        return self.fc(embed)
-
-    def generate_recursive(self, dataset, start_word, max_len=20):
-        if start_word not in dataset.word_to_idx:
-            return ""
-        device = next(self.parameters()).device
-        words = [start_word]
-        input_idx = torch.tensor([[dataset.word_to_idx[start_word]]], dtype=torch.long, device=device)
-        for _ in range(max_len):
-            logit = self.forward(input_idx)[:, -1, :]
-            next_idx = torch.argmax(logit, dim=1).item()
-            next_word = dataset.idx_to_word[next_idx]
-            if next_word == "<EOS>":
-                break
-            words.append(next_word)
-            next_token = torch.tensor([[next_idx]], dtype=torch.long, device=device)
-            input_idx = torch.cat([input_idx, next_token], dim=1)
-        return " ".join(words)
+        def forward(self, x):
+            seq_len = x.size(1)
+            mask = torch.triu(torch.ones(seq_len, seq_len, device=x.device) * float("-inf"), diagonal=1)
+            attn_out, _ = self.attention(x, x, x, attn_mask=mask)
+            x = self.norm1(x + attn_out)
+            ff_out = self.feed_forward(x)
+            return self.norm2(x + ff_out)
 
 
-class CriticalPeriodTrainer:
-    def __init__(self, actor, critic, dataset, epochs=5):
-        self.actor = actor
-        self.critic = critic
-        self.dataset = dataset
-        self.dataloader = DataLoader(dataset, batch_size=2, sampler=CurriculumSampler(dataset))
-        self.optimizer_actor = optim.Adam(actor.parameters(), lr=0.001)
-        self.optimizer_critic = optim.Adam(critic.parameters(), lr=0.001)
-        self.criterion = nn.CrossEntropyLoss(ignore_index=self.dataset.word_to_idx["<PAD>"])
-        self.epochs = epochs
+    class InnateGrammarModule(nn.Module):  # type: ignore
+        def __init__(self, vocab_size, embed_size=64, layers=2):
+            super().__init__()
+            self.embedding = nn.Embedding(vocab_size, embed_size)
+            self.positional = nn.Parameter(torch.zeros(1, 512, embed_size))
+            self.blocks = nn.ModuleList([TransformerBlock(embed_size) for _ in range(layers)])
+            self.fc = nn.Linear(embed_size, vocab_size)
 
-    def train(self):
-        device = next(self.actor.parameters()).device
-        for _ in range(self.epochs):
-            total_loss = 0.0
-            for batch in self.dataloader:
-                batch = batch.to(device)
-                inputs = batch[:, :-1]
-                targets = batch[:, 1:]
+        def forward(self, x):
+            seq_len = x.size(1)
+            embed = self.embedding(x) + self.positional[:, :seq_len, :]
+            for block in self.blocks:
+                embed = block(embed)
+            return self.fc(embed)
 
-                self.optimizer_critic.zero_grad()
-                critic_out = self.critic(inputs)
-                critic_loss = self.criterion(
-                    critic_out.reshape(-1, len(self.dataset.vocab)),
-                    targets.reshape(-1)
-                )
-                critic_loss.backward()
-                self.optimizer_critic.step()
+        def generate_recursive(self, dataset, start_word, max_len=20):
+            if start_word not in dataset.word_to_idx:
+                return ""
+            device = next(self.parameters()).device
+            words = [start_word]
+            input_idx = torch.tensor([[dataset.word_to_idx[start_word]]], dtype=torch.long, device=device)
+            for _ in range(max_len):
+                logit = self.forward(input_idx)[:, -1, :]
+                next_idx = torch.argmax(logit, dim=1).item()
+                next_word = dataset.idx_to_word[next_idx]
+                if next_word == "<EOS>":
+                    break
+                words.append(next_word)
+                next_token = torch.tensor([[next_idx]], dtype=torch.long, device=device)
+                input_idx = torch.cat([input_idx, next_token], dim=1)
+            return " ".join(words)
 
-                self.optimizer_actor.zero_grad()
-                outputs = self.actor(inputs)
-                gen_loss = self.criterion(
-                    outputs.reshape(-1, len(self.dataset.vocab)),
-                    targets.reshape(-1)
-                )
 
-                with torch.no_grad():
-                    critic_eval = self.critic(inputs)
-                    critic_eval_loss = self.criterion(
-                        critic_eval.reshape(-1, len(self.dataset.vocab)),
+    class CriticalPeriodTrainer:
+        def __init__(self, actor, critic, dataset, epochs=5):
+            self.actor = actor
+            self.critic = critic
+            self.dataset = dataset
+            self.dataloader = DataLoader(dataset, batch_size=2, sampler=CurriculumSampler(dataset))
+            self.optimizer_actor = optim.Adam(actor.parameters(), lr=0.001)
+            self.optimizer_critic = optim.Adam(critic.parameters(), lr=0.001)
+            self.criterion = nn.CrossEntropyLoss(ignore_index=self.dataset.word_to_idx["<PAD>"])
+            self.epochs = epochs
+
+        def train(self):
+            device = next(self.actor.parameters()).device
+            for _ in range(self.epochs):
+                total_loss = 0.0
+                for batch in self.dataloader:
+                    batch = batch.to(device)
+                    inputs = batch[:, :-1]
+                    targets = batch[:, 1:]
+
+                    self.optimizer_critic.zero_grad()
+                    critic_out = self.critic(inputs)
+                    critic_loss = self.criterion(
+                        critic_out.reshape(-1, len(self.dataset.vocab)),
                         targets.reshape(-1)
                     )
-                    reward = torch.exp(-critic_eval_loss)
+                    critic_loss.backward()
+                    self.optimizer_critic.step()
 
-                actor_loss = gen_loss * (1 - reward)
-                actor_loss.backward()
-                self.optimizer_actor.step()
-                total_loss += float(actor_loss.item())
+                    self.optimizer_actor.zero_grad()
+                    outputs = self.actor(inputs)
+                    gen_loss = self.criterion(
+                        outputs.reshape(-1, len(self.dataset.vocab)),
+                        targets.reshape(-1)
+                    )
 
+                    with torch.no_grad():
+                        critic_eval = self.critic(inputs)
+                        critic_eval_loss = self.criterion(
+                            critic_eval.reshape(-1, len(self.dataset.vocab)),
+                            targets.reshape(-1)
+                        )
+                        reward = torch.exp(-critic_eval_loss)
 
-class ModularLanguageProcessor:
-    def __init__(self, actor, critic, dataset):
-        self.actor = actor
-        self.critic = critic
-        self.dataset = dataset
-        self.understanding_pattern = re.compile(r"(that|who|which)")
-
-    def process(self, input_sentence):
-        recursion_count = len(self.understanding_pattern.findall(input_sentence))
-        if recursion_count < 1:
-            return "Input lacks recursion; enhancing..."
-        words = input_sentence.split()
-        valid_words = [w for w in words if w in self.dataset.word_to_idx]
-        if not valid_words:
-            return "Invalid input for processing."
-        device = next(self.actor.parameters()).device
-        start_word = valid_words[-1]
-        generated = self.actor.generate_recursive(self.dataset, start_word)
-        crit_words = generated.split()
-        valid_crit_words = [w for w in crit_words if w in self.dataset.word_to_idx]
-        if not valid_crit_words:
-            crit_score = 0.0
-        else:
-            crit_input = torch.tensor(
-                [[self.dataset.word_to_idx[w] for w in valid_crit_words]],
-                dtype=torch.long,
-                device=device
-            )
-            crit_logits = self.critic(crit_input)
-            crit_score = torch.softmax(crit_logits[:, -1, :], dim=1).max().item()
-        return f"Processed (Critic score: {crit_score:.2f}): {input_sentence} -> {generated}"
+                    actor_loss = gen_loss * (1 - reward)
+                    actor_loss.backward()
+                    self.optimizer_actor.step()
+                    total_loss += float(actor_loss.item())
 
 
-class SocialIntegrator:
-    def __init__(self, processor1, processor2):
-        self.agent1 = processor1
-        self.agent2 = processor2
+    class ModularLanguageProcessor:
+        def __init__(self, actor, critic, dataset):
+            self.actor = actor
+            self.critic = critic
+            self.dataset = dataset
+            self.understanding_pattern = re.compile(r"(that|who|which)")
 
-    def interact(self, sentence1, sentence2):
-        proc1 = self.agent1.process(sentence1)
-        proc2 = self.agent2.process(sentence2)
-        combined = proc1 + " And " + proc2
-        if random.random() > 0.7:
-            combined = combined.replace("that", "which", 1)
-        return combined
+        def process(self, input_sentence):
+            recursion_count = len(self.understanding_pattern.findall(input_sentence))
+            if recursion_count < 1:
+                return "Input lacks recursion; enhancing..."
+            words = input_sentence.split()
+            valid_words = [w for w in words if w in self.dataset.word_to_idx]
+            if not valid_words:
+                return "Invalid input for processing."
+            device = next(self.actor.parameters()).device
+            start_word = valid_words[-1]
+            generated = self.actor.generate_recursive(self.dataset, start_word)
+            crit_words = generated.split()
+            valid_crit_words = [w for w in crit_words if w in self.dataset.word_to_idx]
+            if not valid_crit_words:
+                crit_score = 0.0
+            else:
+                crit_input = torch.tensor(
+                    [[self.dataset.word_to_idx[w] for w in valid_crit_words]],
+                    dtype=torch.long,
+                    device=device
+                )
+                crit_logits = self.critic(crit_input)
+                crit_score = torch.softmax(crit_logits[:, -1, :], dim=1).max().item()
+            return f"Processed (Critic score: {crit_score:.2f}): {input_sentence} -> {generated}"
 
 
+    class SocialIntegrator:
+        def __init__(self, processor1, processor2):
+            self.agent1 = processor1
+            self.agent2 = processor2
+
+        def interact(self, sentence1, sentence2):
+            proc1 = self.agent1.process(sentence1)
+            proc2 = self.agent2.process(sentence2)
+            combined = proc1 + " And " + proc2
+            if random.random() > 0.7:
+                combined = combined.replace("that", "which", 1)
+            return combined
+
+
+# AphasiaBrocaDetector does NOT depend on torch - keep it outside the conditional block
 class AphasiaBrocaDetector:
     def __init__(
         self,
@@ -441,18 +465,18 @@ class NeuroLangWrapper(LLMWrapper):
             sleep_duration=sleep_duration,
             initial_moral_threshold=initial_moral_threshold,
         )
-        
+
         # Security: Apply secure mode overrides if enabled
         if is_secure_mode_enabled():
             neurolang_mode = "disabled"
             neurolang_checkpoint_path = None
             aphasia_repair_enabled = False
-        
+
         # Aphasia-Broca configuration flags
         self.aphasia_detect_enabled = bool(aphasia_detect_enabled)
         self.aphasia_repair_enabled = bool(aphasia_repair_enabled)
         self.aphasia_severity_threshold = float(aphasia_severity_threshold)
-        
+
         # NeuroLang mode configuration
         if neurolang_mode not in ("eager_train", "lazy_train", "disabled"):
             raise ValueError(
@@ -461,11 +485,18 @@ class NeuroLangWrapper(LLMWrapper):
             )
         self.neurolang_mode = neurolang_mode
         self.neurolang_checkpoint_path = neurolang_checkpoint_path
-        
+
+        # Check PyTorch availability when NeuroLang mode is enabled
+        if self.neurolang_mode != "disabled" and not TORCH_AVAILABLE:
+            raise RuntimeError(
+                "NeuroLang mode requires 'mlsdm[neurolang]' extra (PyTorch not installed). "
+                "Either install extras with 'pip install mlsdm[neurolang]' or set neurolang_mode='disabled'."
+            )
+
         # Always initialize controller and aphasia detector
         self.controller = CognitiveController(dim)
         self.aphasia_detector = AphasiaBrocaDetector()
-        
+
         # Initialize NeuroLang components based on mode
         if self.neurolang_mode == "disabled":
             # Disabled mode: skip NeuroLang components entirely
@@ -489,7 +520,7 @@ class NeuroLangWrapper(LLMWrapper):
             self.critic.to(device)
 
             self.trainer = CriticalPeriodTrainer(self.actor, self.critic, self.dataset, epochs=3)
-            
+
             # Load checkpoint if provided (using secure loading)
             checkpoint_loaded = False
             if self.neurolang_checkpoint_path is not None:
@@ -505,7 +536,7 @@ class NeuroLangWrapper(LLMWrapper):
                     raise ValueError(
                         f"Failed to load NeuroLang checkpoint from '{self.neurolang_checkpoint_path}': {str(e)}"
                     ) from e
-            
+
             # Train based on mode and checkpoint availability
             if not checkpoint_loaded:
                 if self.neurolang_mode == "eager_train":
@@ -527,7 +558,7 @@ class NeuroLangWrapper(LLMWrapper):
                 if not self._trained:
                     self.trainer.train()
                     self._trained = True
-        
+
         # Generate NeuroLang enhancement based on mode
         if self.neurolang_mode == "disabled":
             # Disabled mode: skip NeuroLang enhancement
@@ -537,7 +568,7 @@ class NeuroLangWrapper(LLMWrapper):
             # Enabled mode: use NeuroLang integrator
             neuro_response = self.integrator.interact(prompt, prompt)
             embedding = self.embed(neuro_response)
-        
+
         state = self.controller.process_event(embedding, moral_value)
 
         if not state["accepted"]:

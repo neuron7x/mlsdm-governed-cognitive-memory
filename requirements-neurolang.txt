@@ -1,0 +1,5 @@
+# NeuroLang + Aphasia-Broca Extension Dependencies
+# Install with: pip install -r requirements-neurolang.txt
+# Or use the optional dependency: pip install mlsdm[neurolang]
+
+torch>=2.0.0
