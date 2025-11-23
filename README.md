@@ -15,6 +15,7 @@ Neurobiologically-grounded cognitive architecture with moral governance, phase-b
 - ✅ Circadian rhythm (8 wake + 3 sleep cycles with forced short responses)
 - ✅ Phase-entangling retrieval (QILM v2) - fresh in wake, consolidated in sleep
 - ✅ Multi-level synaptic memory (L1/L2/L3 with different λ-decay)
+- ✅ **Speech Governance Framework** - pluggable linguistic policies for LLM output control
 - ✅ **NeuroLang extension** for bio-inspired language processing with recursion and modularity
 - ✅ **Aphasia-Broca Model** for detecting and correcting telegraphic speech pathologies in LLM outputs
 
@@ -270,6 +271,69 @@ from src.core.llm_wrapper import LLMWrapper
 ```
 
 See `examples/llm_wrapper_example.py` for complete examples.
+
+### Speech Governance (New in v1.2.0)
+
+MLSDM now features a **universal Speech Governance framework** that allows you to plug in arbitrary linguistic policies to control LLM outputs:
+
+```python
+from mlsdm.core.llm_wrapper import LLMWrapper
+from mlsdm.speech.governance import SpeechGovernanceResult
+
+# Define a custom governor
+class ContentPolicyGovernor:
+    def __call__(self, *, prompt: str, draft: str, max_tokens: int) -> SpeechGovernanceResult:
+        # Apply your policy (filtering, rewriting, validation, etc.)
+        final_text = self.apply_policy(draft)
+        
+        return SpeechGovernanceResult(
+            final_text=final_text,
+            raw_text=draft,
+            metadata={"policy": "applied", "changes": 3}
+        )
+    
+    def apply_policy(self, text: str) -> str:
+        # Your policy logic here
+        return text.replace("sensitive_word", "[REDACTED]")
+
+# Use with any LLMWrapper
+wrapper = LLMWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embedder,
+    speech_governor=ContentPolicyGovernor()  # Plug in your policy
+)
+```
+
+**Built-in: AphasiaSpeechGovernor**
+
+The Aphasia-Broca functionality is now implemented as a pluggable Speech Governor:
+
+```python
+from mlsdm.extensions.neuro_lang_extension import AphasiaBrocaDetector, AphasiaSpeechGovernor
+
+detector = AphasiaBrocaDetector()
+governor = AphasiaSpeechGovernor(
+    detector=detector,
+    repair_enabled=True,
+    severity_threshold=0.3,
+    llm_generate_fn=my_llm
+)
+
+wrapper = LLMWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embedder,
+    speech_governor=governor  # Aphasia detection + repair
+)
+```
+
+**Key Benefits:**
+- ✅ **Pluggable**: Swap policies without changing wrapper code
+- ✅ **Composable**: Chain multiple governors together
+- ✅ **Observable**: Full metadata about policy decisions
+- ✅ **Testable**: Unit test governors in isolation
+- ✅ **Reusable**: Same governor works across different wrappers
+
+See [API_REFERENCE.md#speech-governance](./API_REFERENCE.md#speech-governance) for complete documentation.
 
 ### Low-Level Cognitive Controller
 

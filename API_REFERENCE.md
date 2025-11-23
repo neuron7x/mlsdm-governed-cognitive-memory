@@ -38,7 +38,10 @@ LLMWrapper(
     capacity: int = 20000,
     wake_duration: int = 8,
     sleep_duration: int = 3,
-    initial_moral_threshold: float = 0.50
+    initial_moral_threshold: float = 0.50,
+    llm_timeout: float = 30.0,
+    llm_retry_attempts: int = 3,
+    speech_governor: Optional[SpeechGovernor] = None
 )
 ```
 
@@ -53,6 +56,9 @@ LLMWrapper(
 | `wake_duration` | int | 8 | Number of steps in wake phase |
 | `sleep_duration` | int | 3 | Number of steps in sleep phase |
 | `initial_moral_threshold` | float | 0.50 | Initial moral filtering threshold (0.30-0.90) |
+| `llm_timeout` | float | 30.0 | Timeout for LLM calls in seconds |
+| `llm_retry_attempts` | int | 3 | Number of retry attempts for LLM calls |
+| `speech_governor` | SpeechGovernor | None | Optional speech governance policy (see [Speech Governance](#speech-governance)) |
 
 **Raises:**
 - `ValueError`: If parameters are invalid
@@ -108,6 +114,9 @@ def generate(
 - `moral_threshold` (float): Current moral threshold
 - `context_items` (int): Number of context items retrieved
 - `max_tokens_used` (int): Max tokens used for generation
+- `speech_governance` (dict, optional): Speech governance metadata (if governor configured)
+  - `raw_text` (str): Original LLM output before governance
+  - `metadata` (dict): Policy-specific metadata
 
 **Raises:**
 - `ValueError`: If moral_value not in [0.0, 1.0]
@@ -171,6 +180,138 @@ def reset() -> None
 ```python
 wrapper.reset()
 ```
+
+---
+
+## Speech Governance
+
+The Speech Governance system provides a pluggable framework for applying arbitrary linguistic policies to LLM outputs. Speech governors can implement content filtering, style enforcement, grammar correction, or any other text transformation policy.
+
+### SpeechGovernor Protocol
+
+A speech governor is any callable that implements the following protocol:
+
+```python
+from mlsdm.speech.governance import SpeechGovernor, SpeechGovernanceResult
+
+class MyGovernor:
+    def __call__(
+        self, 
+        *, 
+        prompt: str, 
+        draft: str, 
+        max_tokens: int
+    ) -> SpeechGovernanceResult:
+        # Analyze and potentially modify draft
+        final_text = self.process(draft)
+        
+        return SpeechGovernanceResult(
+            final_text=final_text,
+            raw_text=draft,
+            metadata={"custom_key": "custom_value"}
+        )
+```
+
+**Parameters:**
+- `prompt` (str): Original user prompt
+- `draft` (str): Raw LLM-generated text before governance
+- `max_tokens` (int): Maximum tokens requested for generation
+
+**Returns:** `SpeechGovernanceResult` with:
+- `final_text` (str): Final text after policy application
+- `raw_text` (str): Original draft text
+- `metadata` (dict): Policy-specific information
+
+### Example: Simple Content Filter
+
+```python
+from mlsdm.speech.governance import SpeechGovernanceResult
+
+class ContentFilter:
+    def __init__(self, forbidden_words: list[str]):
+        self.forbidden = set(forbidden_words)
+    
+    def __call__(self, *, prompt: str, draft: str, max_tokens: int) -> SpeechGovernanceResult:
+        words = draft.split()
+        filtered = [w for w in words if w.lower() not in self.forbidden]
+        final = " ".join(filtered)
+        
+        return SpeechGovernanceResult(
+            final_text=final,
+            raw_text=draft,
+            metadata={"words_filtered": len(words) - len(filtered)}
+        )
+
+# Use with LLMWrapper
+wrapper = LLMWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embed,
+    speech_governor=ContentFilter(["spam", "toxic"])
+)
+```
+
+### Example: Style Enforcement
+
+```python
+class FormalStyleGovernor:
+    def __call__(self, *, prompt: str, draft: str, max_tokens: int) -> SpeechGovernanceResult:
+        # Replace informal contractions
+        formal = draft.replace("don't", "do not").replace("can't", "cannot")
+        
+        return SpeechGovernanceResult(
+            final_text=formal,
+            raw_text=draft,
+            metadata={"style": "formal"}
+        )
+```
+
+### AphasiaSpeechGovernor
+
+Built-in governor for detecting and repairing telegraphic speech patterns (Broca's aphasia):
+
+```python
+from mlsdm.extensions.neuro_lang_extension import AphasiaBrocaDetector, AphasiaSpeechGovernor
+
+detector = AphasiaBrocaDetector(
+    min_sentence_len=6.0,
+    min_function_word_ratio=0.15,
+    max_fragment_ratio=0.5
+)
+
+aphasia_governor = AphasiaSpeechGovernor(
+    detector=detector,
+    repair_enabled=True,
+    severity_threshold=0.3,
+    llm_generate_fn=my_llm  # LLM for repair
+)
+
+wrapper = LLMWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embed,
+    speech_governor=aphasia_governor
+)
+```
+
+**AphasiaSpeechGovernor Parameters:**
+- `detector` (AphasiaBrocaDetector): Detector instance
+- `repair_enabled` (bool): Whether to repair detected aphasia
+- `severity_threshold` (float): Minimum severity to trigger repair (0.0-1.0)
+- `llm_generate_fn` (Callable): LLM function for repair (required if repair_enabled)
+
+**Metadata Keys:**
+- `aphasia_report` (dict): Detection results
+  - `is_aphasic` (bool): Whether aphasia detected
+  - `severity` (float): Severity score (0.0-1.0)
+  - `flags` (list): Specific issues detected
+- `repaired` (bool): Whether text was repaired
+
+### Design Principles
+
+1. **Single Responsibility**: Each governor implements one policy
+2. **Composability**: Multiple policies can be chained (implement a `CompositeGovernor`)
+3. **Observable**: Metadata provides transparency
+4. **Non-Invasive**: Governor is optional; LLMWrapper works without it
+5. **Testable**: Pure functions enable isolated testing
 
 ---
 

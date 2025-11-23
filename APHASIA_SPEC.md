@@ -1,10 +1,10 @@
 # Aphasia-Broca Model Specification
 
-**Version:** 1.1.0  
-**Status:** Specification (Implementation Planned)  
-**Last Updated:** November 22, 2025
+**Version:** 1.2.0  
+**Status:** Implemented  
+**Last Updated:** November 23, 2025
 
-> **Note:** This document provides the complete specification for the Aphasia-Broca Model. The implementation (`src/mlsdm/extensions/neuro_lang_extension.py`) will be added in a separate PR following this documentation update.
+> **Implementation Note:** As of v1.2.0, the Aphasia-Broca detection and repair functionality is now implemented as a pluggable **Speech Governor** (`AphasiaSpeechGovernor`) that integrates with the universal Speech Governance framework in `LLMWrapper`. See the [Speech Governance](#speech-governance-integration) section for details.
 
 ## Table of Contents
 
@@ -17,6 +17,7 @@
 - [Correction Pipeline](#correction-pipeline)
 - [Performance Characteristics](#performance-characteristics)
 - [Validation](#validation)
+- [Speech Governance Integration](#speech-governance-integration)
 
 ---
 
@@ -536,6 +537,128 @@ neurolang:
 
 ---
 
+## Speech Governance Integration
+
+**As of MLSDM v1.2.0**, Aphasia-Broca detection and repair is implemented as a pluggable **Speech Governor** that integrates with the universal Speech Governance framework.
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  LLMWrapper (Core)                                      │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │  1. Moral Filter                                  │  │
+│  │  2. Memory Retrieval (QILM + Synaptic)           │  │
+│  │  3. LLM Generation                                │  │
+│  │  4. Speech Governor (Optional) ◄─── NEW          │  │
+│  │     └─> AphasiaSpeechGovernor                    │  │
+│  │  5. Memory Update                                 │  │
+│  └───────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+### AphasiaSpeechGovernor
+
+The `AphasiaSpeechGovernor` class encapsulates aphasia detection and repair logic:
+
+```python
+from mlsdm.extensions.neuro_lang_extension import (
+    AphasiaBrocaDetector, 
+    AphasiaSpeechGovernor
+)
+from mlsdm.core.llm_wrapper import LLMWrapper
+
+# Create detector
+detector = AphasiaBrocaDetector(
+    min_sentence_len=6.0,
+    min_function_word_ratio=0.15,
+    max_fragment_ratio=0.5
+)
+
+# Create governor
+governor = AphasiaSpeechGovernor(
+    detector=detector,
+    repair_enabled=True,
+    severity_threshold=0.3,
+    llm_generate_fn=my_llm_function
+)
+
+# Use with LLMWrapper
+wrapper = LLMWrapper(
+    llm_generate_fn=my_llm_function,
+    embedding_fn=my_embed_function,
+    speech_governor=governor  # Plug in the governor
+)
+```
+
+### How It Works
+
+1. **LLM generates draft response** → `draft_text`
+2. **Speech governor is invoked** (if configured)
+   - Analyzes draft with `AphasiaBrocaDetector`
+   - If aphasia detected and severity > threshold
+   - Triggers repair using provided LLM function
+3. **Returns `SpeechGovernanceResult`**
+   - `final_text`: Repaired text (or original if no repair)
+   - `raw_text`: Original draft
+   - `metadata`: Full aphasia report + repair status
+
+### Benefits of Governance Approach
+
+1. **Pluggability**: Can swap aphasia detection for other policies
+2. **Composability**: Multiple governors can be chained
+3. **Transparency**: Full metadata about detection and repair
+4. **Reusability**: Same governor works with any `LLMWrapper` instance
+5. **Testability**: Governor can be unit tested in isolation
+6. **Backward Compatibility**: Existing code without governor works unchanged
+
+### Migration from NeuroLangWrapper
+
+For users of `NeuroLangWrapper`, the aphasia functionality is automatically configured via the governor pattern. The existing parameters work as before:
+
+```python
+wrapper = NeuroLangWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embed,
+    aphasia_detect_enabled=True,   # Creates governor
+    aphasia_repair_enabled=True,   # Configures repair
+    aphasia_severity_threshold=0.3 # Sets threshold
+)
+```
+
+Internally, `NeuroLangWrapper` creates an `AphasiaSpeechGovernor` and passes it to the parent `LLMWrapper` constructor.
+
+### Custom Speech Policies
+
+The governance framework enables custom linguistic policies:
+
+```python
+from mlsdm.speech.governance import SpeechGovernanceResult
+
+class FormalnessGovernor:
+    """Enforce formal language style."""
+    
+    def __call__(self, *, prompt: str, draft: str, max_tokens: int):
+        # Apply formalization logic
+        formal_text = self.make_formal(draft)
+        
+        return SpeechGovernanceResult(
+            final_text=formal_text,
+            raw_text=draft,
+            metadata={"style": "formal", "changes_made": 5}
+        )
+
+wrapper = LLMWrapper(
+    llm_generate_fn=my_llm,
+    embedding_fn=my_embed,
+    speech_governor=FormalnessGovernor()
+)
+```
+
+See [API_REFERENCE.md](./API_REFERENCE.md#speech-governance) for complete Speech Governance documentation.
+
+---
+
 ## References
 
 ### Neurobiological Foundations
@@ -554,5 +677,5 @@ neurolang:
 
 **Document Status:** Active  
 **Review Cycle:** Per minor version  
-**Last Reviewed:** November 22, 2025  
-**Next Review:** Version 1.2.0 release
+**Last Reviewed:** November 23, 2025  
+**Next Review:** Version 1.3.0 release
