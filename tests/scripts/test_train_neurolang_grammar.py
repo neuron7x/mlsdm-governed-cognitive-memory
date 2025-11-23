@@ -5,6 +5,7 @@ Tests for scripts/train_neurolang_grammar.py
 import sys
 from pathlib import Path
 
+import pytest
 import torch
 
 # Add scripts to path for imports
@@ -42,8 +43,7 @@ def test_train_neurolang_secure_mode(monkeypatch):
     """Test that train_neurolang_grammar.main() fails in secure mode."""
     monkeypatch.setenv("MLSDM_SECURE_MODE", "1")
     
-    try:
+    with pytest.raises(SystemExit) as exc_info:
         train_neurolang_grammar.main(["--epochs", "1"])
-        assert False, "Expected SystemExit"
-    except SystemExit as e:
-        assert "Secure mode enabled" in str(e)
+    
+    assert "Secure mode enabled" in str(exc_info.value)
