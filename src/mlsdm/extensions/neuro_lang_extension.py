@@ -71,8 +71,8 @@ def safe_load_neurolang_checkpoint(path: str | None, device: Any) -> dict[str, A
     """
     if not TORCH_AVAILABLE:
         raise RuntimeError(
-            "Cannot load NeuroLang checkpoint: PyTorch is not installed. "
-            "Install with: pip install mlsdm[neurolang]"
+            "NeuroLang checkpoint loading requires 'mlsdm[neurolang]' extra (PyTorch not installed). "
+            "Install with 'pip install mlsdm[neurolang]' or 'pip install torch>=2.0.0'."
         )
 
     if not path:
