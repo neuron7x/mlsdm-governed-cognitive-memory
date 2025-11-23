@@ -3,6 +3,7 @@ import random
 import re
 import threading
 from pathlib import Path
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -12,6 +13,67 @@ from torch.utils.data import DataLoader, Dataset, Sampler
 from mlsdm.core.cognitive_controller import CognitiveController
 from mlsdm.core.llm_wrapper import LLMWrapper
 from mlsdm.observability.aphasia_logging import AphasiaLogEvent, log_aphasia_event
+
+
+ALLOWED_CHECKPOINT_DIR = Path("config").resolve()
+
+
+def is_secure_mode_enabled() -> bool:
+    """
+    Check if MLSDM secure mode is enabled via environment variable.
+    
+    When secure mode is enabled (MLSDM_SECURE_MODE=1 or true), the system:
+    - Disables NeuroLang training and checkpoint loading
+    - Disables aphasia repair (detection only)
+    - Prevents any offline training operations
+    
+    Returns:
+        bool: True if secure mode is enabled, False otherwise
+    """
+    return os.getenv("MLSDM_SECURE_MODE", "0") in {"1", "true", "TRUE"}
+
+
+def safe_load_neurolang_checkpoint(path: Optional[str], device: torch.device):
+    """
+    Safely load a NeuroLang checkpoint with path validation and structure verification.
+    
+    Security controls:
+    - Restricts checkpoint loading to the configured ALLOWED_CHECKPOINT_DIR
+    - Validates checkpoint file structure (must be dict with 'actor' and 'critic' keys)
+    - Prevents path traversal attacks
+    
+    Args:
+        path: Path to checkpoint file, or None to skip loading
+        device: PyTorch device for loading the checkpoint
+        
+    Returns:
+        dict: Checkpoint dictionary with 'actor' and 'critic' state dicts, or None if path is None
+        
+    Raises:
+        ValueError: If path is outside allowed directory or checkpoint structure is invalid
+        FileNotFoundError: If checkpoint file doesn't exist
+    """
+    if not path:
+        return None
+    
+    p = Path(path).expanduser().resolve()
+    if not str(p).startswith(str(ALLOWED_CHECKPOINT_DIR)):
+        raise ValueError(f"Refusing to load checkpoint outside {ALLOWED_CHECKPOINT_DIR}")
+    
+    if not p.is_file():
+        raise FileNotFoundError(f"Checkpoint not found: {p}")
+    
+    obj = torch.load(p, map_location=device)
+    if not isinstance(obj, dict):
+        raise ValueError("Invalid neurolang checkpoint format: expected dict")
+    
+    if "actor" not in obj or "critic" not in obj:
+        raise ValueError(
+            f"Invalid checkpoint structure: missing 'actor' or 'critic' keys. "
+            f"Found keys: {list(obj.keys())}"
+        )
+    
+    return obj
 
 simple_sentences = [
     "The cat ran.",
@@ -364,6 +426,12 @@ class NeuroLangWrapper(LLMWrapper):
             initial_moral_threshold=initial_moral_threshold,
         )
         
+        # Security: Apply secure mode overrides if enabled
+        if is_secure_mode_enabled():
+            neurolang_mode = "disabled"
+            neurolang_checkpoint_path = None
+            aphasia_repair_enabled = False
+        
         # Aphasia-Broca configuration flags
         self.aphasia_detect_enabled = bool(aphasia_detect_enabled)
         self.aphasia_repair_enabled = bool(aphasia_repair_enabled)
@@ -406,25 +474,21 @@ class NeuroLangWrapper(LLMWrapper):
 
             self.trainer = CriticalPeriodTrainer(self.actor, self.critic, self.dataset, epochs=3)
             
-            # Load checkpoint if provided
+            # Load checkpoint if provided (using secure loading)
             checkpoint_loaded = False
             if self.neurolang_checkpoint_path is not None:
-                checkpoint_path = Path(self.neurolang_checkpoint_path)
-                if checkpoint_path.exists():
-                    try:
-                        checkpoint = torch.load(checkpoint_path, map_location=device)
-                        if "actor" not in checkpoint or "critic" not in checkpoint:
-                            raise ValueError(
-                                f"Invalid checkpoint file: missing 'actor' or 'critic' keys. "
-                                f"Expected keys: ['actor', 'critic'], found: {list(checkpoint.keys())}"
-                            )
+                try:
+                    checkpoint = safe_load_neurolang_checkpoint(
+                        self.neurolang_checkpoint_path, device
+                    )
+                    if checkpoint is not None:
                         self.actor.load_state_dict(checkpoint["actor"])
                         self.critic.load_state_dict(checkpoint["critic"])
                         checkpoint_loaded = True
-                    except Exception as e:
-                        raise ValueError(
-                            f"Failed to load NeuroLang checkpoint from '{self.neurolang_checkpoint_path}': {str(e)}"
-                        ) from e
+                except Exception as e:
+                    raise ValueError(
+                        f"Failed to load NeuroLang checkpoint from '{self.neurolang_checkpoint_path}': {str(e)}"
+                    ) from e
             
             # Train based on mode and checkpoint availability
             if not checkpoint_loaded:

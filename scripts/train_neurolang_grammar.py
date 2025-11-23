@@ -24,10 +24,14 @@ from mlsdm.extensions.neuro_lang_extension import (
     LanguageDataset,
     CriticalPeriodTrainer,
     all_sentences,
+    is_secure_mode_enabled,
 )
 
 
 def main():
+    # Security: Block training when secure mode is enabled
+    if is_secure_mode_enabled():
+        raise SystemExit("Secure mode enabled: offline training is not permitted.")
     parser = argparse.ArgumentParser(
         description="Train NeuroLang grammar models offline"
     )
