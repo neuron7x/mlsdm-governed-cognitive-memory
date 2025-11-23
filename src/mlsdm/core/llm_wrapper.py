@@ -190,6 +190,19 @@ class LLMWrapper:
         self.embedding_failure_count = 0
         self.llm_failure_count = 0
 
+    @property
+    def qilm_failure_count(self) -> int:
+        """Backward compatibility alias for pelm_failure_count (deprecated, use pelm_failure_count instead).
+        
+        This property will be removed in v2.0.0. Migrate to using pelm_failure_count directly.
+        """
+        return self.pelm_failure_count
+    
+    @qilm_failure_count.setter
+    def qilm_failure_count(self, value: int) -> None:
+        """Backward compatibility setter for pelm_failure_count."""
+        self.pelm_failure_count = value
+
     def _llm_generate_with_retry(self, prompt: str, max_tokens: int) -> str:
         """
         Generate LLM response with retry logic and exponential backoff.
