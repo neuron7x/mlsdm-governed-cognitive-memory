@@ -3,6 +3,7 @@ import random
 import re
 import threading
 from pathlib import Path
+from typing import Any
 
 from mlsdm.core.cognitive_controller import CognitiveController
 from mlsdm.core.llm_wrapper import LLMWrapper
@@ -18,13 +19,14 @@ try:
 except ImportError:
     # PyTorch not installed - NeuroLang features will be disabled
     TORCH_AVAILABLE = False
-    # Provide stub types for type hints
-    Dataset = object  # type: ignore
-    DataLoader = object  # type: ignore
-    Sampler = object  # type: ignore
-    nn = object  # type: ignore
-    optim = object  # type: ignore
-    torch = object  # type: ignore
+    # Provide None as placeholders when torch is not available
+    # These will never be used at runtime due to TORCH_AVAILABLE checks
+    Dataset = None  # type: ignore
+    DataLoader = None  # type: ignore
+    Sampler = None  # type: ignore
+    nn = None  # type: ignore
+    optim = None  # type: ignore
+    torch = None  # type: ignore
 
 
 ALLOWED_CHECKPOINT_DIR = Path("config").resolve()
@@ -45,7 +47,7 @@ def is_secure_mode_enabled() -> bool:
     return os.getenv("MLSDM_SECURE_MODE", "0") in {"1", "true", "TRUE"}
 
 
-def safe_load_neurolang_checkpoint(path: str | None, device):  # type: ignore
+def safe_load_neurolang_checkpoint(path: str | None, device: Any) -> dict[str, Any] | None:
     """
     Safely load a NeuroLang checkpoint with path validation and structure verification.
 
