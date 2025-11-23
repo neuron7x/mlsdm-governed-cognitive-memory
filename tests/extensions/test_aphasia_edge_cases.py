@@ -301,12 +301,12 @@ def test_aphasia_detector_boundary_thresholds():
     """Test detection at exact threshold boundaries."""
     detector = AphasiaBrocaDetector()
     
-    # Default min is 6 words based on test output
+    # AphasiaBrocaDetector default min_sentence_len is 6.0 words
     # "The cat runs" is only 3 words, so it will be flagged
     text = "The cat runs."
     result = detector.analyze(text)
     
-    # This should be flagged as short
+    # This should be flagged as short (3 words < 6 word threshold)
     assert result["avg_sentence_len"] == 3.0
     assert "short_sentences" in result["flags"]
 

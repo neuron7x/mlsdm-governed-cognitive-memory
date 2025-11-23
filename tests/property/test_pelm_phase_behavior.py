@@ -15,6 +15,10 @@ from mlsdm.memory.phase_entangled_lattice_memory import PhaseEntangledLatticeMem
 
 
 # Phase constants matching those used in cognitive_controller
+# These values (0.1 for wake, 0.9 for sleep) create maximum separation
+# in phase space, ensuring clear distinction between wake/sleep retrieval
+# patterns. The 0.8 phase distance allows tight tolerance (0.15) to
+# effectively isolate wake from sleep memories.
 WAKE_PHASE = 0.1
 SLEEP_PHASE = 0.9
 
