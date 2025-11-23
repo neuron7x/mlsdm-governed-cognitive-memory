@@ -553,6 +553,9 @@ prometheus-client>=0.20.0  # Metrics
 # Authentication
 export API_KEY="<strong-random-token-32-bytes-min>"
 
+# Security Mode (REQUIRED for production with sensitive data)
+export MLSDM_SECURE_MODE="1"  # Disables training/checkpoints, enables detection-only
+
 # Rate Limiting
 export RATE_LIMIT_RPS="5"
 export RATE_LIMIT_BURST="10"
@@ -564,6 +567,72 @@ export TLS_KEY_PATH="/path/to/key.pem"
 # Logging
 export LOG_LEVEL="INFO"
 export LOG_FORMAT="json"
+```
+
+**MLSDM Secure Mode** (`MLSDM_SECURE_MODE`):
+
+**CRITICAL:** In production environments handling sensitive data, **ALWAYS** set `MLSDM_SECURE_MODE=1`. This security control is mandatory for:
+- Production deployments with PII or confidential data
+- Multi-tenant environments
+- Regulated industries (healthcare, finance, government)
+- Any environment where model training should be prohibited
+
+**Secure Mode Effects:**
+- ✅ **Disables NeuroLang Training**: Prevents `eager_train` and `lazy_train` modes
+- ✅ **Blocks Checkpoint Loading**: Ignores `neurolang_checkpoint_path` configuration
+- ✅ **Disables Aphasia Repair**: Only detection is performed, responses are not modified
+- ✅ **Prevents Training Scripts**: `train_neurolang_grammar.py` refuses to execute
+
+**When NOT to use Secure Mode:**
+- Development environments (use `MLSDM_SECURE_MODE=0` or omit)
+- Isolated training environments (offline model training only)
+- Testing and CI/CD pipelines
+- Environments without sensitive data
+
+**Deployment Patterns:**
+
+*Production Environment:*
+```bash
+# Production: Secure mode ENABLED
+export MLSDM_SECURE_MODE="1"
+export API_KEY="<prod-key>"
+# Deploy pre-trained checkpoints to config/ directory
+# Use read-only mounts for config/
+```
+
+*Training Environment (Isolated):*
+```bash
+# Training: Secure mode DISABLED
+export MLSDM_SECURE_MODE="0"
+# Train models offline
+python scripts/train_neurolang_grammar.py --epochs 5 --output config/model.pt
+# Validate and promote checkpoints through controlled pipeline
+```
+
+*Development Environment:*
+```bash
+# Development: Secure mode DISABLED
+export MLSDM_SECURE_MODE="0"
+export API_KEY="dev-key"
+# Full training and testing capabilities
+```
+
+**Checkpoint Management Best Practices:**
+
+1. **Isolate Training**: Train NeuroLang models in dedicated, isolated environments without access to production data
+2. **Validate Checkpoints**: Scan checkpoints with antivirus/malware detection before deployment
+3. **Read-Only Config**: Mount `config/` directory as read-only in production containers
+4. **Version Control**: Store trusted checkpoints in artifact repository or version control
+5. **Audit Access**: Log and monitor all checkpoint file access in production
+6. **Restrict Paths**: Only load checkpoints from `config/` directory (enforced by `safe_load_neurolang_checkpoint`)
+
+**Security Violations to Monitor:**
+
+```bash
+# Monitor logs for these security events:
+grep "Secure mode enabled: offline training is not permitted" /var/log/mlsdm.log
+grep "Refusing to load checkpoint outside" /var/log/mlsdm.log
+grep "ValueError.*checkpoint" /var/log/mlsdm.log
 ```
 
 **Security Hardening**:

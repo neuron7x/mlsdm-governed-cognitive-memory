@@ -415,6 +415,150 @@ This threat model identifies security threats to MLSDM Governed Cognitive Memory
 
 ---
 
+## NeuroLang / Aphasia Security Controls
+
+**Added:** November 2025  
+**Version:** 1.0.0
+
+The NeuroLang grammar module and Aphasia-Broca detection system introduce specialized security considerations due to their use of PyTorch checkpoints, offline training capabilities, and access to sensitive LLM responses. This section documents the security controls implemented to mitigate these risks.
+
+### Threat: Malicious Checkpoint Loading
+
+**Risk:** An attacker could provide a malicious PyTorch checkpoint file containing arbitrary code that executes during `torch.load()`, leading to remote code execution (RCE).
+
+**Mitigations:**
+- ✅ **Path Restriction**: `safe_load_neurolang_checkpoint()` restricts checkpoint loading to the `config/` directory only
+- ✅ **Structure Validation**: Checkpoints are validated to contain required keys (`actor`, `critic`) before loading
+- ✅ **Type Checking**: Checkpoint must be a dictionary; other types are rejected
+- ✅ **Path Traversal Prevention**: All paths are resolved and validated to prevent `../` attacks
+
+**Implementation:**
+```python
+# Only checkpoints in config/ can be loaded
+ALLOWED_CHECKPOINT_DIR = Path("config").resolve()
+
+def safe_load_neurolang_checkpoint(path, device):
+    # Validates path is within ALLOWED_CHECKPOINT_DIR
+    # Validates checkpoint structure before loading
+```
+
+**Attack Scenario Blocked:**
+```python
+# Attacker tries to load malicious checkpoint from /tmp
+NeuroLangWrapper(checkpoint_path="/tmp/evil.pt")  # ❌ ValueError raised
+```
+
+### Threat: Sensitive Data Leakage via Logs
+
+**Risk:** Aphasia detection/repair logs could leak sensitive user prompts or LLM responses, exposing PII or confidential information.
+
+**Mitigations:**
+- ✅ **Metadata-Only Logging**: Aphasia logs contain only decision metadata (decision, severity, flags)
+- ✅ **No Content Logging**: Prompts and responses are never logged
+- ✅ **Aggregated Metrics Only**: Only statistical information is logged, not raw text
+
+**Implementation:**
+```python
+# Aphasia logging only logs metadata
+log_aphasia_event(AphasiaLogEvent(
+    decision="repaired",
+    is_aphasic=True,
+    severity=0.75,
+    flags=["short_sentences"],
+    # NO prompt or response content
+))
+```
+
+**Log Example (Safe):**
+```
+[APHASIA] decision=repaired is_aphasic=True severity=0.750 flags=short_sentences,low_function_words
+```
+
+### Threat: Unauthorized Training in Production
+
+**Risk:** Attackers could trigger offline model training in production environments, consuming resources and potentially introducing backdoors through poisoned training data.
+
+**Mitigations:**
+- ✅ **Secure Mode**: `MLSDM_SECURE_MODE` environment variable blocks all training operations
+- ✅ **Training Script Guard**: `train_neurolang_grammar.py` refuses to run when secure mode is enabled
+- ✅ **Forced Disable**: Secure mode overrides all NeuroLang configuration to disabled state
+- ✅ **Repair Prevention**: Secure mode disables aphasia repair (detection only)
+
+**Implementation:**
+```python
+# In production, set MLSDM_SECURE_MODE=1
+if is_secure_mode_enabled():
+    neurolang_mode = "disabled"
+    neurolang_checkpoint_path = None
+    aphasia_repair_enabled = False
+```
+
+**Secure Mode Effects:**
+- Training: ❌ Blocked (eager_train, lazy_train disabled)
+- Checkpoint Loading: ❌ Blocked (ignored even if configured)
+- Aphasia Repair: ❌ Blocked (detection only, no response modification)
+- Aphasia Detection: ✅ Allowed (read-only analysis)
+
+### Control Validation
+
+All security controls are validated through comprehensive test suites:
+
+**Checkpoint Security Tests** (`tests/security/test_neurolang_checkpoint_security.py`):
+- ✅ Path outside `config/` is rejected
+- ✅ Non-existent checkpoints raise `FileNotFoundError`
+- ✅ Invalid checkpoint structure raises `ValueError`
+- ✅ Valid checkpoints load successfully
+
+**Secure Mode Tests** (`tests/security/test_secure_mode.py`):
+- ✅ Secure mode detection from environment variable
+- ✅ Forces `neurolang_mode="disabled"`
+- ✅ Ignores checkpoint paths
+- ✅ Disables aphasia repair
+- ✅ Generation works without training
+
+**Privacy Tests** (`tests/security/test_aphasia_logging_privacy.py`):
+- ✅ Prompts never appear in logs
+- ✅ Responses never appear in logs
+- ✅ Only metadata is logged
+- ✅ Multiple generations don't leak secrets
+
+### Deployment Recommendations
+
+**Production Environments:**
+1. **ALWAYS** set `MLSDM_SECURE_MODE=1` on all production nodes
+2. Train models offline in isolated development environments
+3. Deploy pre-trained checkpoints to `config/` directory only
+4. Monitor for unauthorized training attempts via audit logs
+5. Restrict write access to `config/` directory at filesystem level
+
+**Development Environments:**
+1. Use `MLSDM_SECURE_MODE=0` for development and testing
+2. Train models in isolated, non-production environments
+3. Validate checkpoints before promoting to production
+4. Review aphasia logs for unexpected patterns
+
+**Checkpoint Management:**
+- Store trusted checkpoints in version control or artifact repository
+- Scan checkpoints with antivirus/malware detection before deployment
+- Use read-only mounts for `config/` in production containers
+- Rotate/update checkpoints through controlled deployment pipelines only
+
+### Monitoring and Detection
+
+**Indicators of Compromise:**
+- Training operations in production (audit log: `SystemExit: Secure mode enabled`)
+- Checkpoint load attempts outside `config/` (audit log: `ValueError: Refusing to load`)
+- Unexpected changes to files in `config/` directory
+- Anomalous GPU/CPU usage patterns
+
+**Response Procedures:**
+1. Immediately investigate checkpoint load failures
+2. Review filesystem audit logs for unauthorized writes to `config/`
+3. Verify `MLSDM_SECURE_MODE` is enabled on all production nodes
+4. Quarantine suspicious checkpoint files for forensic analysis
+
+---
+
 ## Residual Risks
 
 ### Accepted Risks

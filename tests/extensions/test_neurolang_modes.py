@@ -154,8 +154,11 @@ def test_neurolang_lazy_train_trains_on_first_generate_only():
 
 def test_neurolang_uses_checkpoint_if_available():
     """Test that checkpoint is loaded and training is skipped when checkpoint exists."""
-    # Create a temporary checkpoint file
-    with tempfile.NamedTemporaryFile(suffix=".pt", delete=False) as tmp_file:
+    # Import ALLOWED_CHECKPOINT_DIR to use the correct directory
+    from mlsdm.extensions.neuro_lang_extension import ALLOWED_CHECKPOINT_DIR
+    
+    # Create a temporary checkpoint file in the allowed directory
+    with tempfile.NamedTemporaryFile(suffix=".pt", dir=str(ALLOWED_CHECKPOINT_DIR), delete=False) as tmp_file:
         checkpoint_path = tmp_file.name
     
     try:
@@ -254,8 +257,11 @@ def test_neurolang_disabled_preserves_aphasia_functionality():
 
 def test_neurolang_checkpoint_invalid_format_raises_error():
     """Test that loading an invalid checkpoint raises a clear error."""
-    # Create a checkpoint with wrong format
-    with tempfile.NamedTemporaryFile(suffix=".pt", delete=False) as tmp_file:
+    # Import ALLOWED_CHECKPOINT_DIR to use the correct directory
+    from mlsdm.extensions.neuro_lang_extension import ALLOWED_CHECKPOINT_DIR
+    
+    # Create a checkpoint with wrong format in the allowed directory
+    with tempfile.NamedTemporaryFile(suffix=".pt", dir=str(ALLOWED_CHECKPOINT_DIR), delete=False) as tmp_file:
         checkpoint_path = tmp_file.name
     
     try:
@@ -264,7 +270,7 @@ def test_neurolang_checkpoint_invalid_format_raises_error():
         torch.save(invalid_checkpoint, checkpoint_path)
         
         # Should raise clear error about missing keys
-        with pytest.raises(ValueError, match="Invalid checkpoint file.*missing 'actor' or 'critic'"):
+        with pytest.raises(ValueError, match="Invalid checkpoint structure.*missing 'actor' or 'critic'"):
             NeuroLangWrapper(
                 llm_generate_fn=dummy_llm,
                 embedding_fn=dummy_embedder,
