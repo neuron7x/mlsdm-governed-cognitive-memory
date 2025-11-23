@@ -440,6 +440,73 @@ class AphasiaBrocaDetector:
         }
 
 
+class AphasiaSpeechGovernor:
+    """
+    Speech governor implementation for Aphasia-Broca detection and repair.
+
+    This governor analyzes LLM output for telegraphic speech patterns
+    characteristic of Broca's aphasia and optionally repairs them using
+    an LLM-based repair strategy.
+    """
+
+    def __init__(
+        self,
+        detector: AphasiaBrocaDetector,
+        repair_enabled: bool = True,
+        severity_threshold: float = 0.3,
+        llm_generate_fn=None,
+    ):
+        """
+        Initialize the Aphasia speech governor.
+
+        Args:
+            detector: AphasiaBrocaDetector instance for analysis
+            repair_enabled: Whether to repair detected aphasia (default True)
+            severity_threshold: Minimum severity to trigger repair (default 0.3)
+            llm_generate_fn: LLM function for repair; required if repair_enabled
+        """
+        self._detector = detector
+        self._repair_enabled = repair_enabled
+        self._severity_threshold = severity_threshold
+        self._llm_generate_fn = llm_generate_fn
+
+    def __call__(self, *, prompt: str, draft: str, max_tokens: int):
+        """Apply Aphasia detection and optional repair to draft text."""
+        from mlsdm.speech.governance import SpeechGovernanceResult
+
+        report = self._detector.analyze(draft)
+
+        final_text = draft
+        metadata: dict[str, Any] = {"aphasia_report": report, "repaired": False}
+
+        if (
+            self._repair_enabled
+            and report["is_aphasic"]
+            and report["severity"] >= self._severity_threshold
+        ):
+            llm_fn = self._llm_generate_fn
+            if llm_fn is None:
+                raise RuntimeError(
+                    "Repair requested but no llm_generate_fn provided to AphasiaSpeechGovernor"
+                )
+
+            repair_prompt = (
+                f"{prompt}\n\n"
+                "The following draft answer shows Broca-like aphasia "
+                "(telegraphic style, broken syntax). Rewrite it in coherent, full "
+                "sentences, preserving all technical details and reasoning steps.\n\n"
+                f"Draft answer:\n{draft}"
+            )
+            final_text = llm_fn(repair_prompt, max_tokens)
+            metadata["repaired"] = True
+
+        return SpeechGovernanceResult(
+            final_text=final_text,
+            raw_text=draft,
+            metadata=metadata,
+        )
+
+
 class NeuroLangWrapper(LLMWrapper):
     def __init__(
         self,
@@ -456,16 +523,6 @@ class NeuroLangWrapper(LLMWrapper):
         neurolang_mode="eager_train",
         neurolang_checkpoint_path=None,
     ):
-        super().__init__(
-            llm_generate_fn=llm_generate_fn,
-            embedding_fn=embedding_fn,
-            dim=dim,
-            capacity=capacity,
-            wake_duration=wake_duration,
-            sleep_duration=sleep_duration,
-            initial_moral_threshold=initial_moral_threshold,
-        )
-
         # Security: Apply secure mode overrides if enabled
         if is_secure_mode_enabled():
             neurolang_mode = "disabled"
@@ -496,6 +553,29 @@ class NeuroLangWrapper(LLMWrapper):
         # Always initialize controller and aphasia detector
         self.controller = CognitiveController(dim)
         self.aphasia_detector = AphasiaBrocaDetector()
+
+        # Create Aphasia speech governor if detection is enabled
+        if self.aphasia_detect_enabled:
+            aphasia_governor = AphasiaSpeechGovernor(
+                detector=self.aphasia_detector,
+                repair_enabled=self.aphasia_repair_enabled,
+                severity_threshold=self.aphasia_severity_threshold,
+                llm_generate_fn=llm_generate_fn,
+            )
+        else:
+            aphasia_governor = None
+
+        # Initialize parent LLMWrapper with speech governor
+        super().__init__(
+            llm_generate_fn=llm_generate_fn,
+            embedding_fn=embedding_fn,
+            dim=dim,
+            capacity=capacity,
+            wake_duration=wake_duration,
+            sleep_duration=sleep_duration,
+            initial_moral_threshold=initial_moral_threshold,
+            speech_governor=aphasia_governor,
+        )
 
         # Initialize NeuroLang components based on mode
         if self.neurolang_mode == "disabled":
@@ -587,56 +667,40 @@ class NeuroLangWrapper(LLMWrapper):
             enhanced_prompt = f"{prompt}\n\n[NeuroLang enhancement]: {neuro_response}"
             base_response = self.llm_generate(enhanced_prompt, max_tokens)
 
-        # Aphasia detection gate
-        if not self.aphasia_detect_enabled:
-            # Detection disabled: return base response without analysis
-            return {
-                "response": base_response,
-                "phase": state["phase"],
-                "accepted": True,
-                "neuro_enhancement": neuro_response,
-                "aphasia_flags": None,
-            }
+        # Apply speech governance if configured (via parent's speech governor)
+        final_response = base_response
+        aphasia_report = None
 
-        # Detection enabled: analyze response
-        aphasia_report = self.aphasia_detector.analyze(base_response)
-
-        # Aphasia repair gate
-        should_repair = (
-            self.aphasia_repair_enabled
-            and aphasia_report["is_aphasic"]
-            and aphasia_report["severity"] >= self.aphasia_severity_threshold
-        )
-
-        # Determine decision for logging
-        if should_repair:
-            decision = "repaired"
-        elif aphasia_report["is_aphasic"]:
-            decision = "detected_no_repair"
-        else:
-            decision = "skip"
-
-        # Log aphasia event for observability
-        log_event = AphasiaLogEvent(
-            decision=decision,
-            is_aphasic=aphasia_report["is_aphasic"],
-            severity=aphasia_report["severity"],
-            flags=aphasia_report["flags"],
-            detect_enabled=self.aphasia_detect_enabled,
-            repair_enabled=self.aphasia_repair_enabled,
-            severity_threshold=self.aphasia_severity_threshold,
-        )
-        log_aphasia_event(log_event)
-
-        if should_repair:
-            repair_prompt = (
-                f"{prompt}\n\nThe following draft answer shows Broca-like aphasia "
-                f"(telegraphic style, broken syntax). Rewrite it in coherent, full sentences, "
-                f"preserving all technical details and reasoning steps.\n\nDraft answer:\n{base_response}"
+        if self._speech_governor is not None:
+            # Use the speech governor (AphasiaSpeechGovernor) for processing
+            gov_result = self._speech_governor(
+                prompt=prompt,
+                draft=base_response,
+                max_tokens=max_tokens,
             )
-            final_response = self.llm_generate(repair_prompt, max_tokens)
-        else:
-            final_response = base_response
+            final_response = gov_result.final_text
+            aphasia_report = gov_result.metadata.get("aphasia_report")
+
+            # Log aphasia event for observability
+            if aphasia_report is not None:
+                repaired = gov_result.metadata.get("repaired", False)
+                if repaired:
+                    decision = "repaired"
+                elif aphasia_report["is_aphasic"]:
+                    decision = "detected_no_repair"
+                else:
+                    decision = "skip"
+
+                log_event = AphasiaLogEvent(
+                    decision=decision,
+                    is_aphasic=aphasia_report["is_aphasic"],
+                    severity=aphasia_report["severity"],
+                    flags=aphasia_report["flags"],
+                    detect_enabled=self.aphasia_detect_enabled,
+                    repair_enabled=self.aphasia_repair_enabled,
+                    severity_threshold=self.aphasia_severity_threshold,
+                )
+                log_aphasia_event(log_event)
 
         return {
             "response": final_response,

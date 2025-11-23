@@ -29,6 +29,7 @@ from ..cognition.moral_filter_v2 import MoralFilterV2
 from ..memory.multi_level_memory import MultiLevelSynapticMemory
 from ..memory.qilm_v2 import QILM_v2
 from ..rhythm.cognitive_rhythm import CognitiveRhythm
+from ..speech.governance import SpeechGovernanceResult, SpeechGovernor
 
 
 class CircuitBreakerState(Enum):
@@ -138,7 +139,8 @@ class LLMWrapper:
         sleep_duration: int = 3,
         initial_moral_threshold: float = 0.50,
         llm_timeout: float = 30.0,
-        llm_retry_attempts: int = 3
+        llm_retry_attempts: int = 3,
+        speech_governor: SpeechGovernor | None = None
     ):
         """
         Initialize the LLM wrapper with cognitive governance.
@@ -153,6 +155,7 @@ class LLMWrapper:
             initial_moral_threshold: Starting moral threshold (default 0.50)
             llm_timeout: Timeout for LLM calls in seconds (default 30.0)
             llm_retry_attempts: Number of retry attempts for LLM calls (default 3)
+            speech_governor: Optional speech governance policy (default None)
         """
         self.dim = dim
         self._lock = Lock()
@@ -166,6 +169,9 @@ class LLMWrapper:
         self.qilm = QILM_v2(dimension=dim, capacity=capacity)
         self.rhythm = CognitiveRhythm(wake_duration=wake_duration, sleep_duration=sleep_duration)
         self.synaptic = MultiLevelSynapticMemory(dimension=dim)
+
+        # Speech governance
+        self._speech_governor = speech_governor
 
         # Reliability components
         self.embedding_circuit_breaker = CircuitBreaker(
@@ -372,9 +378,25 @@ class LLMWrapper:
 
             # Step 7: Generate response with retry and timeout
             try:
-                response_text = self._llm_generate_with_retry(enhanced_prompt, max_tokens)
+                base_text = self._llm_generate_with_retry(enhanced_prompt, max_tokens)
             except Exception as e:
                 return self._build_error_response(f"generation failed: {str(e)}")
+
+            # Step 7a: Apply speech governance if configured
+            governed_metadata = None
+            response_text = base_text
+
+            if self._speech_governor is not None:
+                gov_result: SpeechGovernanceResult = self._speech_governor(
+                    prompt=prompt,
+                    draft=base_text,
+                    max_tokens=max_tokens,
+                )
+                response_text = gov_result.final_text
+                governed_metadata = {
+                    "raw_text": gov_result.raw_text,
+                    "metadata": gov_result.metadata,
+                }
 
             # Step 8: Update memory (skip if in stateless mode)
             if not self.stateless_mode:
@@ -399,7 +421,7 @@ class LLMWrapper:
                     # Consolidation failure is non-critical
                     pass
 
-            return {
+            result = {
                 "response": response_text,
                 "accepted": True,
                 "phase": self.rhythm.phase,
@@ -410,6 +432,11 @@ class LLMWrapper:
                 "max_tokens_used": max_tokens,
                 "stateless_mode": self.stateless_mode
             }
+
+            if governed_metadata is not None:
+                result["speech_governance"] = governed_metadata
+
+            return result
 
     def _consolidate_memories(self) -> None:
         """
