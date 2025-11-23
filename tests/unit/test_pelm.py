@@ -1,5 +1,5 @@
 """
-Unit Tests for Phase-Entangled Lattice Memory (PELM, formerly PhaseEntangledLatticeMemory)
+Unit Tests for Phase-Entangled Lattice Memory (PELM, formerly QILM_v2)
 
 Tests corruption detection, auto-recovery, and boundary checks.
 """

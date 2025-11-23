@@ -65,7 +65,7 @@ MLSDM (Multi-Level Synaptic Dynamic Memory) Governed Cognitive Memory is a neuro
               ┌────────────┴────────────┐
               │                         │
          ┌────▼─────┐            ┌─────▼──────┐
-         │  Phase-Entangled Lattice Memory (PELM, formerly PELM) │            │Multi-Level │
+         │  Phase-Entangled Lattice Memory (PELM, formerly QILM_v2) │            │Multi-Level │
          │ (Phase   │            │ Synaptic   │
          │Entangled)│            │  Memory    │
          └──────────┘            └────────────┘
@@ -564,7 +564,7 @@ Event Vector
     │
     ├──► MultiLevelMemory (L1 → L2 → L3 decay)
     │
-    └──► Phase-Entangled Lattice Memory (PELM, formerly PELM) (phase-entangled storage)
+    └──► Phase-Entangled Lattice Memory (PELM, formerly QILM_v2) (phase-entangled storage)
          │
          └──► Retrieval ──► Context Vectors ──► Prompt Enrichment
 ```
@@ -592,7 +592,7 @@ Enriched Prompt
 **Total Memory Bound:** 29.37 MB (verified empirically)
 
 **Component Breakdown:**
-- Phase-Entangled Lattice Memory (PELM, formerly PELM): 20,000 vectors × 384 dims × 4 bytes = 30,720,000 bytes ≈ 29.30 MB (pre-allocated)
+- Phase-Entangled Lattice Memory (PELM, formerly QILM_v2): 20,000 vectors × 384 dims × 4 bytes = 30,720,000 bytes ≈ 29.30 MB (pre-allocated)
 - MultiLevelMemory: 3 levels × 384 dims × 4 bytes = 4,608 bytes ≈ 4.5 KB
 - MoralFilter: ~100 bytes (threshold + EMA state)
 - CognitiveRhythm: ~50 bytes (phase + step counter)
