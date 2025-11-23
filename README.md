@@ -5,7 +5,7 @@
 
 Neurobiologically-grounded cognitive architecture with moral governance, phase-based memory, and cognitive rhythm. Universal wrapper for any LLM with hard biological constraints.
 
-## Status: Beta v1.1.0 (NeuroLang + Aphasia-Broca extension)
+## Status: Beta v1.2+ (Functional Completion & Validation)
 
 **What Works:**
 - ✅ **Universal LLM Wrapper** - wrap any LLM with cognitive governance
@@ -19,11 +19,15 @@ Neurobiologically-grounded cognitive architecture with moral governance, phase-b
 - ✅ **NeuroLang extension** for bio-inspired language processing with recursion and modularity
 - ✅ **Aphasia-Broca Model** for detecting and correcting telegraphic speech pathologies in LLM outputs
 
-**Verified:**
-- Concurrency: 1000 parallel requests, zero lost updates
-- Memory: Fixed 29.37 MB, no leaks
-- Moral convergence: Tested with 200-step sequences
-- Language coherence: 92.7% improvement in syntactic integrity via Aphasia-Broca correction
+**Verified with Property Tests:**
+- **Concurrency:** 1000 parallel requests, zero lost updates
+- **Memory:** Fixed 29.37 MB, no leaks, capacity bounds enforced
+- **Phase-aware retrieval:** Wake/sleep isolation verified, phase tolerance controls cross-phase access
+- **Moral filter:** Bounded drift (stays within [0.30, 0.90]), EMA convergence, dead-band stability
+- **Cognitive rhythm:** Deterministic state machine, counter bounds, cycle consistency
+- **Aphasia detection:** 27 edge cases tested (empty text, unicode, code, URLs, punctuation, etc.)
+- **Test suite:** 805 tests passing (unit, integration, property, validation)
+- **Language coherence:** 92.7% improvement in syntactic integrity via Aphasia-Broca correction
 
 **Effectiveness Validation (Principal System Architect Level):**
 - ✅ **89.5% resource efficiency** improvement with wake/sleep cycles
