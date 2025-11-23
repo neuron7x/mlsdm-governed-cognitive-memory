@@ -555,15 +555,24 @@ class NeuroLangWrapper(LLMWrapper):
         self.aphasia_detector = AphasiaBrocaDetector()
 
         # Create Aphasia speech governor if detection is enabled
+        speech_governor = None
         if self.aphasia_detect_enabled:
+            from mlsdm.speech.governance import PipelineSpeechGovernor
+
             aphasia_governor = AphasiaSpeechGovernor(
                 detector=self.aphasia_detector,
                 repair_enabled=self.aphasia_repair_enabled,
                 severity_threshold=self.aphasia_severity_threshold,
                 llm_generate_fn=llm_generate_fn,
             )
-        else:
-            aphasia_governor = None
+
+            speech_governor = PipelineSpeechGovernor(
+                governors=[
+                    ("aphasia_broca", aphasia_governor),
+                    # Future: add other governors here, e.g.:
+                    # ("style_normalizer", StyleGovernor(...))
+                ]
+            )
 
         # Initialize parent LLMWrapper with speech governor
         super().__init__(
@@ -574,7 +583,7 @@ class NeuroLangWrapper(LLMWrapper):
             wake_duration=wake_duration,
             sleep_duration=sleep_duration,
             initial_moral_threshold=initial_moral_threshold,
-            speech_governor=aphasia_governor,
+            speech_governor=speech_governor,
         )
 
         # Initialize NeuroLang components based on mode
@@ -670,20 +679,45 @@ class NeuroLangWrapper(LLMWrapper):
         # Apply speech governance if configured (via parent's speech governor)
         final_response = base_response
         aphasia_report = None
+        governed_metadata = None
 
         if self._speech_governor is not None:
-            # Use the speech governor (AphasiaSpeechGovernor) for processing
+            # Use the speech governor (PipelineSpeechGovernor or AphasiaSpeechGovernor) for processing
             gov_result = self._speech_governor(
                 prompt=prompt,
                 draft=base_response,
                 max_tokens=max_tokens,
             )
             final_response = gov_result.final_text
-            aphasia_report = gov_result.metadata.get("aphasia_report")
+            governed_metadata = {
+                "raw_text": gov_result.raw_text,
+                "metadata": gov_result.metadata,
+            }
+
+            # Extract aphasia_report for backward compatibility and logging
+            # When using PipelineSpeechGovernor, look for aphasia_broca step
+            if "pipeline" in gov_result.metadata:
+                # Pipeline mode: extract aphasia report from pipeline steps
+                for step in gov_result.metadata["pipeline"]:
+                    if step["name"] == "aphasia_broca" and step["status"] == "ok":
+                        aphasia_report = step["metadata"].get("aphasia_report")
+                        break
+            else:
+                # Direct mode (backward compatibility)
+                aphasia_report = gov_result.metadata.get("aphasia_report")
 
             # Log aphasia event for observability
             if aphasia_report is not None:
-                repaired = gov_result.metadata.get("repaired", False)
+                repaired = False
+                # Check if repaired flag exists in metadata
+                if "pipeline" in gov_result.metadata:
+                    for step in gov_result.metadata["pipeline"]:
+                        if step["name"] == "aphasia_broca" and step["status"] == "ok":
+                            repaired = step["metadata"].get("repaired", False)
+                            break
+                else:
+                    repaired = gov_result.metadata.get("repaired", False)
+
                 if repaired:
                     decision = "repaired"
                 elif aphasia_report["is_aphasic"]:
@@ -702,10 +736,15 @@ class NeuroLangWrapper(LLMWrapper):
                 )
                 log_aphasia_event(log_event)
 
-        return {
+        result = {
             "response": final_response,
             "phase": state["phase"],
             "accepted": True,
             "neuro_enhancement": neuro_response,
             "aphasia_flags": aphasia_report,
         }
+
+        if governed_metadata is not None:
+            result["speech_governance"] = governed_metadata
+
+        return result

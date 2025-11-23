@@ -14,8 +14,9 @@ Example policies:
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Protocol, Sequence
 
 
 @dataclass
@@ -60,3 +61,65 @@ class SpeechGovernor(Protocol):
             SpeechGovernanceResult with final text and metadata
         """
         ...
+
+
+PIPELINE_LOGGER_NAME = "mlsdm.speech.pipeline"
+pipeline_logger = logging.getLogger(PIPELINE_LOGGER_NAME)
+
+
+class PipelineSpeechGovernor:
+    """
+    Composes multiple SpeechGovernor instances into a deterministic pipeline.
+
+    Each governor receives the *current* draft and may transform it.
+    All intermediate results are recorded in metadata.
+    Failures are isolated: a failing governor is skipped with an error entry.
+    """
+
+    def __init__(self, governors: Sequence[tuple[str, SpeechGovernor]]):
+        self._governors: list[tuple[str, SpeechGovernor]] = list(governors)
+
+    def __call__(self, *, prompt: str, draft: str, max_tokens: int) -> SpeechGovernanceResult:
+        current_text = draft
+        history: list[dict[str, Any]] = []
+
+        for name, governor in self._governors:
+            try:
+                result = governor(
+                    prompt=prompt,
+                    draft=current_text,
+                    max_tokens=max_tokens,
+                )
+            except Exception as exc:  # noqa: BLE001
+                pipeline_logger.exception(
+                    "[SPEECH_PIPELINE] governor=%s failed: %s",
+                    name,
+                    exc,
+                )
+                history.append(
+                    {
+                        "name": name,
+                        "status": "error",
+                        "error_type": type(exc).__name__,
+                        "error_message": str(exc),
+                    }
+                )
+                # skip this governor, continue with current_text
+                continue
+
+            current_text = result.final_text
+            history.append(
+                {
+                    "name": name,
+                    "status": "ok",
+                    "raw_text": result.raw_text,
+                    "final_text": result.final_text,
+                    "metadata": result.metadata,
+                }
+            )
+
+        return SpeechGovernanceResult(
+            final_text=current_text,
+            raw_text=draft,
+            metadata={"pipeline": history},
+        )
