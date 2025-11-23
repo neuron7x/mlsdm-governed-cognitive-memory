@@ -217,7 +217,7 @@ The system maintains adaptive moral homeostasis:
 - **L2**: Medium decay (λ=0.10) - short-term memory
 - **L3**: Slow decay (λ=0.01) - long-term memory
 
-**QILM v2 (Quantum-Inspired Latent Memory):**
+**PELM (Phase-Entangled Lattice Memory):**
 - Fixed capacity (20,000 vectors)
 - Phase-entangled storage
 - Cosine similarity retrieval
@@ -330,7 +330,7 @@ result = wrapper.generate(
 ### Memory Footprint
 
 With default settings (20,000 capacity, 384 dimensions):
-- **QILM v2**: 29.37 MB (fixed)
+- **PELM**: 29.37 MB (fixed)
 - **Synaptic Memory**: ~0.005 MB (3 x 384 x float32)
 - **Total**: ~29.5 MB (well under 1.4 GB limit)
 

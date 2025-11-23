@@ -47,7 +47,7 @@ This PR transforms the MLSDM Governed Cognitive Memory project into a profession
 - All components documented:
   * LLMWrapper - Universal LLM wrapper
   * CognitiveController - Low-level controller
-  * QILM_v2 - Quantum-inspired memory
+  * PELM - Quantum-inspired memory
   * MultiLevelSynapticMemory - Three-level memory
   * MoralFilterV2 - Adaptive moral filtering
   * OntologyMatcher - Semantic matching

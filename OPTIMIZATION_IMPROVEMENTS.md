@@ -158,7 +158,7 @@ else:
 These optimizations were already in the codebase and were preserved:
 
 - **Phase value caching** in CognitiveController
-- **Vectorized cosine similarity** in QILM_v2
+- **Vectorized cosine similarity** in PELM
 - **Smart partial sorting** (argpartition) for large result sets
 - **In-place decay operations** in MultiLevelSynapticMemory
 - **Fast path for moral evaluation** edge cases

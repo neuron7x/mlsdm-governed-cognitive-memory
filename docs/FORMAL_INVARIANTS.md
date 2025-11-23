@@ -226,7 +226,7 @@ This document defines the **formal invariants** for the MLSDM Governed Cognitive
 
 ---
 
-## 5. QILM_v2 / MultiLevelSynapticMemory
+## 5. PELM / MultiLevelSynapticMemory
 
 ### 5.1 Safety Invariants
 

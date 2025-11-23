@@ -20,7 +20,7 @@ This document summarizes the complete implementation of MLSDM Governed Cognitive
    - Self-adaptive moral homeostasis (EMA + dynamic threshold, no RLHF)
    - Circadian rhythm (8 wake + 3 sleep with forced short responses and consolidation)
    - Three-level synaptic memory (L1/L2/L3) with different λ-decay
-   - Phase-entangling retrieval (QILM v2) - fresh in wake, consolidated in sleep
+   - Phase-entangling retrieval (PELM) - fresh in wake, consolidated in sleep
 
 2. Result: LLM that doesn't degrade, doesn't consume memory, doesn't become toxic, doesn't lose identity after thousands of messages
 
@@ -155,7 +155,7 @@ User → LLMWrapper → [Moral Filter] → [Phase Check] → [Embedding] →
 - L2: λ=0.10 (medium decay, short-term)
 - L3: λ=0.01 (slow decay, long-term)
 
-**QILM v2** (existing, integrated):
+**PELM** (existing, integrated):
 - Capacity: 20,000 vectors
 - Memory: 29.37 MB fixed
 - Phase-aware: 0.1 (wake) vs 0.9 (sleep)

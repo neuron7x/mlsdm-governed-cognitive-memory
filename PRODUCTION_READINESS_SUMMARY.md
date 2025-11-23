@@ -202,7 +202,7 @@ Successfully transformed MLSDM Governed Cognitive Memory from a research prototy
 │  │  ├─ Moral Filter (Adaptive)                  │  │
 │  │  ├─ Cognitive Rhythm (Wake/Sleep)            │  │
 │  │  ├─ Multi-Level Memory (L1/L2/L3)            │  │
-│  │  └─ QILM v2 (Phase Memory)                   │  │
+│  │  └─ PELM (Phase Memory)                   │  │
 │  └──────────────────────────────────────────────┘  │
 └─────────────────┬───────────────────────────────────┘
                   │

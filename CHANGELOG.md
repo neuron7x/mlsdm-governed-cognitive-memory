@@ -5,6 +5,24 @@ All notable changes to the MLSDM (Governed Cognitive Memory) project will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-11-23
+
+### Changed
+- **Renamed `QILM_v2` to Phase-Entangled Lattice Memory (PELM)** across code, configuration, and documentation
+  - New module: `src/mlsdm/memory/phase_entangled_lattice_memory.py` (formerly `qilm_v2.py`)
+  - New class: `PhaseEntangledLatticeMemory` (formerly `QILM_v2`)
+  - Kept `mlsdm.memory.QILM_v2` as a deprecated alias for backward compatibility
+  - Updated all imports in core modules (`llm_wrapper.py`, `cognitive_controller.py`)
+  - Updated all test files with new naming conventions
+  - Enhanced documentation to clarify PELM as a phase-entangled lattice in embedding space
+  - Removed misleading "quantum-inspired" terminology; PELM is mathematically inspired but operates in classical embedding space
+  - Maintained backward compatibility in state statistics (`qilm_stats` still available alongside `pelm_stats`)
+
+### Note
+- No breaking changes: existing code using `QILM_v2` will continue to work via the deprecated alias
+- Users are encouraged to migrate to `PhaseEntangledLatticeMemory` in new code
+- The `QILM_v2` alias will be removed in v2.0.0
+
 ## [1.1.0] - 2025-11-22
 
 ### Added

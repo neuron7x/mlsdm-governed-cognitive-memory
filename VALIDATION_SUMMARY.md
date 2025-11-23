@@ -126,7 +126,7 @@ python scripts/generate_effectiveness_charts.py
 | **NeuroCognitiveEngine** | 4 | 3 | 3 | ✅ Covered |
 | **MoralFilter** | 3 | 2 | 3 | ✅ Covered |
 | **WakeSleepController** | 3 | 3 | 2 | ✅ Covered |
-| **QILM_v2 / Memory** | 4 | 3 | 4 | ✅ Covered |
+| **PELM / Memory** | 4 | 3 | 4 | ✅ Covered |
 | **Total** | **18** | **14** | **15** | **47 invariants** |
 
 ### Test Coverage by Type

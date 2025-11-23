@@ -65,7 +65,7 @@ MLSDM (Multi-Level Synaptic Dynamic Memory) Governed Cognitive Memory is a neuro
               ┌────────────┴────────────┐
               │                         │
          ┌────▼─────┐            ┌─────▼──────┐
-         │  QILM_v2 │            │Multi-Level │
+         │  Phase-Entangled Lattice Memory (PELM, formerly PELM) │            │Multi-Level │
          │ (Phase   │            │ Synaptic   │
          │Entangled)│            │  Memory    │
          └──────────┘            └────────────┘
@@ -245,10 +245,12 @@ Initial → Wake (step 0-7) → Sleep (step 8-10) → Wake (step 11-18) → ...
 
 ---
 
-### 5. QILM_v2 (Quantum-Inspired Lattice Memory)
+### 5. Phase-Entangled Lattice Memory (PELM)
 
-**Location:** `src/mlsdm/memory/qilm_v2.py`  
-**Purpose:** Bounded phase-entangled memory with efficient retrieval
+**Location:** `src/mlsdm/memory/phase_entangled_lattice_memory.py` (formerly `qilm_v2.py`)  
+**Purpose:** Bounded phase-entangled lattice in embedding space with phase-based retrieval
+
+PELM is a geometrically-structured memory system that stores vectors with associated phase values, enabling phase-proximity-based retrieval. The design is mathematically inspired by quantum concepts but operates entirely in classical embedding space—not related to quantum hardware.
 
 **Key Responsibilities:**
 - Store vectors with phase entanglement
@@ -562,7 +564,7 @@ Event Vector
     │
     ├──► MultiLevelMemory (L1 → L2 → L3 decay)
     │
-    └──► QILM_v2 (phase-entangled storage)
+    └──► Phase-Entangled Lattice Memory (PELM, formerly PELM) (phase-entangled storage)
          │
          └──► Retrieval ──► Context Vectors ──► Prompt Enrichment
 ```
@@ -590,7 +592,7 @@ Enriched Prompt
 **Total Memory Bound:** 29.37 MB (verified empirically)
 
 **Component Breakdown:**
-- QILM_v2: 20,000 vectors × 384 dims × 4 bytes = 30,720,000 bytes ≈ 29.30 MB (pre-allocated)
+- Phase-Entangled Lattice Memory (PELM, formerly PELM): 20,000 vectors × 384 dims × 4 bytes = 30,720,000 bytes ≈ 29.30 MB (pre-allocated)
 - MultiLevelMemory: 3 levels × 384 dims × 4 bytes = 4,608 bytes ≈ 4.5 KB
 - MoralFilter: ~100 bytes (threshold + EMA state)
 - CognitiveRhythm: ~50 bytes (phase + step counter)

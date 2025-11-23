@@ -4,7 +4,7 @@
 
 [project]
 name = "mlsdm-governed-cognitive-memory"
-version = "1.0.0"
+version = "1.2.0"
 description = "Production-ready neurobiologically-grounded cognitive architecture with moral governance"
 readme = "README.md"
 license = {text = "MIT"}
@@ -22,7 +22,7 @@ keywords = [
     "ai-safety",
     "llm-wrapper",
     "circadian-rhythm",
-    "quantum-inspired"
+    "phase-entangled-memory"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

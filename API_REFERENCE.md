@@ -12,7 +12,7 @@ Complete API reference for MLSDM Governed Cognitive Memory v1.0.0.
 - [LLMWrapper](#llmwrapper)
 - [CognitiveController](#cognitivecontroller)
 - [Memory Components](#memory-components)
-  - [QILM_v2](#qilm_v2)
+  - [PELM](#qilm_v2)
   - [MultiLevelSynapticMemory](#multilevelsyn apticmemory)
 - [Filtering Components](#filtering-components)
   - [MoralFilterV2](#moralfilterv2)
@@ -646,14 +646,14 @@ def retrieve_context(
 
 ## Memory Components
 
-### QILM_v2
+### PELM
 
-Quantum-Inspired Latent Memory with phase entanglement.
+Phase-Entangled Lattice Memory with phase entanglement.
 
 #### Constructor
 
 ```python
-QILM_v2(dim: int, capacity: int = 20000)
+PELM(dim: int, capacity: int = 20000)
 ```
 
 **Parameters:**
@@ -1001,7 +1001,7 @@ except ValueError as e:
 
 ### Memory
 
-- **QILM_v2**: Fixed allocation (capacity × dim × 4 bytes)
+- **PELM**: Fixed allocation (capacity × dim × 4 bytes)
 - **Example**: 20,000 × 384 × 4 = 29.37 MB
 - **Total system**: ~30 MB (well under 1.4 GB limit)
 

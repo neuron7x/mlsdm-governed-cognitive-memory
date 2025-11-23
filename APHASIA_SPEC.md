@@ -200,7 +200,7 @@ def calculate_severity(avg_sent_len, func_ratio, frag_ratio):
    └─> CognitiveController.process_event(event_vector, moral_value)
        ├─> MoralFilter evaluation
        ├─> CognitiveRhythm phase management
-       └─> Memory storage (QILM_v2 + MultiLevelMemory)
+       └─> Memory storage (PELM + MultiLevelMemory)
 
 4. NeuroLang Enhancement
    └─> ModularLanguageProcessor.process(prompt)

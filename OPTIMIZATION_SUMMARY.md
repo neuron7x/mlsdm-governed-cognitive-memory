@@ -16,7 +16,7 @@ This document summarizes the code optimizations and test coverage improvements m
 
 ## Optimizations Implemented
 
-### 1. QILM_v2 Memory Retrieval (`src/memory/qilm_v2.py`)
+### 1. PELM Memory Retrieval (`src/memory/qilm_v2.py`)
 
 **Issue**: Cosine similarity computation was using full sort for all candidate sizes.
 
@@ -110,7 +110,7 @@ return bool(moral_value >= self.threshold)
 ### Performance Tests (`src/tests/unit/test_performance.py`)
 
 **14 new tests** covering:
-- QILM_v2 retrieval performance with large memory (3 tests)
+- PELM retrieval performance with large memory (3 tests)
 - Multi-level memory update performance (3 tests)
 - Moral filter fast-path performance (2 tests)
 - Cognitive controller caching performance (2 tests)

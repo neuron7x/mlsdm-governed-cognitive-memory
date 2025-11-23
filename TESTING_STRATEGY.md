@@ -50,7 +50,7 @@ We use **Hypothesis** for property-based testing to verify formal invariants acr
 - Eventual phase transition
 - No deadlocks on active requests
 
-**QILM_v2 / MultiLevelSynapticMemory**:
+**PELM / MultiLevelSynapticMemory**:
 - Capacity enforcement
 - Vector dimensionality consistency
 - Nearest neighbor availability

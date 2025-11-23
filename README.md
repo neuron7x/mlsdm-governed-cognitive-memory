@@ -13,7 +13,7 @@ Neurobiologically-grounded cognitive architecture with moral governance, phase-b
 - ✅ Bounded memory (20k capacity, ≤1.4 GB RAM, zero-allocation after startup)
 - ✅ Adaptive moral homeostasis (EMA + dynamic threshold, no RLHF)
 - ✅ Circadian rhythm (8 wake + 3 sleep cycles with forced short responses)
-- ✅ Phase-entangling retrieval (QILM v2) - fresh in wake, consolidated in sleep
+- ✅ Phase-entangling retrieval (PELM) - fresh in wake, consolidated in sleep
 - ✅ Multi-level synaptic memory (L1/L2/L3 with different λ-decay)
 - ✅ **Speech Governance Framework** - pluggable linguistic policies for LLM output control
 - ✅ **NeuroLang extension** for bio-inspired language processing with recursion and modularity
@@ -53,7 +53,7 @@ pip install -r requirements.txt
 - ✅ Universal LLM wrapper with cognitive governance
 - ✅ Moral homeostasis and circadian rhythm
 - ✅ Multi-level synaptic memory (L1/L2/L3)
-- ✅ Phase-entangling retrieval (QILM v2)
+- ✅ Phase-entangling retrieval (PELM)
 - ✅ **AphasiaBrocaDetector** for detecting telegraphic speech (pure Python, no torch)
 - ✅ All core cognitive architecture features
 
@@ -355,7 +355,7 @@ print(state)
 
 **Components:**
 - `MoralFilterV2`: Adaptive moral threshold (0.30-0.90) with EMA
-- `QILM_v2`: Bounded quantum-inspired memory with phase entanglement
+- `PELM (Phase-Entangled Lattice Memory)`: Bounded phase-entangled memory with phase entanglement
 - `MultiLevelSynapticMemory`: 3-level decay (L1/L2/L3)
 - `CognitiveRhythm`: Wake/sleep cycle (8/3 duration)
 - `CognitiveController`: Thread-safe orchestrator
