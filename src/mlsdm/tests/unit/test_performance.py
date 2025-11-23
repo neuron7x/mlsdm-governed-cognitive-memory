@@ -13,29 +13,29 @@ import numpy as np
 from mlsdm.cognition.moral_filter_v2 import MoralFilterV2
 from mlsdm.core.cognitive_controller import CognitiveController
 from mlsdm.memory.multi_level_memory import MultiLevelSynapticMemory
-from mlsdm.memory.qilm_v2 import QILM_v2
+from mlsdm.memory.phase_entangled_lattice_memory import PhaseEntangledLatticeMemory
 
 
-class TestQILM_v2Performance:
-    """Performance tests for QILM_v2 optimizations."""
+class TestPELMPerformance:
+    """Performance tests for PELM optimizations."""
 
     def test_retrieve_performance_with_large_memory(self) -> None:
         """Test retrieval performance with near-capacity memory."""
-        qilm = QILM_v2(dimension=384, capacity=1000)
+        pelm = PhaseEntangledLatticeMemory(dimension=384, capacity=1000)
 
         # Fill memory to 90% capacity
         for i in range(900):
             vec = np.random.randn(384).astype(np.float32)
             vec = vec / (np.linalg.norm(vec) or 1e-9)
             phase = 0.1 if i % 2 == 0 else 0.9
-            qilm.entangle(vec.tolist(), phase=phase)
+            pelm.entangle(vec.tolist(), phase=phase)
 
         # Test retrieval performance
         query_vec = np.random.randn(384).astype(np.float32)
         query_vec = query_vec / (np.linalg.norm(query_vec) or 1e-9)
 
         start = time.perf_counter()
-        results = qilm.retrieve(query_vec.tolist(), current_phase=0.1, top_k=10)
+        results = pelm.retrieve(query_vec.tolist(), current_phase=0.1, top_k=10)
         elapsed = time.perf_counter() - start
 
         # Should complete in reasonable time (< 50ms for 900 vectors)
@@ -45,21 +45,21 @@ class TestQILM_v2Performance:
 
     def test_retrieve_with_varying_candidate_sizes(self) -> None:
         """Test retrieval optimization with different candidate set sizes."""
-        qilm = QILM_v2(dimension=384, capacity=500)
+        pelm = PhaseEntangledLatticeMemory(dimension=384, capacity=500)
 
         # Add vectors with same phase
         phase = 0.1
         for i in range(200):
             vec = np.random.randn(384).astype(np.float32)
             vec = vec / (np.linalg.norm(vec) or 1e-9)
-            qilm.entangle(vec.tolist(), phase=phase)
+            pelm.entangle(vec.tolist(), phase=phase)
 
         query_vec = np.random.randn(384).astype(np.float32)
         query_vec = query_vec / (np.linalg.norm(query_vec) or 1e-9)
 
         # Test with different top_k values to trigger different optimization paths
         for top_k in [5, 10, 50, 150]:
-            results = qilm.retrieve(query_vec.tolist(), current_phase=phase, top_k=top_k)
+            results = pelm.retrieve(query_vec.tolist(), current_phase=phase, top_k=top_k)
             assert len(results) <= top_k
             # Verify results are sorted by resonance (descending)
             if len(results) > 1:
@@ -68,19 +68,19 @@ class TestQILM_v2Performance:
 
     def test_entangle_performance_batch(self) -> None:
         """Test entangle performance with batch operations."""
-        qilm = QILM_v2(dimension=384, capacity=10000)
+        pelm = PhaseEntangledLatticeMemory(dimension=384, capacity=10000)
 
         # Batch entangle
         start = time.perf_counter()
         for _i in range(1000):
             vec = np.random.randn(384).astype(np.float32)
             vec = vec / (np.linalg.norm(vec) or 1e-9)
-            qilm.entangle(vec.tolist(), phase=0.1)
+            pelm.entangle(vec.tolist(), phase=0.1)
         elapsed = time.perf_counter() - start
 
         # Should handle 1000 entanglements quickly (< 100ms)
         assert elapsed < 0.1, f"Batch entangle took {elapsed:.3f}s, expected < 0.1s"
-        assert qilm.size == 1000
+        assert pelm.size == 1000
 
 
 class TestMultiLevelMemoryPerformance:
@@ -234,13 +234,13 @@ class TestConcurrentPerformance:
 
     def test_qilm_concurrent_retrieval(self) -> None:
         """Test retrieval performance with concurrent threads."""
-        qilm = QILM_v2(dimension=384, capacity=1000)
+        pelm = PhaseEntangledLatticeMemory(dimension=384, capacity=1000)
 
         # Populate memory
         for _i in range(500):
             vec = np.random.randn(384).astype(np.float32)
             vec = vec / (np.linalg.norm(vec) or 1e-9)
-            qilm.entangle(vec.tolist(), phase=0.1)
+            pelm.entangle(vec.tolist(), phase=0.1)
 
         results_list: list[list] = []
 
@@ -248,7 +248,7 @@ class TestConcurrentPerformance:
             query = np.random.randn(384).astype(np.float32)
             query = query / (np.linalg.norm(query) or 1e-9)
             for _ in range(10):
-                results = qilm.retrieve(query.tolist(), current_phase=0.1, top_k=5)
+                results = pelm.retrieve(query.tolist(), current_phase=0.1, top_k=5)
                 results_list.append(results)
 
         # Run concurrent retrievals
@@ -293,9 +293,9 @@ class TestMemoryEfficiency:
 
     def test_qilm_memory_footprint(self) -> None:
         """Test that QILM maintains expected memory footprint."""
-        qilm = QILM_v2(dimension=384, capacity=20000)
+        pelm = PhaseEntangledLatticeMemory(dimension=384, capacity=20000)
 
-        stats = qilm.get_state_stats()
+        stats = pelm.get_state_stats()
         memory_mb = stats["memory_mb"]
 
         # Should be approximately:

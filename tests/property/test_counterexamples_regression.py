@@ -15,7 +15,7 @@ from unittest.mock import Mock
 
 from mlsdm.cognition.moral_filter import MoralFilter
 from mlsdm.memory.multi_level_memory import MultiLevelSynapticMemory
-from mlsdm.memory.qilm_v2 import QILM_v2
+from mlsdm.memory.phase_entangled_lattice_memory import PhaseEntangledLatticeMemory
 from mlsdm.engine import NeuroCognitiveEngine, NeuroEngineConfig
 
 # Test tolerances
@@ -298,7 +298,7 @@ class TestMemoryCounterexamples:
         for case in capacity_cases:
             if case["passed"]:
                 # Verify capacity limits with real memory system
-                qilm = QILM_v2(
+                pelm = PhaseEntangledLatticeMemory(
                     dimension=384,
                     capacity=case["capacity"]
                 )
@@ -307,9 +307,9 @@ class TestMemoryCounterexamples:
                 phase = 0.5
                 for i in range(case["vectors_inserted"]):
                     vec = np.random.randn(384).astype(np.float32)
-                    qilm.entangle(vec.tolist(), phase=phase)
+                    pelm.entangle(vec.tolist(), phase=phase)
                 
-                actual_size = qilm.size
+                actual_size = pelm.size
                 
                 assert actual_size <= case["capacity"], \
                     f"Capacity enforcement failed: {actual_size} > {case['capacity']}"

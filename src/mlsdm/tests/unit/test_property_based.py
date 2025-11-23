@@ -6,7 +6,7 @@ from hypothesis import strategies as st
 from mlsdm.cognition.moral_filter import MoralFilter
 from mlsdm.cognition.moral_filter_v2 import MoralFilterV2
 from mlsdm.memory.multi_level_memory import MultiLevelSynapticMemory
-from mlsdm.memory.qilm_v2 import QILM_v2
+from mlsdm.memory.phase_entangled_lattice_memory import PhaseEntangledLatticeMemory
 from mlsdm.rhythm.cognitive_rhythm import CognitiveRhythm
 
 
@@ -60,17 +60,17 @@ class TestPropertyBasedInvariants:
     )
     @settings(max_examples=20)
     def test_qilm_v2_size_never_exceeds_capacity(self, dimension, capacity):
-        """Property: QILM_v2 size never exceeds capacity."""
-        qilm = QILM_v2(dimension=dimension, capacity=capacity)
+        """Property: PhaseEntangledLatticeMemory size never exceeds capacity."""
+        pelm = PhaseEntangledLatticeMemory(dimension=dimension, capacity=capacity)
 
         # Add more items than capacity
         for i in range(capacity + 50):
             vec = [float(i % 10) for _ in range(dimension)]
-            qilm.entangle(vec, phase=0.5)
+            pelm.entangle(vec, phase=0.5)
 
         # Invariant: size should be capped at capacity
-        assert qilm.size == capacity
-        assert qilm.pointer <= capacity
+        assert pelm.size == capacity
+        assert pelm.pointer <= capacity
 
     @given(
         dimension=st.integers(min_value=2, max_value=50),
@@ -79,16 +79,16 @@ class TestPropertyBasedInvariants:
     @settings(max_examples=20)
     def test_qilm_v2_retrieve_returns_valid_results(self, dimension, num_items):
         """Property: Retrieved items have valid structure and values."""
-        qilm = QILM_v2(dimension=dimension, capacity=100)
+        pelm = PhaseEntangledLatticeMemory(dimension=dimension, capacity=100)
 
         # Add items
         for i in range(num_items):
             vec = [float(i) for _ in range(dimension)]
-            qilm.entangle(vec, phase=0.5)
+            pelm.entangle(vec, phase=0.5)
 
         # Retrieve
         query = [1.0] * dimension
-        results = qilm.retrieve(query, current_phase=0.5, phase_tolerance=0.5, top_k=5)
+        results = pelm.retrieve(query, current_phase=0.5, phase_tolerance=0.5, top_k=5)
 
         # Invariants
         assert isinstance(results, list)
@@ -187,13 +187,13 @@ class TestPropertyBasedInvariants:
     @given(phase=st.floats(min_value=-10.0, max_value=10.0))
     @settings(max_examples=30)
     def test_qilm_v2_phase_storage(self, phase):
-        """Property: QILM_v2 stores phase values correctly."""
-        qilm = QILM_v2(dimension=10, capacity=100)
+        """Property: PhaseEntangledLatticeMemory stores phase values correctly."""
+        pelm = PhaseEntangledLatticeMemory(dimension=10, capacity=100)
         vec = [1.0] * 10
 
-        idx = qilm.entangle(vec, phase=phase)
+        idx = pelm.entangle(vec, phase=phase)
 
-        assert qilm.phase_bank[idx] == phase
+        assert pelm.phase_bank[idx] == phase
 
     @given(
         dimension=st.integers(min_value=2, max_value=30),
@@ -239,15 +239,15 @@ class TestPropertyBasedInvariants:
     @settings(max_examples=20)
     def test_qilm_v2_top_k_constraint(self, dimension, top_k):
         """Property: Retrieve returns at most top_k results."""
-        qilm = QILM_v2(dimension=dimension, capacity=100)
+        pelm = PhaseEntangledLatticeMemory(dimension=dimension, capacity=100)
 
         # Add many items
         for i in range(50):
             vec = [float(i % 10) for _ in range(dimension)]
-            qilm.entangle(vec, phase=0.5)
+            pelm.entangle(vec, phase=0.5)
 
         query = [1.0] * dimension
-        results = qilm.retrieve(query, current_phase=0.5, phase_tolerance=0.5, top_k=top_k)
+        results = pelm.retrieve(query, current_phase=0.5, phase_tolerance=0.5, top_k=top_k)
 
         # Invariant: number of results <= top_k
         assert len(results) <= top_k
