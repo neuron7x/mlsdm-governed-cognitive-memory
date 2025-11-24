@@ -476,7 +476,7 @@ For detailed specification, see [APHASIA_SPEC.md](APHASIA_SPEC.md).
    │
 6. MultiLevelMemory updates with event vector
    │
-7. QILM stores event with current phase
+7. PELM stores event with current phase
    │
 8. OntologyMatcher classifies event
    │
@@ -502,7 +502,7 @@ For detailed specification, see [APHASIA_SPEC.md](APHASIA_SPEC.md).
 4. Controller receives process_event(embedding, moral_value)
    │   ├─ MoralFilter evaluation
    │   ├─ CognitiveRhythm phase management
-   │   └─ Memory storage (QILM + MultiLevelMemory)
+   │   └─ Memory storage (PELM + MultiLevelMemory)
    │
 5. If accepted: LLM generates base_response
    │

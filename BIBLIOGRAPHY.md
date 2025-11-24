@@ -158,17 +158,6 @@ For detailed description of the Broca's aphasia model, see [APHASIA_SPEC.md](APH
 
 This section covers the theoretical and practical foundations for MLSDM's moral governance (MoralFilterV2) and safety architecture.
 
-```bibtex
-@software{mlsdm2025,
-  author       = {Yaroslav Vasylenko},
-  title        = {MLSDM Governed Cognitive Memory v1.0.0},
-  year         = {2025},
-  url          = {https://github.com/neuron7x/mlsdm-governed-cognitive-memory},
-  version      = {1.0.0},
-  note         = {Asynchronous Python framework that wraps arbitrary LLMs with biologically-inspired constraints (MoralFilterV2, PELM (Phase-Entangled Lattice Memory), MultiLevelSynapticMemory, CognitiveRhythm, CognitiveController) to support long-term governed operation.}
-}
-```
-
 ### C.1 Value Alignment Theory
 
 ```bibtex
@@ -232,33 +221,7 @@ This section covers the theoretical and practical foundations for MLSDM's moral 
 
 ### C.2 Standards and Governance Frameworks
 
-```bibtex
-@article{hastings2018_scn_generation,
-  author       = {Michael H. Hastings and Elizabeth S. Maywood and Marco Brancaccio},
-  title        = {Generation of Circadian Rhythms in the Suprachiasmatic Nucleus},
-  journal      = {Nature Reviews Neuroscience},
-  year         = {2018},
-  volume       = {19},
-  number       = {8},
-  pages        = {453--469},
-  doi          = {10.1038/s41583-018-0026-z},
-  url          = {https://doi.org/10.1038/s41583-018-0026-z},
-  note         = {Reviews SCN network mechanisms that generate robust 24h rhythms; provides biological grounding for CognitiveRhythm's wake/sleep cycle parameters and network-level synchronization.}
-}
-
-@article{mendoza2009_brain_clocks,
-  author       = {Jorge Mendoza and Etienne Challet},
-  title        = {Brain Clocks: From the Suprachiasmatic Nuclei to a Cerebral Network},
-  journal      = {The Neuroscientist},
-  year         = {2009},
-  volume       = {15},
-  number       = {5},
-  pages        = {477--488},
-  doi          = {10.1177/1073858408327808},
-  url          = {https://doi.org/10.1177/1073858408327808},
-  note         = {Shows how SCN coordinates distributed brain clocks; motivates MLSDM's global CognitiveRhythm controller that gates consolidation and resource usage across modules.}
-}
-```
+The IEEE standard entry is included above in section C.1.
 
 ---
 
@@ -267,30 +230,38 @@ This section covers the theoretical and practical foundations for MLSDM's moral 
 This section covers contemporary LLM memory systems and generative agent architectures that motivate MLSDM's approach to long-term memory management.
 
 ```bibtex
-@article{benna2016_synaptic_consolidation,
-  author       = {Marcus K. Benna and Stefano Fusi},
-  title        = {Computational Principles of Synaptic Memory Consolidation},
-  journal      = {Nature Neuroscience},
-  year         = {2016},
-  volume       = {19},
-  number       = {12},
-  pages        = {1697--1706},
-  doi          = {10.1038/nn.4401},
-  url          = {https://doi.org/10.1038/nn.4401},
-  note         = {Introduces multistate synapses with multiple timescales; directly motivates MLSDM's L1/L2/L3 MultiLevelSynapticMemory with distinct decay rates for short-, mid- and long-term traces.}
+@article{wu2022_memorizing_transformers,
+  author       = {Yuhuai Wu and Markus N. Rabe and DeLesley Hutchins and Christian Szegedy},
+  title        = {Memorizing Transformers},
+  journal      = {arXiv preprint},
+  year         = {2022},
+  volume       = {arXiv:2203.08913},
+  doi          = {10.48550/arXiv.2203.08913},
+  url          = {https://arxiv.org/abs/2203.08913},
+  note         = {Adds kNN-style external memory to Transformers; informs MLSDM's separation between parametric LLM and non-parametric governed memory (PELM + MultiLevelSynapticMemory).}
 }
 
-@article{fusi2005_cascade_models,
-  author       = {Stefano Fusi and Patrick J. Drew and L. F. Abbott},
-  title        = {Cascade Models of Synaptically Stored Memories},
-  journal      = {Neuron},
-  year         = {2005},
-  volume       = {45},
-  number       = {4},
-  pages        = {599--611},
-  doi          = {10.1016/j.neuron.2005.02.001},
-  url          = {https://doi.org/10.1016/j.neuron.2005.02.001},
-  note         = {Classic cascade model showing how synaptic complexity increases memory lifetime; informs the staged consolidation logic and decay schedule in MLSDM's synaptic memory levels.}
+@inproceedings{park2023_generative_agents,
+  author       = {Joon Sung Park and Joseph C. O'Brien and Carrie J. Cai and Meredith Ringel Morris and Percy Liang and Michael S. Bernstein},
+  title        = {Generative Agents: Interactive Simulacra of Human Behavior},
+  booktitle    = {Proceedings of the 36th Annual ACM Symposium on User Interface Software and Technology (UIST '23)},
+  year         = {2023},
+  pages        = {1--22},
+  doi          = {10.1145/3586183.3606763},
+  url          = {https://doi.org/10.1145/3586183.3606763},
+  note         = {Introduces LLM-based agents with persistent natural-language memory, reflection and retrieval; demonstrates application-level patterns that MLSDM targets to support stably over long horizons.}
+}
+
+@article{hong2025_generative_agents_memory_retrieval,
+  author       = {Jiyu Hong and Zhe Xu and Jianchen Zhang and others},
+  title        = {Enhancing Memory Retrieval in Generative Agents through {LLM}-Trained Cross-Attention Networks},
+  journal      = {Frontiers in Psychology},
+  year         = {2025},
+  volume       = {16},
+  pages        = {1546586},
+  doi          = {10.3389/fpsyg.2025.1546586},
+  url          = {https://doi.org/10.3389/fpsyg.2025.1546586},
+  note         = {Explores learned retrieval mechanisms for generative agents; supports the design of MLSDM's embedding-based retrieval (PELM with sentence-transformer backends) for context selection.}
 }
 ```
 
@@ -341,44 +312,6 @@ This section covers mathematical frameworks for associative memory that inspire 
 }
 ```
 
-
-
-```bibtex
-@article{wu2022_memorizing_transformers,
-  author       = {Yuhuai Wu and Markus N. Rabe and DeLesley Hutchins and Christian Szegedy},
-  title        = {Memorizing Transformers},
-  journal      = {arXiv preprint},
-  year         = {2022},
-  volume       = {arXiv:2203.08913},
-  doi          = {10.48550/arXiv.2203.08913},
-  url          = {https://arxiv.org/abs/2203.08913},
-  note         = {Adds kNN-style external memory to Transformers; informs MLSDM's separation between parametric LLM and non-parametric governed memory (PELM (Phase-Entangled Lattice Memory) + MultiLevelSynapticMemory).}
-}
-
-@inproceedings{park2023_generative_agents,
-  author       = {Joon Sung Park and Joseph C. O'Brien and Carrie J. Cai and Meredith Ringel Morris and Percy Liang and Michael S. Bernstein},
-  title        = {Generative Agents: Interactive Simulacra of Human Behavior},
-  booktitle    = {Proceedings of the 36th Annual ACM Symposium on User Interface Software and Technology (UIST '23)},
-  year         = {2023},
-  pages        = {1--22},
-  doi          = {10.1145/3586183.3606763},
-  url          = {https://doi.org/10.1145/3586183.3606763},
-  note         = {Introduces LLM-based agents with persistent natural-language memory, reflection and retrieval; demonstrates application-level patterns that MLSDM targets to support stably over long horizons.}
-}
-
-@article{hong2025_generative_agents_memory_retrieval,
-  author       = {Jiyu Hong and Zhe Xu and Jianchen Zhang and others},
-  title        = {Enhancing Memory Retrieval in Generative Agents through {LLM}-Trained Cross-Attention Networks},
-  journal      = {Frontiers in Psychology},
-  year         = {2025},
-  volume       = {16},
-  pages        = {1546586},
-  doi          = {10.3389/fpsyg.2025.1546586},
-  url          = {https://doi.org/10.3389/fpsyg.2025.1546586},
-  note         = {Explores learned retrieval mechanisms for generative agents; supports the design of MLSDM's embedding-based retrieval (PELM (Phase-Entangled Lattice Memory) with sentence-transformer backends) for context selection.}
-}
-```
-
 ---
 
 ## F. Standards and Best Practices
@@ -396,6 +329,17 @@ Current focus is on neuroscience and AI safety foundations. Engineering best pra
 ---
 
 ## G. Software Artifacts
+
+```bibtex
+@software{mlsdm2025,
+  author       = {Yaroslav Vasylenko},
+  title        = {MLSDM Governed Cognitive Memory v1.0.0},
+  year         = {2025},
+  url          = {https://github.com/neuron7x/mlsdm-governed-cognitive-memory},
+  version      = {1.0.0},
+  note         = {Asynchronous Python framework that wraps arbitrary LLMs with biologically-inspired constraints (MoralFilterV2, PELM, MultiLevelSynapticMemory, CognitiveRhythm, CognitiveController) to support long-term governed operation.}
+}
+```
 
 ---
 
