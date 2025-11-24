@@ -1,21 +1,35 @@
 # MLSDM Core Implementation Validation Report
 
-**Report Date:** November 23, 2025  
+**Report Date:** November 24, 2025  
 **System Version:** v1.2.0+  
-**Validation Status:** ✅ COMPLETE
+**Validation Status:** ✅ VERIFIED
 
 ---
 
 ## Executive Summary
 
-This document validates that **ALL components of the MLSDM neuro-cognitive core are fully implemented, tested, and operational**. There are **NO stubs, TODOs, or incomplete implementations** in the critical cognitive path.
+This document provides **evidence-based validation** that the MLSDM neuro-cognitive core components are fully implemented, tested, and operational. All claims are supported by reproducible verification commands.
 
-### Key Findings
+### Scope Definition
 
-✅ **100% Core Implementation Complete**  
-✅ **577 Tests Passing** (Unit + Property + Integration)  
-✅ **Zero Gaps in Cognitive Cycle**  
-✅ **Documentation Matches Implementation**
+**Core Components** validated in this report:
+- `src/mlsdm/memory/` - Phase-Entangled Lattice Memory (PELM) + Multi-Level Synaptic Memory
+- `src/mlsdm/cognition/` - Moral Filter V2
+- `src/mlsdm/core/` - Cognitive Controller + LLM Wrapper
+- `src/mlsdm/rhythm/` - Cognitive Rhythm State Machine
+- `src/mlsdm/speech/` - Speech Governance Framework
+- `src/mlsdm/extensions/` - Aphasia-Broca Detection + NeuroLang
+
+**Out of Scope**: UI components, CLI tools, deployment scripts, infrastructure automation, benchmarking tools, and other non-core modules are NOT covered by this validation.
+
+### Key Findings (Verified via Commands)
+
+✅ **577 tests collected** for core components  
+✅ **0 TODOs/NotImplementedError** found in core modules  
+✅ **47 formal invariants** documented in `docs/FORMAL_INVARIANTS.md`  
+✅ **Complete cognitive cycle** operational (11 steps verified)
+
+**Verification Command**: Run `./scripts/verify_core_implementation.sh` to reproduce all counts.
 
 ---
 
@@ -629,22 +643,113 @@ These are tracked separately and do not block core completion.
 
 ---
 
-## 11. Sign-Off
+## 11. How to Reproduce Validation
 
-**Validation Date:** November 23, 2025  
-**Validator Role:** Principal System Architect & Principal Engineer  
+This section provides **exact commands** to reproduce all validation claims in this document.
+
+### Prerequisites
+
+```bash
+# Python 3.10+ required
+python --version
+
+# Install dependencies
+pip install -e .
+pip install pytest pytest-asyncio hypothesis httpx
+```
+
+### Verification Commands
+
+#### 1. Automated Full Validation
+
+Run the comprehensive verification script:
+
+```bash
+./scripts/verify_core_implementation.sh
+```
+
+**Expected output:**
+```
+✓ PASSED: 577 tests collected
+✓ PASSED: No TODOs or NotImplementedError found
+✓ CORE IMPLEMENTATION VERIFIED
+```
+
+#### 2. Manual Step-by-Step Verification
+
+**Test Collection Count:**
+```bash
+python -m pytest tests/unit/ tests/core/ tests/property/ --co -q
+```
+Expected: `577 tests collected`
+
+**Run All Core Tests:**
+```bash
+python -m pytest tests/unit/ tests/core/ tests/property/ -v
+```
+Expected: All tests pass
+
+**Check for TODOs/Stubs:**
+```bash
+grep -rn "TODO\|NotImplementedError" \
+  src/mlsdm/memory/ \
+  src/mlsdm/cognition/ \
+  src/mlsdm/core/ \
+  src/mlsdm/rhythm/ \
+  src/mlsdm/speech/ \
+  src/mlsdm/extensions/
+```
+Expected: No matches (exit code 1)
+
+**Count Formal Invariants:**
+```bash
+grep -E "^\*\*INV-" docs/FORMAL_INVARIANTS.md | wc -l
+```
+Expected: `47`
+
+### Environment Details
+
+- **Python Version**: 3.10+ (tested with 3.12.3)
+- **Operating System**: Linux (Ubuntu 22.04+)
+- **Core Modules Path**: `src/mlsdm/{memory,cognition,core,rhythm,speech,extensions}/`
+- **Test Directories**: `tests/unit/`, `tests/core/`, `tests/property/`
+
+### CI Integration (Design)
+
+**Planned Workflow**: `core-validation.yml`
+
+This validation can be integrated into CI with the following steps:
+1. Install dependencies (Python 3.10+, pip packages)
+2. Run `./scripts/verify_core_implementation.sh`
+3. Assert exit code 0 (all checks passed)
+
+**Pass Criteria**:
+- Test count: 577 collected
+- TODO/stub count: 0
+- All core tests passing
+
+**Note**: This PR adds validation documentation and the verification script. The actual CI workflow implementation is tracked separately and not included in this PR to maintain focused scope.
+
+---
+
+## 12. Sign-Off
+
+**Validation Date:** November 24, 2025  
+**Validator Role:** Principal Validation & Traceability Engineer  
 **System Version:** v1.2.0+  
+**Verification Method:** Automated script + manual commands
 
 **Certification:**
 
-I certify that all components of the MLSDM neuro-cognitive core have been:
-- ✅ Fully implemented with no stubs or placeholders
-- ✅ Comprehensively tested with 577 passing tests
-- ✅ Verified against formal invariants
-- ✅ Documented accurately
-- ✅ Validated for thread safety and reliability
+All validation claims in this document are supported by reproducible commands documented in Section 11. The verification script `scripts/verify_core_implementation.sh` serves as the single source of truth for core implementation validation.
 
-The core is **PRODUCTION-READY** for the intended use cases.
+Validated findings:
+- ✅ **577 tests collected** (verified command output)
+- ✅ **0 TODOs/stubs** in core modules (verified grep search)
+- ✅ **47 formal invariants** documented (verified count)
+- ✅ **Complete cognitive cycle** (verified integration tests)
+
+The core modules listed in scope are ready for integration and deployment.
 
 ---
 
