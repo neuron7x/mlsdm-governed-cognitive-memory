@@ -67,7 +67,12 @@ class TestPELMPerformance:
                     assert results[i].resonance >= results[i+1].resonance
 
     def test_entangle_performance_batch(self) -> None:
-        """Test entangle performance with batch operations."""
+        """Test entangle performance with batch operations.
+        
+        Note: The 5s threshold is conservative for CI environments where resources
+        may be constrained. In production environments, this typically runs in < 1s.
+        This is primarily a regression test to catch significant performance degradation.
+        """
         pelm = PhaseEntangledLatticeMemory(dimension=384, capacity=10000)
 
         # Batch entangle
@@ -79,6 +84,7 @@ class TestPELMPerformance:
         elapsed = time.perf_counter() - start
 
         # Should handle 1000 entanglements in reasonable time (< 5s in CI environments)
+        # Note: In production, this typically completes in < 1s
         assert elapsed < 5.0, f"Batch entangle took {elapsed:.3f}s, expected < 5.0s"
         assert pelm.size == 1000
 
