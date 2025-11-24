@@ -26,7 +26,9 @@ NeuroCognitiveEngine: integrated MLSDM + FSLGS orchestration layer.
 
 from __future__ import annotations
 
+import logging
 import time
+import traceback
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -368,8 +370,6 @@ class NeuroCognitiveEngine:
             )
         except Exception as e:
             # Catch any unexpected exceptions and return structured error
-            import logging
-            import traceback
             logger = logging.getLogger(__name__)
             logger.exception("Unexpected error in generate()")
 
