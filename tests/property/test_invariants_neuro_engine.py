@@ -393,8 +393,9 @@ def test_rephrasing_consistency(prompt):
     response2 = engine.generate(prompt=prompt_rephrase, moral_value=0.5)
 
     # Both should be accepted or both rejected (for simple rephrasing)
-    rejected1 = response1["rejected_at"] is not None
-    rejected2 = response2["rejected_at"] is not None
+    # Track rejection status for reference
+    _ = response1["rejected_at"] is not None
+    _ = response2["rejected_at"] is not None
 
     # Note: This is a weak check since rephrasing can legitimately change semantics
     # We just check that not ALL rephrasings flip the decision

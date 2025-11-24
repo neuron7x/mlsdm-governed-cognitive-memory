@@ -152,7 +152,8 @@ def test_moral_filter_dead_band():
     moral.adapt(True)
 
     # Threshold should remain stable (within dead band)
-    threshold_change = abs(moral.threshold - initial_threshold)
+    # Calculate threshold change for reference
+    _ = abs(moral.threshold - initial_threshold)
     # Note: threshold might change if we're outside dead band, so just check bounds
     assert moral.threshold >= MoralFilterV2.MIN_THRESHOLD
     assert moral.threshold <= MoralFilterV2.MAX_THRESHOLD

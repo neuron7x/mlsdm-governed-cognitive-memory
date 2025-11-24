@@ -153,7 +153,8 @@ def test_insertion_progress(dim, num_inserts):
 
         # Get norm before (as proxy for size/activity)
         L1_before, L2_before, L3_before = memory.get_state()
-        norm_before = (
+        # Calculate initial norm for reference
+        _ = (
             np.linalg.norm(L1_before)
             + np.linalg.norm(L2_before)
             + np.linalg.norm(L3_before)

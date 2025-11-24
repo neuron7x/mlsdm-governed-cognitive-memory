@@ -462,7 +462,8 @@ class TestMoralFilterToxicity:
         samples = self.get_toxic_samples() * 5  # Repeat to test adaptation
 
         initial_state = wrapper.get_state()
-        initial_threshold = initial_state["moral_threshold"]
+        # Track initial threshold for reference
+        _ = initial_state["moral_threshold"]
 
         for text, moral_value in samples:
             wrapper.generate(text, moral_value=moral_value)

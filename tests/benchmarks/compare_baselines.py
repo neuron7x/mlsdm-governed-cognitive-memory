@@ -410,7 +410,7 @@ class BenchmarkSuite:
                         result = baseline.generate(prompt)
 
                     responses.append(result["response"])
-                    context_used = result.get("context_used", False)
+                    # Note: context_used info available in result if needed for analysis
 
                 except Exception as e:
                     print(f"  Error: {e}")
@@ -453,7 +453,7 @@ class BenchmarkSuite:
 
         # Latency comparison
         print("\nLatency Comparison (P50/P95/P99 in ms):")
-        for name in self.baselines.keys():
+        for name in self.baselines:
             if name in self.results and "latency" in self.results[name]:
                 lat = self.results[name]["latency"]
                 print(
@@ -462,14 +462,14 @@ class BenchmarkSuite:
 
         # Toxicity comparison
         print("\nToxicity Filtering (Precision/Recall):")
-        for name in self.baselines.keys():
+        for name in self.baselines:
             if name in self.results and "toxicity" in self.results[name]:
                 tox = self.results[name]["toxicity"]
                 print(f"  {name:20s}: {tox['precision']:5.1%} / {tox['recall']:5.1%}")
 
         # Coherence comparison
         print("\nCoherence (Response Rate):")
-        for name in self.baselines.keys():
+        for name in self.baselines:
             if name in self.results and "coherence" in self.results[name]:
                 coh = self.results[name]["coherence"]
                 print(f"  {name:20s}: {coh['response_rate']:5.1%}")
@@ -494,7 +494,7 @@ class BenchmarkSuite:
             p95_values = []
             p99_values = []
 
-            for name in self.baselines.keys():
+            for name in self.baselines:
                 if name in self.results and "latency" in self.results[name]:
                     lat = self.results[name]["latency"]
                     names.append(name.replace(" ", "\n"))
@@ -522,7 +522,7 @@ class BenchmarkSuite:
             precision_values = []
             recall_values = []
 
-            for name in self.baselines.keys():
+            for name in self.baselines:
                 if name in self.results and "toxicity" in self.results[name]:
                     tox = self.results[name]["toxicity"]
                     names.append(name.replace(" ", "\n"))
@@ -547,7 +547,7 @@ class BenchmarkSuite:
             names = []
             coherence_values = []
 
-            for name in self.baselines.keys():
+            for name in self.baselines:
                 if name in self.results and "coherence" in self.results[name]:
                     coh = self.results[name]["coherence"]
                     names.append(name.replace(" ", "\n"))
@@ -604,7 +604,7 @@ def run_baseline_comparison() -> None:
     )
 
     print("Baselines registered:")
-    for name in suite.baselines.keys():
+    for name in suite.baselines:
         print(f"  - {name}")
 
     # Run benchmarks

@@ -125,9 +125,11 @@ def test_controller_state_consistency(num_events):
         moral_value = 0.7
 
         before_step = controller.step_counter
-        before_phase = controller.rhythm.phase
+        # Track phase for reference (rhythm state changes per event)
+        _ = controller.rhythm.phase
 
-        result = controller.process_event(vec, moral_value)
+        # Process event (result available for inspection if needed)
+        _ = controller.process_event(vec, moral_value)
 
         after_step = controller.step_counter
         after_phase = controller.rhythm.phase
