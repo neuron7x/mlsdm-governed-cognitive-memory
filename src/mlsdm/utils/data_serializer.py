@@ -14,7 +14,7 @@ def _save_data(data: dict[str, Any], filepath: str) -> None:
             json.dump(data, f, indent=2)
     elif ext == ".npz":
         processed = {k: np.asarray(v) for k, v in data.items()}
-        np.savez(filepath, **processed)
+        np.savez(filepath, **processed)  # type: ignore[arg-type]  # numpy stubs issue with **kwargs
     else:
         raise ValueError(f"Unsupported format: {ext}")
 
