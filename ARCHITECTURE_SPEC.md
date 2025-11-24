@@ -476,7 +476,7 @@ For detailed specification, see [APHASIA_SPEC.md](APHASIA_SPEC.md).
    │
 6. MultiLevelMemory updates with event vector
    │
-7. QILM stores event with current phase
+7. PELM stores event with current phase
    │
 8. OntologyMatcher classifies event
    │
@@ -502,7 +502,7 @@ For detailed specification, see [APHASIA_SPEC.md](APHASIA_SPEC.md).
 4. Controller receives process_event(embedding, moral_value)
    │   ├─ MoralFilter evaluation
    │   ├─ CognitiveRhythm phase management
-   │   └─ Memory storage (QILM + MultiLevelMemory)
+   │   └─ Memory storage (PELM + MultiLevelMemory)
    │
 5. If accepted: LLM generates base_response
    │
@@ -686,13 +686,14 @@ weight_consolidated = 0.7
 
 ### 1. Neurobiological Grounding
 
-All components derive from established neuroscience principles:
-- **Circadian Rhythm:** Wake/sleep cycles in cortical processing
-- **Synaptic Decay:** Multi-level memory with forgetting
-- **Moral Homeostasis:** Adaptive threshold regulation
-- **Phase Entanglement:** Hippocampal replay and consolidation
-- **Broca's Area Model:** Speech production and grammar processing (Aphasia-Broca detection)
-- **Modular Language Processing:** Separate comprehension and production pathways
+All components derive from established neuroscience principles (see [docs/NEURO_FOUNDATIONS.md](docs/NEURO_FOUNDATIONS.md) for detailed scientific foundations):
+
+- **Circadian Rhythm:** Wake/sleep cycles inspired by suprachiasmatic nucleus (SCN) rhythm generation [Hastings et al., 2018] and distributed brain clocks [Mendoza & Challet, 2009]
+- **Synaptic Decay:** Multi-level memory with cascade consolidation models [Fusi et al., 2005; Benna & Fusi, 2016]
+- **Moral Homeostasis:** Adaptive threshold regulation inspired by value alignment theory [Gabriel, 2020] and constitutional AI principles [Bai et al., 2022]
+- **Phase Entanglement:** Quantum-inspired associative memory [Masuyama et al., 2014, 2018] with hippocampal replay mechanisms [Foster & Wilson, 2006; Carr et al., 2011]
+- **Broca's Area Model:** Speech production and grammar processing for aphasia detection (see [APHASIA_SPEC.md](APHASIA_SPEC.md))
+- **Modular Language Processing:** Separate comprehension and production pathways inspired by dual-stream language models
 
 ### 2. Bounded Resources
 
@@ -732,11 +733,17 @@ Enterprise-grade operational characteristics:
 
 ## References
 
-For detailed scientific foundations and implementation decisions, see:
-- [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md) - Scientific references
+### Scientific Foundation
+- [docs/SCIENTIFIC_RATIONALE.md](docs/SCIENTIFIC_RATIONALE.md) - Core scientific rationale and hypothesis
+- [docs/NEURO_FOUNDATIONS.md](docs/NEURO_FOUNDATIONS.md) - Neuroscience foundations for each module
+- [docs/ALIGNMENT_AND_SAFETY_FOUNDATIONS.md](docs/ALIGNMENT_AND_SAFETY_FOUNDATIONS.md) - AI safety and governance foundations
+- [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md) - Complete bibliography with peer-reviewed sources
+
+### Technical Documentation
 - [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) - Implementation details
 - [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md) - Empirical validation
 - [APHASIA_SPEC.md](APHASIA_SPEC.md) - Aphasia-Broca Model specification
+- [docs/FORMAL_INVARIANTS.md](docs/FORMAL_INVARIANTS.md) - Formal properties and verification
 
 ---
 

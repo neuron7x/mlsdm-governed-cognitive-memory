@@ -562,11 +562,35 @@ See `CONFIGURATION_GUIDE.md` for details on aphasia configuration options.
 
 ## Appendix B: References
 
-1. MLSDM Governed Cognitive Memory Architecture (ARCHITECTURE_SPEC.md)
-2. Testing Strategy (TESTING_STRATEGY.md) - includes roadmap for planned enhancements
-3. Hypothesis Framework: Property-Based Testing
-4. Industry Standards: Perspective API, OpenAI Moderation API
-5. Neurobiological Inspiration: Circadian Rhythm, Sleep Consolidation
+### Scientific Foundation
+
+The experimental design and validation methodology are grounded in:
+
+**Neuroscience Foundations:**
+- Hastings, M. H., et al. (2018). Generation of Circadian Rhythms in the Suprachiasmatic Nucleus. *Nature Reviews Neuroscience*. - Biological basis for wake/sleep cycles
+- Carr, M. F., et al. (2011). Hippocampal Replay in the Awake State. *Nature Neuroscience*. - Basis for memory consolidation during sleep phases
+- Benna, M. K., & Fusi, S. (2016). Computational Principles of Synaptic Memory Consolidation. *Nature Neuroscience*. - Multi-timescale memory architecture
+
+**AI Safety Foundations:**
+- Gabriel, I. (2020). Artificial Intelligence, Values, and Alignment. *Minds and Machines*. - Value alignment theory for moral filtering
+- Bai, Y., et al. (2022). Constitutional AI: Harmlessness from AI Feedback. *arXiv:2212.08073*. - Self-critiquing and adaptive safety
+- Ji, J., et al. (2023). AI Alignment: A Comprehensive Survey. *arXiv:2310.19852*. - Comprehensive alignment taxonomy
+
+For complete bibliography, see [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md).
+
+### Technical Documentation
+
+1. [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) - System architecture
+2. [docs/SCIENTIFIC_RATIONALE.md](docs/SCIENTIFIC_RATIONALE.md) - Scientific rationale and hypothesis
+3. [docs/NEURO_FOUNDATIONS.md](docs/NEURO_FOUNDATIONS.md) - Detailed neuroscience foundations
+4. [docs/ALIGNMENT_AND_SAFETY_FOUNDATIONS.md](docs/ALIGNMENT_AND_SAFETY_FOUNDATIONS.md) - AI safety foundations
+5. [docs/FORMAL_INVARIANTS.md](docs/FORMAL_INVARIANTS.md) - Formal properties and verification
+6. [TESTING_STRATEGY.md](TESTING_STRATEGY.md) - Testing strategy and roadmap
+
+### Testing Frameworks
+
+- Hypothesis Framework: Property-Based Testing
+- Industry Standards: Perspective API, OpenAI Moderation API (comparison baselines)
 
 **Note**: References to chaos engineering, formal verification (TLA+, Coq), OpenTelemetry tracing, and RAG hallucination testing (ragas) in this document refer to planned future enhancements and are not currently implemented in the repository.
 
