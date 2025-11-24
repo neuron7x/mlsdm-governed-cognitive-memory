@@ -6,9 +6,9 @@ properly validated before use.
 """
 
 from typing import Any
-from typing_extensions import Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from typing_extensions import Self
 
 
 class MultiLevelMemoryConfig(BaseModel):
