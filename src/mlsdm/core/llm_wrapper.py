@@ -193,11 +193,11 @@ class LLMWrapper:
     @property
     def qilm_failure_count(self) -> int:
         """Backward compatibility alias for pelm_failure_count (deprecated, use pelm_failure_count instead).
-        
+
         This property will be removed in v2.0.0. Migrate to using pelm_failure_count directly.
         """
         return self.pelm_failure_count
-    
+
     @qilm_failure_count.setter
     def qilm_failure_count(self, value: int) -> None:
         """Backward compatibility setter for pelm_failure_count."""

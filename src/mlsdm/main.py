@@ -7,7 +7,7 @@ from mlsdm.utils.config_loader import ConfigLoader
 
 
 class JSONFormatter(logging.Formatter):
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         log_record = {
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,

@@ -42,8 +42,8 @@ def test_train_neurolang_creates_checkpoint(tmp_path, monkeypatch):
 def test_train_neurolang_secure_mode(monkeypatch):
     """Test that train_neurolang_grammar.main() fails in secure mode."""
     monkeypatch.setenv("MLSDM_SECURE_MODE", "1")
-    
+
     with pytest.raises(SystemExit) as exc_info:
         train_neurolang_grammar.main(["--epochs", "1"])
-    
+
     assert "Secure mode enabled" in str(exc_info.value)

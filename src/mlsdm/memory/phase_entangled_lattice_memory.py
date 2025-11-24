@@ -14,16 +14,16 @@ class MemoryRetrieval:
 class PhaseEntangledLatticeMemory:
     """
     Phase-Entangled Lattice Memory (PELM, formerly QILM_v2).
-    
+
     A bounded phase-entangled lattice in embedding space that provides
     phase-based retrieval with geometric constraints. This memory system
     stores vectors with associated phase values and enables retrieval
     based on phase proximity and cosine similarity.
-    
+
     Not related to quantum hardware - the design is mathematically inspired
     by quantum concepts but operates entirely in classical embedding space.
     """
-    
+
     def __init__(self, dimension: int = 384, capacity: int = 20000) -> None:
         # Validate inputs
         if dimension <= 0:

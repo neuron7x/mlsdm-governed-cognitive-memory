@@ -6,7 +6,7 @@ Provides request ID tracking, timing, and correlation capabilities.
 import logging
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -24,7 +24,9 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     - Made available to all downstream handlers via request.state
     """
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         """Process request and add request ID."""
         # Get or generate request ID
         request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
@@ -90,7 +92,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     - Content-Security-Policy: default-src 'self'
     """
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         """Process request and add security headers."""
         response = await call_next(request)
 

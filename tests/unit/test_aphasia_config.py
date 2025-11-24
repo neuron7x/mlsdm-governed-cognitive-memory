@@ -97,7 +97,7 @@ class TestAphasiaRepairDisable:
         assert result["accepted"] is True
         assert result["aphasia_flags"] is not None
         assert result["aphasia_flags"]["is_aphasic"] is True
-        
+
         # Should NOT be repaired - should contain original telegraphic text
         assert "work" in result["response"].lower() or "fine" in result["response"].lower()
         # Should NOT contain the repair phrase
@@ -124,7 +124,7 @@ class TestAphasiaRepairDisable:
         assert result["accepted"] is True
         assert result["aphasia_flags"] is not None
         assert result["aphasia_flags"]["is_aphasic"] is True
-        
+
         # Should be repaired
         assert "functioning correctly" in result["response"].lower()
 
@@ -317,7 +317,7 @@ class TestMonitoringMode:
         assert result["aphasia_flags"]["is_aphasic"] is True
         assert "flags" in result["aphasia_flags"]
         assert "severity" in result["aphasia_flags"]
-        
+
         # But text should not be modified
         assert "work" in result["response"].lower() or "fine" in result["response"].lower()
 

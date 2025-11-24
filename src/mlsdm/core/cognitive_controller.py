@@ -39,7 +39,7 @@ class CognitiveController:
     @property
     def qilm(self):
         """Backward compatibility alias for pelm (deprecated, use self.pelm instead).
-        
+
         This property will be removed in v2.0.0. Migrate to using self.pelm directly.
         """
         return self.pelm

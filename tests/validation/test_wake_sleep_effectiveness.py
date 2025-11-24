@@ -17,12 +17,12 @@ def generate_test_vectors(n_vectors: int, dim: int = 384,
                          n_clusters: int = 3) -> tuple:
     """
     Generate clustered test vectors to simulate realistic memory patterns.
-    
+
     Args:
         n_vectors: Number of vectors to generate
         dim: Vector dimensionality
         n_clusters: Number of semantic clusters
-        
+
     Returns:
         (vectors, cluster_labels)
     """
@@ -75,7 +75,7 @@ class NoRhythmController(CognitiveController):
 def test_wake_sleep_phase_separation():
     """
     Test 1: Wake/Sleep cycles enable phase-based memory organization
-    
+
     Expected: Phase-based retrieval should provide more focused results
     when querying in the same phase.
     """
@@ -149,7 +149,7 @@ def test_wake_sleep_phase_separation():
 def test_wake_sleep_retrieval_quality():
     """
     Test 2: Wake/Sleep cycles improve retrieval quality
-    
+
     Expected: Semantic coherence should be higher with phase-based retrieval.
     """
     print("\n" + "=" * 60)
@@ -218,7 +218,7 @@ def test_wake_sleep_retrieval_quality():
 def test_wake_sleep_resource_efficiency():
     """
     Test 3: Wake/Sleep cycles provide resource efficiency
-    
+
     Expected: Sleep phase blocks processing, reducing resource usage
     while maintaining system responsiveness.
     """
@@ -296,7 +296,7 @@ def test_wake_sleep_resource_efficiency():
 def test_comprehensive_coherence_metrics():
     """
     Test 4: Comprehensive coherence analysis
-    
+
     Generate full CoherenceMetrics with and without wake/sleep cycles.
     """
     print("\n" + "=" * 60)

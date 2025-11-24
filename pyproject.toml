@@ -107,6 +107,12 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 no_implicit_optional = true
 
+# Tests in src/mlsdm/tests should be allowed to have untyped definitions
+[[tool.mypy.overrides]]
+module = "mlsdm.tests.*"
+disallow_untyped_defs = false
+check_untyped_defs = false
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = [

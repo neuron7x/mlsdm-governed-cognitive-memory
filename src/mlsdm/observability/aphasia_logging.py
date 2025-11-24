@@ -7,9 +7,8 @@ for the Aphasia-Broca detection path without altering response semantics.
 """
 
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
-
 
 LOGGER_NAME = "mlsdm.aphasia"
 
@@ -18,7 +17,7 @@ LOGGER_NAME = "mlsdm.aphasia"
 class AphasiaLogEvent:
     """
     Structured event representing an aphasia detection/repair decision.
-    
+
     Attributes:
         decision: The decision made - "skip", "detected_no_repair", or "repaired"
         is_aphasic: Whether aphasia was detected in the response
@@ -40,7 +39,7 @@ class AphasiaLogEvent:
 def get_logger() -> logging.Logger:
     """
     Get the aphasia logger instance.
-    
+
     Returns:
         Logger configured for aphasia observability
     """
@@ -50,11 +49,11 @@ def get_logger() -> logging.Logger:
 def log_aphasia_event(event: AphasiaLogEvent) -> None:
     """
     Log an aphasia detection/repair event with structured information.
-    
+
     This function logs aphasia decisions at INFO level with all relevant context.
     Applications consuming this library should configure handlers and formatters
     as needed.
-    
+
     Args:
         event: The aphasia event to log
     """

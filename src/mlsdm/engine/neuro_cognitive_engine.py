@@ -352,7 +352,7 @@ class NeuroCognitiveEngine:
 
         timing: dict[str, float] = {}
         validation_steps: list[dict[str, Any]] = []
-        
+
         # Wrap entire method in try-except to ensure structured response always returned
         try:
             return self._generate_internal(
@@ -368,11 +368,11 @@ class NeuroCognitiveEngine:
             )
         except Exception as e:
             # Catch any unexpected exceptions and return structured error
-            import traceback
             import logging
+            import traceback
             logger = logging.getLogger(__name__)
             logger.exception("Unexpected error in generate()")
-            
+
             return {
                 "response": "",
                 "governance": None,
@@ -600,7 +600,7 @@ class NeuroCognitiveEngine:
                             raise EmptyResponseError(
                                 "MLSDM returned empty response"
                             )
-                
+
                 # POST-GENERATION MORAL CHECK
                 # Verify the generated response meets moral threshold
                 # This is a safety check to ensure harmful content isn't accepted
@@ -608,10 +608,10 @@ class NeuroCognitiveEngine:
                     response_moral_score = self._estimate_response_moral_score(
                         response_text, prompt
                     )
-                    
+
                     # Tolerance for estimation error (matching test expectations)
                     MORAL_SCORE_TOLERANCE = 0.15
-                    
+
                     if response_moral_score < (moral_value - MORAL_SCORE_TOLERANCE):
                         # Response doesn't meet moral threshold - reject it
                         validation_steps.append({
@@ -620,17 +620,17 @@ class NeuroCognitiveEngine:
                             "score": response_moral_score,
                             "threshold": moral_value,
                         })
-                        
+
                         if self._metrics is not None:
                             self._metrics.increment_rejections_total("post_moral")
                             self._metrics.increment_errors_total("post_moral_check")
-                        
+
                         meta_moral: dict[str, Any] = {}
                         if self._selected_provider_id is not None:
                             meta_moral["backend_id"] = self._selected_provider_id
                         if self._selected_variant is not None:
                             meta_moral["variant"] = self._selected_variant
-                        
+
                         return {
                             "response": "",
                             "governance": fslgs_result if fslgs_result is not None else None,
@@ -646,7 +646,7 @@ class NeuroCognitiveEngine:
                             "rejected_at": "pre_moral",
                             "meta": meta_moral,
                         }
-                    
+
                     validation_steps.append({
                         "step": "post_moral_check",
                         "passed": True,
@@ -766,17 +766,17 @@ class NeuroCognitiveEngine:
     # ------------------------------------------------------------------ #
     # Internal helpers                                                    #
     # ------------------------------------------------------------------ #
-    
+
     def _estimate_response_moral_score(self, response_text: str, prompt: str) -> float:
         """Estimate moral score of response using heuristics.
-        
+
         This is a simplified heuristic for testing. In production, this would
         use the actual moral filter with ML models.
-        
+
         Args:
             response_text: Generated response
             prompt: Original prompt
-            
+
         Returns:
             Estimated moral score in [0, 1]
         """
@@ -787,13 +787,13 @@ class NeuroCognitiveEngine:
                 return moral_filter.compute_moral_value(response_text)
             except Exception:
                 pass  # Fall back to heuristic
-        
+
         # Heuristic fallback (matches test expectations)
         harmful_patterns = ["hate", "violence", "attack", "harmful"]
-        
+
         prompt_lower = prompt.lower()
         response_lower = response_text.lower()
-        
+
         # If prompt contains harmful patterns, score is low
         if any(word in prompt_lower for word in harmful_patterns):
             return 0.2

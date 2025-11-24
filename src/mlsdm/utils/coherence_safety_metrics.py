@@ -44,10 +44,10 @@ class SafetyMetrics:
 class CoherenceSafetyAnalyzer:
     """Analyzer for measuring wake/sleep and moral filtering effectiveness"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.reset()
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset all collected metrics"""
         self.wake_retrievals = []
         self.sleep_retrievals = []
