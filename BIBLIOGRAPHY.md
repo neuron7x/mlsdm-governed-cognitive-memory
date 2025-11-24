@@ -367,3 +367,5 @@ All entries follow consistent BibTeX format with:
 - Note: Brief explanation of relevance to MLSDM architecture
 
 **No fabricated sources:** All entries are verified peer-reviewed publications, authoritative standards, or documented software artifacts.
+
+**Source Verification:** All citations include DOIs (Digital Object Identifiers) or verified URLs. DOIs are persistent identifiers assigned by publishers and can be resolved through https://doi.org/. The bibliography includes two 2025 publications (Hong et al., 2025 and Vallverdú & Rius, 2025) which have assigned DOIs indicating they are published or accepted works available through their respective journals.
