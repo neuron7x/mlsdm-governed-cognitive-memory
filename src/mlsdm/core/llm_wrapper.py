@@ -247,7 +247,8 @@ class LLMWrapper:
             result = self.embedding_circuit_breaker.call(self.embed, text)
             if not isinstance(result, np.ndarray):
                 result = np.array(result, dtype=np.float32)
-            return result.astype(np.float32)
+            typed_result: np.ndarray[Any, Any] = result.astype(np.float32)
+            return typed_result
         except Exception as e:
             self.embedding_failure_count += 1
             raise e

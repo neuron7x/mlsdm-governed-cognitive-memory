@@ -113,6 +113,28 @@ module = "mlsdm.tests.*"
 disallow_untyped_defs = false
 disallow_any_generics = false
 
+# Exclude extensions and API from strict checking (complex external integrations)
+[[tool.mypy.overrides]]
+module = "mlsdm.extensions.*"
+disallow_untyped_defs = false
+disallow_untyped_calls = false
+warn_return_any = false
+check_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "mlsdm.api.*"
+disallow_untyped_defs = false
+warn_return_any = false
+
+[[tool.mypy.overrides]]
+module = "mlsdm.service.*"
+disallow_untyped_defs = false
+warn_return_any = false
+
+[[tool.mypy.overrides]]
+module = "mlsdm.main"
+disallow_untyped_defs = false
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = [

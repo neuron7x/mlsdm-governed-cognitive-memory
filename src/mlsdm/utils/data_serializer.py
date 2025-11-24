@@ -47,7 +47,8 @@ def _load_data(filepath: str) -> dict[str, Any]:
     ext = os.path.splitext(filepath)[1].lower()
     if ext == ".json":
         with open(filepath, encoding="utf-8") as f:
-            return json.load(f)
+            loaded: dict[str, Any] = json.load(f)
+            return loaded
     elif ext == ".npz":
         arrs = np.load(filepath, allow_pickle=True)
         result: dict[str, Any] = {

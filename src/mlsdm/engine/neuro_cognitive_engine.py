@@ -210,11 +210,13 @@ class NeuroCognitiveEngine:
 
                 # Generate response - handle both kwargs and non-kwargs providers
                 try:
-                    return provider.generate(prompt, max_tokens, **kwargs)
+                    result: str = provider.generate(prompt, max_tokens, **kwargs)
+                    return result
                 except TypeError:
                     # Provider may not accept kwargs; try without them
                     try:
-                        return provider.generate(prompt, max_tokens)
+                        result2: str = provider.generate(prompt, max_tokens)
+                        return result2
                     except Exception as e:
                         # Return a fallback response to avoid empty response errors
                         fallback = f"[provider_error:{self._selected_provider_id}] {str(e)}"
@@ -224,6 +226,8 @@ class NeuroCognitiveEngine:
                     fallback = f"[provider_error:{self._selected_provider_id}] {str(e)}"
                     return fallback
 
+            # Type checker sees signature mismatch (kwargs vs no kwargs)
+            # but runtime behavior is correct - both are callable with same params
             actual_llm_fn = routed_llm_fn
         else:
             if llm_generate_fn is None:
@@ -746,11 +750,11 @@ class NeuroCognitiveEngine:
                 self._metrics.record_latency_total(timing["total"])
 
         # Build metadata with provider/variant info
-        meta: dict[str, Any] = {}
+        response_meta: dict[str, Any] = {}
         if self._selected_provider_id is not None:
-            meta["backend_id"] = self._selected_provider_id
+            response_meta["backend_id"] = self._selected_provider_id
         if self._selected_variant is not None:
-            meta["variant"] = self._selected_variant
+            response_meta["variant"] = self._selected_variant
 
         return {
             "response": response_text,
@@ -760,7 +764,7 @@ class NeuroCognitiveEngine:
             "validation_steps": validation_steps,
             "error": None,
             "rejected_at": None,
-            "meta": meta,
+            "meta": response_meta,
         }
 
     # ------------------------------------------------------------------ #
@@ -784,7 +788,8 @@ class NeuroCognitiveEngine:
         moral_filter = getattr(self._mlsdm, "moral", None)
         if moral_filter is not None and hasattr(moral_filter, "compute_moral_value"):
             try:
-                return moral_filter.compute_moral_value(response_text)
+                moral_score: float = moral_filter.compute_moral_value(response_text)
+                return moral_score
             except Exception:
                 pass  # Fall back to heuristic
 
