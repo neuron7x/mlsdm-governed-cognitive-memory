@@ -1,0 +1,103 @@
+# Configuration for automatic labeling of PRs based on file paths
+# Documentation: https://github.com/actions/labeler
+
+# Core engine and architecture
+core:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/mlsdm/core/**/*'
+      - 'src/mlsdm/engine/**/*'
+      - 'src/mlsdm/memory/**/*'
+
+# Cognition and moral governance
+cognition:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/mlsdm/cognition/**/*'
+
+# Security-related changes
+security:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/mlsdm/security/**/*'
+      - 'src/mlsdm/utils/security_*.py'
+      - 'src/mlsdm/utils/input_validator.py'
+      - 'src/mlsdm/cognition/moral_filter*.py'
+      - 'tests/security/**/*'
+      - 'SECURITY*.md'
+      - 'THREAT_MODEL.md'
+
+# API changes
+api:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/mlsdm/api/**/*'
+
+# Configuration changes
+config:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/mlsdm/utils/config_*.py'
+      - 'config/**/*'
+      - 'pyproject.toml'
+      - 'requirements*.txt'
+
+# Documentation
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.md'
+      - 'docs/**/*'
+
+# Tests
+tests:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'tests/**/*'
+      - 'pytest.ini'
+
+# CI/CD
+ci:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/**/*'
+      - '.github/dependabot.yml'
+      - '.github/labeler.yml'
+
+# Infrastructure
+infrastructure:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'deploy/**/*'
+      - 'docker/**/*'
+      - 'Dockerfile*'
+
+# Dependencies
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'requirements*.txt'
+      - 'pyproject.toml'
+
+# Observability and metrics
+observability:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/mlsdm/utils/metrics.py'
+      - 'src/mlsdm/observability/**/*'
+
+# Speech/NeuroLang extensions
+neurolang:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/mlsdm/speech/**/*'
+      - 'src/mlsdm/extensions/**/*'
+      - 'tests/eval/test_aphasia_*.py'
+      - 'requirements-neurolang.txt'
+
+# Property-based tests
+property-tests:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'tests/property/**/*'
+      - 'docs/FORMAL_INVARIANTS.md'

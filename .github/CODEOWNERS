@@ -1,0 +1,119 @@
+# CODEOWNERS for MLSDM Governed Cognitive Memory
+# Documentation: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# This file defines code ownership for different parts of the repository.
+# When a PR touches files in these areas, the specified owners will be
+# automatically requested as reviewers.
+
+# Default owner for everything in the repo
+* @neuron7x
+
+# =============================================================================
+# CORE ARCHITECTURE & ENGINE
+# =============================================================================
+
+# Core cognitive architecture - requires architecture review
+/src/mlsdm/core/ @neuron7x
+/src/mlsdm/engine/ @neuron7x
+
+# Memory systems - critical for cognitive function
+/src/mlsdm/memory/ @neuron7x
+
+# Cognition and moral governance - high sensitivity
+/src/mlsdm/cognition/ @neuron7x
+
+# =============================================================================
+# SECURITY & GOVERNANCE
+# =============================================================================
+
+# Security-related code - requires security review
+/src/mlsdm/security/ @neuron7x
+/src/mlsdm/utils/security_*.py @neuron7x
+/src/mlsdm/utils/input_validator.py @neuron7x
+/src/mlsdm/cognition/moral_filter*.py @neuron7x
+
+# Configuration and validation - affects system behavior
+/src/mlsdm/utils/config_*.py @neuron7x
+/config/ @neuron7x
+
+# Security tests and threat models
+/tests/security/ @neuron7x
+/THREAT_MODEL.md @neuron7x
+/SECURITY*.md @neuron7x
+
+# =============================================================================
+# API & INFRASTRUCTURE
+# =============================================================================
+
+# API endpoints - requires API design review
+/src/mlsdm/api/ @neuron7x
+
+# Middleware and rate limiting
+/src/mlsdm/api/middleware.py @neuron7x
+/src/mlsdm/utils/rate_limiter.py @neuron7x
+
+# =============================================================================
+# OBSERVABILITY & MONITORING
+# =============================================================================
+
+# Metrics and monitoring
+/src/mlsdm/utils/metrics.py @neuron7x
+/src/mlsdm/observability/ @neuron7x
+
+# =============================================================================
+# DOCUMENTATION & SPECIFICATIONS
+# =============================================================================
+
+# Architecture documentation
+/ARCHITECTURE_SPEC.md @neuron7x
+/API_REFERENCE.md @neuron7x
+/COMPONENT_TEST_MATRIX.md @neuron7x
+
+# Security documentation
+/docs/security/ @neuron7x
+/SECURITY_POLICY.md @neuron7x
+/SECURITY_IMPLEMENTATION.md @neuron7x
+
+# SLO and production readiness
+/SLO_SPEC.md @neuron7x
+/PRODUCTION_*.md @neuron7x
+/DEPLOYMENT_GUIDE.md @neuron7x
+
+# Testing strategy and guides
+/TESTING_STRATEGY.md @neuron7x
+/TESTING_GUIDE.md @neuron7x
+
+# =============================================================================
+# CI/CD & AUTOMATION
+# =============================================================================
+
+# GitHub Actions workflows
+/.github/workflows/ @neuron7x
+/.github/dependabot.yml @neuron7x
+
+# Deployment and infrastructure
+/deploy/ @neuron7x
+/docker/ @neuron7x
+/Dockerfile* @neuron7x
+
+# Build and package configuration
+/pyproject.toml @neuron7x
+/requirements*.txt @neuron7x
+/pytest.ini @neuron7x
+
+# =============================================================================
+# SPECIALIZED EXTENSIONS
+# =============================================================================
+
+# Speech/NeuroLang extensions - requires specialized review
+/src/mlsdm/speech/ @neuron7x
+/src/mlsdm/extensions/ @neuron7x
+/tests/eval/test_aphasia_*.py @neuron7x
+
+# =============================================================================
+# TESTS
+# =============================================================================
+
+# Property-based and formal tests
+/tests/property/ @neuron7x
+/docs/FORMAL_INVARIANTS.md @neuron7x
