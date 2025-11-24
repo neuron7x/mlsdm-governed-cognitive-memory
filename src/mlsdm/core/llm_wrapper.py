@@ -249,7 +249,7 @@ class LLMWrapper:
             if not isinstance(result, np.ndarray):
                 result = np.array(result, dtype=np.float32)
             # Cast to proper return type after validation
-            return cast(np.ndarray, result.astype(np.float32))
+            return cast("np.ndarray", result.astype(np.float32))
         except Exception as e:
             self.embedding_failure_count += 1
             raise e
