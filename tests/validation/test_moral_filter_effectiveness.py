@@ -37,11 +37,11 @@ class NoFilterController(CognitiveController):
 def generate_moral_value_distribution(n_samples: int, toxic_ratio: float = 0.3) -> list:
     """
     Generate realistic distribution of moral values.
-    
+
     Args:
         n_samples: Number of samples
         toxic_ratio: Ratio of toxic content (low moral values)
-        
+
     Returns:
         List of moral values
     """
@@ -80,7 +80,7 @@ def generate_test_vectors(n_vectors: int, dim: int = 384) -> list:
 def test_moral_filter_toxic_rejection():
     """
     Test 1: Moral filter effectively rejects toxic content
-    
+
     Expected: High rejection rate for toxic content (moral value < 0.4)
     """
     print("\n" + "=" * 60)
@@ -98,7 +98,7 @@ def test_moral_filter_toxic_rejection():
     moral_rejections_with = []
     total_rejections_with = 0
 
-    for vec, moral_val in zip(vectors, moral_values):
+    for vec, moral_val in zip(vectors, moral_values, strict=False):
         state = controller_with.process_event(vec, moral_value=moral_val)
         # Only count moral rejections, not sleep rejections
         moral_rejected = state["rejected"] and "morally" in state["note"]
@@ -113,7 +113,7 @@ def test_moral_filter_toxic_rejection():
     moral_rejections_without = []
     total_rejections_without = 0
 
-    for vec, moral_val in zip(vectors, moral_values):
+    for vec, moral_val in zip(vectors, moral_values, strict=False):
         state = controller_without.process_event(vec, moral_value=moral_val)
         # No moral rejections in baseline
         moral_rejections_without.append(False)
@@ -158,7 +158,7 @@ def test_moral_filter_toxic_rejection():
 def test_moral_filter_false_positive_rate():
     """
     Test 2: Moral filter has low false positive rate
-    
+
     Expected: Low rejection rate for safe content (moral value > 0.6)
     """
     print("\n" + "=" * 60)
@@ -174,7 +174,7 @@ def test_moral_filter_false_positive_rate():
     controller_with = CognitiveController(dim=384)
 
     rejections_with = []
-    for vec, moral_val in zip(vectors, moral_values):
+    for vec, moral_val in zip(vectors, moral_values, strict=False):
         state = controller_with.process_event(vec, moral_value=moral_val)
         rejected = state["rejected"] and "morally" in state["note"]
         rejections_with.append(rejected)
@@ -200,7 +200,7 @@ def test_moral_filter_false_positive_rate():
 def test_moral_threshold_adaptation():
     """
     Test 3: Moral threshold adapts and converges
-    
+
     Expected: Threshold should adapt based on content and converge to stable value
     """
     print("\n" + "=" * 60)
@@ -217,7 +217,7 @@ def test_moral_threshold_adaptation():
     controller1 = CognitiveController(dim=384)
     threshold_history1 = []
 
-    for vec, moral_val in zip(vectors, moral_values_toxic):
+    for vec, moral_val in zip(vectors, moral_values_toxic, strict=False):
         state = controller1.process_event(vec, moral_value=moral_val)
         threshold_history1.append(state["moral_threshold"])
 
@@ -228,7 +228,7 @@ def test_moral_threshold_adaptation():
     controller2 = CognitiveController(dim=384)
     threshold_history2 = []
 
-    for vec, moral_val in zip(vectors, moral_values_safe):
+    for vec, moral_val in zip(vectors, moral_values_safe, strict=False):
         state = controller2.process_event(vec, moral_value=moral_val)
         threshold_history2.append(state["moral_threshold"])
 
@@ -267,7 +267,7 @@ def test_moral_threshold_adaptation():
 def test_moral_drift_stability():
     """
     Test 4: Moral threshold remains stable under toxic bombardment
-    
+
     Expected: Limited drift even under sustained toxic input
     """
     print("\n" + "=" * 60)
@@ -285,7 +285,7 @@ def test_moral_drift_stability():
     threshold_history = []
     rejections = []
 
-    for vec, moral_val in zip(vectors, moral_values):
+    for vec, moral_val in zip(vectors, moral_values, strict=False):
         state = controller.process_event(vec, moral_value=moral_val)
         threshold_history.append(state["moral_threshold"])
         rejected = state["rejected"] and "morally" in state["note"]
@@ -323,7 +323,7 @@ def test_moral_drift_stability():
 def test_comprehensive_safety_metrics():
     """
     Test 5: Comprehensive safety analysis
-    
+
     Generate full SafetyMetrics with and without moral filtering.
     """
     print("\n" + "=" * 60)
@@ -341,7 +341,7 @@ def test_comprehensive_safety_metrics():
     rejections_with = []
     threshold_history_with = []
 
-    for vec, moral_val in zip(vectors, moral_values):
+    for vec, moral_val in zip(vectors, moral_values, strict=False):
         state = controller_with.process_event(vec, moral_value=moral_val)
         rejected = state["rejected"] and "morally" in state["note"]
         rejections_with.append(rejected)
@@ -353,7 +353,7 @@ def test_comprehensive_safety_metrics():
 
     rejections_without = []
 
-    for vec, moral_val in zip(vectors, moral_values):
+    for vec, moral_val in zip(vectors, moral_values, strict=False):
         state = controller_without.process_event(vec, moral_value=moral_val)
         rejections_without.append(False)  # Never rejects based on morals
 

@@ -16,14 +16,14 @@ class TestBackwardCompatibility:
     def test_pelm_alias_exists(self):
         """Test that PELM alias is available as convenient shorthand."""
         from mlsdm.memory import PELM, PhaseEntangledLatticeMemory
-        
+
         # Verify PELM is an alias to the main class
         assert PELM is PhaseEntangledLatticeMemory
-        
+
     def test_pelm_alias_works(self):
         """Test that PELM alias can be instantiated and used."""
         from mlsdm.memory import PELM
-        
+
         # Create instance using PELM alias
         memory = PELM(dimension=10, capacity=100)
         assert memory is not None
@@ -32,25 +32,25 @@ class TestBackwardCompatibility:
 
     def test_qilm_v2_alias_exists(self):
         """Test that QILM_v2 alias is available for backward compatibility."""
-        from mlsdm.memory import QILM_v2, PhaseEntangledLatticeMemory
-        
+        from mlsdm.memory import PhaseEntangledLatticeMemory, QILM_v2
+
         # Verify alias points to the same class
         assert QILM_v2 is PhaseEntangledLatticeMemory
-        
+
     def test_qilm_v2_alias_works(self):
         """Test that QILM_v2 alias can be instantiated and used."""
         from mlsdm.memory import QILM_v2
-        
+
         # Create instance using old name
         memory = QILM_v2(dimension=10, capacity=100)
         assert memory is not None
         assert memory.dimension == 10
         assert memory.capacity == 100
-    
+
     def test_all_aliases_are_same_class(self):
         """Test that all aliases (PELM, QILM_v2, PhaseEntangledLatticeMemory) refer to the same class."""
-        from mlsdm.memory import PELM, QILM_v2, PhaseEntangledLatticeMemory
-        
+        from mlsdm.memory import PELM, PhaseEntangledLatticeMemory, QILM_v2
+
         # All three should be the exact same class
         assert PELM is PhaseEntangledLatticeMemory
         assert QILM_v2 is PhaseEntangledLatticeMemory

@@ -13,7 +13,6 @@ Tests cover:
 from unittest.mock import Mock, patch
 
 import numpy as np
-import pytest
 
 from mlsdm.engine import NeuroCognitiveEngine, NeuroEngineConfig
 

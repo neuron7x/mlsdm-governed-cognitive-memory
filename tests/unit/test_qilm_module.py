@@ -61,7 +61,7 @@ class TestQILMEntanglePhase:
         ]
         phases = [0.1, 0.5, 0.9]
 
-        for vec, phase in zip(vectors, phases):
+        for vec, phase in zip(vectors, phases, strict=False):
             qilm.entangle_phase(vec, phase)
 
         assert len(qilm.memory) == 3

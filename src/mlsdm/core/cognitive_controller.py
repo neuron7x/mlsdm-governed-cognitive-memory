@@ -37,9 +37,9 @@ class CognitiveController:
         self._process = psutil.Process()
 
     @property
-    def qilm(self):
+    def qilm(self) -> PhaseEntangledLatticeMemory:
         """Backward compatibility alias for pelm (deprecated, use self.pelm instead).
-        
+
         This property will be removed in v2.0.0. Migrate to using self.pelm directly.
         """
         return self.pelm
@@ -91,7 +91,7 @@ class CognitiveController:
     def _check_memory_usage(self) -> float:
         """Check current memory usage in MB."""
         memory_info = self._process.memory_info()
-        return memory_info.rss / (1024 * 1024)  # Convert bytes to MB
+        return float(memory_info.rss / (1024 * 1024))  # Convert bytes to MB
 
     def get_memory_usage(self) -> float:
         """Public method to get current memory usage in MB."""

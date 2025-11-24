@@ -8,8 +8,8 @@ including deterministic execution order and failure isolation.
 import logging
 
 from mlsdm.speech.governance import (
-    SpeechGovernanceResult,
     PipelineSpeechGovernor,
+    SpeechGovernanceResult,
 )
 
 

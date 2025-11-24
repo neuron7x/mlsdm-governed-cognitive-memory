@@ -14,11 +14,11 @@ Usage:
     # Recommended - use PELM alias:
     from mlsdm.memory import PELM
     memory = PELM(dimension=384, capacity=20000)
-    
+
     # Or use full name:
     from mlsdm.memory import PhaseEntangledLatticeMemory
     memory = PhaseEntangledLatticeMemory(dimension=384, capacity=20000)
-    
+
     # Deprecated (for backward compatibility only):
     from mlsdm.memory import QILM_v2  # Will be removed in v2.0.0
     memory = QILM_v2(dimension=384, capacity=20000)

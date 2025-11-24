@@ -64,6 +64,8 @@ dev = [
     "ruff>=0.4.10",
     "mypy>=1.10.0",
     "locust>=2.29.1",
+    "httpx>=0.27.0",
+    "types-PyYAML>=6.0.0",
 ]
 docs = [
     "sphinx>=7.0.0",
@@ -74,6 +76,7 @@ test = [
     "pytest-asyncio>=0.23.0",
     "pytest-cov>=4.1.0",
     "hypothesis>=6.98.3",
+    "httpx>=0.27.0",
 ]
 visualization = [
     "matplotlib>=3.8.4",
@@ -106,6 +109,21 @@ check_untyped_defs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 no_implicit_optional = true
+
+# Tests in src/mlsdm/tests should be allowed to have untyped definitions
+[[tool.mypy.overrides]]
+module = "mlsdm.tests.*"
+disallow_untyped_defs = false
+check_untyped_defs = false
+
+# NeuroLang extension is an optional PyTorch-based plugin
+# Torch typing is complex and unstable, so we use lenient checking
+[[tool.mypy.overrides]]
+module = "mlsdm.extensions.neuro_lang_extension"
+disallow_untyped_defs = false
+disallow_untyped_calls = false
+check_untyped_defs = false
+# Note: This is explicitly an optional extension and does not affect core functionality
 
 [tool.pytest.ini_options]
 minversion = "8.0"

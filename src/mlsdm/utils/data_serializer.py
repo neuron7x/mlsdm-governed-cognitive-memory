@@ -14,7 +14,8 @@ def _save_data(data: dict[str, Any], filepath: str) -> None:
             json.dump(data, f, indent=2)
     elif ext == ".npz":
         processed = {k: np.asarray(v) for k, v in data.items()}
-        np.savez(filepath, **processed)
+        # Type ignore: numpy.savez has imprecise type signature for **kwargs
+        np.savez(filepath, **processed)  # type: ignore[arg-type]
     else:
         raise ValueError(f"Unsupported format: {ext}")
 
@@ -24,10 +25,16 @@ def _load_data(filepath: str) -> dict[str, Any]:
     ext = os.path.splitext(filepath)[1].lower()
     if ext == ".json":
         with open(filepath, encoding="utf-8") as f:
-            return json.load(f)
+            data: dict[str, Any] = json.load(f)
+            return data
     elif ext == ".npz":
         arrs = np.load(filepath, allow_pickle=True)
-        return {k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in arrs.items()}
+        # Convert NpzFile to dict - explicit type to satisfy mypy
+        result: dict[str, Any] = {
+            k: v.tolist() if isinstance(v, np.ndarray) else v
+            for k, v in arrs.items()
+        }
+        return result
     else:
         raise ValueError(f"Unsupported format: {ext}")
 

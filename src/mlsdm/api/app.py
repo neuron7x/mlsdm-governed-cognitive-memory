@@ -180,7 +180,7 @@ async def get_state(
 
 
 @app.on_event("startup")
-async def startup_event():
+async def startup_event() -> None:
     """Initialize application on startup."""
     # Initialize lifecycle manager
     lifecycle = get_lifecycle_manager()
@@ -201,7 +201,7 @@ async def startup_event():
 
 
 @app.on_event("shutdown")
-async def shutdown_event():
+async def shutdown_event() -> None:
     """Clean up resources on shutdown."""
     # Log system shutdown
     security_logger.log_system_event(
@@ -212,9 +212,3 @@ async def shutdown_event():
     # Execute graceful shutdown
     lifecycle = get_lifecycle_manager()
     await lifecycle.shutdown()
-
-
-@app.get("/health")
-async def health() -> dict[str, str]:
-    """Health check endpoint (no authentication required)."""
-    return {"status": "healthy"}

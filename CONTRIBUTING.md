@@ -65,22 +65,51 @@ pip install -r requirements.txt
 ### Verify Installation
 
 ```bash
-# Run tests to ensure everything works
-pytest tests/ src/tests/ -v
+# Install with test dependencies
+pip install -e ".[test]"
 
-# Run integration tests
-python tests/integration/test_end_to_end.py
+# Run tests to ensure everything works
+make test
+
+# Or directly:
+pytest --ignore=tests/load
 ```
 
 ### Development Tools
 
-We use the following tools (all included in requirements.txt):
+We use the following tools (all included in dev dependencies):
 
 - **pytest**: Testing framework
 - **pytest-cov**: Code coverage
 - **hypothesis**: Property-based testing
 - **ruff**: Linting and formatting
 - **mypy**: Type checking
+- **httpx**: HTTP client for testing
+
+### Canonical Development Commands
+
+These commands match what CI runs. **Always run these before pushing:**
+
+```bash
+# Run all tests (ignores load tests that require special setup)
+make test
+# Or: pytest --ignore=tests/load
+
+# Run linter (ruff)
+make lint
+# Or: ruff check src tests
+
+# Run type checker (mypy)
+make type
+# Or: mypy src/mlsdm
+
+# Run tests with coverage
+make cov
+# Or: pytest --ignore=tests/load --cov=src --cov-report=html --cov-report=term-missing
+
+# Show all available commands
+make help
+```
 
 ## Development Workflow
 

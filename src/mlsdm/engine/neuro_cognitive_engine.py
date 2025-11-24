@@ -26,7 +26,9 @@ NeuroCognitiveEngine: integrated MLSDM + FSLGS orchestration layer.
 
 from __future__ import annotations
 
+import logging
 import time
+import traceback
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -210,11 +212,13 @@ class NeuroCognitiveEngine:
 
                 # Generate response - handle both kwargs and non-kwargs providers
                 try:
-                    return provider.generate(prompt, max_tokens, **kwargs)
+                    result: str = provider.generate(prompt, max_tokens, **kwargs)
+                    return result
                 except TypeError:
                     # Provider may not accept kwargs; try without them
                     try:
-                        return provider.generate(prompt, max_tokens)
+                        result_no_kwargs: str = provider.generate(prompt, max_tokens)
+                        return result_no_kwargs
                     except Exception as e:
                         # Return a fallback response to avoid empty response errors
                         fallback = f"[provider_error:{self._selected_provider_id}] {str(e)}"
@@ -224,7 +228,7 @@ class NeuroCognitiveEngine:
                     fallback = f"[provider_error:{self._selected_provider_id}] {str(e)}"
                     return fallback
 
-            actual_llm_fn = routed_llm_fn
+            actual_llm_fn: Callable[[str, int], str] = routed_llm_fn
         else:
             if llm_generate_fn is None:
                 raise ValueError(
@@ -352,7 +356,7 @@ class NeuroCognitiveEngine:
 
         timing: dict[str, float] = {}
         validation_steps: list[dict[str, Any]] = []
-        
+
         # Wrap entire method in try-except to ensure structured response always returned
         try:
             return self._generate_internal(
@@ -368,11 +372,9 @@ class NeuroCognitiveEngine:
             )
         except Exception as e:
             # Catch any unexpected exceptions and return structured error
-            import traceback
-            import logging
             logger = logging.getLogger(__name__)
             logger.exception("Unexpected error in generate()")
-            
+
             return {
                 "response": "",
                 "governance": None,
@@ -426,16 +428,16 @@ class NeuroCognitiveEngine:
         # If using router, pre-select provider/variant for metrics tracking
         # This ensures we track even rejected requests
         if self._router is not None:
-            metadata = {
+            router_metadata = {
                 "user_intent": user_intent,
                 "priority_tier": getattr(self, "_runtime_priority_tier", "normal"),
             }
-            provider_name = self._router.select_provider(prompt, metadata)
+            provider_name = self._router.select_provider(prompt, router_metadata)
             provider = self._router.get_provider(provider_name)
             self._selected_provider_id = getattr(provider, "provider_id", None)
             if hasattr(self._router, "get_variant"):
                 try:
-                    self._selected_variant = self._router.get_variant(provider_name, **metadata)
+                    self._selected_variant = self._router.get_variant(provider_name, **router_metadata)
                 except TypeError:
                     self._selected_variant = self._router.get_variant(provider_name)
 
@@ -600,7 +602,7 @@ class NeuroCognitiveEngine:
                             raise EmptyResponseError(
                                 "MLSDM returned empty response"
                             )
-                
+
                 # POST-GENERATION MORAL CHECK
                 # Verify the generated response meets moral threshold
                 # This is a safety check to ensure harmful content isn't accepted
@@ -608,10 +610,10 @@ class NeuroCognitiveEngine:
                     response_moral_score = self._estimate_response_moral_score(
                         response_text, prompt
                     )
-                    
+
                     # Tolerance for estimation error (matching test expectations)
                     MORAL_SCORE_TOLERANCE = 0.15
-                    
+
                     if response_moral_score < (moral_value - MORAL_SCORE_TOLERANCE):
                         # Response doesn't meet moral threshold - reject it
                         validation_steps.append({
@@ -620,17 +622,17 @@ class NeuroCognitiveEngine:
                             "score": response_moral_score,
                             "threshold": moral_value,
                         })
-                        
+
                         if self._metrics is not None:
                             self._metrics.increment_rejections_total("post_moral")
                             self._metrics.increment_errors_total("post_moral_check")
-                        
+
                         meta_moral: dict[str, Any] = {}
                         if self._selected_provider_id is not None:
                             meta_moral["backend_id"] = self._selected_provider_id
                         if self._selected_variant is not None:
                             meta_moral["variant"] = self._selected_variant
-                        
+
                         return {
                             "response": "",
                             "governance": fslgs_result if fslgs_result is not None else None,
@@ -646,7 +648,7 @@ class NeuroCognitiveEngine:
                             "rejected_at": "pre_moral",
                             "meta": meta_moral,
                         }
-                    
+
                     validation_steps.append({
                         "step": "post_moral_check",
                         "passed": True,
@@ -746,11 +748,11 @@ class NeuroCognitiveEngine:
                 self._metrics.record_latency_total(timing["total"])
 
         # Build metadata with provider/variant info
-        meta: dict[str, Any] = {}
+        metadata: dict[str, Any] = {}
         if self._selected_provider_id is not None:
-            meta["backend_id"] = self._selected_provider_id
+            metadata["backend_id"] = self._selected_provider_id
         if self._selected_variant is not None:
-            meta["variant"] = self._selected_variant
+            metadata["variant"] = self._selected_variant
 
         return {
             "response": response_text,
@@ -760,23 +762,23 @@ class NeuroCognitiveEngine:
             "validation_steps": validation_steps,
             "error": None,
             "rejected_at": None,
-            "meta": meta,
+            "meta": metadata,
         }
 
     # ------------------------------------------------------------------ #
     # Internal helpers                                                    #
     # ------------------------------------------------------------------ #
-    
+
     def _estimate_response_moral_score(self, response_text: str, prompt: str) -> float:
         """Estimate moral score of response using heuristics.
-        
+
         This is a simplified heuristic for testing. In production, this would
         use the actual moral filter with ML models.
-        
+
         Args:
             response_text: Generated response
             prompt: Original prompt
-            
+
         Returns:
             Estimated moral score in [0, 1]
         """
@@ -784,16 +786,17 @@ class NeuroCognitiveEngine:
         moral_filter = getattr(self._mlsdm, "moral", None)
         if moral_filter is not None and hasattr(moral_filter, "compute_moral_value"):
             try:
-                return moral_filter.compute_moral_value(response_text)
+                moral_score: float = moral_filter.compute_moral_value(response_text)
+                return moral_score
             except Exception:
                 pass  # Fall back to heuristic
-        
+
         # Heuristic fallback (matches test expectations)
         harmful_patterns = ["hate", "violence", "attack", "harmful"]
-        
+
         prompt_lower = prompt.lower()
         response_lower = response_text.lower()
-        
+
         # If prompt contains harmful patterns, score is low
         if any(word in prompt_lower for word in harmful_patterns):
             return 0.2

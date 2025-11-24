@@ -172,7 +172,7 @@ if TORCH_AVAILABLE:
             return len(self.indices)
 
 
-    class TransformerBlock(nn.Module):  # type: ignore
+    class TransformerBlock(nn.Module):
         def __init__(self, embed_size, heads=4):
             super().__init__()
             self.attention = nn.MultiheadAttention(embed_size, heads, batch_first=True)
@@ -193,7 +193,7 @@ if TORCH_AVAILABLE:
             return self.norm2(x + ff_out)
 
 
-    class InnateGrammarModule(nn.Module):  # type: ignore
+    class InnateGrammarModule(nn.Module):
         def __init__(self, vocab_size, embed_size=64, layers=2):
             super().__init__()
             self.embedding = nn.Embedding(vocab_size, embed_size)
@@ -451,10 +451,10 @@ class AphasiaSpeechGovernor:
 
     def __init__(
         self,
-        detector: AphasiaBrocaDetector,
+        detector: "AphasiaBrocaDetector",
         repair_enabled: bool = True,
         severity_threshold: float = 0.3,
-        llm_generate_fn=None,
+        llm_generate_fn: Any = None,
     ):
         """
         Initialize the Aphasia speech governor.
@@ -470,7 +470,7 @@ class AphasiaSpeechGovernor:
         self._severity_threshold = severity_threshold
         self._llm_generate_fn = llm_generate_fn
 
-    def __call__(self, *, prompt: str, draft: str, max_tokens: int):
+    def __call__(self, *, prompt: str, draft: str, max_tokens: int) -> Any:
         """Apply Aphasia detection and optional repair to draft text."""
         from mlsdm.speech.governance import SpeechGovernanceResult
 
@@ -639,7 +639,13 @@ class NeuroLangWrapper(LLMWrapper):
             self.processor2 = ModularLanguageProcessor(self.critic, self.actor, self.dataset)
             self.integrator = SocialIntegrator(self.processor1, self.processor2)
 
-    def generate(self, prompt: str, moral_value: float = 0.5, max_tokens: int = 50) -> dict:
+    def generate(
+        self,
+        prompt: str,
+        moral_value: float = 0.5,
+        max_tokens: int | None = None,
+        context_top_k: int = 5
+    ) -> dict[str, Any]:
         # Handle lazy training: train on first generation if not yet trained
         if self.neurolang_mode == "lazy_train" and not self._trained:
             with self._train_lock:
@@ -670,11 +676,13 @@ class NeuroLangWrapper(LLMWrapper):
             }
 
         # Generate LLM response with or without NeuroLang enhancement
+        # Use default max_tokens if not provided
+        tokens = max_tokens if max_tokens is not None else 50
         if self.neurolang_mode == "disabled":
-            base_response = self.llm_generate(prompt, max_tokens)
+            base_response = self.llm_generate(prompt, tokens)
         else:
             enhanced_prompt = f"{prompt}\n\n[NeuroLang enhancement]: {neuro_response}"
-            base_response = self.llm_generate(enhanced_prompt, max_tokens)
+            base_response = self.llm_generate(enhanced_prompt, tokens)
 
         # Apply speech governance if configured (via parent's speech governor)
         final_response = base_response
@@ -686,7 +694,7 @@ class NeuroLangWrapper(LLMWrapper):
             gov_result = self._speech_governor(
                 prompt=prompt,
                 draft=base_response,
-                max_tokens=max_tokens,
+                max_tokens=tokens,
             )
             final_response = gov_result.final_text
             governed_metadata = {

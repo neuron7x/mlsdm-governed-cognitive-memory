@@ -76,7 +76,7 @@ def test_secure_mode_forces_neurolang_disabled():
             capacity=256,
             neurolang_mode="eager_train",  # Try to enable training
         )
-        
+
         # Verify that secure mode overrode the setting
         assert wrapper.neurolang_mode == "disabled"
         assert wrapper.actor is None
@@ -96,7 +96,7 @@ def test_secure_mode_ignores_checkpoint_path():
             neurolang_mode="eager_train",
             neurolang_checkpoint_path="config/neurolang_grammar.pt",
         )
-        
+
         # Verify neurolang is disabled
         assert wrapper.neurolang_mode == "disabled"
         assert wrapper.actor is None
@@ -114,7 +114,7 @@ def test_secure_mode_disables_aphasia_repair():
             capacity=256,
             aphasia_repair_enabled=True,  # Try to enable repair
         )
-        
+
         # Verify that secure mode disabled repair
         assert wrapper.aphasia_repair_enabled is False
         # Detection should still work
@@ -132,14 +132,14 @@ def test_secure_mode_generate_works_without_training():
             capacity=256,
             neurolang_mode="eager_train",
         )
-        
+
         # Should not raise any errors
         result = wrapper.generate(
             prompt="Test secure mode generation",
             moral_value=0.7,
             max_tokens=50
         )
-        
+
         assert result is not None
         assert "response" in result
         assert result["accepted"] is True
@@ -159,7 +159,7 @@ def test_secure_mode_preserves_explicit_detect_disabled():
             aphasia_detect_enabled=False,  # Explicitly disable detection
             aphasia_repair_enabled=True,
         )
-        
+
         # Detection should remain disabled
         assert wrapper.aphasia_detect_enabled is False
         # Repair should be disabled by secure mode
@@ -178,7 +178,7 @@ def test_without_secure_mode_training_works_normally():
             neurolang_mode="eager_train",
             aphasia_repair_enabled=True,
         )
-        
+
         # Normal mode should allow training and repair
         assert wrapper.neurolang_mode == "eager_train"
         assert wrapper.aphasia_repair_enabled is True

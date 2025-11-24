@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from mlsdm.service.neuro_engine_service import create_app
 
+
 @pytest.fixture
 def client():
     """Create a test client for the FastAPI app."""
@@ -25,7 +26,7 @@ class TestHealthEndpoint:
         """Test healthz response structure."""
         response = client.get("/healthz")
         data = response.json()
-        
+
         assert "status" in data
         assert "backend" in data
         assert data["status"] == "ok"
@@ -48,7 +49,7 @@ class TestMetricsEndpoint:
         """Test metrics are in Prometheus format."""
         response = client.get("/metrics")
         text = response.text
-        
+
         # Should contain prometheus comment lines
         assert "# HELP" in text
         assert "# TYPE" in text
@@ -71,7 +72,7 @@ class TestGenerateEndpoint:
             json={"prompt": "Test prompt"}
         )
         data = response.json()
-        
+
         # Check all required fields are present
         assert "response" in data
         assert "governance" in data
@@ -80,7 +81,7 @@ class TestGenerateEndpoint:
         assert "validation_steps" in data
         assert "error" in data
         assert "rejected_at" in data
-        
+
         # Response should be a string
         assert isinstance(data["response"], str)
         assert len(data["response"]) > 0
@@ -134,7 +135,7 @@ class TestGenerateEndpoint:
             json={"prompt": "Test timing"}
         )
         data = response.json()
-        
+
         assert "timing" in data
         assert isinstance(data["timing"], dict)
         # Should have at least some timing info
@@ -147,17 +148,17 @@ class TestEndToEnd:
         """Test that multiple requests update metrics endpoint."""
         # Get initial metrics
         metrics_before = client.get("/metrics").text
-        
+
         # Make several requests
         for i in range(3):
             client.post(
                 "/v1/neuro/generate",
                 json={"prompt": f"Test request {i}"}
             )
-        
+
         # Get updated metrics
         metrics_after = client.get("/metrics").text
-        
+
         # Metrics should have changed
         assert metrics_before != metrics_after
         # Should show at least 3 requests
@@ -170,7 +171,7 @@ class TestEndToEnd:
             "/v1/neuro/generate",
             json={"prompt": "Load test"}
         )
-        
+
         # Health check should still work
         response = client.get("/healthz")
         assert response.status_code == 200
@@ -185,7 +186,7 @@ class TestRateLimiting:
         # The default rate limit is 100 requests per 60 seconds
         # Since all test requests come from the same test client (same IP),
         # we'll verify the rate limiter is working by checking it doesn't block normal usage
-        
+
         # Make several requests (under default limit)
         for i in range(5):
             response = client.post(
@@ -193,7 +194,7 @@ class TestRateLimiting:
                 json={"prompt": f"Test {i}"}
             )
             assert response.status_code == 200
-        
+
         # Verify rate limiter is active by checking app state
         # (In a real scenario with 100+ requests, we'd hit the limit)
         assert hasattr(client.app.state, 'rate_limiter')

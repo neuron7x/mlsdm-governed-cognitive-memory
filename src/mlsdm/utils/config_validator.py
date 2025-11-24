@@ -139,17 +139,17 @@ class ConfigValidator:
                 component=component
             )
 
-        threshold = float(threshold)
+        threshold_float: float = float(threshold)
 
-        if not (min_val <= threshold <= max_val):
+        if not (min_val <= threshold_float <= max_val):
             raise ValidationError(
                 parameter="threshold",
-                value=threshold,
+                value=threshold_float,
                 expected=f"float in range [{min_val}, {max_val}]",
                 component=component
             )
 
-        return threshold
+        return threshold_float
 
     @staticmethod
     def validate_duration(
@@ -223,17 +223,17 @@ class ConfigValidator:
                 component=component
             )
 
-        rate = float(rate)
+        rate_float: float = float(rate)
 
-        if not (0 < rate <= 1.0):
+        if not (0 < rate_float <= 1.0):
             raise ValidationError(
                 parameter=parameter_name,
-                value=rate,
+                value=rate_float,
                 expected="float in range (0, 1]",
                 component=component
             )
 
-        return rate
+        return rate_float
 
     @staticmethod
     def validate_positive_int(
@@ -319,17 +319,17 @@ class ConfigValidator:
                 component=component
             )
 
-        value = float(value)
+        value_float: float = float(value)
 
-        if not (min_val <= value <= max_val):
+        if not (min_val <= value_float <= max_val):
             raise ValidationError(
                 parameter=parameter_name,
-                value=value,
+                value=value_float,
                 expected=f"float in range [{min_val}, {max_val}]",
                 component=component
             )
 
-        return value
+        return value_float
 
     @classmethod
     def validate_llm_wrapper_config(cls, config: dict[str, Any]) -> dict[str, Any]:

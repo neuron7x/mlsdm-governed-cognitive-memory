@@ -8,6 +8,7 @@ properly validated before use.
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from typing_extensions import Self
 
 
 class MultiLevelMemoryConfig(BaseModel):
@@ -58,7 +59,7 @@ class MultiLevelMemoryConfig(BaseModel):
     )
 
     @model_validator(mode='after')
-    def validate_decay_hierarchy(self):
+    def validate_decay_hierarchy(self) -> Self:
         """Ensure decay rates follow hierarchy: lambda_l3 < lambda_l2 < lambda_l1."""
         l1, l2, l3 = self.lambda_l1, self.lambda_l2, self.lambda_l3
         if not (l3 <= l2 <= l1):
@@ -69,7 +70,7 @@ class MultiLevelMemoryConfig(BaseModel):
         return self
 
     @model_validator(mode='after')
-    def validate_threshold_hierarchy(self):
+    def validate_threshold_hierarchy(self) -> Self:
         """Ensure theta_l2 > theta_l1 for proper consolidation."""
         t1, t2 = self.theta_l1, self.theta_l2
         if t2 <= t1:
@@ -112,7 +113,7 @@ class MoralFilterConfig(BaseModel):
     )
 
     @model_validator(mode='after')
-    def validate_threshold_bounds(self):
+    def validate_threshold_bounds(self) -> Self:
         """Ensure min <= threshold <= max."""
         min_t = self.min_threshold
         max_t = self.max_threshold
@@ -149,7 +150,7 @@ class OntologyMatcherConfig(BaseModel):
 
     @field_validator('ontology_vectors')
     @classmethod
-    def validate_vectors(cls, v):
+    def validate_vectors(cls, v: list[list[float]]) -> list[list[float]]:
         """Ensure all vectors have same dimension and are non-empty."""
         if not v:
             raise ValueError("ontology_vectors cannot be empty")
@@ -163,7 +164,7 @@ class OntologyMatcherConfig(BaseModel):
         return v
 
     @model_validator(mode='after')
-    def validate_labels_match(self):
+    def validate_labels_match(self) -> Self:
         """Ensure labels match number of vectors if provided."""
         vectors = self.ontology_vectors
         labels = self.ontology_labels
@@ -196,7 +197,7 @@ class CognitiveRhythmConfig(BaseModel):
     )
 
     @model_validator(mode='after')
-    def validate_durations(self):
+    def validate_durations(self) -> Self:
         """Warn if unusual wake/sleep ratio."""
         wake = self.wake_duration
         sleep = self.sleep_duration
@@ -213,7 +214,7 @@ class CognitiveRhythmConfig(BaseModel):
 
 class AphasiaConfig(BaseModel):
     """Configuration for Aphasia-Broca detection and repair.
-    
+
     Controls whether telegraphic speech patterns are detected and/or repaired
     in LLM outputs.
     """
@@ -233,7 +234,7 @@ class AphasiaConfig(BaseModel):
     )
 
     @model_validator(mode='after')
-    def validate_threshold(self):
+    def validate_threshold(self) -> Self:
         """Validate severity threshold is in valid range."""
         if self.severity_threshold is not None:
             if not (0.0 <= self.severity_threshold <= 1.0):
@@ -243,7 +244,7 @@ class AphasiaConfig(BaseModel):
 
 class NeuroLangConfig(BaseModel):
     """Configuration for NeuroLang performance modes.
-    
+
     Controls NeuroLang training behavior and resource usage.
     Three modes: eager_train, lazy_train, and disabled.
     """
@@ -258,7 +259,7 @@ class NeuroLangConfig(BaseModel):
 
     @field_validator('mode')
     @classmethod
-    def validate_mode(cls, v):
+    def validate_mode(cls, v: str) -> str:
         """Ensure mode is one of the allowed values."""
         allowed_modes = {"eager_train", "lazy_train", "disabled"}
         if v not in allowed_modes:
@@ -310,7 +311,7 @@ class SystemConfig(BaseModel):
     )
 
     @model_validator(mode='after')
-    def validate_ontology_dimension(self):
+    def validate_ontology_dimension(self) -> Self:
         """Ensure ontology vectors match system dimension."""
         dim = self.dimension
         onto_cfg = self.ontology_matcher
@@ -390,8 +391,8 @@ def validate_config_dict(config_dict: dict[str, Any]) -> SystemConfig:
             allowed = set(SystemConfig.model_fields.keys())
             unknown = set(config_dict.keys()) - allowed
             raise ValueError(
-                f"Configuration validation failed: unknown top-level keys: {sorted(list(unknown))}. "
-                f"Allowed keys: {sorted(list(allowed))}.\n"
+                f"Configuration validation failed: unknown top-level keys: {sorted(unknown)}. "
+                f"Allowed keys: {sorted(allowed)}.\n"
                 f"Original error: {err_str}"
             ) from e
         raise ValueError(f"Configuration validation failed: {err_str}") from e

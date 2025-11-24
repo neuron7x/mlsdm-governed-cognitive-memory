@@ -2,6 +2,8 @@
 Unit tests for LLMWrapper - Universal LLM wrapper with cognitive governance.
 """
 
+from typing import cast
+
 import numpy as np
 
 from mlsdm.core.llm_wrapper import LLMWrapper
@@ -20,7 +22,9 @@ class TestLLMWrapper:
         """Mock embedding function - returns random normalized vector."""
         np.random.seed(hash(text) % (2**32))
         vec = np.random.randn(384).astype(np.float32)
-        return vec / np.linalg.norm(vec)
+        norm = np.linalg.norm(vec)
+        result = (vec / norm).astype(np.float32)
+        return cast("np.ndarray", result)
 
     def test_initialization(self) -> None:
         """Test wrapper initialization."""
@@ -357,7 +361,9 @@ class TestLLMWrapperEdgeCases:
     @staticmethod
     def mock_embedding(text: str) -> np.ndarray:
         vec = np.random.randn(384).astype(np.float32)
-        return vec / np.linalg.norm(vec)
+        norm = np.linalg.norm(vec)
+        result = (vec / norm).astype(np.float32)
+        return cast("np.ndarray", result)
 
     def test_embedding_error_handling(self) -> None:
         """Test handling of embedding errors."""
@@ -420,7 +426,9 @@ class TestLLMWrapperIntegration:
         # Simple but deterministic embedding
         np.random.seed(sum(ord(c) for c in text) % (2**32))
         vec = np.random.randn(384).astype(np.float32)
-        return vec / (np.linalg.norm(vec) + 1e-9)
+        norm = np.linalg.norm(vec) + 1e-9
+        result = (vec / norm).astype(np.float32)
+        return cast("np.ndarray", result)
 
     def test_realistic_conversation_flow(self) -> None:
         """Test a realistic conversation with multiple turns."""

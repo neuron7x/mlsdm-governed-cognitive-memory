@@ -9,16 +9,13 @@ Tests cover:
 - Moral filter validation with toxic inputs
 """
 
-import os
 import time
-from typing import Any, Callable
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
 
 from mlsdm.core.llm_wrapper import LLMWrapper
-
 
 # ============================================================================
 # Mock Embedding Function
@@ -51,7 +48,7 @@ class TestOpenAIIntegration:
 
     def test_openai_basic_call(self, openai_mock: Mock) -> None:
         """Test basic OpenAI API call."""
-        
+
         def llm_generate(prompt: str, max_tokens: int = 100) -> str:
             response = openai_mock.chat.completions.create(
                 model="gpt-3.5-turbo",
@@ -67,14 +64,14 @@ class TestOpenAIIntegration:
         )
 
         result = wrapper.generate("Hello, how are you?", moral_value=0.9)
-        
+
         assert result["accepted"] is True
         assert len(result["response"]) > 0
         assert openai_mock.chat.completions.create.called
 
     def test_openai_rate_limit_handling(self, openai_mock: Mock) -> None:
         """Test handling of OpenAI rate limit errors."""
-        
+
         # Simulate rate limit error with eventual success
         call_count = 0
         def llm_generate_with_retry(prompt: str, max_tokens: int = 100) -> str:
@@ -93,14 +90,14 @@ class TestOpenAIIntegration:
 
         # Should handle rate limit with retries
         result = wrapper.generate("Test prompt", moral_value=0.9)
-        
+
         # Wrapper should retry and succeed
         assert call_count >= 2
         assert result["accepted"] is True
 
     def test_openai_timeout_handling(self) -> None:
         """Test handling of OpenAI timeout errors."""
-        
+
         def llm_generate_timeout(prompt: str, max_tokens: int = 100) -> str:
             time.sleep(0.1)  # Simulate slow response
             raise TimeoutError("Request timed out")
@@ -114,14 +111,14 @@ class TestOpenAIIntegration:
 
         # Wrapper catches timeout and returns error response
         result = wrapper.generate("Test prompt", moral_value=0.9)
-        
+
         # Should return error response, not raise
         assert result["accepted"] is False
         assert "error" in result["note"].lower() or "failed" in result["note"].lower()
 
     def test_openai_invalid_api_key(self) -> None:
         """Test handling of invalid API key."""
-        
+
         def llm_generate_auth_error(prompt: str, max_tokens: int = 100) -> str:
             raise Exception("Authentication failed: Invalid API key")
 
@@ -133,7 +130,7 @@ class TestOpenAIIntegration:
 
         # Wrapper catches auth errors and returns error response
         result = wrapper.generate("Test prompt", moral_value=0.9)
-        
+
         assert result["accepted"] is False
         assert "error" in result["note"].lower() or "failed" in result["note"].lower()
 
@@ -147,7 +144,7 @@ class TestLocalModelIntegration:
 
     def test_ollama_mock_integration(self) -> None:
         """Test integration with Ollama-style local model."""
-        
+
         def llm_generate_local(prompt: str, max_tokens: int = 100) -> str:
             """Mock Ollama-style response."""
             # Simulate local model response
@@ -164,15 +161,15 @@ class TestLocalModelIntegration:
         )
 
         result = wrapper.generate("Hello, tell me about Python", moral_value=0.9)
-        
+
         assert result["accepted"] is True
         assert len(result["response"]) > 0
 
     def test_local_model_latency(self) -> None:
         """Test latency characteristics of local model."""
-        
+
         latencies = []
-        
+
         def llm_generate_with_latency(prompt: str, max_tokens: int = 100) -> str:
             # Simulate variable local model latency
             delay = np.random.uniform(0.05, 0.15)
@@ -199,7 +196,7 @@ class TestLocalModelIntegration:
 
     def test_local_model_memory_efficiency(self) -> None:
         """Test that local model doesn't cause memory bloat."""
-        
+
         def llm_generate_local(prompt: str, max_tokens: int = 100) -> str:
             return f"Response to: {prompt[:20]}"
 
@@ -215,7 +212,7 @@ class TestLocalModelIntegration:
             wrapper.generate(f"Test prompt {i}", moral_value=0.9)
 
         state = wrapper.get_state()
-        
+
         # Memory should remain bounded
         assert state["qilm_stats"]["used"] <= 100
         assert state["qilm_stats"]["memory_mb"] < 100  # Should stay under 100MB
@@ -239,7 +236,7 @@ class TestAnthropicIntegration:
 
     def test_claude_basic_call(self, claude_mock: Mock) -> None:
         """Test basic Claude API call."""
-        
+
         def llm_generate(prompt: str, max_tokens: int = 100) -> str:
             response = claude_mock.messages.create(
                 model="claude-3-sonnet-20240229",
@@ -255,14 +252,14 @@ class TestAnthropicIntegration:
         )
 
         result = wrapper.generate("Hello Claude", moral_value=0.9)
-        
+
         assert result["accepted"] is True
         assert len(result["response"]) > 0
         assert claude_mock.messages.create.called
 
     def test_claude_overloaded_handling(self, claude_mock: Mock) -> None:
         """Test handling of Claude API overload errors."""
-        
+
         call_count = 0
         def llm_generate_with_overload(prompt: str, max_tokens: int = 100) -> str:
             nonlocal call_count
@@ -279,16 +276,16 @@ class TestAnthropicIntegration:
         )
 
         result = wrapper.generate("Test prompt", moral_value=0.9)
-        
+
         # Wrapper will retry and should succeed on second attempt
         assert call_count >= 2
         assert result["accepted"] is True
 
     def test_claude_streaming_mock(self) -> None:
         """Test mock streaming responses from Claude."""
-        
+
         responses = []
-        
+
         def llm_generate_streaming(prompt: str, max_tokens: int = 100) -> str:
             # Mock streaming by building response incrementally
             parts = ["This ", "is ", "a ", "streaming ", "response."]
@@ -305,7 +302,7 @@ class TestAnthropicIntegration:
         )
 
         result = wrapper.generate("Test streaming", moral_value=0.9)
-        
+
         assert result["accepted"] is True
         assert len(responses) == 5
 
@@ -319,9 +316,9 @@ class TestLatencyDistribution:
 
     def test_latency_measurement(self) -> None:
         """Measure actual latency distribution."""
-        
+
         latencies = []
-        
+
         def llm_generate_timed(prompt: str, max_tokens: int = 100) -> str:
             # Simulate realistic latency variation
             delay = np.random.lognormal(mean=np.log(0.1), sigma=0.3)
@@ -340,7 +337,7 @@ class TestLatencyDistribution:
             start = time.time()
             result = wrapper.generate(f"Prompt {i}", moral_value=0.9)
             latency = time.time() - start
-            
+
             if result["accepted"]:
                 latencies.append(latency)
 
@@ -350,7 +347,7 @@ class TestLatencyDistribution:
         p95 = np.percentile(latencies_arr, 95)
         p99 = np.percentile(latencies_arr, 99)
 
-        print(f"\nLatency Distribution:")
+        print("\nLatency Distribution:")
         print(f"  P50: {p50*1000:.2f}ms")
         print(f"  P95: {p95*1000:.2f}ms")
         print(f"  P99: {p99*1000:.2f}ms")
@@ -361,9 +358,9 @@ class TestLatencyDistribution:
 
     def test_latency_under_load(self) -> None:
         """Test latency behavior under simulated load."""
-        
+
         latencies = []
-        
+
         def llm_generate_variable(prompt: str, max_tokens: int = 100) -> str:
             # Simulate increasing latency under load
             current_load = len(latencies)
@@ -385,14 +382,14 @@ class TestLatencyDistribution:
             start = time.time()
             result = wrapper.generate(f"Load test {i}", moral_value=0.9)
             latency = time.time() - start
-            
+
             if result["accepted"]:
                 latencies.append(latency)
 
         # Latency should increase with load
         early_latency = np.mean(latencies[:10])
         late_latency = np.mean(latencies[-10:])
-        
+
         assert late_latency > early_latency
 
 
@@ -417,7 +414,7 @@ class TestMoralFilterToxicity:
 
     def test_moral_filter_toxic_rejection(self) -> None:
         """Test that moral filter rejects highly toxic inputs."""
-        
+
         def llm_generate(prompt: str, max_tokens: int = 100) -> str:
             return "Generated response"
 
@@ -429,7 +426,7 @@ class TestMoralFilterToxicity:
         )
 
         toxic_samples = self.get_toxic_samples()
-        
+
         results = []
         for text, moral_value in toxic_samples:
             result = wrapper.generate(text, moral_value=moral_value)
@@ -445,7 +442,7 @@ class TestMoralFilterToxicity:
 
     def test_moral_filter_adaptation(self) -> None:
         """Test moral filter adaptation with varying inputs."""
-        
+
         def llm_generate(prompt: str, max_tokens: int = 100) -> str:
             return "Response"
 
@@ -459,9 +456,9 @@ class TestMoralFilterToxicity:
 
         # Feed sequence of varying toxicity
         samples = self.get_toxic_samples() * 5  # Repeat to test adaptation
-        
+
         initial_state = wrapper.get_state()
-        initial_threshold = initial_state["moral_threshold"]
+        initial_state["moral_threshold"]
 
         for text, moral_value in samples:
             wrapper.generate(text, moral_value=moral_value)
@@ -475,7 +472,7 @@ class TestMoralFilterToxicity:
 
     def test_moral_filter_statistics(self) -> None:
         """Test statistics collection for moral filtering."""
-        
+
         def llm_generate(prompt: str, max_tokens: int = 100) -> str:
             return "Response"
 
@@ -488,7 +485,7 @@ class TestMoralFilterToxicity:
         )
 
         toxic_samples = self.get_toxic_samples()
-        
+
         accepted_count = 0
         rejected_count = 0
 
@@ -500,13 +497,13 @@ class TestMoralFilterToxicity:
                 rejected_count += 1
 
         state = wrapper.get_state()
-        
+
         # Verify statistics tracking
         assert state["accepted_count"] == accepted_count
         assert state["rejected_count"] == rejected_count
         assert state["step"] == len(toxic_samples)
 
-        print(f"\nMoral Filter Statistics:")
+        print("\nMoral Filter Statistics:")
         print(f"  Accepted: {accepted_count}")
         print(f"  Rejected: {rejected_count}")
         print(f"  Rejection Rate: {rejected_count/len(toxic_samples)*100:.1f}%")

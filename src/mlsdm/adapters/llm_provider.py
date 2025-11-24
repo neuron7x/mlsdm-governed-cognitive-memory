@@ -169,7 +169,8 @@ class AnthropicProvider(LLMProvider):
             )
 
             if response.content and len(response.content) > 0:
-                return response.content[0].text
+                # Type ignore: anthropic API response attributes not fully typed in stubs
+                return response.content[0].text  # type: ignore[no-any-return]
             return ""
 
         except Exception as e:

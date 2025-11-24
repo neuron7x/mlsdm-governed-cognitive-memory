@@ -68,7 +68,7 @@ class TestPELMPerformance:
 
     def test_entangle_performance_batch(self) -> None:
         """Test entangle performance with batch operations.
-        
+
         Note: The 5s threshold is conservative for CI environments where resources
         may be constrained. In production environments, this typically runs in < 1s.
         This is primarily a regression test to catch significant performance degradation.
@@ -248,7 +248,7 @@ class TestConcurrentPerformance:
             vec = vec / (np.linalg.norm(vec) or 1e-9)
             pelm.entangle(vec.tolist(), phase=0.1)
 
-        results_list: list[list] = []
+        results_list: list[list[tuple[float, int]]] = []
 
         def retrieve_worker():
             query = np.random.randn(384).astype(np.float32)

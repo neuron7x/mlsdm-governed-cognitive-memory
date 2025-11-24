@@ -249,14 +249,15 @@ class TestDefaultConfigFiles:
 
     def test_default_config_validates_with_schema(self):
         """Default config should validate against SystemConfig schema."""
-        from mlsdm.utils.config_schema import validate_config_dict
         import yaml
-        
+
+        from mlsdm.utils.config_schema import validate_config_dict
+
         config_path = Path("config/default_config.yaml")
         if config_path.exists():
             with open(config_path) as f:
                 config_dict = yaml.safe_load(f)
-            
+
             # Should not raise
             validated = validate_config_dict(config_dict)
             assert validated.dimension > 0
@@ -300,16 +301,16 @@ class TestErrorMessages:
     def test_unknown_keys_error_message(self, tmp_path):
         """Unknown config keys should provide helpful error message."""
         from mlsdm.utils.config_schema import validate_config_dict
-        
+
         config_dict = {
             "dimension": 384,
             "unknown_field": "value",
             "another_bad_key": 123
         }
-        
+
         with pytest.raises(ValueError) as exc_info:
             validate_config_dict(config_dict)
-        
+
         error_msg = str(exc_info.value)
         # Should list unknown keys
         assert "unknown_field" in error_msg
