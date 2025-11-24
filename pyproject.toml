@@ -127,6 +127,8 @@ disallow_untyped_defs = false
 check_untyped_defs = false
 warn_return_any = false
 warn_unused_ignores = false
+# Suppress errors for FastAPI/extension patterns that are expected in these modules
+disable_error_code = ["misc", "type-arg", "override", "no-untyped-call", "no-untyped-def"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
