@@ -39,13 +39,27 @@ The Aphasia-Broca Model is a neurobiologically-inspired component for detecting 
 
 ### Broca's Aphasia in Humans
 
-Broca's aphasia (also called expressive or non-fluent aphasia) is characterized by:
+**Clinical Characteristics:**
+
+Broca's aphasia (also called expressive or non-fluent aphasia) is a well-documented language disorder resulting from damage to Broca's area (left inferior frontal gyrus, BA44/45). The condition is characterized by:
 
 1. **Telegraphic Speech**: Short, simple sentences lacking grammatical complexity
 2. **Preserved Comprehension**: Understanding remains largely intact
 3. **Omission of Function Words**: Missing articles, prepositions, conjunctions
-4. **Grammatical Structure Loss**: Difficulty with proper sentence construction
+4. **Grammatical Structure Loss**: Difficulty with proper sentence construction (agrammatism)
 5. **Semantic Preservation**: Core meaning is often conveyed despite grammatical errors
+
+**Neural Basis:**
+
+Broca's area serves critical functions in:
+- Speech production motor planning
+- Grammar processing and syntactic structure
+- Phonological working memory
+- Hierarchical sequence processing
+
+For detailed neuroscience foundations, see [docs/NEURO_FOUNDATIONS.md](docs/NEURO_FOUNDATIONS.md#4-language-processing-and-aphasia).
+
+**Note on References:** The linguistic characteristics of Broca's aphasia are established in standard clinical neuroscience and neurolinguistics literature. MLSDM's detection metrics are based on these well-documented clinical assessment criteria. Future revisions of this document may include specific peer-reviewed neurolinguistics citations.
 
 ### Mapping to LLM Behavior
 
@@ -747,17 +761,28 @@ See [API_REFERENCE.md](./API_REFERENCE.md#speech-governance) for complete Speech
 
 ## References
 
-### Neurobiological Foundations
+### Scientific Foundation
 
-- Broca, P. (1861). "Remarks on the Seat of the Faculty of Articulated Language"
-- Goodglass, H. (1993). "Understanding Aphasia"
-- Dronkers, N. F. (1996). "A new brain region for coordinating speech articulation"
+For detailed neuroscience foundations and complete bibliography:
+- [docs/NEURO_FOUNDATIONS.md](docs/NEURO_FOUNDATIONS.md#4-language-processing-and-aphasia) - Neuroscience foundations for language and aphasia
+- [docs/SCIENTIFIC_RATIONALE.md](docs/SCIENTIFIC_RATIONALE.md) - Scientific rationale for MLSDM architecture
+- [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md) - Complete bibliography with peer-reviewed sources
 
-### LLM Speech Patterns
+### Clinical Neuroscience
+
+**Note:** The linguistic characteristics of Broca's aphasia (telegraphic speech, agrammatism, function word omission) are well-established in clinical neuroscience literature. MLSDM's detection metrics are based on standard clinical assessment criteria for expressive aphasia. Future revisions may include specific peer-reviewed neurolinguistics citations.
+
+Canonical references:
+- Broca, P. (1861). Remarks on the Seat of the Faculty of Articulated Language (Historical foundation)
+- Goodglass, H. (1993). Understanding Aphasia (Clinical assessment methods)
+- Dronkers, N. F. (1996). A new brain region for coordinating speech articulation (Neural basis)
+
+### Empirical Validation
 
 - Internal validation studies (MLSDM v1.1.0)
 - Statistical analysis of 1,000+ LLM outputs
 - Comparative studies across GPT, Claude, and local models
+- See [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md) for quantitative results
 
 ---
 
