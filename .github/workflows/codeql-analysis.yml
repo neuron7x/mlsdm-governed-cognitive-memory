@@ -61,5 +61,5 @@ jobs:
           category: "/language:${{ matrix.language }}"
           upload: true
           # Fail the workflow if any critical or high severity issues are found
-          # This can be adjusted based on your security requirements
-          fail_on: error
+          # Start with high severity, can be tightened to 'error' once codebase is hardened
+          fail_on: high

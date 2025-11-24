@@ -65,6 +65,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # Test on all supported Python versions per pyproject.toml (>=3.10)
+        # Includes 3.12 for forward compatibility validation
         python-version: ['3.10', '3.11', '3.12']
     
     steps:
@@ -134,7 +136,7 @@ jobs:
     name: All CI Checks Passed
     runs-on: ubuntu-latest
     needs: [lint, type-check, test, property-tests]
-    if: always()
+    if: always() && !cancelled()
     
     steps:
       - name: Check all jobs
