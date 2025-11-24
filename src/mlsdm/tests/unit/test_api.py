@@ -17,6 +17,10 @@ def test_config_file():
         f.write("cognitive_rhythm:\n")
         f.write("  wake_duration: 5\n")
         f.write("  sleep_duration: 2\n")
+        f.write("ontology_matcher:\n")
+        f.write("  ontology_vectors:\n")
+        f.write("    - [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]\n")
+        f.write("    - [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]\n")
         config_path = f.name
 
     yield config_path

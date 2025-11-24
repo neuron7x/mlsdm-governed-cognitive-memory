@@ -60,7 +60,7 @@ class TestLLMWrapperBasic:
         )
 
         assert wrapper.dim == 384
-        assert wrapper.qilm.capacity == 1000
+        assert wrapper.pelm.capacity == 1000
         assert wrapper.rhythm.wake_duration == 8
         assert wrapper.rhythm.sleep_duration == 3
         assert wrapper.moral.threshold == 0.50
