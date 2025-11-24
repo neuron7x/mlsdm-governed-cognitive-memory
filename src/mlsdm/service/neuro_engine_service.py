@@ -174,7 +174,7 @@ def create_app() -> FastAPI:
                 kwargs["context_top_k"] = request_body.context_top_k
 
             # Generate response
-            result = request.app.state.engine.generate(**kwargs)
+            result: dict[str, Any] = request.app.state.engine.generate(**kwargs)
 
             # Record metrics if enabled
             if request.app.state.metrics:

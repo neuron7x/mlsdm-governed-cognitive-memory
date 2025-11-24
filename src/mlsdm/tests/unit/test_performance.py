@@ -248,7 +248,7 @@ class TestConcurrentPerformance:
             vec = vec / (np.linalg.norm(vec) or 1e-9)
             pelm.entangle(vec.tolist(), phase=0.1)
 
-        results_list: list[list] = []
+        results_list: list[list[tuple[float, int]]] = []
 
         def retrieve_worker():
             query = np.random.randn(384).astype(np.float32)

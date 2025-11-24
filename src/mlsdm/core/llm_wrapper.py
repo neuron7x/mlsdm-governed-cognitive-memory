@@ -15,7 +15,7 @@ import time
 from collections.abc import Callable
 from enum import Enum
 from threading import Lock
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from tenacity import (
@@ -244,10 +244,12 @@ class LLMWrapper:
         Circuit breaker prevents cascading failures from embedding service.
         """
         try:
-            result = self.embedding_circuit_breaker.call(self.embed, text)
+            # Circuit breaker returns Any; we validate it's ndarray or convert
+            result: Any = self.embedding_circuit_breaker.call(self.embed, text)
             if not isinstance(result, np.ndarray):
                 result = np.array(result, dtype=np.float32)
-            return result.astype(np.float32)
+            # Cast to proper return type after validation
+            return cast(np.ndarray, result.astype(np.float32))
         except Exception as e:
             self.embedding_failure_count += 1
             raise e
