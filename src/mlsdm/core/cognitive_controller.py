@@ -15,7 +15,7 @@ class CognitiveController:
     def __init__(
         self,
         dim: int = 384,
-        memory_threshold_mb: float = 1024.0,
+        memory_threshold_mb: float = 8192.0,
         max_processing_time_ms: float = 1000.0
     ) -> None:
         self.dim = dim

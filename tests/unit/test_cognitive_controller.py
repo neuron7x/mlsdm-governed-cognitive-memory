@@ -20,7 +20,7 @@ class TestCognitiveControllerInitialization:
         """Test controller can be initialized with defaults."""
         controller = CognitiveController()
         assert controller.dim == 384
-        assert controller.memory_threshold_mb == 1024.0
+        assert controller.memory_threshold_mb == 8192.0
         assert controller.max_processing_time_ms == 1000.0
         assert controller.emergency_shutdown is False
         assert controller.step_counter == 0
