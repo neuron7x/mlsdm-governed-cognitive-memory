@@ -529,6 +529,48 @@ Response (HTTP 422):
 
 See [API_REFERENCE.md](./API_REFERENCE.md) for complete API documentation.
 
+## LLM Backend Configuration
+
+MLSDM supports multiple LLM backends that can be switched via environment variables:
+
+### Using Local Stub (Default - for development/testing)
+
+```bash
+# No configuration needed - local_stub is the default
+export LLM_BACKEND=local_stub
+uvicorn mlsdm.api.app:app --host 0.0.0.0 --port 8000
+```
+
+### Using OpenAI
+
+```bash
+export LLM_BACKEND=openai
+export OPENAI_API_KEY=sk-your-api-key-here
+export OPENAI_MODEL=gpt-3.5-turbo  # Optional
+
+uvicorn mlsdm.api.app:app --host 0.0.0.0 --port 8000
+```
+
+### Using Anthropic (Claude)
+
+```bash
+export LLM_BACKEND=anthropic
+export ANTHROPIC_API_KEY=sk-ant-your-api-key-here
+export ANTHROPIC_MODEL=claude-3-sonnet-20240229  # Optional
+
+uvicorn mlsdm.api.app:app --host 0.0.0.0 --port 8000
+```
+
+### Multi-Provider / A/B Testing
+
+```bash
+# Configure multiple providers
+export MULTI_LLM_BACKENDS="control:local_stub,treatment:openai"
+export OPENAI_API_KEY=sk-your-api-key-here
+```
+
+See [docs/LLM_ADAPTERS_AND_ROUTER.md](./docs/LLM_ADAPTERS_AND_ROUTER.md) for complete backend configuration and routing options.
+
 ## Legacy API and Simulation
 
 ```bash
