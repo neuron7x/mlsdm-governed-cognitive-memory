@@ -49,6 +49,7 @@ def test_aphasia_logging_decision_emitted(caplog, llm_fn, expected_decision_cont
         wake_duration=2,
         sleep_duration=1,
         initial_moral_threshold=0.5,
+        neurolang_mode="disabled",  # Disable to ensure consistent behavior
     )
 
     _ = wrapper.generate(prompt="Test aphasia logging.", moral_value=0.8, max_tokens=64)
@@ -76,6 +77,7 @@ def test_aphasia_logging_includes_config_flags(caplog):
         aphasia_detect_enabled=True,
         aphasia_repair_enabled=False,
         aphasia_severity_threshold=0.7,
+        neurolang_mode="disabled",  # Disable to ensure consistent behavior
     )
 
     _ = wrapper.generate(prompt="Test config logging.", moral_value=0.8, max_tokens=64)
@@ -101,6 +103,7 @@ def test_aphasia_logging_includes_severity_and_flags(caplog):
         wake_duration=2,
         sleep_duration=1,
         initial_moral_threshold=0.5,
+        neurolang_mode="disabled",  # Disable to ensure consistent behavior
     )
 
     _ = wrapper.generate(prompt="Test severity and flags.", moral_value=0.8, max_tokens=64)
@@ -127,6 +130,7 @@ def test_no_logging_when_detection_disabled(caplog):
         sleep_duration=1,
         initial_moral_threshold=0.5,
         aphasia_detect_enabled=False,
+        neurolang_mode="disabled",  # Disable to ensure consistent behavior
     )
 
     _ = wrapper.generate(prompt="Test disabled detection.", moral_value=0.8, max_tokens=64)
@@ -149,6 +153,7 @@ def test_detected_no_repair_decision(caplog):
         initial_moral_threshold=0.5,
         aphasia_detect_enabled=True,
         aphasia_repair_enabled=False,  # Repair disabled
+        neurolang_mode="disabled",  # Disable to ensure consistent behavior
     )
 
     _ = wrapper.generate(prompt="Test detected no repair.", moral_value=0.8, max_tokens=64)
