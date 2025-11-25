@@ -492,5 +492,98 @@ class TestThreadSafety:
         assert stats["total_updates"] == num_threads * updates_per_thread
 
 
+class TestEdgeCases:
+    """Tests for edge cases including NaN/inf handling."""
+
+    def test_nan_delta_eoi_treated_as_zero(self) -> None:
+        """Test NaN delta_eoi is treated as 0.0."""
+        import math
+        memory = SynergyExperienceMemory()
+        stats = memory.update_experience("state_1", "combo_A", float('nan'))
+
+        assert stats.trial_count == 1
+        assert stats.last_delta_eoi == 0.0
+        assert not math.isnan(stats.ema_effectiveness)
+
+    def test_inf_delta_eoi_treated_as_zero(self) -> None:
+        """Test infinity delta_eoi is treated as 0.0."""
+        import math
+        memory = SynergyExperienceMemory()
+        stats = memory.update_experience("state_1", "combo_A", float('inf'))
+
+        assert stats.trial_count == 1
+        assert stats.last_delta_eoi == 0.0
+        assert not math.isinf(stats.ema_effectiveness)
+
+    def test_negative_inf_delta_eoi_treated_as_zero(self) -> None:
+        """Test negative infinity delta_eoi is treated as 0.0."""
+        memory = SynergyExperienceMemory()
+        stats = memory.update_experience("state_1", "combo_A", float('-inf'))
+
+        assert stats.trial_count == 1
+        assert stats.last_delta_eoi == 0.0
+
+    def test_combo_stats_update_handles_nan(self) -> None:
+        """Test ComboStats.update handles NaN gracefully."""
+        import math
+        stats = ComboStats()
+        stats.update(float('nan'))
+
+        assert stats.trial_count == 1
+        assert stats.last_delta_eoi == 0.0
+        assert not math.isnan(stats.avg_delta_eoi)
+
+    def test_record_combo_result_with_valid_values(self) -> None:
+        """Test record_combo_result with valid eOI values."""
+        memory = SynergyExperienceMemory()
+        stats = memory.record_combo_result("state_1", "combo_A", 0.3, 0.5)
+
+        assert stats.trial_count == 1
+        assert stats.last_delta_eoi == pytest.approx(0.2)
+
+    def test_record_combo_result_with_nan_before(self) -> None:
+        """Test record_combo_result handles NaN in eoi_before."""
+        memory = SynergyExperienceMemory()
+        stats = memory.record_combo_result("state_1", "combo_A", float('nan'), 0.5)
+
+        assert stats.trial_count == 1
+        assert stats.last_delta_eoi == 0.0
+
+    def test_record_combo_result_with_nan_after(self) -> None:
+        """Test record_combo_result handles NaN in eoi_after."""
+        memory = SynergyExperienceMemory()
+        stats = memory.record_combo_result("state_1", "combo_A", 0.3, float('nan'))
+
+        assert stats.trial_count == 1
+        assert stats.last_delta_eoi == 0.0
+
+    def test_combo_stats_aliases(self) -> None:
+        """Test ComboStats property aliases work correctly."""
+        stats = ComboStats()
+        stats.update(0.5)
+        stats.update(0.3)
+
+        # Test aliases
+        assert stats.attempts == stats.trial_count
+        assert stats.mean_delta_eoi == stats.avg_delta_eoi
+        assert stats.ema_delta_eoi == stats.ema_effectiveness
+
+    def test_combo_stats_to_dict_has_all_fields(self) -> None:
+        """Test to_dict includes all expected fields."""
+        stats = ComboStats()
+        stats.update(0.5)
+        d = stats.to_dict()
+
+        # New field names
+        assert "attempts" in d
+        assert "mean_delta_eoi" in d
+        assert "ema_delta_eoi" in d
+
+        # Legacy field names for backward compatibility
+        assert "trial_count" in d
+        assert "avg_delta_eoi" in d
+        assert "ema_effectiveness" in d
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

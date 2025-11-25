@@ -1,4 +1,5 @@
 import hashlib
+import math
 from dataclasses import dataclass
 from threading import Lock
 
@@ -7,9 +8,17 @@ import numpy as np
 
 @dataclass
 class MemoryRetrieval:
+    """Result from a memory retrieval operation.
+
+    Attributes:
+        vector: The retrieved embedding vector
+        phase: The phase value associated with this memory
+        resonance: Cosine similarity score (higher = better match)
+    """
     vector: np.ndarray
     phase: float
     resonance: float
+
 
 class PhaseEntangledLatticeMemory:
     """
@@ -71,19 +80,52 @@ class PhaseEntangledLatticeMemory:
                 )
 
     def entangle(self, vector: list[float], phase: float) -> int:
+        """Store a vector with associated phase in memory.
+
+        Args:
+            vector: Embedding vector to store (must match dimension)
+            phase: Phase value in [0.0, 1.0] representing cognitive state
+
+        Returns:
+            Index where the vector was stored
+
+        Raises:
+            TypeError: If vector is not a list or phase is not numeric
+            ValueError: If vector dimension doesn't match, phase out of range,
+                       or vector contains NaN/inf values
+        """
         with self._lock:
             # Ensure integrity before operation
             self._ensure_integrity()
 
-            # Validate inputs
+            # Validate vector type
             if not isinstance(vector, list):
                 raise TypeError(f"vector must be a list, got {type(vector).__name__}")
             if len(vector) != self.dimension:
                 raise ValueError(
                     f"vector dimension mismatch: expected {self.dimension}, got {len(vector)}"
                 )
+
+            # Validate vector values (check for NaN/inf)
+            for i, val in enumerate(vector):
+                if not isinstance(val, (int, float)):
+                    raise TypeError(
+                        f"vector element at index {i} must be numeric, got {type(val).__name__}"
+                    )
+                if math.isnan(val) or math.isinf(val):
+                    raise ValueError(
+                        f"vector contains invalid value at index {i}: {val}. "
+                        "NaN and infinity are not allowed in memory vectors."
+                    )
+
+            # Validate phase type and range
             if not isinstance(phase, (int, float)):
                 raise TypeError(f"phase must be numeric, got {type(phase).__name__}")
+            if math.isnan(phase) or math.isinf(phase):
+                raise ValueError(
+                    f"phase must be a finite number, got {phase}. "
+                    "NaN and infinity are not allowed."
+                )
             if not (0.0 <= phase <= 1.0):
                 raise ValueError(
                     f"phase must be in [0.0, 1.0], got {phase}. "

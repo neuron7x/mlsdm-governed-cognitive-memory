@@ -519,14 +519,45 @@ class TestPELMInputValidation:
         # Test dimension error
         with pytest.raises(ValueError, match="Dimension determines the embedding vector size"):
             PhaseEntangledLatticeMemory(dimension=0, capacity=10)
-        
+
         # Test capacity error
         with pytest.raises(ValueError, match="maximum number of vectors"):
             PhaseEntangledLatticeMemory(dimension=10, capacity=0)
-        
+
         # Test large capacity error includes memory estimate
         with pytest.raises(ValueError, match="Estimated memory"):
             PhaseEntangledLatticeMemory(dimension=384, capacity=2_000_000)
+
+    def test_entangle_rejects_nan_in_vector(self):
+        """Test that entangle rejects vectors containing NaN."""
+        pelm = PhaseEntangledLatticeMemory(dimension=3, capacity=10)
+
+        with pytest.raises(ValueError, match="invalid value"):
+            pelm.entangle([1.0, float('nan'), 3.0], 0.5)
+
+    def test_entangle_rejects_inf_in_vector(self):
+        """Test that entangle rejects vectors containing infinity."""
+        pelm = PhaseEntangledLatticeMemory(dimension=3, capacity=10)
+
+        with pytest.raises(ValueError, match="invalid value"):
+            pelm.entangle([1.0, float('inf'), 3.0], 0.5)
+
+        with pytest.raises(ValueError, match="invalid value"):
+            pelm.entangle([float('-inf'), 2.0, 3.0], 0.5)
+
+    def test_entangle_rejects_nan_phase(self):
+        """Test that entangle rejects NaN phase."""
+        pelm = PhaseEntangledLatticeMemory(dimension=3, capacity=10)
+
+        with pytest.raises(ValueError, match="finite number"):
+            pelm.entangle([1.0, 2.0, 3.0], float('nan'))
+
+    def test_entangle_rejects_inf_phase(self):
+        """Test that entangle rejects infinite phase."""
+        pelm = PhaseEntangledLatticeMemory(dimension=3, capacity=10)
+
+        with pytest.raises(ValueError, match="finite number"):
+            pelm.entangle([1.0, 2.0, 3.0], float('inf'))
 
 
 if __name__ == "__main__":

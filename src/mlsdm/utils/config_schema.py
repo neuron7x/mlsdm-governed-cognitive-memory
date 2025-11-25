@@ -276,6 +276,88 @@ class NeuroLangConfig(BaseModel):
         return v
 
 
+class PELMConfig(BaseModel):
+    """Phase-Entangled Lattice Memory (PELM) configuration.
+
+    Controls the bounded phase-entangled lattice memory for vector storage
+    and phase-based retrieval.
+    """
+    capacity: int = Field(
+        default=20000,
+        ge=100,
+        le=1000000,
+        description="Maximum number of vectors to store. Higher values use more memory."
+    )
+    phase_tolerance: float = Field(
+        default=0.15,
+        ge=0.0,
+        le=1.0,
+        description="Default tolerance for phase matching during retrieval."
+    )
+
+    @model_validator(mode='after')
+    def validate_capacity(self) -> Self:
+        """Warn about large capacity values."""
+        if self.capacity > 100000:
+            logger.warning(
+                "Large PELM capacity configured: %d. "
+                "This may use significant memory (estimated: %.2f MB for dim=384). "
+                "Consider reducing if memory is constrained.",
+                self.capacity,
+                self.capacity * 384 * 4 / (1024 ** 2)
+            )
+        return self
+
+
+class SynergyExperienceConfig(BaseModel):
+    """Synergy Experience Learning configuration.
+
+    Controls the experience-based learning for combo/synergy actions.
+    """
+    epsilon: float = Field(
+        default=0.1,
+        ge=0.0,
+        le=1.0,
+        description="Exploration rate for ε-greedy selection. Higher = more exploration."
+    )
+    neutral_tolerance: float = Field(
+        default=0.01,
+        ge=0.0,
+        le=0.5,
+        description="Threshold for considering delta_eoi as neutral (no effect)."
+    )
+    min_trials_for_confidence: int = Field(
+        default=3,
+        ge=1,
+        le=100,
+        description="Minimum trials before trusting combo statistics."
+    )
+    ema_alpha: float = Field(
+        default=0.2,
+        ge=0.0,
+        le=1.0,
+        description="EMA smoothing factor. Higher = more weight on recent results."
+    )
+
+    @model_validator(mode='after')
+    def validate_parameters(self) -> Self:
+        """Warn about aggressive learning parameters."""
+        if self.epsilon > 0.5:
+            logger.warning(
+                "High exploration rate (epsilon=%.2f) configured. "
+                "This may result in suboptimal combo selection. "
+                "Typical values are 0.05-0.2.",
+                self.epsilon
+            )
+        if self.ema_alpha > 0.5:
+            logger.warning(
+                "High EMA alpha (%.2f) configured. "
+                "This makes the system very responsive to recent results but less stable.",
+                self.ema_alpha
+            )
+        return self
+
+
 class SystemConfig(BaseModel):
     """Complete system configuration.
 
@@ -310,6 +392,14 @@ class SystemConfig(BaseModel):
     neurolang: NeuroLangConfig = Field(
         default_factory=NeuroLangConfig,
         description="NeuroLang performance mode configuration."
+    )
+    pelm: PELMConfig = Field(
+        default_factory=PELMConfig,
+        description="Phase-Entangled Lattice Memory (PELM) configuration."
+    )
+    synergy_experience: SynergyExperienceConfig = Field(
+        default_factory=SynergyExperienceConfig,
+        description="Synergy experience learning configuration."
     )
     strict_mode: bool = Field(
         default=False,

@@ -16,6 +16,8 @@ from mlsdm.utils.config_schema import (
     MoralFilterConfig,
     MultiLevelMemoryConfig,
     OntologyMatcherConfig,
+    PELMConfig,
+    SynergyExperienceConfig,
     SystemConfig,
     get_default_config,
     validate_config_dict,
@@ -418,6 +420,170 @@ class TestConfigSerialization:
         config2 = SystemConfig(**data)
         assert config2.dimension == config1.dimension
         assert config2.moral_filter.threshold == config1.moral_filter.threshold
+
+
+class TestPELMConfig:
+    """Tests for PELMConfig validation."""
+
+    def test_default_values(self):
+        """Test default PELM configuration."""
+        config = PELMConfig()
+        assert config.capacity == 20000
+        assert config.phase_tolerance == 0.15
+
+    def test_valid_capacity_range(self):
+        """Test valid capacity values."""
+        config = PELMConfig(capacity=100)
+        assert config.capacity == 100
+
+        config = PELMConfig(capacity=1000000)
+        assert config.capacity == 1000000
+
+    def test_invalid_capacity_too_small(self):
+        """Test capacity below minimum."""
+        with pytest.raises(ValidationError):
+            PELMConfig(capacity=50)
+
+    def test_invalid_capacity_too_large(self):
+        """Test capacity above maximum."""
+        with pytest.raises(ValidationError):
+            PELMConfig(capacity=2000000)
+
+    def test_valid_phase_tolerance(self):
+        """Test valid phase tolerance values."""
+        config = PELMConfig(phase_tolerance=0.0)
+        assert config.phase_tolerance == 0.0
+
+        config = PELMConfig(phase_tolerance=1.0)
+        assert config.phase_tolerance == 1.0
+
+    def test_invalid_phase_tolerance(self):
+        """Test invalid phase tolerance values."""
+        with pytest.raises(ValidationError):
+            PELMConfig(phase_tolerance=-0.1)
+
+        with pytest.raises(ValidationError):
+            PELMConfig(phase_tolerance=1.5)
+
+    def test_large_capacity_warning(self, caplog):
+        """Test that large capacity triggers warning."""
+        import logging
+        caplog.set_level(logging.WARNING)
+
+        config = PELMConfig(capacity=200000)
+        assert config.capacity == 200000
+        assert "Large PELM capacity configured" in caplog.text
+
+
+class TestSynergyExperienceConfig:
+    """Tests for SynergyExperienceConfig validation."""
+
+    def test_default_values(self):
+        """Test default synergy experience configuration."""
+        config = SynergyExperienceConfig()
+        assert config.epsilon == 0.1
+        assert config.neutral_tolerance == 0.01
+        assert config.min_trials_for_confidence == 3
+        assert config.ema_alpha == 0.2
+
+    def test_valid_epsilon_range(self):
+        """Test valid epsilon values."""
+        config = SynergyExperienceConfig(epsilon=0.0)
+        assert config.epsilon == 0.0
+
+        config = SynergyExperienceConfig(epsilon=1.0)
+        assert config.epsilon == 1.0
+
+    def test_invalid_epsilon(self):
+        """Test invalid epsilon values."""
+        with pytest.raises(ValidationError):
+            SynergyExperienceConfig(epsilon=-0.1)
+
+        with pytest.raises(ValidationError):
+            SynergyExperienceConfig(epsilon=1.5)
+
+    def test_valid_neutral_tolerance(self):
+        """Test valid neutral tolerance values."""
+        config = SynergyExperienceConfig(neutral_tolerance=0.0)
+        assert config.neutral_tolerance == 0.0
+
+        config = SynergyExperienceConfig(neutral_tolerance=0.5)
+        assert config.neutral_tolerance == 0.5
+
+    def test_invalid_neutral_tolerance(self):
+        """Test invalid neutral tolerance values."""
+        with pytest.raises(ValidationError):
+            SynergyExperienceConfig(neutral_tolerance=-0.1)
+
+        with pytest.raises(ValidationError):
+            SynergyExperienceConfig(neutral_tolerance=0.6)
+
+    def test_valid_min_trials(self):
+        """Test valid min_trials_for_confidence values."""
+        config = SynergyExperienceConfig(min_trials_for_confidence=1)
+        assert config.min_trials_for_confidence == 1
+
+        config = SynergyExperienceConfig(min_trials_for_confidence=100)
+        assert config.min_trials_for_confidence == 100
+
+    def test_invalid_min_trials(self):
+        """Test invalid min_trials_for_confidence values."""
+        with pytest.raises(ValidationError):
+            SynergyExperienceConfig(min_trials_for_confidence=0)
+
+        with pytest.raises(ValidationError):
+            SynergyExperienceConfig(min_trials_for_confidence=101)
+
+    def test_high_epsilon_warning(self, caplog):
+        """Test that high epsilon triggers warning."""
+        import logging
+        caplog.set_level(logging.WARNING)
+
+        config = SynergyExperienceConfig(epsilon=0.7)
+        assert config.epsilon == 0.7
+        assert "High exploration rate" in caplog.text
+
+    def test_high_ema_alpha_warning(self, caplog):
+        """Test that high EMA alpha triggers warning."""
+        import logging
+        caplog.set_level(logging.WARNING)
+
+        config = SynergyExperienceConfig(ema_alpha=0.8)
+        assert config.ema_alpha == 0.8
+        assert "High EMA alpha" in caplog.text
+
+
+class TestSystemConfigWithNewSections:
+    """Tests for SystemConfig with PELM and SynergyExperience sections."""
+
+    def test_default_includes_new_sections(self):
+        """Test that default SystemConfig includes PELM and SynergyExperience."""
+        config = get_default_config()
+        assert hasattr(config, 'pelm')
+        assert hasattr(config, 'synergy_experience')
+        assert config.pelm.capacity == 20000
+        assert config.synergy_experience.epsilon == 0.1
+
+    def test_custom_pelm_config(self):
+        """Test SystemConfig with custom PELM configuration."""
+        config = SystemConfig(
+            pelm=PELMConfig(capacity=50000, phase_tolerance=0.2)
+        )
+        assert config.pelm.capacity == 50000
+        assert config.pelm.phase_tolerance == 0.2
+
+    def test_custom_synergy_experience_config(self):
+        """Test SystemConfig with custom SynergyExperience configuration."""
+        config = SystemConfig(
+            synergy_experience=SynergyExperienceConfig(
+                epsilon=0.2,
+                neutral_tolerance=0.05,
+                min_trials_for_confidence=5
+            )
+        )
+        assert config.synergy_experience.epsilon == 0.2
+        assert config.synergy_experience.neutral_tolerance == 0.05
+        assert config.synergy_experience.min_trials_for_confidence == 5
 
 
 if __name__ == "__main__":

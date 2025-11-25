@@ -8,13 +8,20 @@ This module implements a learning layer for combo/synergy actions that:
 
 The system follows an ε-greedy exploration strategy with experience-based
 weight adjustment.
+
+Key components:
+- ComboStats: Stores per-combo statistics (attempts, mean_delta_eoi, last_delta_eoi, ema_delta_eoi)
+- SynergyExperienceMemory: Maps (state_signature, combo_id) -> ComboStats
+- compute_eoi: Pure function to calculate estimated Objective Index
+- create_state_signature: Pure function to discretize state for lookup
 """
 
 from __future__ import annotations
 
 import logging
+import math
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from threading import Lock
 from typing import Any
 
@@ -24,21 +31,56 @@ logger = logging.getLogger(__name__)
 EPSILON = 1e-9
 
 
+def _sanitize_delta_eoi(value: float | None) -> float:
+    """Sanitize delta_eoi value, converting NaN/inf/None to 0.0.
+
+    Args:
+        value: The delta_eoi value to sanitize
+
+    Returns:
+        Sanitized float value (0.0 for invalid inputs)
+    """
+    if value is None:
+        return 0.0
+    if math.isnan(value) or math.isinf(value):
+        return 0.0
+    return float(value)
+
+
 @dataclass
 class ComboStats:
     """Statistics for a single combo action.
 
-    Tracks the effectiveness of a combo over multiple trials, including:
-    - Number of times tried
-    - Average and last delta_eoi values
-    - Exponential moving average for recent effectiveness
+    Stores the effectiveness metrics for a combo across multiple trials:
+    - attempts: Number of times this combo has been executed
+    - mean_delta_eoi: Average eOI change across all trials
+    - last_delta_eoi: Most recent eOI change
+    - ema_delta_eoi: Exponentially weighted moving average of recent effectiveness
+
+    The EMA gives more weight to recent results, making the policy more responsive
+    to changing conditions.
     """
 
     trial_count: int = 0
     total_delta_eoi: float = 0.0
     last_delta_eoi: float = 0.0
     ema_effectiveness: float = 0.0
-    _ema_alpha: float = 0.2  # EMA smoothing factor
+    _ema_alpha: float = field(default=0.2, repr=False)  # EMA smoothing factor
+
+    @property
+    def attempts(self) -> int:
+        """Number of attempts (alias for trial_count)."""
+        return self.trial_count
+
+    @property
+    def mean_delta_eoi(self) -> float:
+        """Mean delta_eoi across all trials (alias for avg_delta_eoi)."""
+        return self.avg_delta_eoi
+
+    @property
+    def ema_delta_eoi(self) -> float:
+        """EMA of delta_eoi (alias for ema_effectiveness)."""
+        return self.ema_effectiveness
 
     @property
     def avg_delta_eoi(self) -> float:
@@ -51,8 +93,18 @@ class ComboStats:
         """Update stats with a new trial result.
 
         Args:
-            delta_eoi: The change in eOI (eOI_after - eOI_before)
+            delta_eoi: The change in eOI (eOI_after - eOI_before).
+                       NaN/inf values are treated as 0.0 with a warning.
         """
+        # Sanitize input
+        sanitized = _sanitize_delta_eoi(delta_eoi)
+        if sanitized != delta_eoi:
+            logger.warning(
+                "ComboStats.update received invalid delta_eoi=%s, treating as 0.0",
+                delta_eoi,
+            )
+            delta_eoi = sanitized
+
         self.trial_count += 1
         self.total_delta_eoi += delta_eoi
         self.last_delta_eoi = delta_eoi
@@ -67,11 +119,23 @@ class ComboStats:
             )
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize stats to dictionary."""
+        """Serialize stats to dictionary.
+
+        Returns:
+            Dictionary containing:
+            - attempts: Number of trials
+            - mean_delta_eoi: Average delta_eoi
+            - last_delta_eoi: Most recent delta_eoi
+            - ema_delta_eoi: EMA of delta_eoi
+        """
         return {
+            "attempts": self.attempts,
+            "mean_delta_eoi": self.mean_delta_eoi,
+            "last_delta_eoi": self.last_delta_eoi,
+            "ema_delta_eoi": self.ema_delta_eoi,
+            # Legacy aliases for backward compatibility
             "trial_count": self.trial_count,
             "avg_delta_eoi": self.avg_delta_eoi,
-            "last_delta_eoi": self.last_delta_eoi,
             "ema_effectiveness": self.ema_effectiveness,
         }
 
@@ -137,6 +201,15 @@ class SynergyExperienceMemory:
         Returns:
             The updated ComboStats for this state-combo pair
         """
+        # Sanitize delta_eoi
+        sanitized_delta = _sanitize_delta_eoi(delta_eoi)
+        if sanitized_delta != delta_eoi:
+            logger.warning(
+                "update_experience received invalid delta_eoi=%s for combo=%s, treating as 0.0",
+                delta_eoi, combo_id,
+            )
+            delta_eoi = sanitized_delta
+
         key = (state_signature, combo_id)
 
         with self._lock:
@@ -157,17 +230,58 @@ class SynergyExperienceMemory:
 
             logger.debug(
                 "SynergyExperience update: state=%s combo=%s delta_eoi=%.4f (%s) "
-                "trials=%d avg=%.4f ema=%.4f",
+                "attempts=%d mean=%.4f ema=%.4f",
                 state_signature,
                 combo_id,
                 delta_eoi,
                 classification,
-                stats.trial_count,
-                stats.avg_delta_eoi,
-                stats.ema_effectiveness,
+                stats.attempts,
+                stats.mean_delta_eoi,
+                stats.ema_delta_eoi,
             )
 
             return stats
+
+    def record_combo_result(
+        self,
+        state_signature: str,
+        combo_id: str,
+        eoi_before: float,
+        eoi_after: float,
+    ) -> ComboStats:
+        """Record the result of executing a combo action.
+
+        This is the primary interface for updating experience. It computes
+        delta_eoi = eoi_after - eoi_before and updates the stats.
+
+        Args:
+            state_signature: A signature identifying the current state
+            combo_id: Identifier for the combo action
+            eoi_before: eOI value before the combo was executed
+            eoi_after: eOI value after the combo was executed
+
+        Returns:
+            The updated ComboStats for this state-combo pair
+
+        Note:
+            Invalid values (NaN, inf, None) in eoi_before or eoi_after
+            result in delta_eoi being treated as 0.0 with a warning logged.
+        """
+        # Sanitize inputs
+        before = _sanitize_delta_eoi(eoi_before)
+        after = _sanitize_delta_eoi(eoi_after)
+
+        if before != eoi_before or after != eoi_after:
+            logger.warning(
+                "record_combo_result received invalid eOI values: before=%s, after=%s "
+                "for combo=%s. Treating as 0.0.",
+                eoi_before, eoi_after, combo_id,
+            )
+            delta_eoi = 0.0
+        else:
+            delta_eoi = after - before
+
+        return self.update_experience(state_signature, combo_id, delta_eoi)
 
     def get_experience(
         self,
