@@ -98,7 +98,11 @@ def test_neurolang_wrapper_allowed_when_disabled_without_torch():
             return "This is a proper full sentence response."
 
         def mock_embedder(text: str) -> np.ndarray:
-            return np.random.randn(384).astype(np.float32)
+            # Use deterministic embeddings based on text hash for reproducibility
+            seed = hash(text) % (2**31)
+            rng = np.random.RandomState(seed)
+            vec = rng.randn(384).astype(np.float32)
+            return vec / np.linalg.norm(vec)  # Normalize
 
         # Create NeuroLangWrapper with neurolang_mode disabled - should work
         wrapper = NeuroLangWrapper(
@@ -146,7 +150,11 @@ def test_neurolang_wrapper_with_torch_enabled():
         return "This is a proper full sentence response with good grammar."
 
     def mock_embedder(text: str) -> np.ndarray:
-        return np.random.randn(384).astype(np.float32)
+        # Use deterministic embeddings based on text hash for reproducibility
+        seed = hash(text) % (2**31)
+        rng = np.random.RandomState(seed)
+        vec = rng.randn(384).astype(np.float32)
+        return vec / np.linalg.norm(vec)  # Normalize
 
     # Create NeuroLangWrapper with neurolang_mode enabled - should work with torch
     wrapper = NeuroLangWrapper(

@@ -12,6 +12,11 @@ from dataclasses import dataclass
 
 LOGGER_NAME = "mlsdm.aphasia"
 
+# Configure the aphasia logger with INFO level
+# This ensures logs are emitted even without explicit handler configuration
+_aphasia_logger = logging.getLogger(LOGGER_NAME)
+_aphasia_logger.setLevel(logging.INFO)
+
 
 @dataclass
 class AphasiaLogEvent:
