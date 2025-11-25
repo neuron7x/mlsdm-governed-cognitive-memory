@@ -103,14 +103,14 @@ def stub_embedding(text: str) -> np.ndarray:
 # ============================================================================
 
 
-def compute_percentiles(values: list[float]) -> dict[str, float]:
+def compute_percentiles(values: list[float]) -> dict[str, float | int]:
     """Compute percentile statistics.
 
     Args:
         values: List of latency values in milliseconds
 
     Returns:
-        Dictionary with p50, p95, p99 percentiles
+        Dictionary with p50, p95, p99 percentiles and count
     """
     if not values:
         return {
