@@ -9,6 +9,14 @@ from mlsdm.core.cognitive_controller import CognitiveController
 from mlsdm.core.llm_wrapper import LLMWrapper
 from mlsdm.observability.aphasia_logging import AphasiaLogEvent, log_aphasia_event
 
+# Import calibration defaults - these can be overridden via config
+try:
+    from config.calibration import APHASIA_DEFAULTS, SECURE_MODE_DEFAULTS
+except ImportError:
+    # Fallback if calibration module not available
+    APHASIA_DEFAULTS = None
+    SECURE_MODE_DEFAULTS = None
+
 # Lazy import of PyTorch dependencies - only needed for NeuroLang mode
 try:
     import torch
@@ -44,7 +52,17 @@ def is_secure_mode_enabled() -> bool:
     Returns:
         bool: True if secure mode is enabled, False otherwise
     """
-    return os.getenv("MLSDM_SECURE_MODE", "0") in {"1", "true", "TRUE"}
+    env_var = (
+        SECURE_MODE_DEFAULTS.env_var_name
+        if SECURE_MODE_DEFAULTS
+        else "MLSDM_SECURE_MODE"
+    )
+    enabled_values = (
+        SECURE_MODE_DEFAULTS.enabled_values
+        if SECURE_MODE_DEFAULTS
+        else ("1", "true", "TRUE")
+    )
+    return os.getenv(env_var, "0") in enabled_values
 
 
 def safe_load_neurolang_checkpoint(path: str | None, device: Any) -> dict[str, Any] | None:
@@ -325,12 +343,34 @@ if TORCH_AVAILABLE:
 
 # AphasiaBrocaDetector does NOT depend on torch - keep it outside the conditional block
 class AphasiaBrocaDetector:
+    # Default values from calibration
+    DEFAULT_MIN_SENTENCE_LEN = (
+        APHASIA_DEFAULTS.min_sentence_len if APHASIA_DEFAULTS else 6.0
+    )
+    DEFAULT_MIN_FUNCTION_WORD_RATIO = (
+        APHASIA_DEFAULTS.min_function_word_ratio if APHASIA_DEFAULTS else 0.15
+    )
+    DEFAULT_MAX_FRAGMENT_RATIO = (
+        APHASIA_DEFAULTS.max_fragment_ratio if APHASIA_DEFAULTS else 0.5
+    )
+    DEFAULT_FRAGMENT_LENGTH_THRESHOLD = (
+        APHASIA_DEFAULTS.fragment_length_threshold if APHASIA_DEFAULTS else 4
+    )
+
     def __init__(
         self,
-        min_sentence_len=6.0,
-        min_function_word_ratio=0.15,
-        max_fragment_ratio=0.5,
+        min_sentence_len: float | None = None,
+        min_function_word_ratio: float | None = None,
+        max_fragment_ratio: float | None = None,
     ):
+        # Use calibration defaults if not specified
+        if min_sentence_len is None:
+            min_sentence_len = self.DEFAULT_MIN_SENTENCE_LEN
+        if min_function_word_ratio is None:
+            min_function_word_ratio = self.DEFAULT_MIN_FUNCTION_WORD_RATIO
+        if max_fragment_ratio is None:
+            max_fragment_ratio = self.DEFAULT_MAX_FRAGMENT_RATIO
+
         self.function_words = {
             "the",
             "a",
@@ -362,6 +402,7 @@ class AphasiaBrocaDetector:
         self.min_sentence_len = float(min_sentence_len)
         self.min_function_word_ratio = float(min_function_word_ratio)
         self.max_fragment_ratio = float(max_fragment_ratio)
+        self.fragment_length_threshold = self.DEFAULT_FRAGMENT_LENGTH_THRESHOLD
 
     def analyze(self, text):
         cleaned = text.strip()
@@ -392,7 +433,7 @@ class AphasiaBrocaDetector:
             tokens = [t.lower() for t in sent.split() if t.strip()]
             length = len(tokens)
             total_tokens += length
-            if length < 4:
+            if length < self.fragment_length_threshold:
                 fragment_sentences += 1
             function_tokens += sum(1 for t in tokens if t in self.function_words)
         if total_tokens == 0:
@@ -449,11 +490,19 @@ class AphasiaSpeechGovernor:
     an LLM-based repair strategy.
     """
 
+    # Default values from calibration
+    DEFAULT_SEVERITY_THRESHOLD = (
+        APHASIA_DEFAULTS.severity_threshold if APHASIA_DEFAULTS else 0.3
+    )
+    DEFAULT_REPAIR_ENABLED = (
+        APHASIA_DEFAULTS.repair_enabled if APHASIA_DEFAULTS else True
+    )
+
     def __init__(
         self,
         detector: "AphasiaBrocaDetector",
-        repair_enabled: bool = True,
-        severity_threshold: float = 0.3,
+        repair_enabled: bool | None = None,
+        severity_threshold: float | None = None,
         llm_generate_fn: Any = None,
     ):
         """
@@ -461,13 +510,17 @@ class AphasiaSpeechGovernor:
 
         Args:
             detector: AphasiaBrocaDetector instance for analysis
-            repair_enabled: Whether to repair detected aphasia (default True)
-            severity_threshold: Minimum severity to trigger repair (default 0.3)
+            repair_enabled: Whether to repair detected aphasia (default from calibration)
+            severity_threshold: Minimum severity to trigger repair (default from calibration)
             llm_generate_fn: LLM function for repair; required if repair_enabled
         """
         self._detector = detector
-        self._repair_enabled = repair_enabled
-        self._severity_threshold = severity_threshold
+        self._repair_enabled = (
+            repair_enabled if repair_enabled is not None else self.DEFAULT_REPAIR_ENABLED
+        )
+        self._severity_threshold = (
+            severity_threshold if severity_threshold is not None else self.DEFAULT_SEVERITY_THRESHOLD
+        )
         self._llm_generate_fn = llm_generate_fn
 
     def __call__(self, *, prompt: str, draft: str, max_tokens: int) -> Any:

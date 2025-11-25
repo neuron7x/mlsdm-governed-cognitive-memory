@@ -5,6 +5,13 @@ from threading import Lock
 
 import numpy as np
 
+# Import calibration defaults - these can be overridden via config
+try:
+    from config.calibration import PELM_DEFAULTS
+except ImportError:
+    # Fallback if calibration module not available
+    PELM_DEFAULTS = None
+
 
 @dataclass
 class MemoryRetrieval:
@@ -33,7 +40,18 @@ class PhaseEntangledLatticeMemory:
     by quantum concepts but operates entirely in classical embedding space.
     """
 
-    def __init__(self, dimension: int = 384, capacity: int = 20000) -> None:
+    # Default values from calibration
+    DEFAULT_CAPACITY = PELM_DEFAULTS.default_capacity if PELM_DEFAULTS else 20_000
+    MAX_CAPACITY = PELM_DEFAULTS.max_capacity if PELM_DEFAULTS else 1_000_000
+    DEFAULT_PHASE_TOLERANCE = PELM_DEFAULTS.phase_tolerance if PELM_DEFAULTS else 0.15
+    DEFAULT_TOP_K = PELM_DEFAULTS.default_top_k if PELM_DEFAULTS else 5
+    MIN_NORM_THRESHOLD = PELM_DEFAULTS.min_norm_threshold if PELM_DEFAULTS else 1e-9
+
+    def __init__(self, dimension: int = 384, capacity: int | None = None) -> None:
+        # Use calibration default if not specified
+        if capacity is None:
+            capacity = self.DEFAULT_CAPACITY
+
         # Validate inputs
         if dimension <= 0:
             raise ValueError(
@@ -45,9 +63,9 @@ class PhaseEntangledLatticeMemory:
                 f"capacity must be positive, got {capacity}. "
                 "Capacity determines the maximum number of vectors that can be stored in memory."
             )
-        if capacity > 1_000_000:
+        if capacity > self.MAX_CAPACITY:
             raise ValueError(
-                f"capacity too large (max 1,000,000), got {capacity}. "
+                f"capacity too large (max {self.MAX_CAPACITY:,}), got {capacity}. "
                 "Large capacities may cause excessive memory usage. "
                 f"Estimated memory: {capacity * dimension * 4 / (1024**2):.2f} MB"
             )
@@ -133,7 +151,7 @@ class PhaseEntangledLatticeMemory:
                 )
 
             vec_np = np.array(vector, dtype=np.float32)
-            norm = float(np.linalg.norm(vec_np) or 1e-9)
+            norm = float(np.linalg.norm(vec_np) or self.MIN_NORM_THRESHOLD)
             idx = self.pointer
             self.memory_bank[idx] = vec_np
             self.phase_bank[idx] = phase
@@ -152,7 +170,19 @@ class PhaseEntangledLatticeMemory:
 
             return idx
 
-    def retrieve(self, query_vector: list[float], current_phase: float, phase_tolerance: float = 0.15, top_k: int = 5) -> list[MemoryRetrieval]:
+    def retrieve(
+        self,
+        query_vector: list[float],
+        current_phase: float,
+        phase_tolerance: float | None = None,
+        top_k: int | None = None,
+    ) -> list[MemoryRetrieval]:
+        # Use calibration defaults if not specified
+        if phase_tolerance is None:
+            phase_tolerance = self.DEFAULT_PHASE_TOLERANCE
+        if top_k is None:
+            top_k = self.DEFAULT_TOP_K
+
         with self._lock:
             # Ensure integrity before operation
             self._ensure_integrity()
@@ -161,8 +191,8 @@ class PhaseEntangledLatticeMemory:
                 return []
             q_vec = np.array(query_vector, dtype=np.float32)
             q_norm = float(np.linalg.norm(q_vec))
-            if q_norm < 1e-9:
-                q_norm = 1e-9
+            if q_norm < self.MIN_NORM_THRESHOLD:
+                q_norm = self.MIN_NORM_THRESHOLD
 
             # Optimize: use in-place operations and avoid intermediate arrays
             phase_diff = np.abs(self.phase_bank[:self.size] - current_phase)

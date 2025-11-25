@@ -821,8 +821,99 @@ except ValueError as e:
 - [Deployment Guide](DEPLOYMENT_GUIDE.md) - Production deployment patterns
 - [API Reference](API_REFERENCE.md) - API documentation
 - [Testing Strategy](TESTING_STRATEGY.md) - Testing configurations
+- [Calibration Map](docs/CALIBRATION_MAP.md) - Complete threshold inventory
+- [Calibration Results](docs/CALIBRATION_RESULTS.md) - Benchmark results
 - Schema source: `mlsdm/utils/config_schema.py`
 - Loader source: `mlsdm/utils/config_loader.py`
+- Calibration source: `config/calibration.py`
+
+---
+
+## Calibration & Sensitivity
+
+This section describes how thresholds and sensitivity parameters are calibrated in MLSDM.
+
+### Overview
+
+All key thresholds and sensitivity parameters are centralized in `config/calibration.py`. This module provides:
+
+1. **Default calibrated values** - Baseline values validated through benchmark testing
+2. **Documentation** - Each parameter has clear descriptions of its role and direction of effect
+3. **Type safety** - All parameters are defined in dataclasses with type hints
+
+### Parameter Categories
+
+| Category | Role | Key Parameters |
+|----------|------|----------------|
+| Moral Filter | SAFETY | `threshold`, `min_threshold`, `max_threshold`, `dead_band`, `ema_alpha` |
+| Aphasia Detector | QUALITY | `min_sentence_len`, `min_function_word_ratio`, `severity_threshold` |
+| Secure Mode | SAFETY | `env_var_name`, `enabled_values` |
+| PELM | MEMORY | `phase_tolerance`, `top_k`, `capacity` |
+| Synaptic Memory | MEMORY | `lambda_l1/l2/l3`, `theta_l1/l2`, `gating12/23` |
+| Reliability | PERF | `circuit_breaker_*`, `llm_timeout`, `retry_attempts` |
+
+### Calibration Workflow
+
+1. **Run calibration benchmarks**:
+   ```bash
+   python scripts/run_calibration_benchmarks.py
+   ```
+
+2. **Analyze results** in `docs/CALIBRATION_RESULTS.md`
+
+3. **Adjust parameters** in `config/calibration.py` or override via config/env
+
+4. **Verify changes** with test suite:
+   ```bash
+   pytest tests/ --ignore=tests/load
+   ```
+
+### Direction of Effect
+
+Each parameter has a documented "direction of effect":
+
+- **↑** (increase) = stricter/more sensitive
+- **↓** (decrease) = more permissive/less sensitive
+
+Example for `moral_filter.threshold`:
+- ↑ stricter: More content rejected (higher false positives)
+- ↓ permissive: More content accepted (higher false negatives)
+
+### Safety-Critical Parameters
+
+The following parameters are critical for safety and should be changed with extreme caution:
+
+| Parameter | Default | Risk if Misconfigured |
+|-----------|---------|----------------------|
+| `moral_filter.threshold` | 0.50 | Too low → toxic content passes |
+| `moral_filter.min_threshold` | 0.30 | Floor for adaptive lowering |
+| `aphasia.severity_threshold` | 0.30 | Too high → broken responses pass |
+| `secure_mode.enabled_values` | ("1", "true", "TRUE") | Wrong values → security bypass |
+
+### Overriding Calibration Values
+
+Calibration defaults can be overridden at three levels (in order of precedence):
+
+1. **Environment variables** (highest priority):
+   ```bash
+   export MLSDM_MORAL_FILTER__THRESHOLD=0.6
+   export MLSDM_APHASIA__SEVERITY_THRESHOLD=0.4
+   ```
+
+2. **Config files**:
+   ```yaml
+   moral_filter:
+     threshold: 0.6
+   aphasia:
+     severity_threshold: 0.4
+   ```
+
+3. **Calibration module** (config/calibration.py) - baseline defaults
+
+### Documentation References
+
+- [CALIBRATION_MAP.md](docs/CALIBRATION_MAP.md) - Complete parameter inventory with locations
+- [CALIBRATION_RESULTS.md](docs/CALIBRATION_RESULTS.md) - Benchmark results and tuning guidance
 
 ---
 

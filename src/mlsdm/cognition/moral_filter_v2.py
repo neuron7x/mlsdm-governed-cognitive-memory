@@ -1,13 +1,27 @@
 import numpy as np
 
+# Import calibration defaults - these can be overridden via config
+try:
+    from config.calibration import MORAL_FILTER_DEFAULTS
+except ImportError:
+    # Fallback if calibration module not available
+    MORAL_FILTER_DEFAULTS = None
+
 
 class MoralFilterV2:
-    MIN_THRESHOLD = 0.30
-    MAX_THRESHOLD = 0.90
-    DEAD_BAND = 0.05
-    EMA_ALPHA = 0.1
+    # Default class-level constants (overridden by calibration if available)
+    MIN_THRESHOLD = MORAL_FILTER_DEFAULTS.min_threshold if MORAL_FILTER_DEFAULTS else 0.30
+    MAX_THRESHOLD = MORAL_FILTER_DEFAULTS.max_threshold if MORAL_FILTER_DEFAULTS else 0.90
+    DEAD_BAND = MORAL_FILTER_DEFAULTS.dead_band if MORAL_FILTER_DEFAULTS else 0.05
+    EMA_ALPHA = MORAL_FILTER_DEFAULTS.ema_alpha if MORAL_FILTER_DEFAULTS else 0.1
 
-    def __init__(self, initial_threshold: float = 0.50) -> None:
+    def __init__(self, initial_threshold: float | None = None) -> None:
+        # Use calibration default if not specified
+        if initial_threshold is None:
+            initial_threshold = (
+                MORAL_FILTER_DEFAULTS.threshold if MORAL_FILTER_DEFAULTS else 0.50
+            )
+
         # Validate input
         if not isinstance(initial_threshold, (int, float)):
             raise TypeError(f"initial_threshold must be a number, got {type(initial_threshold).__name__}")

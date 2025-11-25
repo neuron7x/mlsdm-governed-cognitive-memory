@@ -32,6 +32,19 @@ from ..memory.phase_entangled_lattice_memory import PhaseEntangledLatticeMemory
 from ..rhythm.cognitive_rhythm import CognitiveRhythm
 from ..speech.governance import SpeechGovernanceResult, SpeechGovernor
 
+# Import calibration defaults - these can be overridden via config
+try:
+    from config.calibration import (
+        COGNITIVE_RHYTHM_DEFAULTS,
+        PELM_DEFAULTS,
+        RELIABILITY_DEFAULTS,
+    )
+except ImportError:
+    # Fallback if calibration module not available
+    COGNITIVE_RHYTHM_DEFAULTS = None
+    PELM_DEFAULTS = None
+    RELIABILITY_DEFAULTS = None
+
 _logger = logging.getLogger(__name__)
 
 
@@ -45,15 +58,44 @@ class CircuitBreakerState(Enum):
 class CircuitBreaker:
     """Circuit breaker for embedding function failures."""
 
+    # Default values from calibration
+    DEFAULT_FAILURE_THRESHOLD = (
+        RELIABILITY_DEFAULTS.circuit_breaker_failure_threshold
+        if RELIABILITY_DEFAULTS
+        else 5
+    )
+    DEFAULT_RECOVERY_TIMEOUT = (
+        RELIABILITY_DEFAULTS.circuit_breaker_recovery_timeout
+        if RELIABILITY_DEFAULTS
+        else 60.0
+    )
+    DEFAULT_SUCCESS_THRESHOLD = (
+        RELIABILITY_DEFAULTS.circuit_breaker_success_threshold
+        if RELIABILITY_DEFAULTS
+        else 2
+    )
+
     def __init__(
         self,
-        failure_threshold: int = 5,
-        recovery_timeout: float = 60.0,
-        success_threshold: int = 2
+        failure_threshold: int | None = None,
+        recovery_timeout: float | None = None,
+        success_threshold: int | None = None,
     ):
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.success_threshold = success_threshold
+        self.failure_threshold = (
+            failure_threshold
+            if failure_threshold is not None
+            else self.DEFAULT_FAILURE_THRESHOLD
+        )
+        self.recovery_timeout = (
+            recovery_timeout
+            if recovery_timeout is not None
+            else self.DEFAULT_RECOVERY_TIMEOUT
+        )
+        self.success_threshold = (
+            success_threshold
+            if success_threshold is not None
+            else self.DEFAULT_SUCCESS_THRESHOLD
+        )
 
         self.failure_count = 0
         self.success_count = 0
@@ -129,21 +171,44 @@ class LLMWrapper:
         )
     """
 
-    MAX_WAKE_TOKENS = 2048
-    MAX_SLEEP_TOKENS = 150  # Forced short responses during sleep
+    # Default values from calibration
+    MAX_WAKE_TOKENS = (
+        COGNITIVE_RHYTHM_DEFAULTS.max_wake_tokens
+        if COGNITIVE_RHYTHM_DEFAULTS
+        else 2048
+    )
+    MAX_SLEEP_TOKENS = (
+        COGNITIVE_RHYTHM_DEFAULTS.max_sleep_tokens
+        if COGNITIVE_RHYTHM_DEFAULTS
+        else 150
+    )  # Forced short responses during sleep
+    DEFAULT_LLM_TIMEOUT = (
+        RELIABILITY_DEFAULTS.llm_timeout if RELIABILITY_DEFAULTS else 30.0
+    )
+    DEFAULT_LLM_RETRY_ATTEMPTS = (
+        RELIABILITY_DEFAULTS.llm_retry_attempts if RELIABILITY_DEFAULTS else 3
+    )
+    DEFAULT_PELM_FAILURE_THRESHOLD = (
+        RELIABILITY_DEFAULTS.pelm_failure_threshold if RELIABILITY_DEFAULTS else 3
+    )
+    DEFAULT_PHASE_TOLERANCE = (
+        PELM_DEFAULTS.phase_tolerance if PELM_DEFAULTS else 0.15
+    )
+    WAKE_PHASE = PELM_DEFAULTS.wake_phase if PELM_DEFAULTS else 0.1
+    SLEEP_PHASE = PELM_DEFAULTS.sleep_phase if PELM_DEFAULTS else 0.9
 
     def __init__(
         self,
         llm_generate_fn: Callable[[str, int], str],
         embedding_fn: Callable[[str], np.ndarray],
         dim: int = 384,
-        capacity: int = 20_000,
-        wake_duration: int = 8,
-        sleep_duration: int = 3,
-        initial_moral_threshold: float = 0.50,
-        llm_timeout: float = 30.0,
-        llm_retry_attempts: int = 3,
-        speech_governor: SpeechGovernor | None = None
+        capacity: int | None = None,
+        wake_duration: int | None = None,
+        sleep_duration: int | None = None,
+        initial_moral_threshold: float | None = None,
+        llm_timeout: float | None = None,
+        llm_retry_attempts: int | None = None,
+        speech_governor: SpeechGovernor | None = None,
     ):
         """
         Initialize the LLM wrapper with cognitive governance.
@@ -152,14 +217,34 @@ class LLMWrapper:
             llm_generate_fn: Function that takes (prompt, max_tokens) and returns response
             embedding_fn: Function that takes text and returns embedding vector
             dim: Embedding dimension (default 384)
-            capacity: Maximum memory vectors (default 20,000)
-            wake_duration: Wake cycle duration in steps (default 8)
-            sleep_duration: Sleep cycle duration in steps (default 3)
-            initial_moral_threshold: Starting moral threshold (default 0.50)
-            llm_timeout: Timeout for LLM calls in seconds (default 30.0)
-            llm_retry_attempts: Number of retry attempts for LLM calls (default 3)
+            capacity: Maximum memory vectors (default from calibration)
+            wake_duration: Wake cycle duration in steps (default from calibration)
+            sleep_duration: Sleep cycle duration in steps (default from calibration)
+            initial_moral_threshold: Starting moral threshold (default from calibration)
+            llm_timeout: Timeout for LLM calls in seconds (default from calibration)
+            llm_retry_attempts: Number of retry attempts for LLM calls (default from calibration)
             speech_governor: Optional speech governance policy (default None)
         """
+        # Apply calibration defaults where not specified
+        if capacity is None:
+            capacity = PELM_DEFAULTS.default_capacity if PELM_DEFAULTS else 20_000
+        if wake_duration is None:
+            wake_duration = (
+                COGNITIVE_RHYTHM_DEFAULTS.wake_duration
+                if COGNITIVE_RHYTHM_DEFAULTS
+                else 8
+            )
+        if sleep_duration is None:
+            sleep_duration = (
+                COGNITIVE_RHYTHM_DEFAULTS.sleep_duration
+                if COGNITIVE_RHYTHM_DEFAULTS
+                else 3
+            )
+        if llm_timeout is None:
+            llm_timeout = self.DEFAULT_LLM_TIMEOUT
+        if llm_retry_attempts is None:
+            llm_retry_attempts = self.DEFAULT_LLM_RETRY_ATTEMPTS
+
         self.dim = dim
         self._lock = Lock()
         self.llm_timeout = llm_timeout
@@ -176,12 +261,8 @@ class LLMWrapper:
         # Speech governance
         self._speech_governor = speech_governor
 
-        # Reliability components
-        self.embedding_circuit_breaker = CircuitBreaker(
-            failure_threshold=5,
-            recovery_timeout=60.0,
-            success_threshold=2
-        )
+        # Reliability components (using calibration defaults)
+        self.embedding_circuit_breaker = CircuitBreaker()
         self.stateless_mode = False  # Graceful degradation flag
 
         # State tracking
@@ -289,7 +370,7 @@ class LLMWrapper:
                 raise ValueError(f"Unknown PELM operation: {operation}")
         except (MemoryError, RuntimeError) as e:
             self.pelm_failure_count += 1
-            if self.pelm_failure_count >= 3:
+            if self.pelm_failure_count >= self.DEFAULT_PELM_FAILURE_THRESHOLD:
                 # Switch to stateless mode after repeated failures
                 self.stateless_mode = True
             raise e
@@ -299,7 +380,7 @@ class LLMWrapper:
         prompt: str,
         moral_value: float,
         max_tokens: int | None = None,
-        context_top_k: int = 5
+        context_top_k: int | None = None,
     ) -> dict[str, Any]:
         """
         Generate LLM response with cognitive governance and reliability features.
@@ -367,15 +448,18 @@ class LLMWrapper:
                 return self._build_error_response(f"embedding failed: {str(e)}")
 
             # Step 4: Retrieve context from memory with graceful degradation
-            phase_val = 0.1 if is_wake else 0.9
+            phase_val = self.WAKE_PHASE if is_wake else self.SLEEP_PHASE
             memories = []
+            # Use calibration default for top_k if not specified
+            if context_top_k is None:
+                context_top_k = PELM_DEFAULTS.default_top_k if PELM_DEFAULTS else 5
             try:
                 memories = self._safe_pelm_operation(
                     "retrieve",
                     query_vector=prompt_vector.tolist(),
                     current_phase=phase_val,
-                    phase_tolerance=0.15,
-                    top_k=context_top_k
+                    phase_tolerance=self.DEFAULT_PHASE_TOLERANCE,
+                    top_k=context_top_k,
                 )
             except Exception:
                 # Continue in stateless mode if PELM fails
@@ -472,11 +556,10 @@ class LLMWrapper:
         if len(self.consolidation_buffer) == 0:
             return
 
-        # During sleep, re-encode memories with sleep phase (0.9)
-        sleep_phase = 0.9
+        # During sleep, re-encode memories with sleep phase
         for vector in self.consolidation_buffer:
             # Re-entangle with sleep phase for long-term storage
-            self.pelm.entangle(vector.tolist(), phase=sleep_phase)
+            self.pelm.entangle(vector.tolist(), phase=self.SLEEP_PHASE)
 
         # Clear buffer
         self.consolidation_buffer.clear()
