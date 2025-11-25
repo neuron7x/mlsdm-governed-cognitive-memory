@@ -411,19 +411,26 @@ async def generate(prompt: str, moral_value: float = 0.8):
     return wrapper.generate(prompt, moral_value)
 ```
 
-## Planned Improvements (v1.x+)
+## Implemented Observability & Deployment
 
-The system is production-ready. The following enhancements are planned but not yet implemented:
+The following production capabilities are fully implemented:
 
-- [ ] **[PLANNED]** Prometheus metrics export
-- [ ] **[PLANNED]** OpenTelemetry distributed tracing
-- [ ] **[PLANNED]** Structured JSON logging
-- [ ] **[PLANNED]** Kubernetes deployment guide
-- [ ] **[PLANNED]** Stress testing at 10k+ RPS
-- [ ] **[PLANNED]** RAG hallucination testing (ragas)
-- [ ] **[PLANNED]** Chaos engineering suite (chaos-toolkit)
-- [ ] **[PLANNED]** TLA+ formal verification
-- [ ] **[PLANNED]** Coq algorithm proofs
+- [x] **Prometheus metrics export** - `src/mlsdm/observability/metrics.py` with counters, gauges, histograms
+- [x] **Structured JSON logging** - `src/mlsdm/observability/logger.py` with rotation support
+- [x] **Kubernetes deployment manifests** - `deploy/k8s/` with Deployment, Service, production configs
+- [x] **Docker containerization** - `docker/Dockerfile` and `docker/docker-compose.yaml`
+- [x] **Performance benchmarks** - `benchmarks/test_neuro_engine_performance.py` with P50/P95/P99 latency
+
+## Open Research Problems (v1.x+)
+
+The following are research directions requiring external resources or specialized expertise:
+
+- ⚠️ **OpenTelemetry distributed tracing** - Dependencies installed, integration not yet implemented
+- ⚠️ **Stress testing at 10k+ RPS** - Requires dedicated load testing infrastructure
+- ⚠️ **RAG hallucination testing (ragas)** - Requires retrieval-augmented generation setup
+- ⚠️ **Chaos engineering suite** - Requires chaos-toolkit and staging environment
+- ⚠️ **TLA+ formal verification** - Requires formal methods expertise and TLC model checker
+- ⚠️ **Coq algorithm proofs** - Requires proof assistant expertise
 
 ## Conclusion
 

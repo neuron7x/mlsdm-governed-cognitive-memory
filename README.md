@@ -667,20 +667,27 @@ def test_moral_threshold_clamped(t):
 - Hallucination rate (ragas) < 0.15 - not yet implemented
 - Successful jailbreak attempts < 0.5% of adversarial batch - not yet implemented
 
-### Planned Observability Hooks (v1.x+)
+### Implemented Observability
 
-**Status**: ⚠️ Planned for future versions. Current system has basic logging and state tracking.
+**Status**: ✅ Core observability is implemented.
 
-**Proposed Implementation**:
-- Events: event_formal_violation, event_drift_alert, event_chaos_fault
-- Prometheus histograms: retrieval_latency_bucket, moral_filter_eval_ms
-- OpenTelemetry trace: MemoryRetrieve → SemanticMerge → PolicyCheck
+**What's Working**:
+- Prometheus metrics export (`src/mlsdm/observability/metrics.py`):
+  - Counters: `mlsdm_events_processed_total`, `mlsdm_events_rejected_total`, `mlsdm_errors_total`
+  - Gauges: `mlsdm_memory_usage_bytes`, `mlsdm_moral_threshold`, `mlsdm_current_phase`
+  - Histograms: `mlsdm_processing_latency_ms`, `mlsdm_retrieval_latency_ms`
+- Structured JSON logging (`src/mlsdm/observability/logger.py`) with rotation
+- Aphasia-specific logging (`src/mlsdm/observability/aphasia_logging.py`)
+
+**Open Research Problems**:
+- OpenTelemetry distributed tracing (dependencies installed, integration pending)
+- Formal violation event alerts (event_formal_violation, event_chaos_fault)
 
 ### Toolchain
 
-**Implemented**: Hypothesis, pytest, ruff, mypy, pytest-cov
+**Implemented**: Hypothesis, pytest, ruff, mypy, pytest-cov, prometheus-client
 
-**Planned (v1.x+)**: chaos-toolkit, Locust/K6, ragas, TLA+, Coq, OpenTelemetry, Prometheus
+**Open Problems (v1.x+)**: chaos-toolkit, Locust/K6, ragas, TLA+, Coq, OpenTelemetry integration
 
 ## Aphasia-Broca Model for LLM Speech Governance
 
