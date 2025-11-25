@@ -19,25 +19,28 @@ from fastapi.testclient import TestClient
 @pytest.fixture
 def test_config_file():
     """Create a temporary config file for testing."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
-        f.write("dimension: 10\n")
-        f.write("moral_filter:\n")
-        f.write("  threshold: 0.3\n")
-        f.write("  min_threshold: 0.3\n")
-        f.write("  max_threshold: 0.9\n")
-        f.write("cognitive_rhythm:\n")
-        f.write("  wake_duration: 5\n")
-        f.write("  sleep_duration: 2\n")
-        f.write("ontology_matcher:\n")
-        f.write("  ontology_vectors:\n")
-        f.write("    - [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]\n")
-        f.write("    - [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]\n")
-        config_path = f.name
+    config_path = None
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+            f.write("dimension: 10\n")
+            f.write("moral_filter:\n")
+            f.write("  threshold: 0.3\n")
+            f.write("  min_threshold: 0.3\n")
+            f.write("  max_threshold: 0.9\n")
+            f.write("cognitive_rhythm:\n")
+            f.write("  wake_duration: 5\n")
+            f.write("  sleep_duration: 2\n")
+            f.write("ontology_matcher:\n")
+            f.write("  ontology_vectors:\n")
+            f.write("    - [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]\n")
+            f.write("    - [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]\n")
+            config_path = f.name
 
-    yield config_path
+        yield config_path
 
-    if os.path.exists(config_path):
-        os.unlink(config_path)
+    finally:
+        if config_path and os.path.exists(config_path):
+            os.unlink(config_path)
 
 
 @pytest.fixture

@@ -198,7 +198,10 @@ engine = build_neuro_engine_from_env(config=config)
 
 # Automatically routes based on treatment_ratio
 result = engine.generate("Test prompt")
-print(result["meta"]["variant"])  # "control" or "treatment"
+# Result contains response, phase, accepted, and meta fields
+print(result["response"])  # Generated text
+print(result["meta"]["variant"])  # "control" or "treatment" (when using router)
+print(result["meta"]["backend_id"])  # Provider ID used
 ```
 
 ---
