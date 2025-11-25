@@ -131,7 +131,7 @@ def create_moral_value_distribution(
 def create_pelm_memory(
     dim: int = 384,
     capacity: int = 1000,
-):
+) -> "PhaseEntangledLatticeMemory":  # noqa: F821
     """
     Create a PhaseEntangledLatticeMemory instance for testing.
     
@@ -149,7 +149,7 @@ def create_pelm_memory(
 def create_moral_filter(
     threshold: float = 0.5,
     adapt_rate: float = 0.05,
-):
+) -> "MoralFilter":  # noqa: F821
     """
     Create a MoralFilter instance for testing.
     
@@ -167,7 +167,7 @@ def create_moral_filter(
 def create_cognitive_rhythm(
     wake_duration: int = 10,
     sleep_duration: int = 5,
-):
+) -> "CognitiveRhythm":  # noqa: F821
     """
     Create a CognitiveRhythm instance for testing.
     
