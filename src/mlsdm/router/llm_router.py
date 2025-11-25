@@ -48,7 +48,7 @@ class LLMRouter(ABC):
         Returns:
             Provider name/key from self.providers
         """
-        pass
+        ...
 
     def get_provider(self, provider_name: str) -> LLMProvider:
         """Get provider instance by name.
