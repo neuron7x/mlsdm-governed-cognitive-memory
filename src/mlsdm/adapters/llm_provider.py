@@ -7,9 +7,74 @@ concrete implementations for different backends (OpenAI, Anthropic, local stub).
 
 from __future__ import annotations
 
+import logging
 import os
 from abc import ABC, abstractmethod
 from typing import Any
+
+_logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Custom Exceptions
+# ---------------------------------------------------------------------------
+
+
+class LLMProviderError(Exception):
+    """Base exception for LLM provider errors.
+
+    Raised when an LLM provider encounters an unrecoverable error
+    during generation (e.g., HTTP errors, library errors, invalid API key).
+
+    Attributes:
+        provider_id: Identifier of the provider that raised the error.
+        original_error: The original exception that caused this error.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        provider_id: str | None = None,
+        original_error: Exception | None = None,
+    ) -> None:
+        """Initialize LLMProviderError.
+
+        Args:
+            message: Error description.
+            provider_id: Identifier of the failing provider.
+            original_error: Original exception, if any.
+        """
+        super().__init__(message)
+        self.provider_id = provider_id
+        self.original_error = original_error
+
+
+class LLMTimeoutError(LLMProviderError):
+    """Exception raised when LLM call exceeds timeout.
+
+    Inherits from LLMProviderError for consistent error handling.
+
+    Attributes:
+        timeout_seconds: The timeout value that was exceeded.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        provider_id: str | None = None,
+        timeout_seconds: float | None = None,
+        original_error: Exception | None = None,
+    ) -> None:
+        """Initialize LLMTimeoutError.
+
+        Args:
+            message: Error description.
+            provider_id: Identifier of the failing provider.
+            timeout_seconds: Timeout value that was exceeded.
+            original_error: Original exception, if any.
+        """
+        super().__init__(message, provider_id, original_error)
+        self.timeout_seconds = timeout_seconds
 
 
 class LLMProvider(ABC):
@@ -32,7 +97,8 @@ class LLMProvider(ABC):
             Generated text response
 
         Raises:
-            Exception: If generation fails
+            LLMTimeoutError: If the call exceeds configured timeout.
+            LLMProviderError: If generation fails for any other reason.
         """
         ...
 
@@ -91,8 +157,12 @@ class OpenAIProvider(LLMProvider):
             Generated text response
 
         Raises:
-            Exception: If the API call fails
+            LLMTimeoutError: If the API call times out.
+            LLMProviderError: If the API call fails for other reasons.
         """
+        # Import openai for exception types - already validated in __init__
+        import openai
+
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -105,8 +175,41 @@ class OpenAIProvider(LLMProvider):
                 return response.choices[0].message.content or ""
             return ""
 
+        except openai.APITimeoutError as e:
+            _logger.warning("OpenAI API timeout: %s", e)
+            raise LLMTimeoutError(
+                f"OpenAI API call timed out: {e}",
+                provider_id=self.provider_id,
+                original_error=e,
+            ) from e
+        except openai.APIConnectionError as e:
+            _logger.warning("OpenAI API connection error: %s", e)
+            raise LLMProviderError(
+                f"OpenAI API connection failed: {e}",
+                provider_id=self.provider_id,
+                original_error=e,
+            ) from e
+        except openai.RateLimitError as e:
+            _logger.warning("OpenAI API rate limit: %s", e)
+            raise LLMProviderError(
+                f"OpenAI API rate limit exceeded: {e}",
+                provider_id=self.provider_id,
+                original_error=e,
+            ) from e
+        except openai.APIStatusError as e:
+            _logger.warning("OpenAI API status error: %s", e)
+            raise LLMProviderError(
+                f"OpenAI API error (status {e.status_code}): {e}",
+                provider_id=self.provider_id,
+                original_error=e,
+            ) from e
         except Exception as e:
-            raise Exception(f"OpenAI API call failed: {e}") from e
+            _logger.exception("Unexpected OpenAI API error")
+            raise LLMProviderError(
+                f"OpenAI API call failed: {e}",
+                provider_id=self.provider_id,
+                original_error=e,
+            ) from e
 
     @property
     def provider_id(self) -> str:
@@ -159,8 +262,12 @@ class AnthropicProvider(LLMProvider):
             Generated text response
 
         Raises:
-            Exception: If the API call fails
+            LLMTimeoutError: If the API call times out.
+            LLMProviderError: If the API call fails for other reasons.
         """
+        # Import anthropic for exception types - already validated in __init__
+        import anthropic
+
         try:
             response = self.client.messages.create(
                 model=self.model,
@@ -173,8 +280,41 @@ class AnthropicProvider(LLMProvider):
                 return response.content[0].text  # type: ignore[no-any-return]
             return ""
 
+        except anthropic.APITimeoutError as e:
+            _logger.warning("Anthropic API timeout: %s", e)
+            raise LLMTimeoutError(
+                f"Anthropic API call timed out: {e}",
+                provider_id=self.provider_id,
+                original_error=e,
+            ) from e
+        except anthropic.APIConnectionError as e:
+            _logger.warning("Anthropic API connection error: %s", e)
+            raise LLMProviderError(
+                f"Anthropic API connection failed: {e}",
+                provider_id=self.provider_id,
+                original_error=e,
+            ) from e
+        except anthropic.RateLimitError as e:
+            _logger.warning("Anthropic API rate limit: %s", e)
+            raise LLMProviderError(
+                f"Anthropic API rate limit exceeded: {e}",
+                provider_id=self.provider_id,
+                original_error=e,
+            ) from e
+        except anthropic.APIStatusError as e:
+            _logger.warning("Anthropic API status error: %s", e)
+            raise LLMProviderError(
+                f"Anthropic API error (status {e.status_code}): {e}",
+                provider_id=self.provider_id,
+                original_error=e,
+            ) from e
         except Exception as e:
-            raise Exception(f"Anthropic API call failed: {e}") from e
+            _logger.exception("Unexpected Anthropic API error")
+            raise LLMProviderError(
+                f"Anthropic API call failed: {e}",
+                provider_id=self.provider_id,
+                original_error=e,
+            ) from e
 
     @property
     def provider_id(self) -> str:

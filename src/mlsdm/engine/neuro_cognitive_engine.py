@@ -825,3 +825,67 @@ class NeuroCognitiveEngine:
             MetricsRegistry instance or None if metrics are disabled
         """
         return self._metrics
+
+    # ------------------------------------------------------------------ #
+    # Factory Methods                                                     #
+    # ------------------------------------------------------------------ #
+
+    @classmethod
+    def from_config(
+        cls,
+        config_path: str,
+        llm_generate_fn: Callable[[str, int], str] | None = None,
+        embedding_fn: Callable[[str], np.ndarray] | None = None,
+    ) -> NeuroCognitiveEngine:
+        """Create NeuroCognitiveEngine from a YAML/INI configuration file.
+
+        This is the recommended way to instantiate NeuroCognitiveEngine in production,
+        as it ensures all configuration is validated at startup.
+
+        Args:
+            config_path: Path to YAML or INI configuration file.
+            llm_generate_fn: Optional LLM generation function. If None, uses local_stub.
+            embedding_fn: Optional embedding function. If None, uses stub embeddings.
+
+        Returns:
+            Configured NeuroCognitiveEngine instance.
+
+        Raises:
+            FileNotFoundError: If config file does not exist.
+            ValueError: If config validation fails.
+
+        Example:
+            >>> engine = NeuroCognitiveEngine.from_config("config/production.yaml")
+            >>> result = engine.generate(prompt="Hello, world!", max_tokens=128)
+        """
+        from mlsdm.adapters import build_local_stub_llm_adapter
+        from mlsdm.engine.factory import build_stub_embedding_fn
+        from mlsdm.utils.config_loader import ConfigLoader
+
+        # Load and validate configuration
+        config_dict = ConfigLoader.load_config(config_path, validate=True)
+
+        # Build NeuroEngineConfig from validated config
+        engine_config = NeuroEngineConfig(
+            dim=config_dict.get("dimension", 384),
+            wake_duration=config_dict.get("cognitive_rhythm", {}).get("wake_duration", 8),
+            sleep_duration=config_dict.get("cognitive_rhythm", {}).get("sleep_duration", 3),
+            initial_moral_threshold=config_dict.get("moral_filter", {}).get("threshold", 0.50),
+            capacity=config_dict.get("pelm", {}).get("capacity", 20_000),
+            enable_fslgs=False,  # FSLGS integration is optional
+            enable_metrics=True,
+        )
+
+        # Use provided or default functions
+        if llm_generate_fn is None:
+            llm_generate_fn = build_local_stub_llm_adapter()
+
+        if embedding_fn is None:
+            embedding_fn = build_stub_embedding_fn(dim=engine_config.dim)
+
+        return cls(
+            llm_generate_fn=llm_generate_fn,
+            embedding_fn=embedding_fn,
+            config=engine_config,
+            router=None,
+        )

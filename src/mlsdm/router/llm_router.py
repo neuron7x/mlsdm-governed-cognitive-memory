@@ -2,19 +2,41 @@
 LLM Router implementations for multi-provider routing.
 
 This module provides different routing strategies:
-- RuleBasedRouter: Route based on intent, priority, or other metadata
+- RuleBasedRouter: Route based on intent, priority, mode, or other metadata
 - ABTestRouter: Split traffic between control and treatment variants
 """
 
 from __future__ import annotations
 
 import hashlib
+import logging
 import random
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from mlsdm.adapters.llm_provider import LLMProvider
+
+_logger = logging.getLogger(__name__)
+
+
+class RouterError(Exception):
+    """Exception raised when routing fails.
+
+    Attributes:
+        requested_provider: The provider that was requested but unavailable.
+        available_providers: List of available provider names.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        requested_provider: str | None = None,
+        available_providers: list[str] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.requested_provider = requested_provider
+        self.available_providers = available_providers or []
 
 
 class LLMRouter(ABC):
@@ -69,9 +91,12 @@ class RuleBasedRouter(LLMRouter):
     """Route requests based on configurable rules.
 
     Rules can be based on:
+    - mode: Route based on mode ("cheap", "safe", "deep")
     - user_intent: Route based on intent type
     - priority_tier: Route based on priority level
     - Custom metadata fields
+
+    Supports fallback to default provider when the selected provider is unavailable.
 
     Example:
         >>> providers = {
@@ -79,10 +104,11 @@ class RuleBasedRouter(LLMRouter):
         ...     "local_low": LocalStubProvider()
         ... }
         >>> rules = {
-        ...     "high_risk": "openai_high",
-        ...     "low_priority": "local_low"
+        ...     "deep": "openai_high",
+        ...     "cheap": "local_low",
+        ...     "safe": "local_low",
         ... }
-        >>> router = RuleBasedRouter(providers, rules, default="openai_high")
+        >>> router = RuleBasedRouter(providers, rules, default="local_low")
     """
 
     def __init__(
@@ -90,14 +116,16 @@ class RuleBasedRouter(LLMRouter):
         providers: dict[str, LLMProvider],
         rules: dict[str, str] | None = None,
         default: str | None = None,
+        fallback_on_error: bool = True,
     ) -> None:
         """Initialize rule-based router.
 
         Args:
             providers: Dictionary of available providers
             rules: Mapping from metadata values to provider names
-                  Example: {"high_risk": "openai", "low_priority": "local_stub"}
+                  Example: {"deep": "openai", "cheap": "local_stub"}
             default: Default provider name if no rule matches (if None, uses first provider)
+            fallback_on_error: If True, fall back to default when rule points to missing provider
 
         Raises:
             ValueError: If providers is empty or default provider doesn't exist
@@ -105,6 +133,7 @@ class RuleBasedRouter(LLMRouter):
         super().__init__(providers)
 
         self.rules = rules or {}
+        self.fallback_on_error = fallback_on_error
 
         # Set default provider
         if default is None:
@@ -118,9 +147,13 @@ class RuleBasedRouter(LLMRouter):
         """Select provider based on rules.
 
         Checks metadata fields in order:
-        1. user_intent (e.g., "high_risk", "conversational")
-        2. priority_tier (e.g., "low", "medium", "high")
-        3. Any other metadata keys that match rule keys
+        1. mode (e.g., "cheap", "safe", "deep")
+        2. user_intent (e.g., "high_risk", "conversational")
+        3. priority_tier (e.g., "low", "medium", "high")
+        4. Any other metadata keys that match rule keys
+
+        Falls back to default provider if selected provider is unavailable
+        and fallback_on_error is True.
 
         Args:
             prompt: Input prompt text (not used in rule-based routing)
@@ -128,24 +161,63 @@ class RuleBasedRouter(LLMRouter):
 
         Returns:
             Provider name
+
+        Raises:
+            RouterError: If selected provider unavailable and fallback_on_error is False
         """
+        selected: str | None = None
+
+        # Check mode first (priority routing)
+        mode = metadata.get("mode")
+        if mode and mode in self.rules:
+            selected = self.rules[mode]
+
         # Check user_intent
-        user_intent = metadata.get("user_intent")
-        if user_intent and user_intent in self.rules:
-            return self.rules[user_intent]
+        if selected is None:
+            user_intent = metadata.get("user_intent")
+            if user_intent and user_intent in self.rules:
+                selected = self.rules[user_intent]
 
         # Check priority_tier
-        priority_tier = metadata.get("priority_tier")
-        if priority_tier and priority_tier in self.rules:
-            return self.rules[priority_tier]
+        if selected is None:
+            priority_tier = metadata.get("priority_tier")
+            if priority_tier and priority_tier in self.rules:
+                selected = self.rules[priority_tier]
 
-        # Check other metadata keys
-        for _key, value in metadata.items():
-            if value in self.rules:
-                return self.rules[value]
+        # Check other metadata keys - support any hashable value type
+        if selected is None:
+            for _key, value in metadata.items():
+                # Skip None values and check if value is a valid rule key
+                if value is not None:
+                    try:
+                        if value in self.rules:
+                            selected = self.rules[value]
+                            break
+                    except TypeError:
+                        # Skip unhashable values (lists, dicts, etc.)
+                        continue
 
-        # Default fallback
-        return self.default
+        # Use default if nothing selected
+        if selected is None:
+            selected = self.default
+
+        # Validate provider exists
+        if selected not in self.providers:
+            if self.fallback_on_error:
+                _logger.warning(
+                    "Provider '%s' not found, falling back to default '%s'",
+                    selected,
+                    self.default,
+                )
+                return self.default
+            else:
+                raise RouterError(
+                    f"Provider '{selected}' not found in available providers",
+                    requested_provider=selected,
+                    available_providers=list(self.providers.keys()),
+                )
+
+        return selected
 
 
 class ABTestRouter(LLMRouter):

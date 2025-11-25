@@ -10,6 +10,8 @@ This module provides adapters for different LLM backends:
 from .llm_provider import (
     AnthropicProvider,
     LLMProvider,
+    LLMProviderError,
+    LLMTimeoutError,
     LocalStubProvider,
     OpenAIProvider,
 )
@@ -21,6 +23,8 @@ __all__ = [
     "build_openai_llm_adapter",
     "build_local_stub_llm_adapter",
     "LLMProvider",
+    "LLMProviderError",
+    "LLMTimeoutError",
     "OpenAIProvider",
     "AnthropicProvider",
     "LocalStubProvider",
