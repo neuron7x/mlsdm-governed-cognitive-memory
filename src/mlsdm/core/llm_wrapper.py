@@ -11,6 +11,7 @@ This module provides a production-ready wrapper around any LLM that enforces:
 Prevents LLM degradation, memory bloat, toxicity, and identity loss.
 """
 
+import logging
 import time
 from collections.abc import Callable
 from enum import Enum
@@ -30,6 +31,8 @@ from ..memory.multi_level_memory import MultiLevelSynapticMemory
 from ..memory.phase_entangled_lattice_memory import PhaseEntangledLatticeMemory
 from ..rhythm.cognitive_rhythm import CognitiveRhythm
 from ..speech.governance import SpeechGovernanceResult, SpeechGovernor
+
+_logger = logging.getLogger(__name__)
 
 
 class CircuitBreakerState(Enum):
@@ -419,9 +422,12 @@ class LLMWrapper:
                     self.synaptic.update(prompt_vector)
                     self._safe_pelm_operation("entangle", prompt_vector.tolist(), phase=phase_val)
                     self.consolidation_buffer.append(prompt_vector)
-                except Exception:
-                    # Continue even if memory update fails
-                    pass
+                except Exception as mem_err:
+                    # Continue even if memory update fails - graceful degradation
+                    _logger.debug(
+                        "Memory update failed (graceful degradation): %s",
+                        mem_err
+                    )
 
             self.accepted_count += 1
 
@@ -432,9 +438,12 @@ class LLMWrapper:
             if self.rhythm.is_sleep() and len(self.consolidation_buffer) > 0 and not self.stateless_mode:
                 try:
                     self._consolidate_memories()
-                except Exception:
-                    # Consolidation failure is non-critical
-                    pass
+                except Exception as consol_err:
+                    # Consolidation failure is non-critical - log and continue
+                    _logger.debug(
+                        "Memory consolidation failed (non-critical): %s",
+                        consol_err
+                    )
 
             result = {
                 "response": response_text,

@@ -34,7 +34,7 @@ class LLMProvider(ABC):
         Raises:
             Exception: If generation fails
         """
-        pass
+        ...
 
     @property
     def provider_id(self) -> str:
