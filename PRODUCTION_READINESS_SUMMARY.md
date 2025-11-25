@@ -15,7 +15,7 @@
 | **Observability** | ✅ Strong | 80% | Prometheus metrics, structured JSON logs, correlation IDs; missing distributed tracing |
 | **Security & Governance** | ✅ Strong | 85% | Rate limiting, input validation, auth, moral filter; missing RBAC, mTLS |
 | **Performance & SLO/SLA** | ✅ Strong | 90% | SLO defined, benchmarks pass, latency <50ms P95; SLO dashboard not deployed |
-| **CI/CD & Release** | ⚠️ Moderate | 65% | Basic CI present; missing required checks, smoke/slow separation, security scans in PR |
+| **CI/CD & Release** | ⚠️ Needs Work | 65% | Tests present but linting/type checking not in CI (BLOCKER in PROD_GAPS.md) |
 | **Docs & API Contracts** | ✅ Strong | 85% | Comprehensive docs; API reference, runbook, security policy complete |
 
 **Overall Production Readiness: 82%**
@@ -128,7 +128,7 @@
 ## Test Statistics
 
 ```
-Total Tests: 989+ (993 collected, 4 skipped)
+Total Tests: 989 passed (993 collected, 4 skipped)
 Pass Rate: 100%
 Test Coverage: 90%+ (enforced via pyproject.toml)
 

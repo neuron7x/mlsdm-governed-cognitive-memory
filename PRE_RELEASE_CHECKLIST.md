@@ -140,7 +140,8 @@ pytest benchmarks/test_neuro_engine_performance.py -v -s
 
 - [ ] **No secrets in codebase**
   ```bash
-  grep -r "sk-\|api_key\s*=\s*['\"]" src/ --include="*.py" | grep -v "os.getenv\|environ" | wc -l
+  # Note: May have false positives in tests/examples - manual review required
+  grep -r "sk-\|api_key\s*=\s*['\"]" src/mlsdm/ --include="*.py" | grep -v "os.getenv\|environ\|test_\|example" | wc -l
   # Expected: 0
   ```
 
@@ -148,8 +149,9 @@ pytest benchmarks/test_neuro_engine_performance.py -v -s
 
 - [ ] **Health endpoints respond correctly**
   ```bash
-  # Start server in background
+  # Start server in background and save PID
   uvicorn mlsdm.api.app:app --port 8000 &
+  SERVER_PID=$!
   sleep 5
   
   # Test health endpoints
@@ -157,8 +159,8 @@ pytest benchmarks/test_neuro_engine_performance.py -v -s
   curl -s http://localhost:8000/health/readiness | grep -q "ok"
   curl -s http://localhost:8000/health/metrics | grep -q "mlsdm"
   
-  # Stop server
-  pkill -f "uvicorn mlsdm.api.app"
+  # Stop server using saved PID
+  kill $SERVER_PID 2>/dev/null
   ```
 
 - [ ] **API authentication enforced**
