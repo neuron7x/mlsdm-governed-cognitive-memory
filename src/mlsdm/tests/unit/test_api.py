@@ -310,7 +310,7 @@ class TestGenerateEndpoint:
         assert response.status_code == 422
 
     def test_generate_empty_prompt(self, client):
-        """Test generate with empty prompt returns 400."""
+        """Test generate with empty prompt returns 422 (Pydantic validation)."""
         request_data = {
             "prompt": ""
         }
@@ -359,11 +359,11 @@ class TestGenerateEndpoint:
         assert response.status_code == 200
         data = response.json()
 
-        # Check optional fields exist (may be None)
-        # These are defined in the response model
-        assert "metrics" in data or data.get("metrics") is None
-        assert "safety_flags" in data or data.get("safety_flags") is None
-        assert "memory_stats" in data or data.get("memory_stats") is None
+        # Check optional fields are present in response model
+        # They may have None values but should be in the response
+        assert "metrics" in data
+        assert "safety_flags" in data
+        assert "memory_stats" in data
 
     def test_generate_does_not_require_auth(self, client):
         """Test that generate endpoint does not require authentication."""
