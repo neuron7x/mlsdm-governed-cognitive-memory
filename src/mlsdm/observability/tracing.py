@@ -1,0 +1,632 @@
+"""OpenTelemetry distributed tracing for MLSDM.
+
+This module provides distributed tracing capabilities using OpenTelemetry,
+enabling observability across the entire cognitive pipeline.
+
+Features:
+- Span creation for key operations (API handlers, generate, process_event)
+- Trace context propagation
+- Export to configurable backends (Jaeger/OTLP)
+- Integration with FastAPI middleware
+
+Configuration:
+- OTEL_SERVICE_NAME: Service name (default: mlsdm)
+- OTEL_EXPORTER_OTLP_ENDPOINT: OTLP endpoint URL
+- OTEL_EXPORTER_OTLP_PROTOCOL: Protocol (http/protobuf, grpc)
+- OTEL_TRACES_SAMPLER: Sampling strategy (always_on, always_off, traceidratio)
+- OTEL_TRACES_SAMPLER_ARG: Sampler argument (e.g., 0.1 for 10% sampling)
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+from contextlib import contextmanager
+from functools import wraps
+from threading import Lock
+from typing import TYPE_CHECKING, Any, Literal
+
+from opentelemetry import trace
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import SpanProcessor, TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.trace import SpanKind, Status, StatusCode
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
+
+    from opentelemetry.context import Context
+    from opentelemetry.trace import Span, Tracer
+
+logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+
+class TracingConfig:
+    """Configuration for OpenTelemetry tracing.
+
+    Attributes:
+        service_name: Name of the service for tracing
+        enabled: Whether tracing is enabled
+        exporter_type: Type of exporter (console, otlp, jaeger)
+        otlp_endpoint: OTLP exporter endpoint
+        otlp_protocol: OTLP protocol (http/protobuf, grpc)
+        sample_rate: Sampling rate (0.0 to 1.0)
+        batch_max_queue_size: Maximum queue size for batch processor
+        batch_max_export_batch_size: Maximum batch size for export
+        batch_schedule_delay_millis: Delay between exports in milliseconds
+    """
+
+    def __init__(
+        self,
+        service_name: str | None = None,
+        enabled: bool | None = None,
+        exporter_type: Literal["console", "otlp", "jaeger", "none"] | None = None,
+        otlp_endpoint: str | None = None,
+        otlp_protocol: Literal["http/protobuf", "grpc"] | None = None,
+        sample_rate: float | None = None,
+        batch_max_queue_size: int = 2048,
+        batch_max_export_batch_size: int = 512,
+        batch_schedule_delay_millis: int = 5000,
+    ) -> None:
+        """Initialize tracing configuration from environment or parameters."""
+        self.service_name = service_name or os.getenv("OTEL_SERVICE_NAME", "mlsdm")
+        self.enabled = (
+            enabled
+            if enabled is not None
+            else os.getenv("OTEL_SDK_DISABLED", "false").lower() != "true"
+        )
+        self.exporter_type = exporter_type or os.getenv(
+            "OTEL_EXPORTER_TYPE", "console"
+        )
+        self.otlp_endpoint = otlp_endpoint or os.getenv(
+            "OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318"
+        )
+        self.otlp_protocol = otlp_protocol or os.getenv(
+            "OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf"
+        )
+
+        # Parse sample rate
+        sample_rate_str = os.getenv("OTEL_TRACES_SAMPLER_ARG", "1.0")
+        try:
+            self.sample_rate = (
+                sample_rate if sample_rate is not None else float(sample_rate_str)
+            )
+        except ValueError:
+            self.sample_rate = 1.0
+
+        self.batch_max_queue_size = batch_max_queue_size
+        self.batch_max_export_batch_size = batch_max_export_batch_size
+        self.batch_schedule_delay_millis = batch_schedule_delay_millis
+
+
+# ---------------------------------------------------------------------------
+# Tracer Management
+# ---------------------------------------------------------------------------
+
+
+class TracerManager:
+    """Manages OpenTelemetry tracer lifecycle and provides tracing utilities.
+
+    This class implements the singleton pattern for tracer management,
+    ensuring consistent tracing across the application.
+
+    Example:
+        >>> manager = get_tracer_manager()
+        >>> with manager.start_span("my_operation") as span:
+        ...     span.set_attribute("key", "value")
+        ...     # do work
+    """
+
+    _instance: TracerManager | None = None
+    _lock: Lock = Lock()
+
+    def __init__(self, config: TracingConfig | None = None) -> None:
+        """Initialize tracer manager with configuration.
+
+        Args:
+            config: Tracing configuration. If None, uses defaults from environment.
+        """
+        self._config = config or TracingConfig()
+        self._initialized = False
+        self._tracer: Tracer | None = None
+        self._provider: TracerProvider | None = None
+        self._processor: SpanProcessor | None = None
+
+    @classmethod
+    def get_instance(cls, config: TracingConfig | None = None) -> TracerManager:
+        """Get or create the singleton TracerManager instance.
+
+        Note:
+            The config parameter is only used when creating the instance.
+            Subsequent calls with different config will be ignored.
+
+        Args:
+            config: Tracing configuration (only used on first call)
+
+        Returns:
+            TracerManager singleton instance
+        """
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = cls(config)
+        return cls._instance
+
+    @classmethod
+    def reset_instance(cls) -> None:
+        """Reset the singleton instance (useful for testing)."""
+        with cls._lock:
+            if cls._instance is not None:
+                cls._instance.shutdown()
+                cls._instance = None
+
+    def initialize(self) -> None:
+        """Initialize the OpenTelemetry tracer provider and exporter.
+
+        This method sets up the tracer provider with the configured exporter
+        and registers it as the global tracer provider.
+        """
+        if self._initialized:
+            return
+
+        if not self._config.enabled:
+            logger.info("OpenTelemetry tracing is disabled")
+            return
+
+        try:
+            # Create resource with service information
+            resource = Resource.create(
+                {
+                    "service.name": self._config.service_name,
+                    "service.version": "1.0.0",
+                    "deployment.environment": os.getenv("DEPLOYMENT_ENV", "development"),
+                }
+            )
+
+            # Create tracer provider
+            self._provider = TracerProvider(resource=resource)
+
+            # Create exporter based on configuration
+            exporter = self._create_exporter()
+            if exporter is not None:
+                self._processor = BatchSpanProcessor(
+                    exporter,
+                    max_queue_size=self._config.batch_max_queue_size,
+                    max_export_batch_size=self._config.batch_max_export_batch_size,
+                    schedule_delay_millis=self._config.batch_schedule_delay_millis,
+                )
+                self._provider.add_span_processor(self._processor)
+
+            # Register as global provider
+            trace.set_tracer_provider(self._provider)
+
+            # Get tracer
+            self._tracer = trace.get_tracer(
+                self._config.service_name,
+                "1.0.0",
+            )
+
+            self._initialized = True
+            logger.info(
+                "OpenTelemetry tracing initialized",
+                extra={
+                    "service_name": self._config.service_name,
+                    "exporter_type": self._config.exporter_type,
+                },
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to initialize OpenTelemetry tracing: {e}")
+            self._initialized = False
+
+    def _create_exporter(self) -> Any | None:
+        """Create the appropriate span exporter based on configuration.
+
+        Returns:
+            Configured span exporter or None if disabled
+        """
+        if self._config.exporter_type == "none":
+            return None
+
+        if self._config.exporter_type == "console":
+            return ConsoleSpanExporter()
+
+        if self._config.exporter_type == "otlp":
+            try:
+                if self._config.otlp_protocol == "grpc":
+                    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+                        OTLPSpanExporter,
+                    )
+
+                    return OTLPSpanExporter(endpoint=self._config.otlp_endpoint)
+                else:
+                    from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+                        OTLPSpanExporter,
+                    )
+
+                    return OTLPSpanExporter(endpoint=self._config.otlp_endpoint)
+            except ImportError:
+                logger.warning(
+                    "OTLP exporter not available, falling back to console exporter"
+                )
+                return ConsoleSpanExporter()
+
+        if self._config.exporter_type == "jaeger":
+            try:
+                from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+
+                return JaegerExporter()
+            except ImportError:
+                logger.warning(
+                    "Jaeger exporter not available, falling back to console exporter"
+                )
+                return ConsoleSpanExporter()
+
+        return ConsoleSpanExporter()
+
+    def shutdown(self) -> None:
+        """Shutdown the tracer provider and flush pending spans."""
+        if self._provider is not None:
+            try:
+                self._provider.shutdown()
+            except Exception as e:
+                logger.error(f"Error during tracer shutdown: {e}")
+            finally:
+                self._provider = None
+                self._tracer = None
+                self._initialized = False
+
+    @property
+    def tracer(self) -> Tracer:
+        """Get the tracer instance, initializing if necessary.
+
+        Returns:
+            OpenTelemetry Tracer instance
+        """
+        if not self._initialized:
+            self.initialize()
+
+        if self._tracer is None:
+            # Return a no-op tracer if not initialized
+            return trace.get_tracer("mlsdm", "1.0.0")
+
+        return self._tracer
+
+    @property
+    def enabled(self) -> bool:
+        """Check if tracing is enabled."""
+        return self._config.enabled and self._initialized
+
+    @contextmanager
+    def start_span(
+        self,
+        name: str,
+        kind: SpanKind = SpanKind.INTERNAL,
+        attributes: dict[str, Any] | None = None,
+        context: Context | None = None,
+    ) -> Iterator[Span]:
+        """Start a new span as a context manager.
+
+        Args:
+            name: Name of the span
+            kind: Kind of span (INTERNAL, SERVER, CLIENT, PRODUCER, CONSUMER)
+            attributes: Initial span attributes
+            context: Parent context (optional)
+
+        Yields:
+            The created span
+
+        Example:
+            >>> with tracer_manager.start_span("process_event") as span:
+            ...     span.set_attribute("event_type", "cognitive")
+            ...     process_event()
+        """
+        with self.tracer.start_as_current_span(
+            name,
+            kind=kind,
+            attributes=attributes,
+            context=context,
+        ) as span:
+            yield span
+
+    def record_exception(self, span: Span, exception: Exception) -> None:
+        """Record an exception on a span.
+
+        Args:
+            span: The span to record the exception on
+            exception: The exception to record
+        """
+        span.record_exception(exception)
+        span.set_status(Status(StatusCode.ERROR, str(exception)))
+
+
+# ---------------------------------------------------------------------------
+# Global accessor functions
+# ---------------------------------------------------------------------------
+
+_manager: TracerManager | None = None
+_manager_lock = Lock()
+
+
+def get_tracer_manager(config: TracingConfig | None = None) -> TracerManager:
+    """Get or create the global TracerManager instance.
+
+    Args:
+        config: Tracing configuration (only used on first call)
+
+    Returns:
+        TracerManager singleton instance
+    """
+    return TracerManager.get_instance(config)
+
+
+def get_tracer() -> Tracer:
+    """Get the global tracer instance.
+
+    Returns:
+        OpenTelemetry Tracer instance
+    """
+    return get_tracer_manager().tracer
+
+
+def initialize_tracing(config: TracingConfig | None = None) -> None:
+    """Initialize OpenTelemetry tracing with the given configuration.
+
+    This should be called at application startup before any tracing operations.
+
+    Args:
+        config: Tracing configuration
+    """
+    manager = get_tracer_manager(config)
+    manager.initialize()
+
+
+def shutdown_tracing() -> None:
+    """Shutdown OpenTelemetry tracing and flush pending spans.
+
+    This should be called at application shutdown.
+    """
+    TracerManager.reset_instance()
+
+
+# ---------------------------------------------------------------------------
+# Decorators
+# ---------------------------------------------------------------------------
+
+
+def traced(
+    name: str | None = None,
+    kind: SpanKind = SpanKind.INTERNAL,
+    record_args: bool = False,
+    record_result: bool = False,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    """Decorator to trace a function.
+
+    Args:
+        name: Span name (defaults to function name)
+        kind: Span kind
+        record_args: Whether to record function arguments as attributes
+        record_result: Whether to record function result as attribute
+
+    Returns:
+        Decorated function
+
+    Example:
+        >>> @traced("my_operation", record_args=True)
+        ... def my_function(x: int, y: int) -> int:
+        ...     return x + y
+    """
+
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        span_name = name or func.__name__
+
+        @wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            manager = get_tracer_manager()
+
+            with manager.start_span(span_name, kind=kind) as span:
+                # Record arguments if requested
+                if record_args:
+                    for i, arg in enumerate(args):
+                        span.set_attribute(f"arg.{i}", str(arg)[:1024])
+                    for key, value in kwargs.items():
+                        span.set_attribute(f"kwarg.{key}", str(value)[:1024])
+
+                try:
+                    result = func(*args, **kwargs)
+
+                    # Record result if requested
+                    if record_result:
+                        span.set_attribute("result", str(result)[:1024])
+
+                    return result
+
+                except Exception as e:
+                    manager.record_exception(span, e)
+                    raise
+
+        return wrapper
+
+    return decorator
+
+
+def traced_async(
+    name: str | None = None,
+    kind: SpanKind = SpanKind.INTERNAL,
+    record_args: bool = False,
+    record_result: bool = False,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    """Decorator to trace an async function.
+
+    Args:
+        name: Span name (defaults to function name)
+        kind: Span kind
+        record_args: Whether to record function arguments as attributes
+        record_result: Whether to record function result as attribute
+
+    Returns:
+        Decorated async function
+    """
+
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        span_name = name or func.__name__
+
+        @wraps(func)
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
+            manager = get_tracer_manager()
+
+            with manager.start_span(span_name, kind=kind) as span:
+                # Record arguments if requested
+                if record_args:
+                    for i, arg in enumerate(args):
+                        span.set_attribute(f"arg.{i}", str(arg)[:1024])
+                    for key, value in kwargs.items():
+                        span.set_attribute(f"kwarg.{key}", str(value)[:1024])
+
+                try:
+                    result = await func(*args, **kwargs)
+
+                    # Record result if requested
+                    if record_result:
+                        span.set_attribute("result", str(result)[:1024])
+
+                    return result
+
+                except Exception as e:
+                    manager.record_exception(span, e)
+                    raise
+
+        return wrapper
+
+    return decorator
+
+
+# ---------------------------------------------------------------------------
+# MLSDM-specific tracing utilities
+# ---------------------------------------------------------------------------
+
+
+def trace_generate(
+    prompt: str,
+    moral_value: float,
+    max_tokens: int,
+) -> Any:
+    """Create a context manager for tracing generate operations.
+
+    Args:
+        prompt: The input prompt
+        moral_value: The moral threshold value
+        max_tokens: Maximum tokens to generate
+
+    Returns:
+        Context manager yielding a span
+    """
+    manager = get_tracer_manager()
+    return manager.start_span(
+        "mlsdm.generate",
+        kind=SpanKind.INTERNAL,
+        attributes={
+            "mlsdm.prompt_length": len(prompt),
+            "mlsdm.moral_value": moral_value,
+            "mlsdm.max_tokens": max_tokens,
+        },
+    )
+
+
+def trace_process_event(
+    event_type: str,
+    moral_value: float,
+) -> Any:
+    """Create a context manager for tracing process_event operations.
+
+    Args:
+        event_type: Type of event being processed
+        moral_value: The moral threshold value
+
+    Returns:
+        Context manager yielding a span
+    """
+    manager = get_tracer_manager()
+    return manager.start_span(
+        "mlsdm.process_event",
+        kind=SpanKind.INTERNAL,
+        attributes={
+            "mlsdm.event_type": event_type,
+            "mlsdm.moral_value": moral_value,
+        },
+    )
+
+
+def trace_memory_retrieval(
+    query_type: str,
+    top_k: int,
+) -> Any:
+    """Create a context manager for tracing memory retrieval operations.
+
+    Args:
+        query_type: Type of query being executed
+        top_k: Number of results requested
+
+    Returns:
+        Context manager yielding a span
+    """
+    manager = get_tracer_manager()
+    return manager.start_span(
+        "mlsdm.memory_retrieval",
+        kind=SpanKind.INTERNAL,
+        attributes={
+            "mlsdm.query_type": query_type,
+            "mlsdm.top_k": top_k,
+        },
+    )
+
+
+def trace_moral_filter(
+    threshold: float,
+    score: float | None = None,
+) -> Any:
+    """Create a context manager for tracing moral filter operations.
+
+    Args:
+        threshold: Current moral threshold
+        score: Computed moral score (optional)
+
+    Returns:
+        Context manager yielding a span
+    """
+    manager = get_tracer_manager()
+    attributes: dict[str, Any] = {"mlsdm.moral_threshold": threshold}
+    if score is not None:
+        attributes["mlsdm.moral_score"] = score
+
+    return manager.start_span(
+        "mlsdm.moral_filter",
+        kind=SpanKind.INTERNAL,
+        attributes=attributes,
+    )
+
+
+def add_span_attributes(span: Span, **attributes: Any) -> None:
+    """Add attributes to a span, handling type conversion.
+
+    Args:
+        span: The span to add attributes to
+        **attributes: Key-value pairs to add as attributes
+    """
+    for key, value in attributes.items():
+        if value is None:
+            continue
+
+        # Convert to supported types
+        if isinstance(value, (str, int, float, bool)):
+            span.set_attribute(key, value)
+        elif isinstance(value, (list, tuple)):
+            # Convert lists to comma-separated strings
+            span.set_attribute(key, ",".join(str(v) for v in value))
+        else:
+            span.set_attribute(key, str(value)[:1024])
