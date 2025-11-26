@@ -139,7 +139,10 @@ pytest benchmarks/test_neuro_engine_performance.py -v -s
 # Aphasia Detection (TPR/TNR/severity)
 pytest tests/eval/test_aphasia_eval_suite.py -v
 
-# Memory Bounds (29.37 MB)
+# Memory Bounds (29.37 MB) - Quick check
+python benchmarks/measure_memory_footprint.py --quick
+
+# Memory Bounds - Property test
 pytest tests/property/test_invariants_memory.py -v
 
 # Full Validation Suite
