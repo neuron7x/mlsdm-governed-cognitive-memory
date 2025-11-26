@@ -26,6 +26,13 @@ class PhaseType(Enum):
     UNKNOWN = "unknown"
 
 
+# Aphasia severity bucket thresholds
+# These can be overridden via environment or configuration if needed
+APHASIA_SEVERITY_LOW_THRESHOLD = 0.3
+APHASIA_SEVERITY_MEDIUM_THRESHOLD = 0.5
+APHASIA_SEVERITY_HIGH_THRESHOLD = 0.7
+
+
 class MetricsExporter:
     """Prometheus-compatible metrics exporter for MLSDM system.
 
@@ -450,17 +457,22 @@ class MetricsExporter:
     def get_severity_bucket(self, severity: float) -> str:
         """Convert aphasia severity score to bucket label.
 
+        Uses configurable thresholds defined as module constants:
+        - APHASIA_SEVERITY_LOW_THRESHOLD (default: 0.3)
+        - APHASIA_SEVERITY_MEDIUM_THRESHOLD (default: 0.5)
+        - APHASIA_SEVERITY_HIGH_THRESHOLD (default: 0.7)
+
         Args:
             severity: Severity score (0.0 to 1.0)
 
         Returns:
             Bucket label ('low', 'medium', 'high', 'critical')
         """
-        if severity < 0.3:
+        if severity < APHASIA_SEVERITY_LOW_THRESHOLD:
             return "low"
-        elif severity < 0.5:
+        elif severity < APHASIA_SEVERITY_MEDIUM_THRESHOLD:
             return "medium"
-        elif severity < 0.7:
+        elif severity < APHASIA_SEVERITY_HIGH_THRESHOLD:
             return "high"
         else:
             return "critical"
