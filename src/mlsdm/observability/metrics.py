@@ -170,6 +170,30 @@ class MetricsExporter:
             registry=self.registry,
         )
 
+        # Request latency in seconds with endpoint and phase labels (Phase 7)
+        self.request_latency_seconds = Histogram(
+            "mlsdm_request_latency_seconds",
+            "Request latency in seconds by endpoint and phase",
+            ["endpoint", "phase"],
+            buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0),
+            registry=self.registry,
+        )
+
+        # Aphasia detection counter by severity bucket (Phase 7)
+        self.aphasia_detected_total = Counter(
+            "mlsdm_aphasia_detected_total",
+            "Total aphasia detections by severity bucket",
+            ["severity_bucket"],
+            registry=self.registry,
+        )
+
+        # Aphasia repair counter (Phase 7)
+        self.aphasia_repaired_total = Counter(
+            "mlsdm_aphasia_repaired_total",
+            "Total number of successful aphasia repairs",
+            registry=self.registry,
+        )
+
         # Track timing contexts
         self._processing_start_times: dict[str, float] = {}
         self._retrieval_start_times: dict[str, float] = {}
@@ -388,6 +412,58 @@ class MetricsExporter:
         """
         with self._lock:
             self.retrieval_latency_ms.observe(latency_ms)
+
+    def observe_request_latency_seconds(
+        self, latency_seconds: float, endpoint: str, phase: str
+    ) -> None:
+        """Observe request latency in seconds with endpoint and phase labels.
+
+        Args:
+            latency_seconds: Request latency in seconds
+            endpoint: API endpoint (e.g., '/generate', '/infer')
+            phase: Cognitive phase ('wake' or 'sleep')
+        """
+        with self._lock:
+            self.request_latency_seconds.labels(endpoint=endpoint, phase=phase).observe(
+                latency_seconds
+            )
+
+    def increment_aphasia_detected(self, severity_bucket: str, count: int = 1) -> None:
+        """Increment the aphasia detected counter.
+
+        Args:
+            severity_bucket: Severity bucket (e.g., 'low', 'medium', 'high', 'critical')
+            count: Number to add (default: 1)
+        """
+        with self._lock:
+            self.aphasia_detected_total.labels(severity_bucket=severity_bucket).inc(count)
+
+    def increment_aphasia_repaired(self, count: int = 1) -> None:
+        """Increment the aphasia repaired counter.
+
+        Args:
+            count: Number to add (default: 1)
+        """
+        with self._lock:
+            self.aphasia_repaired_total.inc(count)
+
+    def get_severity_bucket(self, severity: float) -> str:
+        """Convert aphasia severity score to bucket label.
+
+        Args:
+            severity: Severity score (0.0 to 1.0)
+
+        Returns:
+            Bucket label ('low', 'medium', 'high', 'critical')
+        """
+        if severity < 0.3:
+            return "low"
+        elif severity < 0.5:
+            return "medium"
+        elif severity < 0.7:
+            return "high"
+        else:
+            return "critical"
 
     def export_metrics(self) -> bytes:
         """Export metrics in Prometheus format.

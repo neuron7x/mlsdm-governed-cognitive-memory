@@ -52,6 +52,21 @@ MLSDM_VERSION = "1.0.0"
 class TracingConfig:
     """Configuration for OpenTelemetry tracing.
 
+    Supports both standard OpenTelemetry environment variables and
+    MLSDM-specific variables for convenience:
+
+    Standard OTEL Variables:
+    - OTEL_SERVICE_NAME: Service name (default: mlsdm)
+    - OTEL_SDK_DISABLED: Disable tracing (default: false)
+    - OTEL_EXPORTER_TYPE: Exporter type (console, otlp, jaeger, none)
+    - OTEL_EXPORTER_OTLP_ENDPOINT: OTLP endpoint URL
+    - OTEL_EXPORTER_OTLP_PROTOCOL: Protocol (http/protobuf, grpc)
+    - OTEL_TRACES_SAMPLER_ARG: Sampling rate (0.0 to 1.0)
+
+    MLSDM-specific Variables (override OTEL equivalents):
+    - MLSDM_OTEL_ENABLED: Enable tracing (takes precedence over OTEL_SDK_DISABLED)
+    - MLSDM_OTEL_ENDPOINT: OTLP endpoint (takes precedence over OTEL_EXPORTER_OTLP_ENDPOINT)
+
     Attributes:
         service_name: Name of the service for tracing
         enabled: Whether tracing is enabled
@@ -78,17 +93,28 @@ class TracingConfig:
     ) -> None:
         """Initialize tracing configuration from environment or parameters."""
         self.service_name = service_name or os.getenv("OTEL_SERVICE_NAME", "mlsdm")
-        self.enabled = (
-            enabled
-            if enabled is not None
-            else os.getenv("OTEL_SDK_DISABLED", "false").lower() != "true"
-        )
+
+        # Check for MLSDM-specific enable flag first, then fall back to OTEL standard
+        mlsdm_enabled = os.getenv("MLSDM_OTEL_ENABLED")
+        if enabled is not None:
+            self.enabled = enabled
+        elif mlsdm_enabled is not None:
+            self.enabled = mlsdm_enabled.lower() == "true"
+        else:
+            self.enabled = os.getenv("OTEL_SDK_DISABLED", "false").lower() != "true"
+
         self.exporter_type = exporter_type or os.getenv(
             "OTEL_EXPORTER_TYPE", "console"
         )
-        self.otlp_endpoint = otlp_endpoint or os.getenv(
-            "OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318"
+
+        # Check for MLSDM-specific endpoint first, then fall back to OTEL standard
+        mlsdm_endpoint = os.getenv("MLSDM_OTEL_ENDPOINT")
+        self.otlp_endpoint = (
+            otlp_endpoint
+            or mlsdm_endpoint
+            or os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318")
         )
+
         self.otlp_protocol = otlp_protocol or os.getenv(
             "OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf"
         )
@@ -742,3 +768,118 @@ def add_span_attributes(span: Span, **attributes: Any) -> None:
             span.set_attribute(key, ",".join(str(v) for v in value))
         else:
             span.set_attribute(key, str(value)[:1024])
+
+
+# ---------------------------------------------------------------------------
+# Additional MLSDM-specific tracing utilities (Phase 7)
+# ---------------------------------------------------------------------------
+
+
+def trace_aphasia_repair(
+    detected: bool,
+    severity: float,
+    repair_enabled: bool,
+) -> Any:
+    """Create a context manager for tracing aphasia repair operations.
+
+    Args:
+        detected: Whether aphasia was detected
+        severity: Severity score (0.0 to 1.0)
+        repair_enabled: Whether repair is enabled
+
+    Returns:
+        Context manager yielding a span
+    """
+    manager = get_tracer_manager()
+    return manager.start_span(
+        "mlsdm.aphasia_repair",
+        kind=SpanKind.INTERNAL,
+        attributes={
+            "mlsdm.aphasia.detected": detected,
+            "mlsdm.aphasia.severity": severity,
+            "mlsdm.aphasia.repair_enabled": repair_enabled,
+        },
+    )
+
+
+def trace_llm_call(
+    prompt_length: int,
+    max_tokens: int,
+    provider_id: str | None = None,
+) -> Any:
+    """Create a context manager for tracing LLM call operations.
+
+    Args:
+        prompt_length: Length of prompt (NOT the prompt itself)
+        max_tokens: Maximum tokens to generate
+        provider_id: Optional provider identifier
+
+    Returns:
+        Context manager yielding a span
+    """
+    manager = get_tracer_manager()
+    attributes: dict[str, Any] = {
+        "mlsdm.llm.prompt_length": prompt_length,
+        "mlsdm.llm.max_tokens": max_tokens,
+    }
+    if provider_id is not None:
+        attributes["mlsdm.llm.provider_id"] = provider_id
+
+    return manager.start_span(
+        "mlsdm.llm_call",
+        kind=SpanKind.CLIENT,
+        attributes=attributes,
+    )
+
+
+def trace_speech_governance(
+    governance_enabled: bool,
+    aphasia_mode: bool = False,
+) -> Any:
+    """Create a context manager for tracing speech governance operations.
+
+    Args:
+        governance_enabled: Whether speech governance is enabled
+        aphasia_mode: Whether aphasia mode is enabled
+
+    Returns:
+        Context manager yielding a span
+    """
+    manager = get_tracer_manager()
+    return manager.start_span(
+        "mlsdm.speech_governance",
+        kind=SpanKind.INTERNAL,
+        attributes={
+            "mlsdm.speech.governance_enabled": governance_enabled,
+            "mlsdm.speech.aphasia_mode": aphasia_mode,
+        },
+    )
+
+
+def trace_request(
+    request_id: str,
+    endpoint: str,
+    method: str = "POST",
+) -> Any:
+    """Create a context manager for tracing HTTP requests.
+
+    This is a high-level span for the entire API request.
+
+    Args:
+        request_id: Unique request identifier
+        endpoint: API endpoint path
+        method: HTTP method
+
+    Returns:
+        Context manager yielding a span
+    """
+    manager = get_tracer_manager()
+    return manager.start_span(
+        f"api.{endpoint.lstrip('/').replace('/', '_')}",
+        kind=SpanKind.SERVER,
+        attributes={
+            "http.method": method,
+            "http.route": endpoint,
+            "mlsdm.request_id": request_id,
+        },
+    )

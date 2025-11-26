@@ -2,10 +2,16 @@
 
 This module implements a Principal System Architect-level logging system
 with structured JSON logs, multiple log levels, and automatic rotation.
+
+Key features:
+- Payload scrubbing to prevent PII/sensitive data in logs
+- Mandatory fields for full observability (request_id, phase, etc.)
+- Thread-safe singleton pattern
 """
 
 import json
 import logging
+import re
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
@@ -13,6 +19,69 @@ from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from pathlib import Path
 from threading import Lock
 from typing import Any
+
+
+# ---------------------------------------------------------------------------
+# Payload Scrubbing
+# ---------------------------------------------------------------------------
+
+
+def payload_scrubber(
+    text: str,
+    max_length: int = 50,
+    mask_char: str = "*",
+) -> str:
+    """Scrub sensitive content from text for safe logging.
+
+    This function masks user input and LLM responses to prevent
+    PII or sensitive content from appearing in logs.
+
+    Args:
+        text: The text to scrub
+        max_length: Maximum length of text to show (rest is masked)
+        mask_char: Character to use for masking
+
+    Returns:
+        Scrubbed text safe for logging
+    """
+    if not text:
+        return "[empty]"
+
+    if not isinstance(text, str):
+        return f"[non-string:{type(text).__name__}]"
+
+    # Remove any newlines/tabs for log readability
+    clean = re.sub(r"[\n\r\t]+", " ", text)
+
+    # Truncate and mask if too long
+    if len(clean) > max_length:
+        visible_chars = max_length // 2
+        return f"{clean[:visible_chars]}{mask_char * 3}[{len(clean)} chars]{mask_char * 3}{clean[-visible_chars:]}"
+
+    return clean
+
+
+def scrub_for_log(value: Any, max_length: int = 50) -> str:
+    """Convert any value to a log-safe scrubbed string.
+
+    Args:
+        value: Any value to convert for logging
+        max_length: Maximum length for string values
+
+    Returns:
+        Log-safe string representation
+    """
+    if value is None:
+        return "[none]"
+    if isinstance(value, str):
+        return payload_scrubber(value, max_length)
+    if isinstance(value, (int, float, bool)):
+        return str(value)
+    if isinstance(value, (list, tuple)):
+        return f"[{type(value).__name__}:{len(value)} items]"
+    if isinstance(value, dict):
+        return f"[dict:{len(value)} keys]"
+    return f"[{type(value).__name__}]"
 
 
 class EventType(Enum):
@@ -53,6 +122,32 @@ class EventType(Enum):
     # General events
     EVENT_PROCESSED = "event_processed"
     STATE_CHANGE = "state_change"
+
+    # Request lifecycle events (Phase 7 additions)
+    REQUEST_STARTED = "request_started"
+    REQUEST_COMPLETED = "request_completed"
+    REQUEST_REJECTED = "request_rejected"
+
+    # Generation events
+    GENERATION_STARTED = "generation_started"
+    GENERATION_COMPLETED = "generation_completed"
+
+    # Aphasia events (for unified tracking)
+    APHASIA_DETECTED = "aphasia_detected"
+    APHASIA_REPAIRED = "aphasia_repaired"
+
+
+class RejectionReason(Enum):
+    """Reason codes for request rejections."""
+
+    NORMAL = "normal"
+    MORAL_REJECT = "moral_reject"
+    MORAL_PRECHECK = "moral_precheck"
+    GRAMMAR_PRECHECK = "grammar_precheck"
+    EMERGENCY_SHUTDOWN = "emergency_shutdown"
+    RATE_LIMIT = "rate_limit"
+    SLEEP_PHASE = "sleep_phase"
+    VALIDATION_ERROR = "validation_error"
 
 
 class JSONFormatter(logging.Formatter):
@@ -662,6 +757,242 @@ class ObservabilityLogger:
             EventType.EMERGENCY_SHUTDOWN_RESET,
             "Emergency shutdown flag has been reset",
             correlation_id=correlation_id,
+        )
+
+    # ------------------------------------------------------------------ #
+    # Request lifecycle logging with mandatory fields (Phase 7)          #
+    # ------------------------------------------------------------------ #
+
+    def log_request_started(
+        self,
+        request_id: str,
+        phase: str,
+        step_counter: int,
+        endpoint: str | None = None,
+        prompt_length: int | None = None,
+        correlation_id: str | None = None,
+    ) -> str:
+        """Log the start of a request with mandatory observability fields.
+
+        Args:
+            request_id: Unique identifier for this request
+            phase: Current cognitive phase (wake/sleep)
+            step_counter: Current step counter
+            endpoint: Optional API endpoint (e.g., '/generate', '/infer')
+            prompt_length: Length of prompt (NOT the prompt itself)
+            correlation_id: Optional correlation ID
+
+        Returns:
+            Correlation ID
+        """
+        metrics: dict[str, Any] = {
+            "request_id": request_id,
+            "phase": phase,
+            "step_counter": step_counter,
+        }
+        if endpoint:
+            metrics["endpoint"] = endpoint
+        if prompt_length is not None:
+            metrics["prompt_length"] = prompt_length
+
+        return self.info(
+            EventType.REQUEST_STARTED,
+            f"Request started: {request_id}",
+            correlation_id=correlation_id or request_id,
+            metrics=metrics,
+        )
+
+    def log_request_completed(
+        self,
+        request_id: str,
+        phase: str,
+        step_counter: int,
+        moral_score_before: float | None = None,
+        moral_score_after: float | None = None,
+        accepted: bool = True,
+        reason: str = "normal",
+        latency_ms: float | None = None,
+        response_length: int | None = None,
+        correlation_id: str | None = None,
+    ) -> str:
+        """Log the completion of a request with mandatory observability fields.
+
+        This is the main logging method for request lifecycle tracking.
+        All mandatory fields are captured here for full observability.
+
+        INVARIANT: No PII, raw user input, or LLM output is logged.
+
+        Args:
+            request_id: Unique identifier for this request
+            phase: Current cognitive phase (wake/sleep)
+            step_counter: Current step counter
+            moral_score_before: Moral score before processing
+            moral_score_after: Moral score after processing
+            accepted: Whether the request was accepted
+            reason: Reason code (normal/moral_reject/emergency_shutdown/etc.)
+            latency_ms: Total processing latency in milliseconds
+            response_length: Length of response (NOT the response itself)
+            correlation_id: Optional correlation ID
+
+        Returns:
+            Correlation ID
+        """
+        metrics: dict[str, Any] = {
+            "request_id": request_id,
+            "phase": phase,
+            "step_counter": step_counter,
+            "accepted": accepted,
+            "reason": reason,
+        }
+        if moral_score_before is not None:
+            metrics["moral_score_before"] = round(moral_score_before, 4)
+        if moral_score_after is not None:
+            metrics["moral_score_after"] = round(moral_score_after, 4)
+        if latency_ms is not None:
+            metrics["latency_ms"] = round(latency_ms, 2)
+        if response_length is not None:
+            metrics["response_length"] = response_length
+
+        status = "completed" if accepted else f"rejected ({reason})"
+        return self.info(
+            EventType.REQUEST_COMPLETED,
+            f"Request {status}: {request_id}",
+            correlation_id=correlation_id or request_id,
+            metrics=metrics,
+        )
+
+    def log_request_rejected(
+        self,
+        request_id: str,
+        phase: str,
+        step_counter: int,
+        reason: str,
+        moral_score: float | None = None,
+        threshold: float | None = None,
+        correlation_id: str | None = None,
+    ) -> str:
+        """Log a rejected request with context.
+
+        Args:
+            request_id: Unique identifier for this request
+            phase: Current cognitive phase (wake/sleep)
+            step_counter: Current step counter
+            reason: Reason for rejection
+            moral_score: Moral score that caused rejection (if applicable)
+            threshold: Moral threshold (if applicable)
+            correlation_id: Optional correlation ID
+
+        Returns:
+            Correlation ID
+        """
+        metrics: dict[str, Any] = {
+            "request_id": request_id,
+            "phase": phase,
+            "step_counter": step_counter,
+            "accepted": False,
+            "reason": reason,
+        }
+        if moral_score is not None:
+            metrics["moral_score"] = round(moral_score, 4)
+        if threshold is not None:
+            metrics["threshold"] = round(threshold, 4)
+
+        return self.warn(
+            EventType.REQUEST_REJECTED,
+            f"Request rejected ({reason}): {request_id}",
+            correlation_id=correlation_id or request_id,
+            metrics=metrics,
+        )
+
+    def log_generation_event(
+        self,
+        request_id: str,
+        phase: str,
+        step_counter: int,
+        event: str,  # "started" or "completed"
+        latency_ms: float | None = None,
+        response_length: int | None = None,
+        correlation_id: str | None = None,
+    ) -> str:
+        """Log a generation lifecycle event.
+
+        Args:
+            request_id: Unique identifier for this request
+            phase: Current cognitive phase (wake/sleep)
+            step_counter: Current step counter
+            event: Event type ("started" or "completed")
+            latency_ms: Generation latency in milliseconds (for completed)
+            response_length: Length of response (NOT the response itself)
+            correlation_id: Optional correlation ID
+
+        Returns:
+            Correlation ID
+        """
+        event_type = (
+            EventType.GENERATION_STARTED if event == "started"
+            else EventType.GENERATION_COMPLETED
+        )
+        metrics: dict[str, Any] = {
+            "request_id": request_id,
+            "phase": phase,
+            "step_counter": step_counter,
+        }
+        if latency_ms is not None:
+            metrics["latency_ms"] = round(latency_ms, 2)
+        if response_length is not None:
+            metrics["response_length"] = response_length
+
+        return self.info(
+            event_type,
+            f"Generation {event}: {request_id}",
+            correlation_id=correlation_id or request_id,
+            metrics=metrics,
+        )
+
+    def log_aphasia_event(
+        self,
+        request_id: str,
+        detected: bool,
+        severity: float,
+        repaired: bool,
+        flags: list[str] | None = None,
+        severity_bucket: str | None = None,
+        correlation_id: str | None = None,
+    ) -> str:
+        """Log an aphasia detection/repair event.
+
+        This provides unified aphasia logging alongside the aphasia_logging module.
+
+        Args:
+            request_id: Unique identifier for this request
+            detected: Whether aphasia was detected
+            severity: Aphasia severity score (0.0 to 1.0)
+            repaired: Whether repair was applied
+            flags: List of aphasia flags detected
+            severity_bucket: Severity bucket label (e.g., "low", "medium", "high")
+            correlation_id: Optional correlation ID
+
+        Returns:
+            Correlation ID
+        """
+        event_type = EventType.APHASIA_REPAIRED if repaired else EventType.APHASIA_DETECTED
+        metrics: dict[str, Any] = {
+            "request_id": request_id,
+            "detected": detected,
+            "severity": round(severity, 3),
+            "repaired": repaired,
+        }
+        if flags:
+            metrics["flags"] = flags
+        if severity_bucket:
+            metrics["severity_bucket"] = severity_bucket
+
+        action = "repaired" if repaired else ("detected" if detected else "checked")
+        return self.info(
+            event_type,
+            f"Aphasia {action}: severity={severity:.3f}",
+            correlation_id=correlation_id or request_id,
+            metrics=metrics,
         )
 
     def get_config(self) -> dict[str, Any]:
