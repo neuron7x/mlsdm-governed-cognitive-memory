@@ -402,9 +402,111 @@ class NeuroCognitiveEngine:
         timing: dict[str, float],
         validation_steps: list[dict[str, Any]],
     ) -> dict[str, Any]:
-        """Internal generate logic with exception handling in outer wrapper."""
+        """Internal generate logic with exception handling in outer wrapper.
 
-        # Заповнюємо рантайм за замовчуванням
+        Orchestrates the generation pipeline:
+        1. Prepare request context (fill defaults, update runtime params)
+        2. Pre-select provider for metrics tracking (if router enabled)
+        3. PRE-FLIGHT: moral precheck
+        4. PRE-FLIGHT: grammar precheck (if FSLGS enabled)
+        5. MAIN: LLM/FSLGS generation
+        6. POST: moral check on response
+        7. Record metrics and build response
+        """
+        # Step 1: Prepare request context
+        user_intent, cognitive_load, moral_value, context_top_k = (
+            self._prepare_request_context(
+                user_intent, cognitive_load, moral_value, context_top_k
+            )
+        )
+
+        # Step 2: Pre-select provider for metrics tracking
+        self._preselect_provider_for_metrics(prompt, user_intent)
+
+        mlsdm_state: dict[str, Any] | None = None
+        fslgs_result: dict[str, Any] | None = None
+
+        with TimingContext(timing, "total"):
+            # Step 3: PRE-FLIGHT moral check
+            rejection = self._run_moral_precheck(
+                prompt, moral_value, timing, validation_steps
+            )
+            if rejection is not None:
+                return rejection
+
+            # Step 4: PRE-FLIGHT grammar check
+            rejection = self._run_grammar_precheck(prompt, timing, validation_steps)
+            if rejection is not None:
+                return rejection
+
+            # Step 5: MAIN generation pipeline
+            self._runtime_moral_value = moral_value
+            self._runtime_context_top_k = context_top_k
+
+            try:
+                response_text, mlsdm_state, fslgs_result = self._run_llm_generation(
+                    prompt, max_tokens, cognitive_load, user_intent,
+                    moral_value, context_top_k, enable_diagnostics, timing
+                )
+
+                # Step 6: POST-generation moral check
+                rejection = self._run_post_moral_check(
+                    response_text, prompt, moral_value,
+                    mlsdm_state, fslgs_result, timing, validation_steps
+                )
+                if rejection is not None:
+                    return rejection
+
+            except MLSDMRejectionError as e:
+                # Use self._last_mlsdm_state since mlsdm_state may be None
+                # when exception is raised before return
+                return self._build_error_response(
+                    error_type="mlsdm_rejection",
+                    message=str(e),
+                    rejected_at="generation",
+                    mlsdm_state=self._last_mlsdm_state,
+                    fslgs_result=fslgs_result,
+                    timing=timing,
+                    validation_steps=validation_steps,
+                    record_generation_metrics=True,
+                )
+            except EmptyResponseError as e:
+                # Use self._last_mlsdm_state since mlsdm_state may be None
+                # when exception is raised before return
+                return self._build_error_response(
+                    error_type="empty_response",
+                    message=str(e),
+                    rejected_at="generation",
+                    mlsdm_state=self._last_mlsdm_state,
+                    fslgs_result=fslgs_result,
+                    timing=timing,
+                    validation_steps=validation_steps,
+                    record_generation_metrics=True,
+                )
+
+        # Step 7: Success path - record metrics and build response
+        self._record_success_metrics(timing)
+        return self._build_success_response(
+            response_text, mlsdm_state, fslgs_result, timing, validation_steps
+        )
+
+    # ------------------------------------------------------------------ #
+    # Orchestration helpers for _generate_internal                        #
+    # ------------------------------------------------------------------ #
+
+    def _prepare_request_context(
+        self,
+        user_intent: str | None,
+        cognitive_load: float | None,
+        moral_value: float | None,
+        context_top_k: int | None,
+    ) -> tuple[str, float, float, int]:
+        """Fill defaults for request parameters and update runtime state.
+
+        Returns:
+            Tuple of (user_intent, cognitive_load, moral_value, context_top_k)
+            with defaults applied.
+        """
         user_intent = user_intent or self.config.default_user_intent
         cognitive_load = (
             cognitive_load
@@ -421,12 +523,19 @@ class NeuroCognitiveEngine:
         # Update runtime parameters for router
         self._runtime_user_intent = user_intent
 
+        return user_intent, cognitive_load, moral_value, context_top_k
+
+    def _preselect_provider_for_metrics(
+        self, prompt: str, user_intent: str
+    ) -> None:
+        """Pre-select provider/variant for metrics tracking.
+
+        This ensures we track even rejected requests in metrics.
+        """
         # Reset provider/variant tracking
         self._selected_provider_id = None
         self._selected_variant = None
 
-        # If using router, pre-select provider/variant for metrics tracking
-        # This ensures we track even rejected requests
         if self._router is not None:
             router_metadata = {
                 "user_intent": user_intent,
@@ -437,323 +546,361 @@ class NeuroCognitiveEngine:
             self._selected_provider_id = getattr(provider, "provider_id", None)
             if hasattr(self._router, "get_variant"):
                 try:
-                    self._selected_variant = self._router.get_variant(provider_name, **router_metadata)
+                    self._selected_variant = self._router.get_variant(
+                        provider_name, **router_metadata
+                    )
                 except TypeError:
                     self._selected_variant = self._router.get_variant(provider_name)
 
+    def _run_moral_precheck(
+        self,
+        prompt: str,
+        moral_value: float,
+        timing: dict[str, float],
+        validation_steps: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
+        """Run pre-flight moral check on the prompt.
+
+        Returns:
+            Rejection response dict if check fails, None if passed.
+        """
+        with TimingContext(timing, "moral_precheck"):
+            moral_filter = getattr(self._mlsdm, "moral", None)
+
+            if moral_filter is not None and hasattr(
+                moral_filter, "compute_moral_value"
+            ):
+                prompt_moral = moral_filter.compute_moral_value(prompt)
+                passed = prompt_moral >= moral_value
+                validation_steps.append(
+                    {
+                        "step": "moral_precheck",
+                        "passed": passed,
+                        "score": prompt_moral,
+                        "threshold": moral_value,
+                    }
+                )
+                if not passed:
+                    # Швидка відмова: не вантажимо FSLGS/LLM
+                    # Record metrics
+                    if self._metrics is not None:
+                        self._metrics.increment_requests_total(
+                            provider_id=self._selected_provider_id,
+                            variant=self._selected_variant
+                        )
+                        self._metrics.increment_rejections_total("pre_flight")
+                        self._metrics.increment_errors_total("moral_precheck")
+                        if "moral_precheck" in timing:
+                            self._metrics.record_latency_pre_flight(
+                                timing["moral_precheck"]
+                            )
+                        if "total" in timing:
+                            self._metrics.record_latency_total(timing["total"])
+
+                    return {
+                        "response": "",
+                        "governance": None,
+                        "mlsdm": {},
+                        "timing": timing,
+                        "validation_steps": validation_steps,
+                        "error": {
+                            "type": "moral_precheck",
+                            "score": prompt_moral,
+                            "threshold": moral_value,
+                        },
+                        "rejected_at": "pre_flight",
+                        "meta": self._build_meta(),
+                    }
+            else:
+                # Якщо моральний фільтр недоступний — позначаємо як пропущений крок.
+                validation_steps.append(
+                    {
+                        "step": "moral_precheck",
+                        "passed": True,
+                        "skipped": True,
+                        "reason": "moral_filter_not_available",
+                    }
+                )
+
+        return None
+
+    def _run_grammar_precheck(
+        self,
+        prompt: str,
+        timing: dict[str, float],
+        validation_steps: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
+        """Run pre-flight grammar check on the prompt (if FSLGS enabled).
+
+        Returns:
+            Rejection response dict if check fails, None if passed/skipped.
+        """
+        if self._fslgs is None or getattr(self._fslgs, "grammar", None) is None:
+            return None
+
+        with TimingContext(timing, "grammar_precheck"):
+            grammar = self._fslgs.grammar
+            if hasattr(grammar, "validate_input_structure"):
+                passed = bool(grammar.validate_input_structure(prompt))
+                validation_steps.append(
+                    {
+                        "step": "grammar_precheck",
+                        "passed": passed,
+                    }
+                )
+                if not passed:
+                    # Record metrics
+                    if self._metrics is not None:
+                        self._metrics.increment_rejections_total("pre_flight")
+                        self._metrics.increment_errors_total("grammar_precheck")
+                        if "grammar_precheck" in timing:
+                            self._metrics.record_latency_pre_flight(
+                                timing["grammar_precheck"]
+                            )
+                        if "total" in timing:
+                            self._metrics.record_latency_total(timing["total"])
+
+                    return {
+                        "response": "",
+                        "governance": None,
+                        "mlsdm": {},
+                        "timing": timing,
+                        "validation_steps": validation_steps,
+                        "error": {
+                            "type": "grammar_precheck",
+                            "message": "invalid_structure",
+                        },
+                        "rejected_at": "pre_flight",
+                        "meta": {},
+                    }
+            else:
+                validation_steps.append(
+                    {
+                        "step": "grammar_precheck",
+                        "passed": True,
+                        "skipped": True,
+                        "reason": "validate_input_structure_not_available",
+                    }
+                )
+
+        return None
+
+    def _run_llm_generation(
+        self,
+        prompt: str,
+        max_tokens: int,
+        cognitive_load: float,
+        user_intent: str,
+        moral_value: float,
+        context_top_k: int,
+        enable_diagnostics: bool,
+        timing: dict[str, float],
+    ) -> tuple[str, dict[str, Any] | None, dict[str, Any] | None]:
+        """Run the core LLM/FSLGS generation.
+
+        Returns:
+            Tuple of (response_text, mlsdm_state, fslgs_result).
+
+        Raises:
+            MLSDMRejectionError: If MLSDM rejects the request.
+            EmptyResponseError: If MLSDM returns empty response.
+        """
         mlsdm_state: dict[str, Any] | None = None
         fslgs_result: dict[str, Any] | None = None
 
-        with TimingContext(timing, "total"):
-            # -----------------------
-            # PRE-FLIGHT: moral check
-            # -----------------------
-            with TimingContext(timing, "moral_precheck"):
-                prompt_moral = None
-                moral_filter = getattr(self._mlsdm, "moral", None)
+        with TimingContext(timing, "generation"):
+            if self._fslgs is not None:
+                # Повний governance-пайплайн
+                fslgs_result = self._fslgs.generate(
+                    prompt=prompt,
+                    cognitive_load=cognitive_load,
+                    max_tokens=max_tokens,
+                    user_intent=user_intent,
+                    enable_diagnostics=enable_diagnostics,
+                )
+                response_text = fslgs_result.get("response", "")
+                mlsdm_state = self._last_mlsdm_state
+            else:
+                # Фолбек: лише MLSDM без FSLGS
+                mlsdm_state = self._mlsdm.generate(
+                    prompt=prompt,
+                    moral_value=moral_value,
+                    max_tokens=max_tokens,
+                    context_top_k=context_top_k,
+                )
+                self._last_mlsdm_state = mlsdm_state
 
-                if moral_filter is not None and hasattr(
-                    moral_filter, "compute_moral_value"
-                ):
-                    prompt_moral = moral_filter.compute_moral_value(prompt)
-                    passed = prompt_moral >= moral_value
-                    validation_steps.append(
-                        {
-                            "step": "moral_precheck",
-                            "passed": passed,
-                            "score": prompt_moral,
-                            "threshold": moral_value,
-                        }
-                    )
-                    if not passed:
-                        # Швидка відмова: не вантажимо FSLGS/LLM
-                        # Record metrics
-                        if self._metrics is not None:
-                            self._metrics.increment_requests_total(
-                                provider_id=self._selected_provider_id,
-                                variant=self._selected_variant
-                            )
-                            self._metrics.increment_rejections_total("pre_flight")
-                            self._metrics.increment_errors_total("moral_precheck")
-                            if "moral_precheck" in timing:
-                                self._metrics.record_latency_pre_flight(timing["moral_precheck"])
-                            if "total" in timing:
-                                self._metrics.record_latency_total(timing["total"])
+                if not mlsdm_state.get("accepted", True):
+                    note = mlsdm_state.get("note", "rejected")
+                    raise MLSDMRejectionError(f"MLSDM rejected: {note}")
 
-                        # Build metadata for pre-flight rejections
-                        meta_precheck: dict[str, Any] = {}
-                        if self._selected_provider_id is not None:
-                            meta_precheck["backend_id"] = self._selected_provider_id
-                        if self._selected_variant is not None:
-                            meta_precheck["variant"] = self._selected_variant
+                response_text = mlsdm_state.get("response", "")
+                if not isinstance(response_text, str) or not response_text.strip():
+                    raise EmptyResponseError("MLSDM returned empty response")
 
-                        return {
-                            "response": "",
-                            "governance": None,
-                            "mlsdm": {},
-                            "timing": timing,
-                            "validation_steps": validation_steps,
-                            "error": {
-                                "type": "moral_precheck",
-                                "score": prompt_moral,
-                                "threshold": moral_value,
-                            },
-                            "rejected_at": "pre_flight",
-                            "meta": meta_precheck,
-                        }
-                else:
-                    # Якщо моральний фільтр недоступний — позначаємо як пропущений крок.
-                    validation_steps.append(
-                        {
-                            "step": "moral_precheck",
-                            "passed": True,
-                            "skipped": True,
-                            "reason": "moral_filter_not_available",
-                        }
-                    )
+        return response_text, mlsdm_state, fslgs_result
 
-            # --------------------------
-            # PRE-FLIGHT: grammar check
-            # --------------------------
-            if self._fslgs is not None and getattr(
-                self._fslgs, "grammar", None
-            ) is not None:
-                with TimingContext(timing, "grammar_precheck"):
-                    grammar = self._fslgs.grammar
-                    if hasattr(grammar, "validate_input_structure"):
-                        passed = bool(grammar.validate_input_structure(prompt))
-                        validation_steps.append(
-                            {
-                                "step": "grammar_precheck",
-                                "passed": passed,
-                            }
-                        )
-                        if not passed:
-                            # Record metrics
-                            if self._metrics is not None:
-                                self._metrics.increment_rejections_total("pre_flight")
-                                self._metrics.increment_errors_total("grammar_precheck")
-                                if "grammar_precheck" in timing:
-                                    self._metrics.record_latency_pre_flight(timing["grammar_precheck"])
-                                if "total" in timing:
-                                    self._metrics.record_latency_total(timing["total"])
+    def _run_post_moral_check(
+        self,
+        response_text: str,
+        prompt: str,
+        moral_value: float,
+        mlsdm_state: dict[str, Any] | None,
+        fslgs_result: dict[str, Any] | None,
+        timing: dict[str, float],
+        validation_steps: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
+        """Run post-generation moral check on the response.
 
-                            return {
-                                "response": "",
-                                "governance": None,
-                                "mlsdm": {},
-                                "timing": timing,
-                                "validation_steps": validation_steps,
-                                "error": {
-                                    "type": "grammar_precheck",
-                                    "message": "invalid_structure",
-                                },
-                                "rejected_at": "pre_flight",
-                                "meta": {},
-                            }
-                    else:
-                        validation_steps.append(
-                            {
-                                "step": "grammar_precheck",
-                                "passed": True,
-                                "skipped": True,
-                                "reason": "validate_input_structure_not_available",
-                            }
-                        )
+        Returns:
+            Rejection response dict if check fails, None if passed.
+        """
+        with TimingContext(timing, "post_moral_check"):
+            response_moral_score = self._estimate_response_moral_score(
+                response_text, prompt
+            )
 
-            # -----------------------
-            # MAIN PIPELINE
-            # -----------------------
-            # Оновлюємо runtime-параметри для governed_llm (FIX-002)
-            self._runtime_moral_value = moral_value
-            self._runtime_context_top_k = context_top_k
+            # Tolerance for estimation error (matching test expectations)
+            MORAL_SCORE_TOLERANCE = 0.15
 
-            try:
-                with TimingContext(timing, "generation"):
-                    if self._fslgs is not None:
-                        # Повний governance-пайплайн
-                        fslgs_result = self._fslgs.generate(
-                            prompt=prompt,
-                            cognitive_load=cognitive_load,
-                            max_tokens=max_tokens,
-                            user_intent=user_intent,
-                            enable_diagnostics=enable_diagnostics,
-                        )
-                        response_text = fslgs_result.get("response", "")
-                        mlsdm_state = self._last_mlsdm_state
-                    else:
-                        # Фолбек: лише MLSDM без FSLGS
-                        mlsdm_state = self._mlsdm.generate(
-                            prompt=prompt,
-                            moral_value=moral_value,
-                            max_tokens=max_tokens,
-                            context_top_k=context_top_k,
-                        )
-                        self._last_mlsdm_state = mlsdm_state
+            if response_moral_score < (moral_value - MORAL_SCORE_TOLERANCE):
+                # Response doesn't meet moral threshold - reject it
+                validation_steps.append({
+                    "step": "post_moral_check",
+                    "passed": False,
+                    "score": response_moral_score,
+                    "threshold": moral_value,
+                })
 
-                        if not mlsdm_state.get("accepted", True):
-                            note = mlsdm_state.get("note", "rejected")
-                            raise MLSDMRejectionError(
-                                f"MLSDM rejected: {note}"
-                            )
+                if self._metrics is not None:
+                    self._metrics.increment_rejections_total("post_moral")
+                    self._metrics.increment_errors_total("post_moral_check")
 
-                        response_text = mlsdm_state.get("response", "")
-                        if not isinstance(response_text, str) or not response_text.strip():
-                            raise EmptyResponseError(
-                                "MLSDM returned empty response"
-                            )
-
-                # POST-GENERATION MORAL CHECK
-                # Verify the generated response meets moral threshold
-                # This is a safety check to ensure harmful content isn't accepted
-                with TimingContext(timing, "post_moral_check"):
-                    response_moral_score = self._estimate_response_moral_score(
-                        response_text, prompt
-                    )
-
-                    # Tolerance for estimation error (matching test expectations)
-                    MORAL_SCORE_TOLERANCE = 0.15
-
-                    if response_moral_score < (moral_value - MORAL_SCORE_TOLERANCE):
-                        # Response doesn't meet moral threshold - reject it
-                        validation_steps.append({
-                            "step": "post_moral_check",
-                            "passed": False,
-                            "score": response_moral_score,
-                            "threshold": moral_value,
-                        })
-
-                        if self._metrics is not None:
-                            self._metrics.increment_rejections_total("post_moral")
-                            self._metrics.increment_errors_total("post_moral_check")
-
-                        meta_moral: dict[str, Any] = {}
-                        if self._selected_provider_id is not None:
-                            meta_moral["backend_id"] = self._selected_provider_id
-                        if self._selected_variant is not None:
-                            meta_moral["variant"] = self._selected_variant
-
-                        return {
-                            "response": "",
-                            "governance": fslgs_result if fslgs_result is not None else None,
-                            "mlsdm": mlsdm_state if mlsdm_state is not None else {},
-                            "timing": timing,
-                            "validation_steps": validation_steps,
-                            "error": {
-                                "type": "post_moral_check",
-                                "score": response_moral_score,
-                                "threshold": moral_value,
-                                "message": f"Response moral score {response_moral_score:.2f} below threshold {moral_value:.2f}",
-                            },
-                            "rejected_at": "pre_moral",
-                            "meta": meta_moral,
-                        }
-
-                    validation_steps.append({
-                        "step": "post_moral_check",
-                        "passed": True,
+                return {
+                    "response": "",
+                    "governance": fslgs_result if fslgs_result is not None else None,
+                    "mlsdm": mlsdm_state if mlsdm_state is not None else {},
+                    "timing": timing,
+                    "validation_steps": validation_steps,
+                    "error": {
+                        "type": "post_moral_check",
                         "score": response_moral_score,
                         "threshold": moral_value,
-                    })
-
-            except MLSDMRejectionError as e:
-                # Record metrics
-                if self._metrics is not None:
-                    self._metrics.increment_requests_total(
-                        provider_id=self._selected_provider_id,
-                        variant=self._selected_variant
-                    )
-                    self._metrics.increment_rejections_total("generation")
-                    self._metrics.increment_errors_total("mlsdm_rejection")
-                    if "generation" in timing:
-                        self._metrics.record_latency_generation(timing["generation"])
-                    if "total" in timing:
-                        self._metrics.record_latency_total(timing["total"])
-
-                # Build metadata even for rejections
-                meta: dict[str, Any] = {}
-                if self._selected_provider_id is not None:
-                    meta["backend_id"] = self._selected_provider_id
-                if self._selected_variant is not None:
-                    meta["variant"] = self._selected_variant
-
-                return {
-                    "response": "",
-                    "governance": fslgs_result if fslgs_result is not None else None,
-                    "mlsdm": mlsdm_state if mlsdm_state is not None else {},
-                    "timing": timing,
-                    "validation_steps": validation_steps,
-                    "error": {
-                        "type": "mlsdm_rejection",
-                        "message": str(e),
+                        "message": (
+                            f"Response moral score {response_moral_score:.2f} "
+                            f"below threshold {moral_value:.2f}"
+                        ),
                     },
-                    "rejected_at": "generation",
-                    "meta": meta,
-                }
-            except EmptyResponseError as e:
-                # Record metrics
-                if self._metrics is not None:
-                    self._metrics.increment_requests_total(
-                        provider_id=self._selected_provider_id,
-                        variant=self._selected_variant
-                    )
-                    self._metrics.increment_rejections_total("generation")
-                    self._metrics.increment_errors_total("empty_response")
-                    if "generation" in timing:
-                        self._metrics.record_latency_generation(timing["generation"])
-                    if "total" in timing:
-                        self._metrics.record_latency_total(timing["total"])
-
-                # Build metadata even for rejections
-                meta_empty: dict[str, Any] = {}
-                if self._selected_provider_id is not None:
-                    meta_empty["backend_id"] = self._selected_provider_id
-                if self._selected_variant is not None:
-                    meta_empty["variant"] = self._selected_variant
-
-                return {
-                    "response": "",
-                    "governance": fslgs_result if fslgs_result is not None else None,
-                    "mlsdm": mlsdm_state if mlsdm_state is not None else {},
-                    "timing": timing,
-                    "validation_steps": validation_steps,
-                    "error": {
-                        "type": "empty_response",
-                        "message": str(e),
-                    },
-                    "rejected_at": "generation",
-                    "meta": meta_empty,
+                    "rejected_at": "pre_moral",
+                    "meta": self._build_meta(),
                 }
 
-        # Успішний шлях
-        # Record metrics for successful generation
+            validation_steps.append({
+                "step": "post_moral_check",
+                "passed": True,
+                "score": response_moral_score,
+                "threshold": moral_value,
+            })
+
+        return None
+
+    def _build_meta(self) -> dict[str, Any]:
+        """Build metadata dict with provider/variant info."""
+        meta: dict[str, Any] = {}
+        if self._selected_provider_id is not None:
+            meta["backend_id"] = self._selected_provider_id
+        if self._selected_variant is not None:
+            meta["variant"] = self._selected_variant
+        return meta
+
+    def _build_error_response(
+        self,
+        error_type: str,
+        message: str,
+        rejected_at: str,
+        mlsdm_state: dict[str, Any] | None,
+        fslgs_result: dict[str, Any] | None,
+        timing: dict[str, float],
+        validation_steps: list[dict[str, Any]],
+        record_generation_metrics: bool = False,
+    ) -> dict[str, Any]:
+        """Build a structured error response.
+
+        Args:
+            error_type: Type of error (e.g., 'mlsdm_rejection', 'empty_response').
+            message: Error message.
+            rejected_at: Stage where rejection occurred.
+            mlsdm_state: MLSDM state if available.
+            fslgs_result: FSLGS result if available.
+            timing: Timing metrics dict.
+            validation_steps: Validation steps list.
+            record_generation_metrics: Whether to record generation metrics.
+
+        Returns:
+            Structured error response dict.
+        """
+        # Record metrics
         if self._metrics is not None:
-            # Increment request counter with provider/variant labels
             self._metrics.increment_requests_total(
                 provider_id=self._selected_provider_id,
                 variant=self._selected_variant
             )
-
-            if "moral_precheck" in timing or "grammar_precheck" in timing:
-                pre_flight_time = timing.get("moral_precheck", 0) + timing.get("grammar_precheck", 0)
-                if pre_flight_time > 0:
-                    self._metrics.record_latency_pre_flight(pre_flight_time)
-            if "generation" in timing:
-                self._metrics.record_latency_generation(
-                    timing["generation"],
-                    provider_id=self._selected_provider_id,
-                    variant=self._selected_variant
-                )
+            self._metrics.increment_rejections_total(rejected_at)
+            self._metrics.increment_errors_total(error_type)
+            if record_generation_metrics and "generation" in timing:
+                self._metrics.record_latency_generation(timing["generation"])
             if "total" in timing:
                 self._metrics.record_latency_total(timing["total"])
 
-        # Build metadata with provider/variant info
-        metadata: dict[str, Any] = {}
-        if self._selected_provider_id is not None:
-            metadata["backend_id"] = self._selected_provider_id
-        if self._selected_variant is not None:
-            metadata["variant"] = self._selected_variant
+        return {
+            "response": "",
+            "governance": fslgs_result if fslgs_result is not None else None,
+            "mlsdm": mlsdm_state if mlsdm_state is not None else {},
+            "timing": timing,
+            "validation_steps": validation_steps,
+            "error": {
+                "type": error_type,
+                "message": message,
+            },
+            "rejected_at": rejected_at,
+            "meta": self._build_meta(),
+        }
 
+    def _record_success_metrics(self, timing: dict[str, float]) -> None:
+        """Record metrics for successful generation."""
+        if self._metrics is None:
+            return
+
+        # Increment request counter with provider/variant labels
+        self._metrics.increment_requests_total(
+            provider_id=self._selected_provider_id,
+            variant=self._selected_variant
+        )
+
+        if "moral_precheck" in timing or "grammar_precheck" in timing:
+            pre_flight_time = (
+                timing.get("moral_precheck", 0) + timing.get("grammar_precheck", 0)
+            )
+            if pre_flight_time > 0:
+                self._metrics.record_latency_pre_flight(pre_flight_time)
+        if "generation" in timing:
+            self._metrics.record_latency_generation(
+                timing["generation"],
+                provider_id=self._selected_provider_id,
+                variant=self._selected_variant
+            )
+        if "total" in timing:
+            self._metrics.record_latency_total(timing["total"])
+
+    def _build_success_response(
+        self,
+        response_text: str,
+        mlsdm_state: dict[str, Any] | None,
+        fslgs_result: dict[str, Any] | None,
+        timing: dict[str, float],
+        validation_steps: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Build a structured success response."""
         return {
             "response": response_text,
             "governance": fslgs_result if fslgs_result is not None else None,
@@ -762,7 +909,7 @@ class NeuroCognitiveEngine:
             "validation_steps": validation_steps,
             "error": None,
             "rejected_at": None,
-            "meta": metadata,
+            "meta": self._build_meta(),
         }
 
     # ------------------------------------------------------------------ #
