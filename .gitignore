@@ -22,3 +22,7 @@ htmlcov/
 baseline_comparison*.png
 baseline_comparison*.json
 load_test_report.json
+
+# Effectiveness suite generated reports
+reports/effectiveness_snapshot.json
+reports/EFFECTIVENESS_SNAPSHOT.md

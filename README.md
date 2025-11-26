@@ -226,9 +226,12 @@ Before deploying to production, complete the following:
 
 2. **Run effectiveness validation**
    ```bash
-   pytest tests/validation/test_moral_filter_effectiveness.py -v
-   pytest tests/validation/test_wake_sleep_effectiveness.py -v
-   pytest tests/validation/test_aphasia_detection.py -v
+   # Run unified effectiveness suite (recommended)
+   python scripts/run_effectiveness_suite.py --validate-slo
+   
+   # View generated reports
+   cat reports/effectiveness_snapshot.json
+   cat reports/EFFECTIVENESS_SNAPSHOT.md
    ```
 
 3. **Measure latency/throughput on your infrastructure**

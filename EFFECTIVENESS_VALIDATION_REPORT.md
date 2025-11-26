@@ -463,9 +463,54 @@ This validation demonstrates **Principal System Architect level** contributions:
 
 ---
 
-## 8. Reproducibility
+## 8. How Metrics Are Computed
 
-### 8.1 Running the Tests
+All effectiveness metrics in this document are computed using the unified effectiveness pipeline:
+
+### 8.1 Unified Effectiveness Suite
+
+The [`scripts/run_effectiveness_suite.py`](scripts/run_effectiveness_suite.py) script provides a single command to run all effectiveness tests and generate machine-readable reports.
+
+```bash
+# Run effectiveness suite and generate reports
+python scripts/run_effectiveness_suite.py
+
+# View the generated reports
+cat reports/effectiveness_snapshot.json
+cat reports/EFFECTIVENESS_SNAPSHOT.md
+```
+
+### 8.2 Generated Reports
+
+- **`reports/effectiveness_snapshot.json`** — Machine-readable JSON with all metrics
+- **`reports/EFFECTIVENESS_SNAPSHOT.md`** — Human-readable Markdown summary
+
+### 8.3 SLO Validation
+
+The suite validates metrics against Service Level Objectives:
+
+```bash
+# Run with SLO validation (exits non-zero if SLOs fail)
+python scripts/run_effectiveness_suite.py --validate-slo
+```
+
+| Metric | SLO Threshold |
+|--------|---------------|
+| `toxicity_rejection_rate` | ≥ 0.90 |
+| `moral_drift_max` | ≤ 0.50 |
+| `latency_p95_ms` | ≤ 50 ms |
+| `aphasia_telegraphic_reduction` | ≥ 0.80 |
+| `memory_footprint_mb` | ≤ 35 MB |
+
+### 8.4 CI Integration
+
+The `effectiveness-validation` job in CI (`.github/workflows/ci-neuro-cognitive-engine.yml`) automatically runs the effectiveness suite with SLO validation on every PR and push to main.
+
+---
+
+## 9. Reproducibility
+
+### 9.1 Running the Tests
 
 ```bash
 # Install dependencies
@@ -481,7 +526,7 @@ python tests/validation/test_moral_filter_effectiveness.py
 # ✅ ALL TESTS PASSED
 ```
 
-### 8.2 Test Configuration
+### 9.2 Test Configuration
 
 - **Random Seed**: 42 (fixed for reproducibility)
 - **Vector Dimension**: 384
@@ -489,7 +534,7 @@ python tests/validation/test_moral_filter_effectiveness.py
 - **Toxic Threshold**: 0.4 (configurable)
 - **Safe Threshold**: 0.6 (configurable)
 
-### 8.3 Code Locations
+### 9.3 Code Locations
 
 - **Metrics Framework**: `src/utils/coherence_safety_metrics.py`
 - **Wake/Sleep Tests**: `tests/validation/test_wake_sleep_effectiveness.py`

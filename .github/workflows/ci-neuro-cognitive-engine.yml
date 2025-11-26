@@ -39,6 +39,39 @@ jobs:
         run: |
           pytest -q --ignore=tests/load
   
+  effectiveness-validation:
+    name: Effectiveness Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e ".[test]"
+      
+      - name: Run effectiveness suite with SLO validation
+        run: |
+          python scripts/run_effectiveness_suite.py --validate-slo
+      
+      - name: Upload effectiveness snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: effectiveness-snapshot
+          path: |
+            reports/effectiveness_snapshot.json
+            reports/EFFECTIVENESS_SNAPSHOT.md
+          retention-days: 90
+  
   benchmarks:
     name: Performance Benchmarks
     runs-on: ubuntu-latest
