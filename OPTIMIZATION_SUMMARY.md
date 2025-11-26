@@ -62,7 +62,7 @@ else:
 - Fewer temporary array allocations
 - Performance test shows <50ms for 1000 updates with frequent transfers
 
-### 3. Cognitive Controller (`src/core/cognitive_controller.py`)
+### 3. Cognitive Controller (`src/mlsdm/core/cognitive_controller.py`)
 
 **Issue**: Phase values (0.1 for wake, 0.9 for sleep) were computed repeatedly.
 
@@ -83,7 +83,7 @@ phase_val = self._phase_cache[self.rhythm.phase]
 - Improved process_event and retrieve_context performance
 - Performance test shows <0.5s for 100 events
 
-### 4. Moral Filter V2 (`src/cognition/moral_filter_v2.py`)
+### 4. Moral Filter V2 (`src/mlsdm/cognition/moral_filter_v2.py`)
 
 **Issue**: All moral values went through threshold comparison, even extreme cases.
 
@@ -167,10 +167,10 @@ return bool(moral_value >= self.threshold)
 **Coverage by Module**:
 - `src/mlsdm/memory/qilm_v2.py`: 100%
 - `src/mlsdm/memory/multi_level_memory.py`: 100%
-- `src/cognition/moral_filter_v2.py`: 100%
-- `src/core/cognitive_controller.py`: 100%
-- `src/core/llm_wrapper.py`: 95%
-- `src/rhythm/cognitive_rhythm.py`: 100%
+- `src/mlsdm/cognition/moral_filter_v2.py`: 100%
+- `src/mlsdm/core/cognitive_controller.py`: 100%
+- `src/mlsdm/core/llm_wrapper.py`: 95%
+- `src/mlsdm/rhythm/cognitive_rhythm.py`: 100%
 
 **Overall**: 92.65% (exceeds 90% requirement)
 

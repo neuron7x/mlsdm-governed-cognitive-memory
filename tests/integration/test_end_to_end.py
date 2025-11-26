@@ -4,6 +4,9 @@ from mlsdm.core.cognitive_controller import CognitiveController
 
 
 def test_basic_flow():
+    # Use fixed seed for reproducibility
+    np.random.seed(42)
+
     controller = CognitiveController(dim=384)
     vec = np.random.randn(384).astype(np.float32)
     vec = vec / np.linalg.norm(vec)

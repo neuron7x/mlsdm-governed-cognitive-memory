@@ -43,7 +43,7 @@ The MLSDM Governed Cognitive Memory system implements multiple layers of securit
 
 The rate limiter uses a **leaky bucket algorithm** to provide smooth rate limiting across clients.
 
-**Location**: `src/utils/rate_limiter.py`
+**Location**: `src/mlsdm/utils/rate_limiter.py`
 
 **Configuration**:
 - Rate: 5 requests per second (RPS)
@@ -86,7 +86,7 @@ python -m pytest src/tests/unit/test_security.py::TestRateLimiter -v
 
 Comprehensive input validation prevents injection attacks, data corruption, and ensures data integrity.
 
-**Location**: `src/utils/input_validator.py`
+**Location**: `src/mlsdm/utils/input_validator.py`
 
 ### Validation Features
 
@@ -170,7 +170,7 @@ python -m pytest src/tests/unit/test_security.py::TestInputValidator -v
 
 Structured security logging system with correlation IDs for tracking requests across components. **No PII is logged.**
 
-**Location**: `src/utils/security_logger.py`
+**Location**: `src/mlsdm/utils/security_logger.py`
 
 ### Event Types
 

@@ -31,7 +31,7 @@ This report presents quantitative evidence demonstrating measurable improvements
 
 ### 1.1 Testing Framework
 
-**Metrics Implementation**: `src/utils/coherence_safety_metrics.py`
+**Metrics Implementation**: `src/mlsdm/utils/coherence_safety_metrics.py`
 - CoherenceMetrics: Temporal consistency, semantic coherence, retrieval stability, phase separation
 - SafetyMetrics: Toxic rejection rate, moral drift, threshold convergence, false positive rate
 
@@ -552,10 +552,10 @@ python tests/validation/test_moral_filter_effectiveness.py
 
 ### 9.3 Code Locations
 
-- **Metrics Framework**: `src/utils/coherence_safety_metrics.py`
+- **Metrics Framework**: `src/mlsdm/utils/coherence_safety_metrics.py`
 - **Wake/Sleep Tests**: `tests/validation/test_wake_sleep_effectiveness.py`
 - **Moral Filter Tests**: `tests/validation/test_moral_filter_effectiveness.py`
-- **Core Implementation**: `src/core/cognitive_controller.py`
+- **Core Implementation**: `src/mlsdm/core/cognitive_controller.py`
 
 ---
 

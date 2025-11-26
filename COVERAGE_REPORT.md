@@ -36,9 +36,9 @@ According to ESA standards for Technology Readiness Level 5-6:
 
 | Module | Statements | Missed | Coverage | Status |
 |--------|-----------|--------|----------|--------|
-| `src/core/cognitive_controller.py` | 38 | 0 | **100%** | ✅ |
-| `src/core/memory_manager.py` | 77 | 0 | **100%** | ✅ |
-| `src/core/llm_wrapper.py` | 101 | 3 | **97%** | ✅ |
+| `src/mlsdm/core/cognitive_controller.py` | 38 | 0 | **100%** | ✅ |
+| `src/mlsdm/core/memory_manager.py` | 77 | 0 | **100%** | ✅ |
+| `src/mlsdm/core/llm_wrapper.py` | 101 | 3 | **97%** | ✅ |
 
 **Analysis:** Core components demonstrate exceptional coverage. The LLM wrapper has 3 uncovered lines, likely error handling paths that are difficult to trigger in testing.
 
@@ -46,9 +46,9 @@ According to ESA standards for Technology Readiness Level 5-6:
 
 | Module | Statements | Missed | Coverage | Status |
 |--------|-----------|--------|----------|--------|
-| `src/cognition/moral_filter.py` | 21 | 0 | **100%** | ✅ |
-| `src/cognition/moral_filter_v2.py` | 26 | 1 | **96%** | ✅ |
-| `src/cognition/ontology_matcher.py` | 33 | 0 | **100%** | ✅ |
+| `src/mlsdm/cognition/moral_filter.py` | 21 | 0 | **100%** | ✅ |
+| `src/mlsdm/cognition/moral_filter_v2.py` | 26 | 1 | **96%** | ✅ |
+| `src/mlsdm/cognition/ontology_matcher.py` | 33 | 0 | **100%** | ✅ |
 
 **Analysis:** Moral filtering and ontology matching achieve full or near-full coverage, ensuring content governance accountability.
 
@@ -56,9 +56,9 @@ According to ESA standards for Technology Readiness Level 5-6:
 
 | Module | Statements | Missed | Coverage | Status |
 |--------|-----------|--------|----------|--------|
-| `src/memory/qilm_module.py` | 27 | 2 | **93%** | ✅ |
-| `src/memory/qilm_v2.py` | 64 | 3 | **95%** | ✅ |
-| `src/memory/multi_level_memory.py` | 56 | 8 | **86%** | ✅ |
+| `src/mlsdm/memory/qilm_module.py` | 27 | 2 | **93%** | ✅ |
+| `src/mlsdm/memory/qilm_v2.py` | 64 | 3 | **95%** | ✅ |
+| `src/mlsdm/memory/multi_level_memory.py` | 56 | 8 | **86%** | ✅ |
 
 **Analysis:** Quantum-Inspired Learning Module (QILM) meets coverage requirements with comprehensive edge case testing.
 
@@ -66,7 +66,7 @@ According to ESA standards for Technology Readiness Level 5-6:
 
 | Module | Statements | Missed | Coverage | Status |
 |--------|-----------|--------|----------|--------|
-| `src/rhythm/cognitive_rhythm.py` | 25 | 0 | **100%** | ✅ |
+| `src/mlsdm/rhythm/cognitive_rhythm.py` | 25 | 0 | **100%** | ✅ |
 
 **Analysis:** Wake/sleep cycle implementation fully covered with effectiveness validation.
 
@@ -74,14 +74,14 @@ According to ESA standards for Technology Readiness Level 5-6:
 
 | Module | Statements | Missed | Coverage | Status |
 |--------|-----------|--------|----------|--------|
-| `src/utils/coherence_safety_metrics.py` | 169 | 0 | **100%** | ✅ |
-| `src/utils/config_loader.py` | 29 | 0 | **100%** | ✅ |
-| `src/utils/config_validator.py` | 117 | 3 | **97%** | ✅ |
-| `src/utils/data_serializer.py` | 36 | 0 | **100%** | ✅ |
-| `src/utils/input_validator.py` | 87 | 12 | **86%** | ✅ |
-| `src/utils/metrics.py` | 49 | 1 | **98%** | ✅ |
-| `src/utils/rate_limiter.py` | 44 | 0 | **100%** | ✅ |
-| `src/utils/security_logger.py` | 61 | 0 | **100%** | ✅ |
+| `src/mlsdm/utils/coherence_safety_metrics.py` | 169 | 0 | **100%** | ✅ |
+| `src/mlsdm/utils/config_loader.py` | 29 | 0 | **100%** | ✅ |
+| `src/mlsdm/utils/config_validator.py` | 117 | 3 | **97%** | ✅ |
+| `src/mlsdm/utils/data_serializer.py` | 36 | 0 | **100%** | ✅ |
+| `src/mlsdm/utils/input_validator.py` | 87 | 12 | **86%** | ✅ |
+| `src/mlsdm/utils/metrics.py` | 49 | 1 | **98%** | ✅ |
+| `src/mlsdm/utils/rate_limiter.py` | 44 | 0 | **100%** | ✅ |
+| `src/mlsdm/utils/security_logger.py` | 61 | 0 | **100%** | ✅ |
 
 **Analysis:** Critical safety and coherence metrics achieve 100% coverage through comprehensive edge case testing added in this analysis.
 
@@ -89,7 +89,7 @@ According to ESA standards for Technology Readiness Level 5-6:
 
 | Module | Statements | Missed | Coverage | Status |
 |--------|-----------|--------|----------|--------|
-| `src/api/app.py` | 83 | 7 | **92%** | ✅ |
+| `src/mlsdm/api/app.py` | 83 | 7 | **92%** | ✅ |
 
 **Analysis:** API endpoints well-covered. Uncovered lines likely involve async startup/shutdown lifecycle events.
 
@@ -97,7 +97,7 @@ According to ESA standards for Technology Readiness Level 5-6:
 
 | Module | Statements | Missed | Coverage | Status |
 |--------|-----------|--------|----------|--------|
-| `src/main.py` | 32 | 32 | **0%** | ⚠️ |
+| `src/mlsdm/main.py` | 32 | 32 | **0%** | ⚠️ |
 
 **Analysis:** Entry point typically not covered by unit tests. This is acceptable as it's primarily a bootstrap script.
 

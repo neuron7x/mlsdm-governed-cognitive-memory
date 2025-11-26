@@ -21,6 +21,17 @@ from mlsdm.engine.neuro_cognitive_engine import (
 )
 
 
+# Fixed seed for reproducible tests
+_SEED = 42
+
+
+@pytest.fixture(autouse=True)
+def set_random_seed():
+    """Set random seed before each test for reproducibility."""
+    np.random.seed(_SEED)
+    yield
+
+
 class TestNeuroCognitiveEngineArchitecture:
     """Architectural validation: single memory, params, errors, observability."""
 

@@ -10,6 +10,17 @@ import numpy as np
 import pytest
 
 
+# Fixed seed for reproducible tests
+_SEED = 42
+
+
+def _make_vector(dim: int = 384) -> np.ndarray:
+    """Create a normalized vector with fixed seed for reproducibility."""
+    np.random.seed(_SEED)
+    vec = np.random.randn(dim).astype(np.float32)
+    return vec / np.linalg.norm(vec)
+
+
 class TestE2ECoreHappyPath:
     """Core E2E happy path tests - basic cognitive controller flow."""
 
@@ -25,8 +36,7 @@ class TestE2ECoreHappyPath:
         from mlsdm.core.cognitive_controller import CognitiveController
 
         controller = CognitiveController(dim=384)
-        vec = np.random.randn(384).astype(np.float32)
-        vec = vec / np.linalg.norm(vec)
+        vec = _make_vector(384)
 
         state = controller.process_event(vec, moral_value=0.9)
 
@@ -45,8 +55,7 @@ class TestE2ECoreHappyPath:
         from mlsdm.core.cognitive_controller import CognitiveController
 
         controller = CognitiveController(dim=384)
-        vec = np.random.randn(384).astype(np.float32)
-        vec = vec / np.linalg.norm(vec)
+        vec = _make_vector(384)
 
         state = controller.process_event(vec, moral_value=0.1)
 
@@ -64,8 +73,7 @@ class TestE2ECoreHappyPath:
         from mlsdm.core.cognitive_controller import CognitiveController
 
         controller = CognitiveController(dim=384)
-        vec = np.random.randn(384).astype(np.float32)
-        vec = vec / np.linalg.norm(vec)
+        vec = _make_vector(384)
 
         # Step enough times to enter sleep phase (default wake_duration=8)
         for _ in range(8):
@@ -116,8 +124,7 @@ class TestE2ECoreHappyPath:
         from mlsdm.core.cognitive_controller import CognitiveController
 
         controller = CognitiveController(dim=384)
-        vec = np.random.randn(384).astype(np.float32)
-        vec = vec / np.linalg.norm(vec)
+        vec = _make_vector(384)
 
         states = []
         for _ in range(5):

@@ -36,7 +36,7 @@ This document summarizes the complete implementation of MLSDM Governed Cognitive
 
 ### 1. Core Implementation
 
-#### A. Universal LLM Wrapper (`src/core/llm_wrapper.py`)
+#### A. Universal LLM Wrapper (`src/mlsdm/core/llm_wrapper.py`)
 
 **312 lines of production code** implementing:
 
@@ -129,7 +129,7 @@ This document summarizes the complete implementation of MLSDM Governed Cognitive
 **Total: 7 files, 1,916 lines added**
 
 #### New Files (6):
-1. `src/core/llm_wrapper.py` - 312 lines (core implementation)
+1. `src/mlsdm/core/llm_wrapper.py` - 312 lines (core implementation)
 2. `src/tests/unit/test_llm_wrapper.py` - 471 lines (unit tests)
 3. `tests/integration/test_llm_wrapper_integration.py` - 288 lines (integration tests)
 4. `examples/llm_wrapper_example.py` - 286 lines (examples)

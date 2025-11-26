@@ -48,9 +48,9 @@ According to ESA standards for Technology Readiness Level 5-6:
 
 | Module | Statements | Missed | Coverage | Status |
 |--------|-----------|--------|----------|--------|
-| `src/core/cognitive_controller.py` | 51 | 0 | **100%** | ✅ |
-| `src/core/memory_manager.py` | 77 | 0 | **100%** | ✅ |
-| `src/core/llm_wrapper.py` | 101 | 3 | **95.20%** | ✅ |
+| `src/mlsdm/core/cognitive_controller.py` | 51 | 0 | **100%** | ✅ |
+| `src/mlsdm/core/memory_manager.py` | 77 | 0 | **100%** | ✅ |
+| `src/mlsdm/core/llm_wrapper.py` | 101 | 3 | **95.20%** | ✅ |
 
 **Analysis:** Core components demonstrate exceptional coverage. The LLM wrapper has 3 uncovered lines (144, 174, 216), likely error handling paths that are difficult to trigger in testing.
 
@@ -58,9 +58,9 @@ According to ESA standards for Technology Readiness Level 5-6:
 
 | Module | Statements | Missed | Coverage | Status |
 |--------|-----------|--------|----------|--------|
-| `src/cognition/moral_filter.py` | 21 | 0 | **100%** | ✅ |
-| `src/cognition/moral_filter_v2.py` | 26 | 1 | **94.12%** | ✅ |
-| `src/cognition/ontology_matcher.py` | 33 | 0 | **100%** | ✅ |
+| `src/mlsdm/cognition/moral_filter.py` | 21 | 0 | **100%** | ✅ |
+| `src/mlsdm/cognition/moral_filter_v2.py` | 26 | 1 | **94.12%** | ✅ |
+| `src/mlsdm/cognition/ontology_matcher.py` | 33 | 0 | **100%** | ✅ |
 
 **Analysis:** Moral filtering and ontology matching achieve full or near-full coverage, ensuring content governance accountability.
 
@@ -78,7 +78,7 @@ According to ESA standards for Technology Readiness Level 5-6:
 
 | Module | Statements | Missed | Coverage | Status |
 |--------|-----------|--------|----------|--------|
-| `src/rhythm/cognitive_rhythm.py` | 25 | 0 | **100%** | ✅ |
+| `src/mlsdm/rhythm/cognitive_rhythm.py` | 25 | 0 | **100%** | ✅ |
 
 **Analysis:** Wake/sleep cycle implementation fully covered with effectiveness validation.
 

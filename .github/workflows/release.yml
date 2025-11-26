@@ -15,6 +15,7 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       matrix:
         python-version: ['3.10', '3.11']
@@ -42,6 +43,7 @@ jobs:
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     steps:
       - name: Checkout code
@@ -91,6 +93,7 @@ jobs:
   validation-tests:
     name: Validation Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     
     steps:
       - name: Checkout code
@@ -115,6 +118,7 @@ jobs:
   security-tests:
     name: Security Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     
     steps:
       - name: Checkout code
@@ -139,6 +143,7 @@ jobs:
   observability-tests:
     name: Observability Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     
     steps:
       - name: Checkout code
@@ -163,6 +168,7 @@ jobs:
   benchmarks:
     name: Performance Benchmarks
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     
     steps:
       - name: Checkout code
@@ -188,6 +194,7 @@ jobs:
   code-quality:
     name: Code Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     
     steps:
       - name: Checkout code
@@ -217,6 +224,7 @@ jobs:
   coverage-check:
     name: Coverage Check
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     
     steps:
       - name: Checkout code
@@ -241,6 +249,7 @@ jobs:
   build-and-push-docker:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: 
       - unit-tests
       - integration-tests
@@ -303,6 +312,7 @@ jobs:
   publish-to-testpypi:
     name: Publish to TestPyPI
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: build-and-push-docker
     if: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, 'rc') == false
     
@@ -341,6 +351,7 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: build-and-push-docker
     
     steps:

@@ -119,9 +119,9 @@ src/tests/unit/          # Unit tests for individual components
 - **Minimum Coverage:** 90% (enforced by pyproject.toml)
 - **Current Coverage:** 97.63%
 - **Critical Modules:** 100% coverage required for:
-  - `src/core/cognitive_controller.py`
-  - `src/core/memory_manager.py`
-  - `src/cognition/moral_filter.py`
+  - `src/mlsdm/core/cognitive_controller.py`
+  - `src/mlsdm/core/memory_manager.py`
+  - `src/mlsdm/cognition/moral_filter.py`
   - `src/mlsdm/utils/coherence_safety_metrics.py`
   - `src/mlsdm/utils/security_logger.py`
 
