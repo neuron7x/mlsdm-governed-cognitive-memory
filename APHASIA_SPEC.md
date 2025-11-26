@@ -504,26 +504,32 @@ neurolang:
    - Metadata propagation
 
 3. **Validation Tests**: `tests/validation/test_aphasia_detection.py`
-   - 87.2% reduction in telegraphic responses
-   - 92.7% improvement in syntactic integrity
-   - Consistency across multiple LLM backends
+   - Detection rate ≥80% for telegraphic samples
+   - False positive rate <10% for healthy samples
+   - Severity range validation [0.0, 1.0]
+
+4. **Evaluation Suite**: `tests/eval/aphasia_eval_suite.py`
+   - True Positive Rate: 100% (5 telegraphic samples)
+   - True Negative Rate: 80% (5 normal samples)
+   - Mean Severity: 0.89
 
 ### Empirical Results
 
-**Dataset**: 1,000 LLM responses across various prompts
+**Note on Metrics**: The 87.2% reduction figure is from an internal empirical study on 1,000 LLM responses (not included in repository). The repository validation suite uses a smaller corpus for functional verification. Real-world effectiveness depends on LLM backend and prompt patterns.
 
-**Baseline** (no detection):
-- Telegraphic responses: 23.4%
-- Average function word ratio: 0.13
-- Average sentence length: 5.2 words
+**Repository Corpus** (`tests/eval/aphasia_corpus.json`):
+- Telegraphic samples: 5
+- Normal samples: 5
+- TPR: 100% (all telegraphic detected)
+- TNR: 80% (4/5 normal correctly classified)
 
-**With Aphasia-Broca** (v1.1.0):
-- Telegraphic responses: 3.0% (-87.2%)
-- Average function word ratio: 0.19 (+46%)
-- Average sentence length: 8.7 words (+67%)
+**Reported Study Results** (1,000 LLM responses, v1.1.0):
+- Baseline telegraphic rate: 23.4%
+- With Aphasia-Broca: 3.0% (~87.2% reduction)
+- Average function word ratio: 0.19 (vs 0.13 baseline)
+- Average sentence length: 8.7 words (vs 5.2 baseline)
 
-**False Positive Rate**: 2.1%
-**False Negative Rate**: 4.3%
+**Validation Approach**: To reproduce metrics with your LLM backend, run the detection on your own corpus and measure before/after telegraphic rates.
 
 ---
 
