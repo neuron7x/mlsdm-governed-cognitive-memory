@@ -417,15 +417,37 @@ The following production capabilities are fully implemented:
 
 - [x] **Prometheus metrics export** - `src/mlsdm/observability/metrics.py` with counters, gauges, histograms
 - [x] **Structured JSON logging** - `src/mlsdm/observability/logger.py` with rotation support
+- [x] **OpenTelemetry distributed tracing** - `src/mlsdm/observability/tracing.py` integrated into API and Engine
 - [x] **Kubernetes deployment manifests** - `deploy/k8s/` with Deployment, Service, production configs
 - [x] **Docker containerization** - `docker/Dockerfile` and `docker/docker-compose.yaml`
 - [x] **Performance benchmarks** - `benchmarks/test_neuro_engine_performance.py` with P50/P95/P99 latency
+- [x] **Grafana dashboards** - `docs/observability/GRAFANA_DASHBOARDS.md` with ready-to-import JSON
+
+### Observability Details (Phase 5)
+
+**Tracing Integration**:
+- API layer (`/generate`, `/infer`) creates root spans with `SpanKind.SERVER`
+- Engine layer creates child spans for pipeline stages: `moral_precheck`, `grammar_precheck`, `llm_generation`, `post_moral_check`
+- Trace context propagation via `request_id` correlation
+- Configurable via environment: `OTEL_SDK_DISABLED`, `OTEL_EXPORTER_TYPE`
+- Lightweight mode (no exporter) for development/testing
+
+**Prometheus Metrics**:
+- Request counters: `mlsdm_requests_total` (by endpoint, status)
+- Latency histograms: `mlsdm_generation_latency_milliseconds`
+- State gauges: `mlsdm_phase`, `mlsdm_emergency_shutdown_active`, `mlsdm_stateless_mode`
+- Aphasia telemetry: `mlsdm_aphasia_events_total`, `mlsdm_aphasia_severity`
+- Memory norms: `mlsdm_memory_l1_norm`, `mlsdm_memory_l2_norm`, `mlsdm_memory_l3_norm`
+
+**Test Coverage**:
+- `tests/observability/test_metrics_and_tracing_integration.py` - 21 tests
+- `tests/e2e/test_observability_e2e.py` - 10 E2E tests
+- All observability tests pass (58 total)
 
 ## Open Research Problems (v1.x+)
 
 The following are research directions requiring external resources or specialized expertise:
 
-- ⚠️ **OpenTelemetry distributed tracing** - Dependencies installed, integration not yet implemented
 - ⚠️ **Stress testing at 10k+ RPS** - Requires dedicated load testing infrastructure
 - ⚠️ **RAG hallucination testing (ragas)** - Requires retrieval-augmented generation setup
 - ⚠️ **Chaos engineering suite** - Requires chaos-toolkit and staging environment

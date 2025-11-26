@@ -455,6 +455,22 @@ This validation demonstrates **Principal System Architect level** contributions:
 4. ⚠️ Implement user feedback loops to reduce false positives
 5. ✅ Monitor drift metrics in production - Prometheus metrics implemented (`src/mlsdm/observability/metrics.py`)
 
+**For Observability (Phase 5 Implemented)**:
+1. ✅ **OpenTelemetry Tracing** - Integrated into API and Engine layers
+   - Root spans for `/generate` and `/infer` endpoints
+   - Child spans for pipeline stages (moral_precheck, generation, etc.)
+   - Configurable via `OTEL_SDK_DISABLED` and `OTEL_EXPORTER_TYPE`
+2. ✅ **Prometheus Metrics** - Extended with new observability metrics
+   - `mlsdm_requests_total` by endpoint and status
+   - `mlsdm_generation_latency_milliseconds` histogram
+   - `mlsdm_emergency_shutdown_active` and `mlsdm_stateless_mode` gauges
+3. ✅ **Grafana Dashboards** - Documentation and JSON exports available
+   - See `docs/observability/GRAFANA_DASHBOARDS.md`
+   - Import `docs/observability/dashboards/mlsdm-system-overview.json`
+4. ✅ **E2E Observability Tests** - Validate metrics/traces in full pipeline
+   - `tests/e2e/test_observability_e2e.py`
+   - `tests/observability/test_metrics_and_tracing_integration.py`
+
 **For Research Extension** (Open Problems):
 1. ⚠️ Formal verification (TLA+, Coq) - requires formal methods expertise
 2. ⚠️ Adversarial red teaming (automated) - requires attack corpus

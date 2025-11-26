@@ -33,6 +33,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
 from mlsdm.core.llm_wrapper import LLMWrapper
+from mlsdm.observability.tracing import get_tracer_manager
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -426,63 +427,95 @@ class NeuroCognitiveEngine:
         mlsdm_state: dict[str, Any] | None = None
         fslgs_result: dict[str, Any] | None = None
 
-        with TimingContext(timing, "total"):
-            # Step 3: PRE-FLIGHT moral check
-            rejection = self._run_moral_precheck(
-                prompt, moral_value, timing, validation_steps
-            )
-            if rejection is not None:
-                return rejection
+        # Get tracer manager for child spans
+        tracer_manager = get_tracer_manager()
 
-            # Step 4: PRE-FLIGHT grammar check
-            rejection = self._run_grammar_precheck(prompt, timing, validation_steps)
-            if rejection is not None:
-                return rejection
+        with TimingContext(timing, "total"):  # noqa: SIM117
+            # Create a parent span for the full pipeline
+            with tracer_manager.start_span(
+                "engine.generate",
+                attributes={
+                    "mlsdm.prompt_length": len(prompt),
+                    "mlsdm.max_tokens": max_tokens,
+                    "mlsdm.moral_value": moral_value,
+                    "mlsdm.context_top_k": context_top_k,
+                    "mlsdm.user_intent": user_intent,
+                },
+            ) as pipeline_span:
+                # Step 3: PRE-FLIGHT moral check
+                with tracer_manager.start_span("engine.moral_precheck") as moral_span:
+                    rejection = self._run_moral_precheck(
+                        prompt, moral_value, timing, validation_steps
+                    )
+                    if rejection is not None:
+                        moral_span.set_attribute("mlsdm.rejected", True)
+                        pipeline_span.set_attribute("mlsdm.rejected_at", "pre_flight")
+                        return rejection
 
-            # Step 5: MAIN generation pipeline
-            self._runtime_moral_value = moral_value
-            self._runtime_context_top_k = context_top_k
+                # Step 4: PRE-FLIGHT grammar check
+                with tracer_manager.start_span("engine.grammar_precheck") as grammar_span:
+                    rejection = self._run_grammar_precheck(prompt, timing, validation_steps)
+                    if rejection is not None:
+                        grammar_span.set_attribute("mlsdm.rejected", True)
+                        pipeline_span.set_attribute("mlsdm.rejected_at", "pre_flight")
+                        return rejection
 
-            try:
-                response_text, mlsdm_state, fslgs_result = self._run_llm_generation(
-                    prompt, max_tokens, cognitive_load, user_intent,
-                    moral_value, context_top_k, enable_diagnostics, timing
-                )
+                # Step 5: MAIN generation pipeline
+                self._runtime_moral_value = moral_value
+                self._runtime_context_top_k = context_top_k
 
-                # Step 6: POST-generation moral check
-                rejection = self._run_post_moral_check(
-                    response_text, prompt, moral_value,
-                    mlsdm_state, fslgs_result, timing, validation_steps
-                )
-                if rejection is not None:
-                    return rejection
+                try:
+                    with tracer_manager.start_span("engine.llm_generation") as gen_span:
+                        response_text, mlsdm_state, fslgs_result = self._run_llm_generation(
+                            prompt, max_tokens, cognitive_load, user_intent,
+                            moral_value, context_top_k, enable_diagnostics, timing
+                        )
+                        gen_span.set_attribute("mlsdm.response_length", len(response_text))
 
-            except MLSDMRejectionError as e:
-                # Use self._last_mlsdm_state since mlsdm_state may be None
-                # when exception is raised before return
-                return self._build_error_response(
-                    error_type="mlsdm_rejection",
-                    message=str(e),
-                    rejected_at="generation",
-                    mlsdm_state=self._last_mlsdm_state,
-                    fslgs_result=fslgs_result,
-                    timing=timing,
-                    validation_steps=validation_steps,
-                    record_generation_metrics=True,
-                )
-            except EmptyResponseError as e:
-                # Use self._last_mlsdm_state since mlsdm_state may be None
-                # when exception is raised before return
-                return self._build_error_response(
-                    error_type="empty_response",
-                    message=str(e),
-                    rejected_at="generation",
-                    mlsdm_state=self._last_mlsdm_state,
-                    fslgs_result=fslgs_result,
-                    timing=timing,
-                    validation_steps=validation_steps,
-                    record_generation_metrics=True,
-                )
+                    # Step 6: POST-generation moral check
+                    with tracer_manager.start_span("engine.post_moral_check") as post_span:
+                        rejection = self._run_post_moral_check(
+                            response_text, prompt, moral_value,
+                            mlsdm_state, fslgs_result, timing, validation_steps
+                        )
+                        if rejection is not None:
+                            post_span.set_attribute("mlsdm.rejected", True)
+                            pipeline_span.set_attribute("mlsdm.rejected_at", "pre_moral")
+                            return rejection
+
+                except MLSDMRejectionError as e:
+                    # Use self._last_mlsdm_state since mlsdm_state may be None
+                    # when exception is raised before return
+                    pipeline_span.set_attribute("mlsdm.error_type", "mlsdm_rejection")
+                    return self._build_error_response(
+                        error_type="mlsdm_rejection",
+                        message=str(e),
+                        rejected_at="generation",
+                        mlsdm_state=self._last_mlsdm_state,
+                        fslgs_result=fslgs_result,
+                        timing=timing,
+                        validation_steps=validation_steps,
+                        record_generation_metrics=True,
+                    )
+                except EmptyResponseError as e:
+                    # Use self._last_mlsdm_state since mlsdm_state may be None
+                    # when exception is raised before return
+                    pipeline_span.set_attribute("mlsdm.error_type", "empty_response")
+                    return self._build_error_response(
+                        error_type="empty_response",
+                        message=str(e),
+                        rejected_at="generation",
+                        mlsdm_state=self._last_mlsdm_state,
+                        fslgs_result=fslgs_result,
+                        timing=timing,
+                        validation_steps=validation_steps,
+                        record_generation_metrics=True,
+                    )
+
+                # Mark pipeline as successful
+                pipeline_span.set_attribute("mlsdm.accepted", True)
+                if mlsdm_state:
+                    pipeline_span.set_attribute("mlsdm.phase", mlsdm_state.get("phase", "unknown"))
 
         # Step 7: Success path - record metrics and build response
         self._record_success_metrics(timing)

@@ -109,6 +109,20 @@ class MetricsExporter:
             registry=self.registry,
         )
 
+        # Emergency shutdown active gauge (1 if in shutdown state, 0 otherwise)
+        self.emergency_shutdown_active = Gauge(
+            "mlsdm_emergency_shutdown_active",
+            "Whether system is in emergency shutdown state (1=active, 0=normal)",
+            registry=self.registry,
+        )
+
+        # Stateless mode gauge (for lightweight/no-memory mode)
+        self.stateless_mode = Gauge(
+            "mlsdm_stateless_mode",
+            "Whether system is running in stateless mode (1=stateless, 0=stateful)",
+            registry=self.registry,
+        )
+
         # Phase distribution (wake vs sleep processing)
         self.phase_events = Counter(
             "mlsdm_phase_events_total",
@@ -125,6 +139,14 @@ class MetricsExporter:
             registry=self.registry,
         )
 
+        # Request counters with labels for endpoint tracking
+        self.requests_total = Counter(
+            "mlsdm_requests_total",
+            "Total requests by endpoint and status",
+            ["endpoint", "status"],
+            registry=self.registry,
+        )
+
         # Histograms with reasonable buckets for millisecond latencies
         self.processing_latency_ms = Histogram(
             "mlsdm_processing_latency_milliseconds",
@@ -137,6 +159,14 @@ class MetricsExporter:
             "mlsdm_retrieval_latency_milliseconds",
             "Memory retrieval latency in milliseconds",
             buckets=(0.1, 0.5, 1, 2.5, 5, 10, 25, 50, 100, 250, 500),
+            registry=self.registry,
+        )
+
+        # Generation latency histogram (end-to-end latency for generate/infer)
+        self.generation_latency_ms = Histogram(
+            "mlsdm_generation_latency_milliseconds",
+            "End-to-end generation latency in milliseconds",
+            buckets=(50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000),
             registry=self.registry,
         )
 
@@ -246,6 +276,44 @@ class MetricsExporter:
         """
         with self._lock:
             self.moral_rejections.labels(reason=reason).inc(count)
+
+    def set_emergency_shutdown_active(self, active: bool) -> None:
+        """Set the emergency shutdown active gauge.
+
+        Args:
+            active: Whether emergency shutdown is active
+        """
+        with self._lock:
+            self.emergency_shutdown_active.set(1.0 if active else 0.0)
+
+    def set_stateless_mode(self, stateless: bool) -> None:
+        """Set the stateless mode gauge.
+
+        Args:
+            stateless: Whether system is in stateless mode
+        """
+        with self._lock:
+            self.stateless_mode.set(1.0 if stateless else 0.0)
+
+    def increment_requests(self, endpoint: str, status_code: str, count: int = 1) -> None:
+        """Increment the requests counter.
+
+        Args:
+            endpoint: API endpoint (e.g., '/generate', '/infer')
+            status_code: HTTP status code category (e.g., '2xx', '4xx', '5xx')
+            count: Number to add (default: 1)
+        """
+        with self._lock:
+            self.requests_total.labels(endpoint=endpoint, status=status_code).inc(count)
+
+    def observe_generation_latency(self, latency_ms: float) -> None:
+        """Directly observe a generation latency value.
+
+        Args:
+            latency_ms: Generation latency in milliseconds
+        """
+        with self._lock:
+            self.generation_latency_ms.observe(latency_ms)
 
     def start_processing_timer(self, correlation_id: str) -> None:
         """Start timing an event processing operation.
