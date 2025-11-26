@@ -1,14 +1,21 @@
 """
 Aphasia Observability Module
 
-This module provides structured logging capabilities for aphasia detection and repair
-decisions made by the NeuroLangWrapper. It enables audit trails and observability
-for the Aphasia-Broca detection path without altering response semantics.
+This module provides structured logging and metrics capabilities for aphasia detection
+and repair decisions made by the NeuroLangWrapper. It enables audit trails and
+observability for the Aphasia-Broca detection path without altering response semantics.
+
+Key features:
+- Structured logging with only metadata (no content/PII)
+- Prometheus metrics integration for monitoring
+- Support for detect, repair, and skip decisions
 """
 
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
+
+from mlsdm.observability.aphasia_metrics import get_aphasia_metrics_exporter
 
 LOGGER_NAME = "mlsdm.aphasia"
 
@@ -46,16 +53,17 @@ def get_logger() -> logging.Logger:
     return logging.getLogger(LOGGER_NAME)
 
 
-def log_aphasia_event(event: AphasiaLogEvent) -> None:
+def log_aphasia_event(event: AphasiaLogEvent, emit_metrics: bool = True) -> None:
     """
     Log an aphasia detection/repair event with structured information.
 
-    This function logs aphasia decisions at INFO level with all relevant context.
-    Applications consuming this library should configure handlers and formatters
-    as needed.
+    This function logs aphasia decisions at INFO level with all relevant context
+    and optionally emits Prometheus metrics. Only metadata is logged - no content
+    or PII is included.
 
     Args:
         event: The aphasia event to log
+        emit_metrics: Whether to also emit Prometheus metrics (default: True)
     """
     logger = get_logger()
     logger.info(
@@ -69,3 +77,25 @@ def log_aphasia_event(event: AphasiaLogEvent) -> None:
         event.repair_enabled,
         event.severity_threshold,
     )
+
+    # Emit Prometheus metrics
+    if emit_metrics:
+        # Determine mode based on config
+        if not event.detect_enabled:
+            mode = "disabled"
+        elif event.repair_enabled:
+            mode = "full"
+        else:
+            mode = "monitor"
+
+        # Determine if repair was applied
+        repair_applied = event.decision == "repaired"
+
+        metrics = get_aphasia_metrics_exporter()
+        metrics.record_aphasia_event(
+            mode=mode,
+            is_aphasic=event.is_aphasic,
+            repair_applied=repair_applied,
+            severity=event.severity,
+            flags=list(event.flags),
+        )
