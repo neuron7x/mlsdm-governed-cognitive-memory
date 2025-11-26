@@ -540,6 +540,8 @@ These settings can now be configured in `NeuroLangWrapper` (as of PR #49) to sup
 
 See `CONFIGURATION_GUIDE.md` for details on aphasia configuration options.
 
+For production monitoring and Prometheus metrics, see `docs/APHASIA_OBSERVABILITY.md`.
+
 ---
 
 ## Appendix A: Metric Definitions

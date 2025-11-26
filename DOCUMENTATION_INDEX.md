@@ -69,6 +69,7 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.0.0.
 | [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) | Configuration reference | DevOps | 25 min |
 | [SLO_SPEC.md](SLO_SPEC.md) | Service objectives | SRE/DevOps | 5 min |
 | [SECURITY_POLICY.md](SECURITY_POLICY.md) | Security practices | Security/DevOps | 5 min |
+| [docs/APHASIA_OBSERVABILITY.md](docs/APHASIA_OBSERVABILITY.md) | Aphasia monitoring | SRE/DevOps | 10 min |
 
 ### 🧪 Testing & Validation
 
