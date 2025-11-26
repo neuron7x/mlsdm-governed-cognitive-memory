@@ -77,6 +77,7 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.0.0.
 |----------|---------|----------|--------------|
 | [TESTING_STRATEGY.md](TESTING_STRATEGY.md) | Testing approach | Engineers | 15 min |
 | [VALIDATION_SUMMARY.md](VALIDATION_SUMMARY.md) | Validation results | Engineers | 10 min |
+| [CLAIMS_TRACEABILITY.md](CLAIMS_TRACEABILITY.md) | Metric → Test mapping | Reviewers | 10 min |
 | [OPTIMIZATION_SUMMARY.md](OPTIMIZATION_SUMMARY.md) | Performance tuning | Engineers | 10 min |
 
 ### 📊 Analysis & Reports

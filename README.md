@@ -38,14 +38,16 @@
 
 ## Key Metrics
 
-| Metric | Value | Source |
-|--------|-------|--------|
-| Concurrent Requests | 1,000+ RPS | [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md#performance-characteristics) |
-| Memory Footprint | 29.37 MB fixed | [SLO_SPEC.md](SLO_SPEC.md#slo-5-resource-efficiency) |
-| Toxic Content Rejection | 93.3% | [EFFECTIVENESS_VALIDATION_REPORT.md §3.1](EFFECTIVENESS_VALIDATION_REPORT.md) |
-| Coherence Improvement | 5.5% | [EFFECTIVENESS_VALIDATION_REPORT.md §2.4](EFFECTIVENESS_VALIDATION_REPORT.md) |
-| Telegraphic Response Reduction | 87.2% | [APHASIA_SPEC.md §Validation](APHASIA_SPEC.md) |
-| Resource Efficiency (wake/sleep) | 89.5% reduction | [EFFECTIVENESS_VALIDATION_REPORT.md §2.3](EFFECTIVENESS_VALIDATION_REPORT.md) |
+| Metric | Value | Source | Reproducibility |
+|--------|-------|--------|-----------------|
+| Concurrent Requests | 1,000+ RPS | [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md#performance-characteristics) | Requires server deployment |
+| Memory Footprint | 29.37 MB fixed | [SLO_SPEC.md](SLO_SPEC.md#slo-5-resource-efficiency) | `pytest tests/property/test_invariants_memory.py` |
+| Toxic Content Rejection | 93.3% | [EFFECTIVENESS_VALIDATION_REPORT.md §3.1](EFFECTIVENESS_VALIDATION_REPORT.md) | `pytest tests/validation/test_moral_filter_effectiveness.py -v` |
+| Coherence Improvement | 5.5% | [EFFECTIVENESS_VALIDATION_REPORT.md §2.4](EFFECTIVENESS_VALIDATION_REPORT.md) | `pytest tests/validation/test_wake_sleep_effectiveness.py -v` |
+| Telegraphic Response Reduction | ~87% (empirical) | [APHASIA_SPEC.md §Validation](APHASIA_SPEC.md) | See note below |
+| Resource Efficiency (wake/sleep) | 89.5% reduction | [EFFECTIVENESS_VALIDATION_REPORT.md §2.3](EFFECTIVENESS_VALIDATION_REPORT.md) | `pytest tests/validation/test_wake_sleep_effectiveness.py -v` |
+
+**Note**: Telegraphic response reduction is based on empirical LLM testing. Repository validation suite verifies detection logic with ≥80% detection rate. See [CLAIMS_TRACEABILITY.md](CLAIMS_TRACEABILITY.md) for complete traceability of all metrics to their test sources.
 
 ---
 
@@ -267,6 +269,7 @@ Before deploying to production, complete the following:
 
 ### Validation & Testing
 - [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md) — Quantitative validation
+- [CLAIMS_TRACEABILITY.md](CLAIMS_TRACEABILITY.md) — Claim → Test mapping for all metrics
 - [TESTING_STRATEGY.md](TESTING_STRATEGY.md) — Testing methodology
 - [SLO_SPEC.md](SLO_SPEC.md) — Service level objectives
 
