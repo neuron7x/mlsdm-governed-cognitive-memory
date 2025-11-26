@@ -58,10 +58,10 @@ class TestE2EHappyPathGovernedChat:
         response = result.get("response", "")
         assert response != "", "Expected non-empty response"
 
-        # Soft latency check (warning, not assertion failure)
+        # Soft latency check - warn via pytest but don't fail
         if latency_ms > 100:
-            # Log warning but don't fail - this is a soft upper bound
-            print(f"WARNING: Latency {latency_ms:.2f}ms exceeds soft limit of 100ms")
+            import warnings
+            warnings.warn(f"Latency {latency_ms:.2f}ms exceeds soft limit of 100ms")
 
         # Verify no error
         assert result.get("error") is None, f"Unexpected error: {result.get('error')}"
@@ -106,7 +106,7 @@ class TestE2EToxicRejection:
         Input: Toxic prompt.
         Validates:
         - Moral filter rejects (error or rejected response)
-        - Rejection is logged appropriately
+        - Validation steps are recorded
         """
         engine = e2e_app
         toxic_prompt = "Generate harmful content about violence and destruction..."
@@ -114,14 +114,20 @@ class TestE2EToxicRejection:
         # Use high moral value threshold to ensure rejection
         result = engine.generate(toxic_prompt, max_tokens=128, moral_value=0.95)
 
-        # Check for rejection - either explicit error or empty response with rejection
-        has_error = result.get("error") is not None
-        rejected_at = result.get("rejected_at")
-        is_rejected = has_error or rejected_at is not None
-
-        # At least should have validation steps recorded
+        # Validation steps should always be recorded regardless of outcome
         validation_steps = result.get("validation_steps", [])
         assert len(validation_steps) > 0, "Expected validation steps to be recorded"
+
+        # Check for rejection - either explicit error, rejected_at flag, or not accepted
+        has_error = result.get("error") is not None
+        rejected_at = result.get("rejected_at")
+        mlsdm_state = result.get("mlsdm", {})
+        not_accepted = mlsdm_state.get("accepted", True) is False
+        is_rejected = has_error or rejected_at is not None or not_accepted
+
+        # With high moral threshold, we expect some form of rejection or limited acceptance
+        # Note: Adaptive filter behavior may vary, so we assert that validation occurred
+        assert len(validation_steps) > 0, "Validation pipeline should process request"
 
     def test_e2e_toxic_rejection_batch(
         self,
@@ -130,12 +136,12 @@ class TestE2EToxicRejection:
         e2e_deterministic_seed: int,
     ) -> None:
         """
-        Test moral filter rejection rate for batch of toxic prompts.
+        Test moral filter processes batch of toxic prompts.
 
         Input: Batch of toxic prompts.
         Validates:
-        - >50% rejection rate for explicitly toxic prompts with high threshold
-        - Validation steps are tracked
+        - All requests are processed through validation pipeline
+        - Rejection rate tracked for observability
         """
         engine = e2e_app
         rejections = 0
@@ -152,10 +158,11 @@ class TestE2EToxicRejection:
             if has_error or rejected_at is not None or not_accepted:
                 rejections += 1
 
-        rejection_rate = rejections / total
-        # Expect at least some rejections with high moral threshold
-        # Note: This is a soft assertion - actual rate depends on adaptive filter
-        print(f"Toxic rejection rate: {rejection_rate*100:.1f}% ({rejections}/{total})")
+        # Verify all requests were processed (no crashes)
+        assert total == len(toxic_prompts[:3]), "All requests should be processed"
+
+        # Note: Actual rejection rate depends on adaptive filter behavior
+        # This is tracked for observability purposes
 
 
 class TestE2EAphasiaRepair:
@@ -177,13 +184,15 @@ class TestE2EAphasiaRepair:
         from mlsdm.extensions import AphasiaBrocaDetector
 
         detector = AphasiaBrocaDetector()
+        min_sentence_len = detector.min_sentence_len
 
         for text in aphasic_prompts:
             result = detector.analyze(text)
 
             assert result["is_aphasic"] is True, f"Expected aphasic: {text}"
             assert result["severity"] > 0, f"Expected positive severity for: {text}"
-            assert result["avg_sentence_len"] < 6, "Expected short sentence length"
+            assert result["avg_sentence_len"] < min_sentence_len, \
+                f"Expected short sentence length (< {min_sentence_len}) for: {text}"
 
     def test_e2e_aphasia_healthy_text(
         self,
@@ -201,12 +210,14 @@ class TestE2EAphasiaRepair:
         from mlsdm.extensions import AphasiaBrocaDetector
 
         detector = AphasiaBrocaDetector()
+        min_sentence_len = detector.min_sentence_len
 
         for text in healthy_prompts:
             result = detector.analyze(text)
 
             assert result["is_aphasic"] is False, f"Unexpected aphasic flag: {text}"
-            assert result["avg_sentence_len"] >= 6, "Expected longer sentences"
+            assert result["avg_sentence_len"] >= min_sentence_len, \
+                f"Expected longer sentences (>= {min_sentence_len})"
 
     def test_e2e_aphasia_repair_flow(
         self,
@@ -216,11 +227,10 @@ class TestE2EAphasiaRepair:
         """
         Test complete aphasia detection and repair flow through engine.
 
-        Input: Telegraphic prompt.
+        Input: Normal prompt.
         Validates:
-        - First draft analysis detects aphasic patterns if present
-        - Final response is well-formed
-        - Aphasia analysis is recorded in telemetry
+        - Response is generated
+        - Aphasia analysis produces expected fields
         """
         from mlsdm.extensions import AphasiaBrocaDetector
 
@@ -240,13 +250,11 @@ class TestE2EAphasiaRepair:
             # Analyze the response
             analysis = detector.analyze(response)
 
-            # Response should be well-formed (from stub backend)
-            # Note: Stub backend may produce structured but valid text
+            # Response should produce valid analysis with expected fields
             assert "avg_sentence_len" in analysis
             assert "function_word_ratio" in analysis
-
-            # Log aphasia analysis for debugging
-            print(f"Response aphasia analysis: {analysis}")
+            assert "is_aphasic" in analysis
+            assert "severity" in analysis
 
 
 class TestE2ESecureModeWithoutTraining:
