@@ -119,15 +119,18 @@ def test_aphasia_severity_histogram_observes_values(metrics_exporter):
     histogram_sum = metrics_exporter.aphasia_severity_histogram._sum.get()
     assert histogram_sum == pytest.approx(1.0)  # 0.3 + 0.7 + 0.0
 
-    # Count total observations by summing the +inf bucket (all observations fall below +inf)
-    # The buckets are cumulative, so the last bucket before +inf contains all observations
-    total_observations = sum(
-        bucket.get() for bucket in metrics_exporter.aphasia_severity_histogram._buckets
-    )
+    # Verify observations are distributed across buckets
     # With buckets (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, +inf)
-    # Each observation is counted in all buckets >= its value
-    # We verify the sum is correctly accumulated
-    assert histogram_sum == pytest.approx(1.0)
+    # Each observation is counted in the bucket matching its value
+    # severity=0.0 -> bucket[0] (le=0.0)
+    # severity=0.3 -> bucket[3] (le=0.3)
+    # severity=0.7 -> bucket[7] (le=0.7)
+    bucket_0_count = metrics_exporter.aphasia_severity_histogram._buckets[0].get()
+    bucket_3_count = metrics_exporter.aphasia_severity_histogram._buckets[3].get()
+    bucket_7_count = metrics_exporter.aphasia_severity_histogram._buckets[7].get()
+    assert bucket_0_count == 1.0  # severity=0.0
+    assert bucket_3_count == 1.0  # severity=0.3
+    assert bucket_7_count == 1.0  # severity=0.7
 
 
 def test_aphasia_flags_total_increments_for_each_flag(metrics_exporter):
