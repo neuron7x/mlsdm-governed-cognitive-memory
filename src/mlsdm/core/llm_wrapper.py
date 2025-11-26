@@ -225,7 +225,33 @@ class LLMWrapper:
             llm_retry_attempts: Number of retry attempts for LLM calls (default from calibration)
             speech_governor: Optional speech governance policy (default None)
         """
-        # Apply calibration defaults where not specified
+        # Apply calibration defaults
+        capacity, wake_duration, sleep_duration, llm_timeout, llm_retry_attempts = (
+            self._apply_calibration_defaults(
+                capacity, wake_duration, sleep_duration, llm_timeout, llm_retry_attempts
+            )
+        )
+        # Initialize core parameters
+        self._init_core_params(dim, llm_timeout, llm_retry_attempts)
+        # Initialize core components
+        self._init_core_components(
+            llm_generate_fn, embedding_fn, dim, capacity,
+            wake_duration, sleep_duration, initial_moral_threshold, speech_governor
+        )
+        # Initialize reliability components
+        self._init_reliability()
+        # Initialize state tracking
+        self._init_state_tracking()
+
+    def _apply_calibration_defaults(
+        self,
+        capacity: int | None,
+        wake_duration: int | None,
+        sleep_duration: int | None,
+        llm_timeout: float | None,
+        llm_retry_attempts: int | None,
+    ) -> tuple[int, int, int, float, int]:
+        """Apply calibration defaults where parameters not specified."""
         if capacity is None:
             capacity = PELM_DEFAULTS.default_capacity if PELM_DEFAULTS else 20_000
         if wake_duration is None:
@@ -244,28 +270,47 @@ class LLMWrapper:
             llm_timeout = self.DEFAULT_LLM_TIMEOUT
         if llm_retry_attempts is None:
             llm_retry_attempts = self.DEFAULT_LLM_RETRY_ATTEMPTS
+        return capacity, wake_duration, sleep_duration, llm_timeout, llm_retry_attempts
 
+    def _init_core_params(
+        self,
+        dim: int,
+        llm_timeout: float,
+        llm_retry_attempts: int,
+    ) -> None:
+        """Initialize core parameters and lock."""
         self.dim = dim
         self._lock = Lock()
         self.llm_timeout = llm_timeout
         self.llm_retry_attempts = llm_retry_attempts
 
-        # Core components
+    def _init_core_components(
+        self,
+        llm_generate_fn: Callable[[str, int], str],
+        embedding_fn: Callable[[str], np.ndarray],
+        dim: int,
+        capacity: int,
+        wake_duration: int,
+        sleep_duration: int,
+        initial_moral_threshold: float | None,
+        speech_governor: SpeechGovernor | None,
+    ) -> None:
+        """Initialize core components: LLM, embedding, moral filter, memory, rhythm."""
         self.llm_generate = llm_generate_fn
         self.embed = embedding_fn
         self.moral = MoralFilterV2(initial_threshold=initial_moral_threshold)
         self.pelm = PhaseEntangledLatticeMemory(dimension=dim, capacity=capacity)
         self.rhythm = CognitiveRhythm(wake_duration=wake_duration, sleep_duration=sleep_duration)
         self.synaptic = MultiLevelSynapticMemory(dimension=dim)
-
-        # Speech governance
         self._speech_governor = speech_governor
 
-        # Reliability components (using calibration defaults)
+    def _init_reliability(self) -> None:
+        """Initialize reliability components (circuit breaker, stateless mode flag)."""
         self.embedding_circuit_breaker = CircuitBreaker()
-        self.stateless_mode = False  # Graceful degradation flag
+        self.stateless_mode = False
 
-        # State tracking
+    def _init_state_tracking(self) -> None:
+        """Initialize state tracking counters and buffers."""
         self.step_counter = 0
         self.rejected_count = 0
         self.accepted_count = 0
@@ -410,141 +455,204 @@ class LLMWrapper:
         with self._lock:
             self.step_counter += 1
 
-            # Step 1: Moral evaluation
-            accepted = self.moral.evaluate(moral_value)
-            self.moral.adapt(accepted)
+            # Step 1: Moral evaluation and phase check
+            rejection = self._check_moral_and_phase(moral_value)
+            if rejection is not None:
+                return rejection
 
-            if not accepted:
-                self.rejected_count += 1
-                return self._build_rejection_response("morally rejected")
+            # Step 2: Embed prompt
+            embed_result = self._embed_and_validate_prompt(prompt)
+            if isinstance(embed_result, dict):
+                return embed_result
+            prompt_vector = embed_result
 
-            # Step 2: Check cognitive phase
+            # Step 3: Retrieve context and build enhanced prompt
             is_wake = self.rhythm.is_wake()
-            if not is_wake:
-                # During sleep, reject new processing but allow consolidation
-                return self._build_rejection_response("sleep phase - consolidating")
-
-            # Step 3: Embed prompt with circuit breaker
-            try:
-                prompt_vector = self._embed_with_circuit_breaker(prompt)
-
-                # Validate and normalize
-                if prompt_vector.size == 0:
-                    raise ValueError("Corrupted embedding vector: empty vector")
-                if not np.isfinite(prompt_vector).all():
-                    raise ValueError("Corrupted embedding vector: contains NaN or Inf values")
-
-                norm = np.linalg.norm(prompt_vector)
-                if norm > 1e-9:
-                    prompt_vector = prompt_vector / norm
-                else:
-                    raise ValueError("Zero-norm embedding vector")
-
-            except RuntimeError as e:
-                if "Circuit breaker is OPEN" in str(e):
-                    return self._build_error_response("embedding service unavailable (circuit breaker open)")
-                return self._build_error_response(f"embedding failed: {str(e)}")
-            except Exception as e:
-                return self._build_error_response(f"embedding failed: {str(e)}")
-
-            # Step 4: Retrieve context from memory with graceful degradation
             phase_val = self.WAKE_PHASE if is_wake else self.SLEEP_PHASE
-            memories = []
-            # Use calibration default for top_k if not specified
-            if context_top_k is None:
-                context_top_k = PELM_DEFAULTS.default_top_k if PELM_DEFAULTS else 5
-            try:
-                memories = self._safe_pelm_operation(
-                    "retrieve",
-                    query_vector=prompt_vector.tolist(),
-                    current_phase=phase_val,
-                    phase_tolerance=self.DEFAULT_PHASE_TOLERANCE,
-                    top_k=context_top_k,
-                )
-            except Exception:
-                # Continue in stateless mode if PELM fails
-                if not self.stateless_mode:
-                    memories = []
+            memories, enhanced_prompt = self._retrieve_and_build_context(
+                prompt, prompt_vector, phase_val, context_top_k
+            )
 
-            # Step 5: Build context-aware prompt
-            context_text = self._build_context_from_memories(memories)
-            enhanced_prompt = self._enhance_prompt(prompt, context_text)
+            # Step 4: Determine max tokens
+            max_tokens = self._determine_max_tokens(max_tokens, is_wake)
 
-            # Step 6: Determine max tokens based on phase
-            if max_tokens is None:
-                max_tokens = self.MAX_WAKE_TOKENS if is_wake else self.MAX_SLEEP_TOKENS
+            # Step 5: Generate and govern response
+            gen_result = self._generate_and_govern(prompt, enhanced_prompt, max_tokens)
+            if isinstance(gen_result, dict) and "note" in gen_result and "error" in gen_result.get("note", ""):
+                return gen_result
+            response_text, governed_metadata = gen_result
+
+            # Step 6: Update memory state
+            self._update_memory_after_generate(prompt_vector, phase_val)
+
+            # Step 7: Advance rhythm and consolidate
+            self._advance_rhythm_and_consolidate()
+
+            # Step 8: Build final response
+            return self._build_success_response(
+                response_text, memories, max_tokens, governed_metadata
+            )
+
+    def _check_moral_and_phase(self, moral_value: float) -> dict[str, Any] | None:
+        """Check moral acceptability and cognitive phase. Returns rejection response or None."""
+        accepted = self.moral.evaluate(moral_value)
+        self.moral.adapt(accepted)
+
+        if not accepted:
+            self.rejected_count += 1
+            return self._build_rejection_response("morally rejected")
+
+        is_wake = self.rhythm.is_wake()
+        if not is_wake:
+            return self._build_rejection_response("sleep phase - consolidating")
+
+        return None
+
+    def _embed_and_validate_prompt(self, prompt: str) -> np.ndarray | dict[str, Any]:
+        """Embed prompt with circuit breaker and validate. Returns vector or error response."""
+        try:
+            prompt_vector = self._embed_with_circuit_breaker(prompt)
+
+            if prompt_vector.size == 0:
+                raise ValueError("Corrupted embedding vector: empty vector")
+            if not np.isfinite(prompt_vector).all():
+                raise ValueError("Corrupted embedding vector: contains NaN or Inf values")
+
+            norm = np.linalg.norm(prompt_vector)
+            if norm > 1e-9:
+                prompt_vector = prompt_vector / norm
             else:
-                # During sleep, enforce short responses
-                if not is_wake:
-                    max_tokens = min(max_tokens, self.MAX_SLEEP_TOKENS)
+                raise ValueError("Zero-norm embedding vector")
 
-            # Step 7: Generate response with retry and timeout
-            try:
-                base_text = self._llm_generate_with_retry(enhanced_prompt, max_tokens)
-            except Exception as e:
-                return self._build_error_response(f"generation failed: {str(e)}")
+            return prompt_vector
 
-            # Step 7a: Apply speech governance if configured
-            governed_metadata = None
-            response_text = base_text
+        except RuntimeError as e:
+            if "Circuit breaker is OPEN" in str(e):
+                return self._build_error_response("embedding service unavailable (circuit breaker open)")
+            return self._build_error_response(f"embedding failed: {str(e)}")
+        except Exception as e:
+            return self._build_error_response(f"embedding failed: {str(e)}")
 
-            if self._speech_governor is not None:
-                gov_result: SpeechGovernanceResult = self._speech_governor(
-                    prompt=prompt,
-                    draft=base_text,
-                    max_tokens=max_tokens,
-                )
-                response_text = gov_result.final_text
-                governed_metadata = {
-                    "raw_text": gov_result.raw_text,
-                    "metadata": gov_result.metadata,
-                }
-
-            # Step 8: Update memory (skip if in stateless mode)
+    def _retrieve_and_build_context(
+        self,
+        prompt: str,
+        prompt_vector: np.ndarray,
+        phase_val: float,
+        context_top_k: int | None,
+    ) -> tuple[list[Any], str]:
+        """Retrieve context from memory and build enhanced prompt."""
+        memories: list[Any] = []
+        if context_top_k is None:
+            context_top_k = PELM_DEFAULTS.default_top_k if PELM_DEFAULTS else 5
+        try:
+            memories = self._safe_pelm_operation(
+                "retrieve",
+                query_vector=prompt_vector.tolist(),
+                current_phase=phase_val,
+                phase_tolerance=self.DEFAULT_PHASE_TOLERANCE,
+                top_k=context_top_k,
+            )
+        except Exception:
             if not self.stateless_mode:
-                try:
-                    self.synaptic.update(prompt_vector)
-                    self._safe_pelm_operation("entangle", prompt_vector.tolist(), phase=phase_val)
-                    self.consolidation_buffer.append(prompt_vector)
-                except Exception as mem_err:
-                    # Continue even if memory update fails - graceful degradation
-                    _logger.debug(
-                        "Memory update failed (graceful degradation): %s",
-                        mem_err
-                    )
+                memories = []
 
-            self.accepted_count += 1
+        context_text = self._build_context_from_memories(memories)
+        enhanced_prompt = self._enhance_prompt(prompt, context_text)
+        return memories, enhanced_prompt
 
-            # Step 9: Advance cognitive rhythm
-            self.rhythm.step()
+    def _determine_max_tokens(self, max_tokens: int | None, is_wake: bool) -> int:
+        """Determine max tokens based on phase and user input."""
+        if max_tokens is None:
+            return self.MAX_WAKE_TOKENS if is_wake else self.MAX_SLEEP_TOKENS
+        if not is_wake:
+            return min(max_tokens, self.MAX_SLEEP_TOKENS)
+        return max_tokens
 
-            # Step 10: Perform consolidation if entering sleep
-            if self.rhythm.is_sleep() and len(self.consolidation_buffer) > 0 and not self.stateless_mode:
-                try:
-                    self._consolidate_memories()
-                except Exception as consol_err:
-                    # Consolidation failure is non-critical - log and continue
-                    _logger.debug(
-                        "Memory consolidation failed (non-critical): %s",
-                        consol_err
-                    )
+    def _generate_and_govern(
+        self,
+        prompt: str,
+        enhanced_prompt: str,
+        max_tokens: int,
+    ) -> tuple[str, dict[str, Any] | None] | dict[str, Any]:
+        """Generate response with retry and apply speech governance."""
+        try:
+            base_text = self._llm_generate_with_retry(enhanced_prompt, max_tokens)
+        except Exception as e:
+            return self._build_error_response(f"generation failed: {str(e)}")
 
-            result = {
-                "response": response_text,
-                "accepted": True,
-                "phase": self.rhythm.phase,
-                "step": self.step_counter,
-                "note": "processed (stateless mode)" if self.stateless_mode else "processed",
-                "moral_threshold": round(self.moral.threshold, 4),
-                "context_items": len(memories),
-                "max_tokens_used": max_tokens,
-                "stateless_mode": self.stateless_mode
+        governed_metadata = None
+        response_text = base_text
+
+        if self._speech_governor is not None:
+            gov_result: SpeechGovernanceResult = self._speech_governor(
+                prompt=prompt,
+                draft=base_text,
+                max_tokens=max_tokens,
+            )
+            response_text = gov_result.final_text
+            governed_metadata = {
+                "raw_text": gov_result.raw_text,
+                "metadata": gov_result.metadata,
             }
 
-            if governed_metadata is not None:
-                result["speech_governance"] = governed_metadata
+        return response_text, governed_metadata
 
-            return result
+    def _update_memory_after_generate(
+        self,
+        prompt_vector: np.ndarray,
+        phase_val: float,
+    ) -> None:
+        """Update memory (skip if in stateless mode)."""
+        if not self.stateless_mode:
+            try:
+                self.synaptic.update(prompt_vector)
+                self._safe_pelm_operation("entangle", prompt_vector.tolist(), phase=phase_val)
+                self.consolidation_buffer.append(prompt_vector)
+            except Exception as mem_err:
+                _logger.debug(
+                    "Memory update failed (graceful degradation): %s",
+                    mem_err
+                )
+
+        self.accepted_count += 1
+
+    def _advance_rhythm_and_consolidate(self) -> None:
+        """Advance cognitive rhythm and perform consolidation if entering sleep."""
+        self.rhythm.step()
+
+        if self.rhythm.is_sleep() and len(self.consolidation_buffer) > 0 and not self.stateless_mode:
+            try:
+                self._consolidate_memories()
+            except Exception as consol_err:
+                _logger.debug(
+                    "Memory consolidation failed (non-critical): %s",
+                    consol_err
+                )
+
+    def _build_success_response(
+        self,
+        response_text: str,
+        memories: list[Any],
+        max_tokens: int,
+        governed_metadata: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        """Build the successful response dictionary."""
+        result = {
+            "response": response_text,
+            "accepted": True,
+            "phase": self.rhythm.phase,
+            "step": self.step_counter,
+            "note": "processed (stateless mode)" if self.stateless_mode else "processed",
+            "moral_threshold": round(self.moral.threshold, 4),
+            "context_items": len(memories),
+            "max_tokens_used": max_tokens,
+            "stateless_mode": self.stateless_mode
+        }
+
+        if governed_metadata is not None:
+            result["speech_governance"] = governed_metadata
+
+        return result
 
     def _consolidate_memories(self) -> None:
         """
