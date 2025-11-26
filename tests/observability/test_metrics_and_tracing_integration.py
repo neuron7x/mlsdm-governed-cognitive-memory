@@ -15,6 +15,10 @@ Test coverage:
 import pytest
 from prometheus_client import CollectorRegistry
 
+from mlsdm.observability.aphasia_metrics import (
+    AphasiaMetricsExporter,
+    reset_aphasia_metrics_exporter,
+)
 from mlsdm.observability.metrics import MetricsExporter, MetricsRegistry
 from mlsdm.observability.tracing import (
     TracerManager,
@@ -23,10 +27,6 @@ from mlsdm.observability.tracing import (
     trace_full_pipeline,
     trace_generate,
     trace_moral_filter,
-)
-from mlsdm.observability.aphasia_metrics import (
-    AphasiaMetricsExporter,
-    reset_aphasia_metrics_exporter,
 )
 
 

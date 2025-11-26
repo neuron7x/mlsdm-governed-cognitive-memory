@@ -21,6 +21,15 @@ Quick Start:
 >>> print(result["response"])
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    import numpy as np
+
 from .core.llm_wrapper import LLMWrapper
 from .engine import NeuroCognitiveEngine, NeuroEngineConfig, build_neuro_engine_from_env
 from .engine.factory import build_stub_embedding_fn
@@ -35,14 +44,14 @@ __version__ = "1.2.0"
 
 
 def create_llm_wrapper(
-    llm_generate_fn: "Callable[[str, int], str] | None" = None,
-    embedding_fn: "Callable[[str], np.ndarray] | None" = None,
+    llm_generate_fn: Callable[[str, int], str] | None = None,
+    embedding_fn: Callable[[str], np.ndarray] | None = None,
     dim: int = 384,
     capacity: int = 20_000,
     wake_duration: int = 8,
     sleep_duration: int = 3,
     initial_moral_threshold: float = 0.50,
-    speech_governor: "SpeechGovernor | None" = None,
+    speech_governor: SpeechGovernor | None = None,
 ) -> LLMWrapper:
     """
     Factory function to create an LLMWrapper instance with sensible defaults.
@@ -89,9 +98,9 @@ def create_llm_wrapper(
 
 
 def create_neuro_engine(
-    config: "NeuroEngineConfig | None" = None,
-    llm_generate_fn: "Callable[[str, int], str] | None" = None,
-    embedding_fn: "Callable[[str], np.ndarray] | None" = None,
+    config: NeuroEngineConfig | None = None,
+    llm_generate_fn: Callable[[str, int], str] | None = None,
+    embedding_fn: Callable[[str], np.ndarray] | None = None,
 ) -> NeuroCognitiveEngine:
     """
     Factory function to create a NeuroCognitiveEngine instance.
@@ -128,15 +137,6 @@ def create_neuro_engine(
         embedding_fn=embedding_fn,
         config=config,
     )
-
-
-# Type annotations for factory functions (deferred to avoid circular imports)
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    import numpy as np
 
 
 __all__ = [

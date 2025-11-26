@@ -5,7 +5,6 @@ These tests verify that the tracing infrastructure is properly configured
 and creates spans for key operations.
 """
 
-import os
 
 import pytest
 
@@ -158,7 +157,7 @@ class TestTracingConfiguration:
         config = TracingConfig(enabled=False)
         manager = TracerManager(config)
         manager.initialize()
-        
+
         assert not manager.enabled
         TracerManager.reset_instance()
 
@@ -166,20 +165,20 @@ class TestTracingConfiguration:
         """Test MLSDM_OTEL_ENABLED environment variable."""
         TracerManager.reset_instance()
         monkeypatch.setenv("MLSDM_OTEL_ENABLED", "true")
-        
+
         config = TracingConfig()
         assert config.enabled is True
-        
+
         TracerManager.reset_instance()
 
     def test_mlsdm_otel_enabled_false(self, monkeypatch):
         """Test MLSDM_OTEL_ENABLED=false disables tracing."""
         TracerManager.reset_instance()
         monkeypatch.setenv("MLSDM_OTEL_ENABLED", "false")
-        
+
         config = TracingConfig()
         assert config.enabled is False
-        
+
         TracerManager.reset_instance()
 
     def test_mlsdm_otel_endpoint_env_var(self, monkeypatch):
@@ -187,10 +186,10 @@ class TestTracingConfiguration:
         TracerManager.reset_instance()
         test_endpoint = "http://custom-endpoint:4318"
         monkeypatch.setenv("MLSDM_OTEL_ENDPOINT", test_endpoint)
-        
+
         config = TracingConfig()
         assert config.otlp_endpoint == test_endpoint
-        
+
         TracerManager.reset_instance()
 
     def test_exporter_type_none(self):
@@ -199,11 +198,11 @@ class TestTracingConfiguration:
         config = TracingConfig(enabled=True, exporter_type="none")
         manager = TracerManager(config)
         manager.initialize()
-        
+
         # Should still create spans, just no export
         with manager.start_span("test") as span:
             assert span is not None
-        
+
         TracerManager.reset_instance()
 
 
@@ -213,25 +212,25 @@ class TestSpanChaining:
     def test_pipeline_span_chain(self, fresh_tracer):
         """Test that a full pipeline creates proper span chain."""
         spans_created = []
-        
+
         with trace_full_pipeline(100, 0.7, "wake") as pipeline_span:
             spans_created.append(pipeline_span)
-            
+
             with trace_moral_filter(0.5, 0.8) as moral_span:
                 spans_created.append(moral_span)
-            
+
             with trace_aphasia_detection(True, True, 0.5) as aphasia_span:
                 spans_created.append(aphasia_span)
-            
+
             with trace_memory_retrieval("semantic", 5) as memory_span:
                 spans_created.append(memory_span)
-            
+
             with trace_llm_call(100, 256) as llm_span:
                 spans_created.append(llm_span)
-            
+
             with trace_speech_governance(True) as speech_span:
                 spans_created.append(speech_span)
-        
+
         # All spans should have been created
         assert len(spans_created) == 6
         for span in spans_created:
@@ -240,11 +239,10 @@ class TestSpanChaining:
     def test_exception_handling_in_span(self, fresh_tracer):
         """Test that exceptions are properly recorded on spans."""
         tracer_manager = get_tracer_manager()
-        
-        with pytest.raises(ValueError):
-            with tracer_manager.start_span("error_span") as span:
-                tracer_manager.record_exception(span, ValueError("Test error"))
-                raise ValueError("Test error")
+
+        with pytest.raises(ValueError), tracer_manager.start_span("error_span") as span:
+            tracer_manager.record_exception(span, ValueError("Test error"))
+            raise ValueError("Test error")
 
 
 if __name__ == "__main__":

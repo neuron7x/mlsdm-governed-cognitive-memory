@@ -102,7 +102,7 @@ if isinstance(vector, np.ndarray):
         arr = vector  # No copy needed!
 ```
 
-#### 2. Cognitive Controller (`src/core/cognitive_controller.py`)
+#### 2. Cognitive Controller (`src/mlsdm/core/cognitive_controller.py`)
 
 **Problem**: Redundant norm calculations in state building.
 
@@ -246,7 +246,7 @@ All optimizations are backward compatible:
    - In-place normalization
    - Optimized string sanitization
 
-3. **src/core/cognitive_controller.py** (+30 lines, optimized)
+3. **src/mlsdm/core/cognitive_controller.py** (+30 lines, optimized)
    - State caching mechanism
    - Cache invalidation logic
    - Pre-allocated dictionaries

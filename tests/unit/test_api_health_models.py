@@ -7,8 +7,9 @@ Tests cover:
 - Health status models
 """
 
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
 
 from mlsdm.api.health import (
     DetailedHealthStatus,
@@ -130,10 +131,10 @@ class TestMemoryManagerReference:
         """Test setting memory manager twice (replaces)."""
         mock_manager1 = MagicMock()
         mock_manager2 = MagicMock()
-        
+
         set_memory_manager(mock_manager1)
         assert get_memory_manager() is mock_manager1
-        
+
         set_memory_manager(mock_manager2)
         assert get_memory_manager() is mock_manager2
 

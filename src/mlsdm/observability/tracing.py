@@ -92,7 +92,7 @@ class TracingConfig:
         batch_schedule_delay_millis: int = 5000,
     ) -> None:
         """Initialize tracing configuration from environment or parameters."""
-        self.service_name = service_name or os.getenv("OTEL_SERVICE_NAME", "mlsdm")
+        self.service_name: str = service_name or os.getenv("OTEL_SERVICE_NAME", "mlsdm") or "mlsdm"
 
         # Check for MLSDM-specific enable flag first, then fall back to OTEL standard
         mlsdm_enabled = os.getenv("MLSDM_OTEL_ENABLED")

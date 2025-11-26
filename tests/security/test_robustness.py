@@ -89,7 +89,7 @@ class TestMoralFilterThresholdStability:
 
         # Alternating toxic/safe inputs
         for i in range(200):
-            if i % 2 == 0:
+            if i % 2 == 0:  # noqa: SIM108 - if/else is more readable with comments
                 result = moral.evaluate(0.1)  # Toxic
             else:
                 result = moral.evaluate(0.9)  # Safe

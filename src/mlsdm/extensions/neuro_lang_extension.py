@@ -1,19 +1,27 @@
+from __future__ import annotations
+
 import os
 import random
 import re
 import threading
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from mlsdm.core.cognitive_controller import CognitiveController
 from mlsdm.core.llm_wrapper import LLMWrapper
 from mlsdm.observability.aphasia_logging import AphasiaLogEvent, log_aphasia_event
 
+if TYPE_CHECKING:
+    from config.calibration import AphasiaDetectorCalibration, SecureModeCalibration
+
 # Import calibration defaults - these can be overridden via config
+# Type hints use Optional to allow None when calibration module unavailable
+APHASIA_DEFAULTS: AphasiaDetectorCalibration | None
+SECURE_MODE_DEFAULTS: SecureModeCalibration | None
+
 try:
     from config.calibration import APHASIA_DEFAULTS, SECURE_MODE_DEFAULTS
 except ImportError:
-    # Fallback if calibration module not available
     APHASIA_DEFAULTS = None
     SECURE_MODE_DEFAULTS = None
 
@@ -500,7 +508,7 @@ class AphasiaSpeechGovernor:
 
     def __init__(
         self,
-        detector: "AphasiaBrocaDetector",
+        detector: AphasiaBrocaDetector,
         repair_enabled: bool | None = None,
         severity_threshold: float | None = None,
         llm_generate_fn: Any = None,
@@ -695,9 +703,9 @@ class NeuroLangWrapper(LLMWrapper):
     def generate(
         self,
         prompt: str,
-        moral_value: float = 0.5,
+        moral_value: float,
         max_tokens: int | None = None,
-        context_top_k: int = 5
+        context_top_k: int | None = None,
     ) -> dict[str, Any]:
         # Handle lazy training: train on first generation if not yet trained
         if self.neurolang_mode == "lazy_train" and not self._trained:
@@ -706,6 +714,9 @@ class NeuroLangWrapper(LLMWrapper):
                 if not self._trained:
                     self.trainer.train()
                     self._trained = True
+
+        # Use default if context_top_k is None (retained for future retrieval logic)
+        _effective_context_top_k = context_top_k if context_top_k is not None else 5
 
         # Generate NeuroLang enhancement based on mode
         if self.neurolang_mode == "disabled":

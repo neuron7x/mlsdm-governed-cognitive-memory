@@ -555,7 +555,7 @@ python tests/validation/test_moral_filter_effectiveness.py
 - **Metrics Framework**: `src/utils/coherence_safety_metrics.py`
 - **Wake/Sleep Tests**: `tests/validation/test_wake_sleep_effectiveness.py`
 - **Moral Filter Tests**: `tests/validation/test_moral_filter_effectiveness.py`
-- **Core Implementation**: `src/core/cognitive_controller.py`
+- **Core Implementation**: `src/mlsdm/core/cognitive_controller.py`
 
 ---
 

@@ -11,12 +11,14 @@ This module provides a production-ready wrapper around any LLM that enforces:
 Prevents LLM degradation, memory bloat, toxicity, and identity loss.
 """
 
+from __future__ import annotations
+
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Callable  # noqa: TC003 - used at runtime in type hints
 from enum import Enum
 from threading import Lock
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from tenacity import (
@@ -30,9 +32,24 @@ from ..cognition.moral_filter_v2 import MoralFilterV2
 from ..memory.multi_level_memory import MultiLevelSynapticMemory
 from ..memory.phase_entangled_lattice_memory import PhaseEntangledLatticeMemory
 from ..rhythm.cognitive_rhythm import CognitiveRhythm
-from ..speech.governance import SpeechGovernanceResult, SpeechGovernor
+from ..speech.governance import (  # noqa: TC001 - used at runtime in function signatures
+    SpeechGovernanceResult,
+    SpeechGovernor,
+)
+
+if TYPE_CHECKING:
+    from config.calibration import (
+        CognitiveRhythmCalibration,
+        PELMCalibration,
+        ReliabilityCalibration,
+    )
 
 # Import calibration defaults - these can be overridden via config
+# Type hints use Optional to allow None when calibration module unavailable
+COGNITIVE_RHYTHM_DEFAULTS: CognitiveRhythmCalibration | None
+PELM_DEFAULTS: PELMCalibration | None
+RELIABILITY_DEFAULTS: ReliabilityCalibration | None
+
 try:
     from config.calibration import (
         COGNITIVE_RHYTHM_DEFAULTS,
@@ -40,7 +57,6 @@ try:
         RELIABILITY_DEFAULTS,
     )
 except ImportError:
-    # Fallback if calibration module not available
     COGNITIVE_RHYTHM_DEFAULTS = None
     PELM_DEFAULTS = None
     RELIABILITY_DEFAULTS = None
@@ -478,8 +494,11 @@ class LLMWrapper:
             # Step 5: Generate and govern response
             gen_result = self._generate_and_govern(prompt, enhanced_prompt, max_tokens)
             if self._is_error_response(gen_result):
-                return gen_result
-            response_text, governed_metadata = gen_result
+                return cast("dict[str, Any]", gen_result)
+            # At this point gen_result must be a tuple
+            response_text, governed_metadata = cast(
+                "tuple[str, dict[str, Any] | None]", gen_result
+            )
 
             # Step 6: Update memory state
             self._update_memory_after_generate(prompt_vector, phase_val)
@@ -519,7 +538,7 @@ class LLMWrapper:
 
             norm = np.linalg.norm(prompt_vector)
             if norm > 1e-9:
-                prompt_vector = prompt_vector / norm
+                prompt_vector = cast("np.ndarray", prompt_vector / norm)
             else:
                 raise ValueError("Zero-norm embedding vector")
 

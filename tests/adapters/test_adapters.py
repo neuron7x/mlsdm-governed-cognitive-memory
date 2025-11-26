@@ -9,7 +9,7 @@ Tests cover:
 """
 
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -154,7 +154,6 @@ class TestOpenAIAdapterContract:
     def test_openai_adapter_with_mock_client(self):
         """Test that OpenAI adapter makes correct API call (with mock)."""
         import sys
-        from unittest.mock import MagicMock
 
         # Create a mock openai module
         mock_openai = MagicMock()
@@ -173,6 +172,7 @@ class TestOpenAIAdapterContract:
 
             # Need to reimport to pick up the mock
             import importlib
+
             import mlsdm.adapters.openai_adapter as oa_module
             importlib.reload(oa_module)
 
@@ -195,7 +195,6 @@ class TestOpenAIAdapterContract:
     def test_openai_provider_id_format(self):
         """Test that OpenAI provider_id format is correct (with mock)."""
         import sys
-        from unittest.mock import MagicMock
 
         mock_openai = MagicMock()
         mock_openai.OpenAI.return_value = MagicMock()
@@ -207,6 +206,7 @@ class TestOpenAIAdapterContract:
             os.environ["OPENAI_API_KEY"] = "sk-test-key"
 
             import importlib
+
             import mlsdm.adapters.llm_provider as lp_module
             importlib.reload(lp_module)
 
