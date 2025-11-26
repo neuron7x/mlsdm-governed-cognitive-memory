@@ -226,11 +226,10 @@ class LLMWrapper:
             speech_governor: Optional speech governance policy (default None)
         """
         # Apply calibration defaults
-        capacity, wake_duration, sleep_duration, llm_timeout, llm_retry_attempts = (
-            self._apply_calibration_defaults(
-                capacity, wake_duration, sleep_duration, llm_timeout, llm_retry_attempts
-            )
+        defaults = self._apply_calibration_defaults(
+            capacity, wake_duration, sleep_duration, llm_timeout, llm_retry_attempts
         )
+        capacity, wake_duration, sleep_duration, llm_timeout, llm_retry_attempts = defaults
         # Initialize core parameters
         self._init_core_params(dim, llm_timeout, llm_retry_attempts)
         # Initialize core components
@@ -478,7 +477,7 @@ class LLMWrapper:
 
             # Step 5: Generate and govern response
             gen_result = self._generate_and_govern(prompt, enhanced_prompt, max_tokens)
-            if isinstance(gen_result, dict) and "note" in gen_result and "error" in gen_result.get("note", ""):
+            if self._is_error_response(gen_result):
                 return gen_result
             response_text, governed_metadata = gen_result
 
@@ -717,6 +716,10 @@ class LLMWrapper:
             "context_items": 0,
             "max_tokens_used": 0
         }
+
+    def _is_error_response(self, result: Any) -> bool:
+        """Check if a result is an error response dict."""
+        return isinstance(result, dict) and "note" in result and "error" in result.get("note", "")
 
     def get_state(self) -> dict[str, Any]:
         """
