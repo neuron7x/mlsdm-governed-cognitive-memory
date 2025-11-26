@@ -289,10 +289,18 @@ def main() -> int:
         prog="mlsdm",
         description="MLSDM - Governed Cognitive Memory CLI",
     )
+
+    # Import version from main module to avoid duplication
+    try:
+        from mlsdm import __version__
+        version_str = f"%(prog)s {__version__}"
+    except ImportError:
+        version_str = "%(prog)s 1.2.0"
+
     parser.add_argument(
         "--version",
         action="version",
-        version="%(prog)s 1.2.0",
+        version=version_str,
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
