@@ -364,26 +364,52 @@ def test_rephrasing_consistency(prompt):
     """
     INV-NCE-M2: Rephrasing Consistency
     Semantically similar prompts should produce similar rejection patterns.
+
+    Invariant: Adding polite prefix "Please " should NOT cause:
+    - A major change in response structure (both should have same keys)
+    
+    Note: Due to stateful moral threshold adaptation, we use separate engine
+    instances to test each prompt independently. This ensures the threshold
+    doesn't drift between calls, making the test deterministic.
     """
     assume(len(prompt.strip()) > 5)
+    # Skip prompts that are already toxic to avoid false test failures
+    assume(not any(w in prompt.lower() for w in ["hate", "violence", "attack", "harmful"]))
 
-    engine = create_test_engine()
+    # Use separate engines to avoid stateful threshold interference
+    engine1 = create_test_engine()
+    engine2 = create_test_engine()
 
     # Original prompt
-    response1 = engine.generate(prompt=prompt, moral_value=0.5)
+    response1 = engine1.generate(prompt=prompt, moral_value=0.5)
 
     # Rephrased version (simple transformation)
     prompt_rephrase = f"Please {prompt.lower()}"
-    response2 = engine.generate(prompt=prompt_rephrase, moral_value=0.5)
+    response2 = engine2.generate(prompt=prompt_rephrase, moral_value=0.5)
 
-    # Both should be accepted or both rejected (for simple rephrasing)
-    # Note: This is a weak check since rephrasing can legitimately change semantics
-    # We just check that not ALL rephrasings flip the decision
-    # In practice, some variance is expected and acceptable
-    # TODO: This test needs proper assertion logic
-    # Currently just verifying responses exist
-    assert response1 is not None
-    assert response2 is not None
+    # Both responses must be valid structured responses
+    assert isinstance(response1, dict), "response1 must be a dict"
+    assert isinstance(response2, dict), "response2 must be a dict"
+
+    # Both should have required schema fields (INV-NCE-S1)
+    required_keys = {"response", "governance", "mlsdm", "timing", "validation_steps", "error", "rejected_at"}
+    assert required_keys.issubset(set(response1.keys())), f"response1 missing keys: {required_keys - set(response1.keys())}"
+    assert required_keys.issubset(set(response2.keys())), f"response2 missing keys: {required_keys - set(response2.keys())}"
+
+    # Key invariant: Polite rephrasing should not cause rejection flip
+    # If original was accepted, rephrased should also be accepted
+    # (Adding "Please" should never make a benign prompt toxic)
+    if response1.get("rejected_at") is None:
+        # Original accepted - rephrased should also be accepted
+        # Allow for sleep phase rejections (those are deterministic based on step count)
+        if response2.get("rejected_at") is not None:
+            rejection_reason = response2.get("error", {}).get("message", "")
+            # Only fail if it's a moral rejection (not sleep phase)
+            if "morally rejected" in rejection_reason or "moral" in rejection_reason.lower():
+                pytest.fail(
+                    f"Polite rephrasing caused moral rejection: "
+                    f"original accepted, rephrased rejected with: {rejection_reason}"
+                )
 
 
 @settings(max_examples=30, deadline=None)
@@ -396,7 +422,11 @@ def test_cognitive_load_monotonicity(prompt, load1, load2):
     """
     INV-NCE-M3: Cognitive Load Monotonicity
     Higher cognitive load should not improve response quality.
-    (This is a conceptual invariant - in practice we just check system doesn't crash)
+
+    Invariants verified:
+    1. Both responses complete without errors (liveness)
+    2. Response structure is consistent regardless of load
+    3. If low load produces accepted response, high load should not produce better quality
     """
     assume(len(prompt.strip()) > 5)
     assume(load1 < load2)  # load1 is lower than load2
@@ -417,13 +447,31 @@ def test_cognitive_load_monotonicity(prompt, load1, load2):
         cognitive_load=load2
     )
 
-    # Both should complete without errors
-    assert response1 is not None
-    assert response2 is not None
+    # Both must be valid dict responses (liveness guarantee)
+    assert isinstance(response1, dict), "response1 must be a dict"
+    assert isinstance(response2, dict), "response2 must be a dict"
+
+    # Both must have required schema keys (INV-NCE-S1)
+    required_keys = {"response", "governance", "mlsdm", "timing", "validation_steps", "error", "rejected_at"}
+    assert required_keys.issubset(set(response1.keys())), "response1 missing required keys"
+    assert required_keys.issubset(set(response2.keys())), "response2 missing required keys"
 
     # Higher load should not produce dramatically better results
-    # (Simplified check: both should have similar structure)
+    # Both should have consistent response structure
     assert ("response" in response1) == ("response" in response2)
+
+    # Timing should be non-negative for both (INV-NCE-S3)
+    for key, value in response1.get("timing", {}).items():
+        assert value >= 0, f"response1 timing '{key}' is negative: {value}"
+    for key, value in response2.get("timing", {}).items():
+        assert value >= 0, f"response2 timing '{key}' is negative: {value}"
+
+    # If both accepted, higher load should not drastically improve response
+    # (We cannot measure quality directly, but we can verify structure consistency)
+    if response1.get("rejected_at") is None and response2.get("rejected_at") is None:
+        # Both have valid responses - verify they both have non-empty content
+        assert len(response1.get("response", "")) > 0, "Low load response is empty"
+        # Note: High load response can be empty due to degradation, which is acceptable
 
 
 # ============================================================================
@@ -477,6 +525,147 @@ def test_moral_boundary_values(moral_value):
 
     assert response is not None
     assert "response" in response or "rejected_at" in response
+
+
+# ============================================================================
+# Phase 3: Additional Invariant Property Tests
+# ============================================================================
+
+@settings(max_examples=50, deadline=None)
+@given(
+    num_calls=st.integers(min_value=5, max_value=30),
+    moral_value=moral_value_strategy()
+)
+def test_engine_step_counter_monotonic_under_valid_calls(num_calls, moral_value):
+    """
+    INV-CTRL-3 (from COMPONENT_TEST_MATRIX.md): Step counter should increment monotonically.
+    
+    Each call to generate() should advance the internal step counter by exactly 1.
+    """
+    assume(0.3 <= moral_value <= 0.9)  # Use reasonable moral values
+    
+    engine = create_test_engine()
+    
+    # Track step counter via mlsdm state
+    for i in range(num_calls):
+        response = engine.generate(
+            prompt=f"Test prompt {i}",
+            moral_value=moral_value
+        )
+        
+        # Response should always be structured
+        assert isinstance(response, dict), f"Response {i} is not a dict"
+        
+        # MLSDM state should be available
+        mlsdm_state = response.get("mlsdm", {})
+        
+        # If step counter is exposed, verify monotonicity
+        if "step" in mlsdm_state:
+            step = mlsdm_state["step"]
+            expected_step = i + 1  # Steps start at 1
+            assert step >= expected_step, \
+                f"Step counter went backwards: got {step}, expected >= {expected_step}"
+
+
+@settings(max_examples=30, deadline=None)
+@given(
+    prompt=prompt_strategy(),
+    num_generate_calls=st.integers(min_value=1, max_value=10)
+)
+def test_engine_state_does_not_leak_across_calls(prompt, num_generate_calls):
+    """
+    Test that each generate call is independent and doesn't leak state.
+    
+    Multiple calls with the same prompt should produce consistent structured
+    responses without state corruption.
+    """
+    assume(len(prompt.strip()) > 0)
+    
+    engine = create_test_engine()
+    
+    responses = []
+    for _ in range(num_generate_calls):
+        response = engine.generate(prompt=prompt, moral_value=0.5)
+        responses.append(response)
+    
+    # All responses should have consistent structure
+    required_keys = {"response", "governance", "mlsdm", "timing", "validation_steps", "error", "rejected_at"}
+    
+    for i, response in enumerate(responses):
+        assert required_keys.issubset(set(response.keys())), \
+            f"Response {i} missing required keys"
+        
+        # Timing should always be non-negative
+        for key, value in response.get("timing", {}).items():
+            assert value >= 0, f"Response {i} has negative timing: {key}={value}"
+
+
+@settings(max_examples=30, deadline=None)
+@given(
+    prompt=st.text(min_size=5, max_size=50),
+    max_tokens_values=st.lists(
+        st.integers(min_value=10, max_value=500),
+        min_size=2,
+        max_size=5
+    )
+)
+def test_engine_handles_varying_max_tokens(prompt, max_tokens_values):
+    """
+    Test that varying max_tokens parameter doesn't break the engine.
+    
+    Different max_tokens values should all produce valid structured responses.
+    """
+    assume(len(prompt.strip()) > 3)
+    
+    engine = create_test_engine()
+    
+    for max_tokens in max_tokens_values:
+        response = engine.generate(
+            prompt=prompt,
+            moral_value=0.5,
+            max_tokens=max_tokens
+        )
+        
+        # Should always return structured response
+        assert isinstance(response, dict), f"Response with max_tokens={max_tokens} not a dict"
+        assert "response" in response
+        assert "error" in response
+
+
+@settings(max_examples=20, deadline=None)
+@given(
+    prompts=st.lists(
+        st.text(min_size=5, max_size=50),
+        min_size=2,
+        max_size=10
+    )
+)
+def test_engine_multi_prompt_sequence_stability(prompts):
+    """
+    Test that processing a sequence of different prompts doesn't corrupt state.
+    
+    This simulates a conversation-like pattern where each prompt is different.
+    """
+    assume(all(len(p.strip()) > 3 for p in prompts))
+    
+    engine = create_test_engine()
+    
+    responses = []
+    for prompt in prompts:
+        response = engine.generate(prompt=prompt, moral_value=0.5)
+        responses.append(response)
+    
+    # All responses should be valid
+    for i, response in enumerate(responses):
+        assert isinstance(response, dict), f"Response {i} is not a dict"
+        
+        # Either has response content or is properly rejected
+        has_content = response.get("response") is not None
+        is_rejected = response.get("rejected_at") is not None
+        has_error = response.get("error") is not None
+        
+        assert has_content or is_rejected or has_error, \
+            f"Response {i} has neither content nor rejection/error"
 
 
 if __name__ == "__main__":

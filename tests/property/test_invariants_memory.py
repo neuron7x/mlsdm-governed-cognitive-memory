@@ -7,7 +7,7 @@ and MultiLevelSynapticMemory as defined in docs/FORMAL_INVARIANTS.md.
 
 import numpy as np
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from mlsdm.memory.multi_level_memory import MultiLevelSynapticMemory
@@ -469,6 +469,159 @@ def test_single_vector_retrieval():
     neighbors = pelm.retrieve(query.tolist(), current_phase=phase, phase_tolerance=0.5, top_k=5)
 
     assert len(neighbors) == 1, "Should return the single vector"
+
+
+# ============================================================================
+# Phase 3: Additional Invariant Property Tests
+# ============================================================================
+
+@settings(max_examples=30, deadline=None)
+@given(
+    dim=st.integers(min_value=5, max_value=50),
+    capacity=st.integers(min_value=10, max_value=100),
+    num_inserts=st.integers(min_value=50, max_value=200)
+)
+def test_memory_never_exceeds_capacity_under_random_load(dim, capacity, num_inserts):
+    """
+    INV-MEM-S1 (from FORMAL_INVARIANTS.md): Memory MUST NOT exceed configured capacity.
+    
+    Under heavy random load (inserts >> capacity), PELM should never exceed
+    its configured capacity. This tests the circular buffer wraparound behavior.
+    """
+    # Ensure we have enough inserts to fill and overflow
+    assume(num_inserts > capacity)
+    
+    pelm = PhaseEntangledLatticeMemory(dimension=dim, capacity=capacity)
+    
+    # Track size at each step
+    max_size_seen = 0
+    
+    for i in range(num_inserts):
+        vec = np.random.randn(dim).astype(np.float32)
+        phase = np.random.random()  # Random phase in [0, 1)
+        pelm.entangle(vec.tolist(), phase=phase)
+        
+        # Check capacity invariant after each insert
+        current_size = pelm.size
+        max_size_seen = max(max_size_seen, current_size)
+        
+        assert current_size <= capacity, \
+            f"PELM size {current_size} exceeds capacity {capacity} after insert {i+1}"
+    
+    # Final size should be exactly capacity (since inserts > capacity)
+    assert pelm.size == capacity, \
+        f"After {num_inserts} inserts (> capacity {capacity}), size should be {capacity}, got {pelm.size}"
+    
+    # Max size seen should never exceed capacity
+    assert max_size_seen <= capacity, \
+        f"Max size {max_size_seen} exceeded capacity {capacity}"
+
+
+@settings(max_examples=30, deadline=None)
+@given(
+    dim=st.integers(min_value=5, max_value=50),
+    capacity=st.integers(min_value=10, max_value=100)
+)
+def test_pelm_mixed_phase_capacity_enforcement(dim, capacity):
+    """
+    Test that capacity enforcement works correctly with mixed phases.
+    
+    Inserting vectors with various phases should all respect the same
+    global capacity limit.
+    """
+    pelm = PhaseEntangledLatticeMemory(dimension=dim, capacity=capacity)
+    
+    # Insert 3x capacity vectors with varying phases
+    num_inserts = capacity * 3
+    
+    for i in range(num_inserts):
+        vec = np.random.randn(dim).astype(np.float32)
+        # Alternate between wake-like (0.1) and sleep-like (0.9) phases
+        phase = 0.1 if i % 2 == 0 else 0.9
+        pelm.entangle(vec.tolist(), phase=phase)
+        
+        # Capacity invariant must hold
+        assert pelm.size <= capacity, \
+            f"Size {pelm.size} > capacity {capacity} at insert {i+1}"
+    
+    # Final state checks
+    assert pelm.size == capacity
+    assert not pelm.detect_corruption(), "Memory corruption detected after heavy load"
+
+
+@settings(max_examples=30, deadline=None)
+@given(
+    dim=st.integers(min_value=5, max_value=30),
+    capacity=st.integers(min_value=5, max_value=50)
+)
+def test_pelm_retrieval_after_overflow(dim, capacity):
+    """
+    Test that retrieval still works correctly after capacity overflow.
+    
+    After the circular buffer wraps around, retrieval should still find
+    valid vectors and maintain ordering invariants.
+    """
+    pelm = PhaseEntangledLatticeMemory(dimension=dim, capacity=capacity)
+    
+    # Fill to 2x capacity to ensure wraparound
+    common_phase = 0.5
+    for i in range(capacity * 2):
+        vec = np.random.randn(dim).astype(np.float32)
+        pelm.entangle(vec.tolist(), phase=common_phase)
+    
+    # Retrieval should work
+    query = np.random.randn(dim).astype(np.float32)
+    results = pelm.retrieve(
+        query.tolist(),
+        current_phase=common_phase,
+        phase_tolerance=0.3,
+        top_k=min(5, capacity)
+    )
+    
+    # Should return results (memory is not empty)
+    assert len(results) > 0, "No results after overflow - memory should have content"
+    assert len(results) <= capacity, "Cannot retrieve more than capacity"
+    
+    # Results should be ordered by resonance (INV-MEM-M3)
+    resonances = [r.resonance for r in results]
+    for i in range(len(resonances) - 1):
+        assert resonances[i] >= resonances[i + 1] - 1e-6, \
+            f"Results not ordered: {resonances[i]} < {resonances[i + 1]}"
+
+
+@settings(max_examples=20, deadline=None)
+@given(dim=st.integers(min_value=5, max_value=30))
+def test_pelm_no_corruption_under_stress(dim):
+    """
+    Stress test: Verify no corruption after many operations.
+    
+    Perform many interleaved entangle and retrieve operations
+    and verify memory integrity is maintained.
+    """
+    capacity = 100
+    pelm = PhaseEntangledLatticeMemory(dimension=dim, capacity=capacity)
+    
+    # Mix of operations
+    for i in range(500):
+        op = i % 3  # Cycle through operations
+        
+        if op == 0 or op == 1:  # Entangle (2/3 of ops)
+            vec = np.random.randn(dim).astype(np.float32)
+            phase = np.random.random()
+            pelm.entangle(vec.tolist(), phase=phase)
+        else:  # Retrieve (1/3 of ops)
+            if pelm.size > 0:
+                query = np.random.randn(dim).astype(np.float32)
+                phase = np.random.random()
+                pelm.retrieve(query.tolist(), current_phase=phase, phase_tolerance=0.5, top_k=5)
+    
+    # Verify integrity
+    assert not pelm.detect_corruption(), "Corruption detected after stress test"
+    assert pelm.size <= capacity, f"Size {pelm.size} exceeds capacity {capacity}"
+    
+    # Recovery should succeed if needed
+    if pelm.detect_corruption():
+        assert pelm.auto_recover(), "Auto-recovery failed"
 
 
 if __name__ == "__main__":
