@@ -614,6 +614,115 @@ def trace_moral_filter(
     )
 
 
+def trace_aphasia_detection(
+    detect_enabled: bool,
+    repair_enabled: bool,
+    severity_threshold: float,
+) -> Any:
+    """Create a context manager for tracing aphasia detection operations.
+
+    Args:
+        detect_enabled: Whether aphasia detection is enabled
+        repair_enabled: Whether aphasia repair is enabled
+        severity_threshold: Threshold for triggering repair
+
+    Returns:
+        Context manager yielding a span
+    """
+    manager = get_tracer_manager()
+    return manager.start_span(
+        "mlsdm.aphasia_detection",
+        kind=SpanKind.INTERNAL,
+        attributes={
+            "mlsdm.aphasia.detect_enabled": detect_enabled,
+            "mlsdm.aphasia.repair_enabled": repair_enabled,
+            "mlsdm.aphasia.severity_threshold": severity_threshold,
+        },
+    )
+
+
+def trace_emergency_shutdown(
+    reason: str,
+    memory_mb: float | None = None,
+) -> Any:
+    """Create a context manager for tracing emergency shutdown events.
+
+    Args:
+        reason: Reason for the emergency shutdown
+        memory_mb: Current memory usage in MB (if applicable)
+
+    Returns:
+        Context manager yielding a span
+    """
+    manager = get_tracer_manager()
+    attributes: dict[str, Any] = {
+        "mlsdm.emergency.reason": reason,
+        "mlsdm.emergency.shutdown": True,
+    }
+    if memory_mb is not None:
+        attributes["mlsdm.emergency.memory_mb"] = memory_mb
+
+    return manager.start_span(
+        "mlsdm.emergency_shutdown",
+        kind=SpanKind.INTERNAL,
+        attributes=attributes,
+    )
+
+
+def trace_phase_transition(
+    from_phase: str,
+    to_phase: str,
+) -> Any:
+    """Create a context manager for tracing phase transitions.
+
+    Args:
+        from_phase: The phase transitioning from
+        to_phase: The phase transitioning to
+
+    Returns:
+        Context manager yielding a span
+    """
+    manager = get_tracer_manager()
+    return manager.start_span(
+        "mlsdm.phase_transition",
+        kind=SpanKind.INTERNAL,
+        attributes={
+            "mlsdm.phase.from": from_phase,
+            "mlsdm.phase.to": to_phase,
+        },
+    )
+
+
+def trace_full_pipeline(
+    prompt_length: int,
+    moral_value: float,
+    phase: str,
+) -> Any:
+    """Create a context manager for tracing the full cognitive pipeline.
+
+    This is a root span that encompasses the entire request path:
+    input → validation → controller → memory → moral → aphasia → output
+
+    Args:
+        prompt_length: Length of the input prompt (NOT the prompt itself, to avoid PII)
+        moral_value: The moral threshold value
+        phase: Current cognitive phase
+
+    Returns:
+        Context manager yielding a span
+    """
+    manager = get_tracer_manager()
+    return manager.start_span(
+        "mlsdm.full_pipeline",
+        kind=SpanKind.SERVER,
+        attributes={
+            "mlsdm.prompt_length": prompt_length,
+            "mlsdm.moral_value": moral_value,
+            "mlsdm.phase": phase,
+        },
+    )
+
+
 def add_span_attributes(span: Span, **attributes: Any) -> None:
     """Add attributes to a span, handling type conversion.
 

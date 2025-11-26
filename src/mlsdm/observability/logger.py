@@ -40,6 +40,12 @@ class EventType(Enum):
     SYSTEM_ERROR = "system_error"
     SYSTEM_WARNING = "system_warning"
 
+    # Emergency shutdown events (CRITICAL for prod observability)
+    EMERGENCY_SHUTDOWN = "emergency_shutdown"
+    EMERGENCY_SHUTDOWN_MEMORY = "emergency_shutdown_memory"
+    EMERGENCY_SHUTDOWN_TIMEOUT = "emergency_shutdown_timeout"
+    EMERGENCY_SHUTDOWN_RESET = "emergency_shutdown_reset"
+
     # Performance events
     PERFORMANCE_DEGRADATION = "performance_degradation"
     PROCESSING_TIME_EXCEEDED = "processing_time_exceeded"
@@ -598,6 +604,64 @@ class ObservabilityLogger:
             EventType.SYSTEM_SHUTDOWN,
             "MLSDM system shutting down",
             metrics=metrics,
+        )
+
+    def log_emergency_shutdown(
+        self,
+        reason: str,
+        memory_mb: float | None = None,
+        processing_time_ms: float | None = None,
+        correlation_id: str | None = None,
+    ) -> str:
+        """Log an emergency shutdown event (CRITICAL for prod observability).
+
+        This method logs emergency shutdown events with relevant context.
+        INVARIANT: Only metadata is logged, never PII or raw user content.
+
+        Args:
+            reason: Reason for shutdown (e.g., 'memory_exceeded', 'processing_timeout')
+            memory_mb: Current memory usage in MB (if applicable)
+            processing_time_ms: Processing time in ms (if applicable)
+            correlation_id: Optional correlation ID
+
+        Returns:
+            Correlation ID
+        """
+        event_type = EventType.EMERGENCY_SHUTDOWN
+        if reason == "memory_exceeded":
+            event_type = EventType.EMERGENCY_SHUTDOWN_MEMORY
+        elif reason == "processing_timeout":
+            event_type = EventType.EMERGENCY_SHUTDOWN_TIMEOUT
+
+        metrics: dict[str, Any] = {"reason": reason}
+        if memory_mb is not None:
+            metrics["memory_mb"] = memory_mb
+        if processing_time_ms is not None:
+            metrics["processing_time_ms"] = processing_time_ms
+
+        return self.error(
+            event_type,
+            f"EMERGENCY SHUTDOWN triggered: {reason}",
+            correlation_id=correlation_id,
+            metrics=metrics,
+        )
+
+    def log_emergency_shutdown_reset(
+        self,
+        correlation_id: str | None = None,
+    ) -> str:
+        """Log an emergency shutdown reset event.
+
+        Args:
+            correlation_id: Optional correlation ID
+
+        Returns:
+            Correlation ID
+        """
+        return self.warn(
+            EventType.EMERGENCY_SHUTDOWN_RESET,
+            "Emergency shutdown flag has been reset",
+            correlation_id=correlation_id,
         )
 
     def get_config(self) -> dict[str, Any]:

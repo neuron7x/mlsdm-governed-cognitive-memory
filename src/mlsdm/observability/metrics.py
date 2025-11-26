@@ -101,6 +101,30 @@ class MetricsExporter:
             registry=self.registry,
         )
 
+        # Emergency shutdown counter
+        self.emergency_shutdowns = Counter(
+            "mlsdm_emergency_shutdowns_total",
+            "Total number of emergency shutdown events",
+            ["reason"],
+            registry=self.registry,
+        )
+
+        # Phase distribution (wake vs sleep processing)
+        self.phase_events = Counter(
+            "mlsdm_phase_events_total",
+            "Total events processed per cognitive phase",
+            ["phase"],
+            registry=self.registry,
+        )
+
+        # Moral rejection rate counter with labels
+        self.moral_rejections = Counter(
+            "mlsdm_moral_rejections_total",
+            "Total moral filter rejections by reason",
+            ["reason"],
+            registry=self.registry,
+        )
+
         # Histograms with reasonable buckets for millisecond latencies
         self.processing_latency_ms = Histogram(
             "mlsdm_processing_latency_milliseconds",
@@ -192,6 +216,36 @@ class MetricsExporter:
             self.memory_l1_norm.set(l1_norm)
             self.memory_l2_norm.set(l2_norm)
             self.memory_l3_norm.set(l3_norm)
+
+    def increment_emergency_shutdown(self, reason: str, count: int = 1) -> None:
+        """Increment the emergency shutdown counter.
+
+        Args:
+            reason: Reason for the emergency shutdown (e.g., 'memory_exceeded', 'processing_timeout')
+            count: Number to add (default: 1)
+        """
+        with self._lock:
+            self.emergency_shutdowns.labels(reason=reason).inc(count)
+
+    def increment_phase_event(self, phase: str, count: int = 1) -> None:
+        """Increment the phase events counter.
+
+        Args:
+            phase: The cognitive phase ('wake' or 'sleep')
+            count: Number to add (default: 1)
+        """
+        with self._lock:
+            self.phase_events.labels(phase=phase).inc(count)
+
+    def increment_moral_rejection(self, reason: str, count: int = 1) -> None:
+        """Increment the moral rejections counter.
+
+        Args:
+            reason: Reason for the rejection (e.g., 'below_threshold', 'sleep_phase')
+            count: Number to add (default: 1)
+        """
+        with self._lock:
+            self.moral_rejections.labels(reason=reason).inc(count)
 
     def start_processing_timer(self, correlation_id: str) -> None:
         """Start timing an event processing operation.
