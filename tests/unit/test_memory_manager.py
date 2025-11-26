@@ -9,8 +9,7 @@ Tests cover:
 - State persistence
 """
 
-import asyncio
-from typing import Iterator
+from collections.abc import Iterator
 
 import numpy as np
 import pytest
@@ -238,8 +237,6 @@ class TestSimulate:
             },
         }
         manager = MemoryManager(config)
-
-        events_processed = []
 
         def event_gen() -> Iterator[tuple[np.ndarray, float]]:
             for i in range(6):

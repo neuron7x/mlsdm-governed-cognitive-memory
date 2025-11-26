@@ -41,9 +41,9 @@ try:
     )
 except ImportError:
     # Fallback if calibration module not available
-    COGNITIVE_RHYTHM_DEFAULTS = None
-    PELM_DEFAULTS = None
-    RELIABILITY_DEFAULTS = None
+    COGNITIVE_RHYTHM_DEFAULTS = None  # type: ignore[assignment]
+    PELM_DEFAULTS = None  # type: ignore[assignment]
+    RELIABILITY_DEFAULTS = None  # type: ignore[assignment]
 
 _logger = logging.getLogger(__name__)
 
@@ -478,7 +478,9 @@ class LLMWrapper:
             # Step 5: Generate and govern response
             gen_result = self._generate_and_govern(prompt, enhanced_prompt, max_tokens)
             if self._is_error_response(gen_result):
-                return gen_result
+                return gen_result  # type: ignore[return-value]
+            # At this point, gen_result is a tuple (not a dict)
+            assert isinstance(gen_result, tuple), "Expected tuple from _generate_and_govern"
             response_text, governed_metadata = gen_result
 
             # Step 6: Update memory state
@@ -519,7 +521,7 @@ class LLMWrapper:
 
             norm = np.linalg.norm(prompt_vector)
             if norm > 1e-9:
-                prompt_vector = prompt_vector / norm
+                prompt_vector = cast("np.ndarray", prompt_vector / norm)
             else:
                 raise ValueError("Zero-norm embedding vector")
 

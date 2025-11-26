@@ -5,7 +5,7 @@ try:
     from config.calibration import MORAL_FILTER_DEFAULTS
 except ImportError:
     # Fallback if calibration module not available
-    MORAL_FILTER_DEFAULTS = None
+    MORAL_FILTER_DEFAULTS = None  # type: ignore[assignment]
 
 
 class MoralFilterV2:

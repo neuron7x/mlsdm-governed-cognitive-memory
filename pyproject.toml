@@ -197,6 +197,8 @@ ignore = [
     "N806",  # Allow uppercase variable names (L1, L2, L3 are scientific notation for memory levels)
     "SIM105",  # contextlib.suppress is less explicit than try-except-pass
     "SIM102",  # Nested ifs can be more readable in some contexts
+    "SIM108",  # Ternary operators can be less readable than if-else blocks
+    "SIM117",  # Nested with statements can be more readable than combined with statements
 ]
 
 [tool.ruff.lint.per-file-ignores]

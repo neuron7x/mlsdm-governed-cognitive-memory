@@ -14,8 +14,8 @@ try:
     from config.calibration import APHASIA_DEFAULTS, SECURE_MODE_DEFAULTS
 except ImportError:
     # Fallback if calibration module not available
-    APHASIA_DEFAULTS = None
-    SECURE_MODE_DEFAULTS = None
+    APHASIA_DEFAULTS = None  # type: ignore[assignment]
+    SECURE_MODE_DEFAULTS = None  # type: ignore[assignment]
 
 # Lazy import of PyTorch dependencies - only needed for NeuroLang mode
 try:
@@ -692,7 +692,7 @@ class NeuroLangWrapper(LLMWrapper):
             self.processor2 = ModularLanguageProcessor(self.critic, self.actor, self.dataset)
             self.integrator = SocialIntegrator(self.processor1, self.processor2)
 
-    def generate(
+    def generate(  # type: ignore[override]  # Intentional signature deviation for NeuroLang defaults
         self,
         prompt: str,
         moral_value: float = 0.5,

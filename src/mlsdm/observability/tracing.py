@@ -77,7 +77,8 @@ class TracingConfig:
         batch_schedule_delay_millis: int = 5000,
     ) -> None:
         """Initialize tracing configuration from environment or parameters."""
-        self.service_name = service_name or os.getenv("OTEL_SERVICE_NAME", "mlsdm")
+        _service_name = service_name or os.getenv("OTEL_SERVICE_NAME", "mlsdm")
+        self.service_name: str = _service_name if _service_name else "mlsdm"
         self.enabled = (
             enabled
             if enabled is not None

@@ -131,7 +131,7 @@ def create_neuro_engine(
 
 
 # Type annotations for factory functions (deferred to avoid circular imports)
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Callable

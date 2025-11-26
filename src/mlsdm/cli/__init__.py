@@ -34,7 +34,7 @@ def cmd_demo(args: argparse.Namespace) -> int:
         initial_moral_threshold=args.moral_threshold,
     )
 
-    print(f"Wrapper created with:")
+    print("Wrapper created with:")
     print(f"  - Wake duration: {args.wake_duration} steps")
     print(f"  - Sleep duration: {args.sleep_duration} steps")
     print(f"  - Moral threshold: {args.moral_threshold}")
@@ -173,7 +173,7 @@ def cmd_check(args: argparse.Namespace) -> int:
 
     # Check Python version
     print(f"Python version: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
-    if sys.version_info < (3, 10):
+    if sys.version_info < (3, 10):  # noqa: UP036  # Runtime check for user feedback
         status["errors"].append("Python 3.10+ required")
         print("  ✗ Python 3.10+ required")
     else:

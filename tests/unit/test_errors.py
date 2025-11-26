@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 
-import pytest
+import pytest  # noqa: TC002  # pytest is used at runtime, not just for type hints
 
 from mlsdm.utils.errors import (
     AuthenticationError,

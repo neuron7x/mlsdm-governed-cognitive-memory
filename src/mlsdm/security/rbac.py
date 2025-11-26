@@ -611,7 +611,7 @@ def get_current_user(request: Request) -> UserContext:
     Raises:
         HTTPException: If user context not found
     """
-    user_context = getattr(request.state, "user_context", None)
+    user_context: UserContext | None = getattr(request.state, "user_context", None)
     if user_context is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -10,7 +10,7 @@ try:
     from config.calibration import PELM_DEFAULTS
 except ImportError:
     # Fallback if calibration module not available
-    PELM_DEFAULTS = None
+    PELM_DEFAULTS = None  # type: ignore[assignment]
 
 
 @dataclass

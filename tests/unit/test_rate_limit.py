@@ -12,7 +12,6 @@ Tests cover:
 
 import time
 from threading import Thread
-from unittest.mock import patch
 
 import pytest
 
