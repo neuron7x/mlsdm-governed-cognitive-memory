@@ -122,6 +122,60 @@ class GenerateRequest(BaseModel):
     )
 
 
+# Request/Response models for /infer endpoint (extended API)
+class InferRequest(BaseModel):
+    """Request model for infer endpoint with extended governance options."""
+
+    prompt: str = Field(..., min_length=1, description="Input text prompt to process")
+    moral_value: float | None = Field(
+        None, ge=0.0, le=1.0, description="Moral threshold value (default: 0.5)"
+    )
+    max_tokens: int | None = Field(
+        None, ge=1, le=4096, description="Maximum number of tokens to generate"
+    )
+    secure_mode: bool = Field(
+        default=False,
+        description="Enable enhanced security filtering for sensitive contexts"
+    )
+    aphasia_mode: bool = Field(
+        default=False,
+        description="Enable aphasia detection and repair for output quality"
+    )
+    rag_enabled: bool = Field(
+        default=True,
+        description="Enable RAG-based context retrieval from memory"
+    )
+    context_top_k: int | None = Field(
+        None, ge=1, le=100, description="Number of context items for RAG (default: 5)"
+    )
+    user_intent: str | None = Field(
+        None, description="User intent category (e.g., 'conversational', 'analytical')"
+    )
+
+
+class InferResponse(BaseModel):
+    """Response model for infer endpoint with detailed metadata."""
+
+    response: str = Field(description="Generated response text")
+    accepted: bool = Field(description="Whether the request was accepted")
+    phase: str = Field(description="Current cognitive phase ('wake' or 'sleep')")
+    moral_metadata: dict[str, Any] | None = Field(
+        default=None, description="Moral filtering metadata"
+    )
+    aphasia_metadata: dict[str, Any] | None = Field(
+        default=None, description="Aphasia detection/repair metadata (if aphasia_mode enabled)"
+    )
+    rag_metadata: dict[str, Any] | None = Field(
+        default=None, description="RAG retrieval metadata (context items, relevance)"
+    )
+    timing: dict[str, float] | None = Field(
+        default=None, description="Performance timing in milliseconds"
+    )
+    governance: dict[str, Any] | None = Field(
+        default=None, description="Full governance state information"
+    )
+
+
 class GenerateResponse(BaseModel):
     """Response model for generate endpoint.
 
@@ -401,6 +455,205 @@ async def startup_event() -> None:
             "dimension": _manager.dimension
         }
     )
+
+
+@app.post(
+    "/infer",
+    response_model=InferResponse,
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid input"},
+        429: {"model": ErrorResponse, "description": "Rate limit exceeded"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+    tags=["Inference"],
+)
+async def infer(
+    request_body: InferRequest,
+    request: Request,
+) -> InferResponse | JSONResponse:
+    """Generate a response with extended governance options.
+
+    This endpoint provides fine-grained control over the cognitive pipeline,
+    including secure mode, aphasia detection/repair, and RAG retrieval.
+
+    Features:
+    - **secure_mode**: Enhanced filtering for sensitive/security-critical contexts
+    - **aphasia_mode**: Detection and repair of telegraphic/fragmented speech patterns
+    - **rag_enabled**: Context retrieval from cognitive memory for coherent responses
+
+    Args:
+        request_body: Inference request parameters with governance options.
+        request: FastAPI request object.
+
+    Returns:
+        InferResponse with response text and detailed governance metadata.
+    """
+    client_id = _get_client_id(request)
+
+    # Rate limiting check
+    if _rate_limiting_enabled and not _rate_limiter.is_allowed(client_id):
+        security_logger.log_rate_limit_exceeded(client_id=client_id)
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={
+                "error": {
+                    "error_type": "rate_limit_exceeded",
+                    "message": "Rate limit exceeded. Maximum 5 requests per second.",
+                    "details": None,
+                }
+            },
+        )
+
+    # Validate prompt
+    if not request_body.prompt or not request_body.prompt.strip():
+        security_logger.log_invalid_input(
+            client_id=client_id,
+            error_message="Prompt cannot be empty"
+        )
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error": {
+                    "error_type": "validation_error",
+                    "message": "Prompt cannot be empty",
+                    "details": {"field": "prompt"},
+                }
+            },
+        )
+
+    try:
+        # Build kwargs for engine
+        kwargs: dict[str, Any] = {"prompt": request_body.prompt}
+
+        if request_body.max_tokens is not None:
+            kwargs["max_tokens"] = request_body.max_tokens
+
+        # Apply moral_value with secure_mode boost
+        base_moral = request_body.moral_value if request_body.moral_value is not None else 0.5
+        if request_body.secure_mode:
+            # In secure mode, raise moral threshold by 0.2 (capped at 1.0)
+            kwargs["moral_value"] = min(1.0, base_moral + 0.2)
+        else:
+            kwargs["moral_value"] = base_moral
+
+        if request_body.user_intent is not None:
+            kwargs["user_intent"] = request_body.user_intent
+
+        # RAG control via context_top_k
+        if request_body.rag_enabled:
+            kwargs["context_top_k"] = request_body.context_top_k or 5
+        else:
+            # Disable RAG by setting context_top_k to 0
+            kwargs["context_top_k"] = 0
+
+        # Generate response
+        result: dict[str, Any] = _neuro_engine.generate(**kwargs)
+
+        # Extract state
+        mlsdm_state = result.get("mlsdm", {})
+        phase = mlsdm_state.get("phase", "unknown")
+        rejected_at = result.get("rejected_at")
+        error_info = result.get("error")
+        accepted = rejected_at is None and error_info is None and bool(result.get("response"))
+
+        # Build moral metadata
+        moral_metadata = {
+            "threshold": mlsdm_state.get("moral_threshold"),
+            "secure_mode": request_body.secure_mode,
+            "applied_moral_value": kwargs.get("moral_value"),
+        }
+
+        # Build RAG metadata
+        rag_metadata = None
+        if request_body.rag_enabled:
+            rag_metadata = {
+                "enabled": True,
+                "context_items_retrieved": mlsdm_state.get("context_items", 0),
+                "top_k": kwargs.get("context_top_k", 5),
+            }
+        else:
+            rag_metadata = {
+                "enabled": False,
+                "context_items_retrieved": 0,
+                "top_k": 0,
+            }
+
+        # Build aphasia metadata (detection happens at speech governance level)
+        aphasia_metadata = None
+        if request_body.aphasia_mode:
+            speech_gov = result.get("mlsdm", {}).get("speech_governance")
+            if speech_gov and "metadata" in speech_gov:
+                aphasia_report = speech_gov["metadata"].get("aphasia_report")
+                aphasia_metadata = {
+                    "enabled": True,
+                    "detected": aphasia_report.get("is_aphasic") if aphasia_report else False,
+                    "severity": aphasia_report.get("severity") if aphasia_report else 0.0,
+                    "repaired": speech_gov["metadata"].get("repaired", False),
+                }
+            else:
+                # Aphasia mode requested but no speech governor configured
+                aphasia_metadata = {
+                    "enabled": True,
+                    "detected": False,
+                    "severity": 0.0,
+                    "repaired": False,
+                    "note": "aphasia_mode enabled but no speech governor configured",
+                }
+
+        # Timing info
+        timing = result.get("timing")
+
+        return InferResponse(
+            response=result.get("response", ""),
+            accepted=accepted,
+            phase=phase,
+            moral_metadata=moral_metadata,
+            aphasia_metadata=aphasia_metadata,
+            rag_metadata=rag_metadata,
+            timing=timing,
+            governance=result.get("governance"),
+        )
+
+    except Exception as e:
+        logger.exception("Error in infer endpoint")
+        security_logger.log_invalid_input(
+            client_id=client_id,
+            error_message=f"Internal error: {type(e).__name__}"
+        )
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "error": {
+                    "error_type": "internal_error",
+                    "message": "An internal error occurred. Please try again later.",
+                    "details": None,
+                }
+            },
+        )
+
+
+@app.get("/status", tags=["Health"])
+async def get_status() -> dict[str, Any]:
+    """Get extended service status with system info.
+
+    Returns system status including version, backend, memory usage,
+    and configuration info.
+    """
+    import psutil
+
+    return {
+        "status": "ok",
+        "version": "1.2.0",
+        "backend": os.environ.get("LLM_BACKEND", "local_stub"),
+        "system": {
+            "memory_mb": round(psutil.Process().memory_info().rss / 1024 / 1024, 2),
+            "cpu_percent": psutil.cpu_percent(),
+        },
+        "config": {
+            "dimension": _manager.dimension,
+            "rate_limiting_enabled": _rate_limiting_enabled,
+        },
+    }
 
 
 @app.on_event("shutdown")
