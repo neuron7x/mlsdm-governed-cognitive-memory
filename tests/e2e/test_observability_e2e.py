@@ -164,8 +164,8 @@ class TestE2EObservabilityPipeline:
         metrics = engine_with_metrics.get_metrics()
         if metrics is not None:
             snapshot = metrics.get_snapshot()
-            # Should have at least some latency recorded
-            assert len(snapshot.get("latency_total_ms", [])) >= 0
+            # Should have at least one latency recorded
+            assert len(snapshot.get("latency_total_ms", [])) > 0
 
     def test_spans_created_for_pipeline_stages(
         self, engine_with_metrics, fresh_tracing
