@@ -89,6 +89,9 @@ Repository = "https://github.com/neuron7x/mlsdm-governed-cognitive-memory"
 Documentation = "https://github.com/neuron7x/mlsdm-governed-cognitive-memory/blob/main/DOCUMENTATION_INDEX.md"
 "Bug Tracker" = "https://github.com/neuron7x/mlsdm-governed-cognitive-memory/issues"
 
+[project.scripts]
+mlsdm = "mlsdm.cli:main"
+
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
