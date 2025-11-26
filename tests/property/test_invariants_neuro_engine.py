@@ -17,6 +17,10 @@ from mlsdm.engine import NeuroCognitiveEngine, NeuroEngineConfig
 MORAL_SCORE_TOLERANCE = 0.15  # Tolerance for moral score estimation
 COHERENCE_TOLERANCE = 0.15  # Tolerance for coherence variations
 
+# Harmful/toxic patterns used for content detection in tests
+# These patterns trigger rejection in the mock LLM and moral scoring heuristics
+HARMFUL_CONTENT_PATTERNS = ["hate", "violence", "attack", "harmful"]
+
 
 # ============================================================================
 # Test Strategies
@@ -77,7 +81,7 @@ def create_test_engine(config=None):
     class MockLLM:
         def __call__(self, prompt_text, system_prompt="", temperature=0.7, max_tokens=150):
             # Simulate moral filtering based on content
-            if any(word in prompt_text.lower() for word in ["hate", "violence", "attack"]):
+            if any(word in prompt_text.lower() for word in HARMFUL_CONTENT_PATTERNS):
                 return "I cannot respond to harmful requests."
             return f"Response to: {prompt_text[:20]}..."
 
@@ -99,12 +103,10 @@ def get_moral_score_estimate(response_text, prompt):
     """Estimate moral score from response (simplified)."""
     # In real system, this would use actual moral filter
     # Here we use heuristic: reject harmful patterns
-    harmful_patterns = ["hate", "violence", "attack", "harmful"]
-
     prompt_lower = prompt.lower()
     response_lower = response_text.lower()
 
-    if any(word in prompt_lower for word in harmful_patterns):
+    if any(word in prompt_lower for word in HARMFUL_CONTENT_PATTERNS):
         return 0.2  # Low moral score for harmful prompts
     elif "cannot respond" in response_lower:
         return 0.3  # Rejection response gets moderate score
@@ -374,7 +376,7 @@ def test_rephrasing_consistency(prompt):
     """
     assume(len(prompt.strip()) > 5)
     # Skip prompts that are already toxic to avoid false test failures
-    assume(not any(w in prompt.lower() for w in ["hate", "violence", "attack", "harmful"]))
+    assume(not any(w in prompt.lower() for w in HARMFUL_CONTENT_PATTERNS))
 
     # Use separate engines to avoid stateful threshold interference
     engine1 = create_test_engine()

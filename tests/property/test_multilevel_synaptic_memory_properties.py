@@ -18,6 +18,16 @@ from mlsdm.memory.multi_level_memory import MultiLevelSynapticMemory
 # Fixed seed for deterministic property tests
 PROPERTY_TEST_SEED = 42
 
+# Default decay rates for testing (from MultiLevelSynapticMemory defaults)
+# λ_L1 > λ_L2 > λ_L3 ensures L1 decays fastest (short-term), L3 slowest (long-term)
+DEFAULT_LAMBDA_L1 = 0.50  # Fastest decay (short-term memory)
+DEFAULT_LAMBDA_L2 = 0.10  # Medium decay (working memory)
+DEFAULT_LAMBDA_L3 = 0.01  # Slowest decay (long-term memory)
+
+# Tolerance for decay rate comparisons - accounts for floating point precision
+# and transfer effects between levels during decay
+DECAY_RATE_TOLERANCE = 0.15
+
 
 @settings(max_examples=30, deadline=None)
 @given(
@@ -296,9 +306,9 @@ def test_multilevel_l1_decays_faster_than_l2_l3(dim, num_updates):
     # Use default lambdas which enforce λ_L1 > λ_L2 > λ_L3
     memory = MultiLevelSynapticMemory(
         dimension=dim,
-        lambda_l1=0.50,
-        lambda_l2=0.10,
-        lambda_l3=0.01
+        lambda_l1=DEFAULT_LAMBDA_L1,
+        lambda_l2=DEFAULT_LAMBDA_L2,
+        lambda_l3=DEFAULT_LAMBDA_L3
     )
     
     # Build up state with updates
@@ -335,16 +345,13 @@ def test_multilevel_l1_decays_faster_than_l2_l3(dim, num_updates):
     retention_L3 = norm_L3_after / (norm_L3_before + eps) if norm_L3_before > eps else 1.0
     
     # L1 should have lower retention (decayed more) than L2 and L3
-    # Allow tolerance for floating point and transfer effects
-    tolerance = 0.15
-    
     # Only assert if we had meaningful initial content
     if norm_L1_before > 1e-3:
-        assert retention_L1 <= retention_L2 + tolerance, \
+        assert retention_L1 <= retention_L2 + DECAY_RATE_TOLERANCE, \
             f"L1 retention ({retention_L1:.4f}) should be <= L2 retention ({retention_L2:.4f})"
     
     if norm_L2_before > 1e-3:
-        assert retention_L2 <= retention_L3 + tolerance, \
+        assert retention_L2 <= retention_L3 + DECAY_RATE_TOLERANCE, \
             f"L2 retention ({retention_L2:.4f}) should be <= L3 retention ({retention_L3:.4f})"
 
 
