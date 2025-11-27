@@ -29,6 +29,7 @@ from tenacity import (
 )
 
 from ..cognition.moral_filter_v2 import MoralFilterV2
+from ..observability.tracing import get_tracer_manager
 from ..memory.multi_level_memory import MultiLevelSynapticMemory
 from ..memory.phase_entangled_lattice_memory import PhaseEntangledLatticeMemory
 from ..rhythm.cognitive_rhythm import CognitiveRhythm
@@ -467,13 +468,26 @@ class LLMWrapper:
                 - note: Processing note
                 - stateless_mode: Whether running in degraded mode
         """
+        # Get tracer manager for spans (fallback to no-op if tracing disabled)
+        tracer_manager = get_tracer_manager()
+
         with self._lock:
             self.step_counter += 1
 
             # Step 1: Moral evaluation and phase check
-            rejection = self._check_moral_and_phase(moral_value)
-            if rejection is not None:
-                return rejection
+            with tracer_manager.start_span(
+                "llm_wrapper.moral_filter",
+                attributes={
+                    "mlsdm.moral_value": moral_value,
+                    "mlsdm.moral_threshold": self.moral.threshold,
+                },
+            ) as moral_span:
+                rejection = self._check_moral_and_phase(moral_value)
+                if rejection is not None:
+                    moral_span.set_attribute("mlsdm.moral.accepted", False)
+                    moral_span.set_attribute("mlsdm.moral.rejection_reason", rejection.get("note", ""))
+                    return rejection
+                moral_span.set_attribute("mlsdm.moral.accepted", True)
 
             # Step 2: Embed prompt
             embed_result = self._embed_and_validate_prompt(prompt)
@@ -484,24 +498,50 @@ class LLMWrapper:
             # Step 3: Retrieve context and build enhanced prompt
             is_wake = self.rhythm.is_wake()
             phase_val = self.WAKE_PHASE if is_wake else self.SLEEP_PHASE
-            memories, enhanced_prompt = self._retrieve_and_build_context(
-                prompt, prompt_vector, phase_val, context_top_k
-            )
+            with tracer_manager.start_span(
+                "llm_wrapper.memory_retrieval",
+                attributes={
+                    "mlsdm.phase": "wake" if is_wake else "sleep",
+                    "mlsdm.context_top_k": context_top_k or 5,
+                },
+            ) as memory_span:
+                memories, enhanced_prompt = self._retrieve_and_build_context(
+                    prompt, prompt_vector, phase_val, context_top_k
+                )
+                memory_span.set_attribute("mlsdm.context_items_retrieved", len(memories))
+                memory_span.set_attribute("mlsdm.stateless_mode", self.stateless_mode)
 
             # Step 4: Determine max tokens
             max_tokens = self._determine_max_tokens(max_tokens, is_wake)
 
             # Step 5: Generate and govern response
-            gen_result = self._generate_and_govern(prompt, enhanced_prompt, max_tokens)
-            if self._is_error_response(gen_result):
-                return cast("dict[str, Any]", gen_result)
-            # At this point gen_result must be a tuple
-            response_text, governed_metadata = cast(
-                "tuple[str, dict[str, Any] | None]", gen_result
-            )
+            with tracer_manager.start_span(
+                "llm_wrapper.llm_call",
+                attributes={
+                    "mlsdm.prompt_length": len(enhanced_prompt),
+                    "mlsdm.max_tokens": max_tokens,
+                },
+            ) as llm_span:
+                gen_result = self._generate_and_govern(prompt, enhanced_prompt, max_tokens)
+                if self._is_error_response(gen_result):
+                    llm_span.set_attribute("mlsdm.llm_call.error", True)
+                    return cast("dict[str, Any]", gen_result)
+                # At this point gen_result must be a tuple
+                response_text, governed_metadata = cast(
+                    "tuple[str, dict[str, Any] | None]", gen_result
+                )
+                llm_span.set_attribute("mlsdm.response_length", len(response_text))
+                llm_span.set_attribute("mlsdm.llm_call.error", False)
 
             # Step 6: Update memory state
-            self._update_memory_after_generate(prompt_vector, phase_val)
+            with tracer_manager.start_span(
+                "llm_wrapper.memory_update",
+                attributes={
+                    "mlsdm.phase": "wake" if is_wake else "sleep",
+                    "mlsdm.stateless_mode": self.stateless_mode,
+                },
+            ):
+                self._update_memory_after_generate(prompt_vector, phase_val)
 
             # Step 7: Advance rhythm and consolidate
             self._advance_rhythm_and_consolidate()
