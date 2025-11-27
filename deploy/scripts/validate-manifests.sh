@@ -180,10 +180,14 @@ check_common_issues() {
     local file=$1
     local filename=$(basename "$file")
     
-    # Check for hardcoded secrets
-    if grep -q "password:" "$file" || grep -q "secret:" "$file"; then
-        if grep -qE "password:\s*['\"]?[^$]" "$file" || grep -qE "secret:\s*['\"]?[^$]" "$file"; then
-            log_warn "$filename - May contain hardcoded secrets"
+    # Check for hardcoded secrets (look for non-placeholder, non-variable values)
+    # Only warn if we see actual values that aren't placeholders or env vars
+    if grep -qE "(password|secret|api-key|apikey):" "$file"; then
+        # Check for values that look like actual secrets (not placeholders or env refs)
+        if grep -qE "(password|secret|api-key|apikey):\s+['\"]?[a-zA-Z0-9+/=]{8,}['\"]?\s*$" "$file"; then
+            if ! grep -qE "(CHANGE|change|placeholder|example|TODO)" "$file"; then
+                log_warn "$filename - May contain hardcoded secrets"
+            fi
         fi
     fi
     

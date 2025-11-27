@@ -78,9 +78,9 @@ services:
           cpus: "1.0"
           memory: 2G
     
-    # Health check
+    # Health check using wget (more commonly available than python requests)
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health/liveness').raise_for_status()"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8000/health/liveness || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -133,7 +133,7 @@ services:
     
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./monitoring/alertmanager-rules.yaml:/etc/prometheus/rules/alertmanager-rules.yaml:ro
+      - ../../monitoring/alertmanager-rules.yaml:/etc/prometheus/rules/alertmanager-rules.yaml:ro
       - prometheus-data:/prometheus
     
     command:
@@ -177,8 +177,8 @@ services:
     
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./grafana/mlsdm_observability_dashboard.json:/var/lib/grafana/dashboards/mlsdm.json:ro
-      - ../monitoring/grafana-dashboard.json:/var/lib/grafana/dashboards/slo.json:ro
+      - ../../grafana/mlsdm_observability_dashboard.json:/var/lib/grafana/dashboards/mlsdm.json:ro
+      - ../../monitoring/grafana-dashboard.json:/var/lib/grafana/dashboards/slo.json:ro
       - grafana-data:/var/lib/grafana
     
     healthcheck:

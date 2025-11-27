@@ -76,12 +76,12 @@ spec:
         - record: mlsdm:requests:rate5m
           expr: sum(rate(mlsdm_events_processed_total[5m]))
         
-        # Error rate
+        # Error rate (with division-by-zero protection)
         - record: mlsdm:error_rate:ratio5m
           expr: |
             sum(rate(mlsdm_requests_total{status=~"5.."}[5m]))
             /
-            sum(rate(mlsdm_requests_total[5m]))
+            (sum(rate(mlsdm_requests_total[5m])) > 0 or vector(1))
         
         # P95 latency
         - record: mlsdm:latency_p95:5m
@@ -109,6 +109,7 @@ spec:
             (sum(rate(mlsdm_events_processed_total[5m])) + sum(rate(mlsdm_events_rejected_total[5m])))
         
         # Memory utilization ratio
+        # Note: 29370000 bytes = ~29.37 MB is the SLO target from SLO_SPEC.md
         - record: mlsdm:memory_utilization:ratio
           expr: |
             mlsdm_memory_usage_bytes / 29370000
