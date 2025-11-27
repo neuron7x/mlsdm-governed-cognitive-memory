@@ -296,8 +296,6 @@ class TestMemoryBoundsEnforcement:
         """
         Verify that memory footprint stays within expected bounds.
         """
-        import sys
-
         dim = 384
         capacity = 1000
         pelm = PhaseEntangledLatticeMemory(dimension=dim, capacity=capacity)
