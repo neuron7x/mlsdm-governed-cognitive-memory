@@ -30,11 +30,11 @@ class TestMetricsBasicSmoke:
     def test_metrics_export_prometheus_format(self, fresh_metrics):
         """Test that metrics are in valid Prometheus format."""
         metrics_text = fresh_metrics.get_metrics_text()
-        
+
         # Prometheus format includes HELP and TYPE lines
         assert "# HELP" in metrics_text
         assert "# TYPE" in metrics_text
-        
+
         # Should include known metric names
         assert "mlsdm_" in metrics_text
 
@@ -44,9 +44,9 @@ class TestMetricsBasicSmoke:
         fresh_metrics.increment_events_processed(5)
         fresh_metrics.increment_events_rejected(2)
         fresh_metrics.increment_errors("test_error", 3)
-        
+
         metrics_text = fresh_metrics.get_metrics_text()
-        
+
         # Verify counters appear in output
         assert "mlsdm_events_processed_total 5" in metrics_text
         assert "mlsdm_events_rejected_total 2" in metrics_text
@@ -58,9 +58,9 @@ class TestMetricsBasicSmoke:
         fresh_metrics.observe_request_latency_seconds(0.05, "/generate", "wake")
         fresh_metrics.observe_request_latency_seconds(0.10, "/generate", "sleep")
         fresh_metrics.observe_request_latency_seconds(0.25, "/infer", "wake")
-        
+
         metrics_text = fresh_metrics.get_metrics_text()
-        
+
         # Verify histogram appears with labels
         assert "mlsdm_request_latency_seconds" in metrics_text
         assert 'endpoint="/generate"' in metrics_text
@@ -73,9 +73,9 @@ class TestMetricsBasicSmoke:
         fresh_metrics.increment_aphasia_detected("low", 3)
         fresh_metrics.increment_aphasia_detected("high", 1)
         fresh_metrics.increment_aphasia_repaired(2)
-        
+
         metrics_text = fresh_metrics.get_metrics_text()
-        
+
         # Verify aphasia metrics
         assert "mlsdm_aphasia_detected_total" in metrics_text
         assert 'severity_bucket="low"' in metrics_text
@@ -86,9 +86,9 @@ class TestMetricsBasicSmoke:
         """Test moral rejection counter with reason labels."""
         fresh_metrics.increment_moral_rejection("below_threshold", 5)
         fresh_metrics.increment_moral_rejection("sleep_phase", 2)
-        
+
         metrics_text = fresh_metrics.get_metrics_text()
-        
+
         assert "mlsdm_moral_rejections_total" in metrics_text
         assert 'reason="below_threshold"' in metrics_text
         assert 'reason="sleep_phase"' in metrics_text
@@ -97,9 +97,9 @@ class TestMetricsBasicSmoke:
         """Test emergency shutdown counter and gauge."""
         fresh_metrics.increment_emergency_shutdown("memory_exceeded", 1)
         fresh_metrics.set_emergency_shutdown_active(True)
-        
+
         metrics_text = fresh_metrics.get_metrics_text()
-        
+
         assert "mlsdm_emergency_shutdowns_total" in metrics_text
         assert 'reason="memory_exceeded"' in metrics_text
         assert "mlsdm_emergency_shutdown_active 1" in metrics_text
@@ -108,7 +108,7 @@ class TestMetricsBasicSmoke:
         """Test phase gauge updates correctly."""
         fresh_metrics.set_phase("wake")
         assert fresh_metrics.phase_gauge._value.get() == 1.0
-        
+
         fresh_metrics.set_phase("sleep")
         assert fresh_metrics.phase_gauge._value.get() == 0.0
 
@@ -118,9 +118,9 @@ class TestMetricsBasicSmoke:
         latencies = [50, 100, 250, 500, 1000]
         for lat in latencies:
             fresh_metrics.observe_generation_latency(float(lat))
-        
+
         metrics_text = fresh_metrics.get_metrics_text()
-        
+
         # Verify histogram has observations
         assert "mlsdm_generation_latency_milliseconds" in metrics_text
         assert "mlsdm_generation_latency_milliseconds_count 5" in metrics_text
@@ -148,10 +148,10 @@ class TestMetricsAfterScenarios:
         fresh_metrics.observe_generation_latency(150.0)
         fresh_metrics.observe_request_latency_seconds(0.15, "/generate", "wake")
         fresh_metrics.increment_requests("/generate", "2xx")
-        
+
         # Verify counters are positive
         assert fresh_metrics.events_processed._value.get() > 0
-        
+
         metrics_text = fresh_metrics.get_metrics_text()
         assert "mlsdm_events_processed_total 1" in metrics_text
 
@@ -161,10 +161,10 @@ class TestMetricsAfterScenarios:
         fresh_metrics.increment_events_rejected()
         fresh_metrics.increment_moral_rejection("below_threshold")
         fresh_metrics.increment_requests("/generate", "4xx")
-        
+
         # Verify rejection counted
         assert fresh_metrics.events_rejected._value.get() > 0
-        
+
         metrics_text = fresh_metrics.get_metrics_text()
         assert "mlsdm_events_rejected_total 1" in metrics_text
         assert "mlsdm_moral_rejections_total" in metrics_text
@@ -176,9 +176,9 @@ class TestMetricsAfterScenarios:
         bucket = fresh_metrics.get_severity_bucket(severity)
         fresh_metrics.increment_aphasia_detected(bucket)
         fresh_metrics.increment_aphasia_repaired()
-        
+
         metrics_text = fresh_metrics.get_metrics_text()
-        
+
         assert "mlsdm_aphasia_detected_total" in metrics_text
         assert f'severity_bucket="{bucket}"' in metrics_text
         assert "mlsdm_aphasia_repaired_total 1" in metrics_text
@@ -189,7 +189,7 @@ class TestMetricsAfterScenarios:
         for i in range(100):
             fresh_metrics.increment_events_processed()
             fresh_metrics.observe_generation_latency(float(i % 1000))
-        
+
         # Export should still work without errors
         metrics_text = fresh_metrics.get_metrics_text()
         assert metrics_text

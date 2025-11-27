@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import os
 import random
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
@@ -149,8 +149,8 @@ class TestFullStackNormalRequest:
 
         # Validate acceptance
         mlsdm_state = result.get("mlsdm", {})
-        accepted = mlsdm_state.get("accepted", True)  # Default True if not rejected
-        error = result.get("error")
+        _accepted = mlsdm_state.get("accepted", True)  # Default True if not rejected
+        _error = result.get("error")  # Retained for debugging
         rejected_at = result.get("rejected_at")
 
         # Should not be rejected at pre-flight for safe content
@@ -286,7 +286,7 @@ class TestFullStackToxicRejection:
         error = result.get("error")
 
         # Should be rejected OR have rejection indicators
-        is_rejected = (
+        _is_rejected = (
             accepted is False or
             rejected_at is not None or
             (error is not None and error.get("type") in ("moral_precheck", "mlsdm_rejection"))

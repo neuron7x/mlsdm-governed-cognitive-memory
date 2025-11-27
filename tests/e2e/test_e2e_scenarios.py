@@ -16,7 +16,6 @@ Test Scenarios:
 """
 
 import os
-import random
 import time
 from typing import Any
 
@@ -61,7 +60,10 @@ class TestE2EHappyPathGovernedChat:
         # Soft latency check - warn via pytest but don't fail
         if latency_ms > 100:
             import warnings
-            warnings.warn(f"Latency {latency_ms:.2f}ms exceeds soft limit of 100ms")
+            warnings.warn(
+                f"Latency {latency_ms:.2f}ms exceeds soft limit of 100ms",
+                stacklevel=2,
+            )
 
         # Verify no error
         assert result.get("error") is None, f"Unexpected error: {result.get('error')}"
@@ -123,7 +125,8 @@ class TestE2EToxicRejection:
         rejected_at = result.get("rejected_at")
         mlsdm_state = result.get("mlsdm", {})
         not_accepted = mlsdm_state.get("accepted", True) is False
-        is_rejected = has_error or rejected_at is not None or not_accepted
+        # is_rejected is computed but not used - retained for debugging context
+        _ = has_error or rejected_at is not None or not_accepted
 
         # With high moral threshold, we expect some form of rejection or limited acceptance
         # Note: Adaptive filter behavior may vary, so we assert that validation occurred

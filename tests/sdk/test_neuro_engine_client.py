@@ -318,9 +318,11 @@ class TestNeuroCognitiveClientRetryBehavior:
             failure_count += 1
             raise LLMProviderError("Temporary failure")
 
-        with patch.object(client._engine, "generate", side_effect=fail_once):
-            with pytest.raises(LLMProviderError):
-                client.generate("Test")
+        with (
+            patch.object(client._engine, "generate", side_effect=fail_once),
+            pytest.raises(LLMProviderError),
+        ):
+            client.generate("Test")
 
         # SDK doesn't retry by default
         assert failure_count == 1

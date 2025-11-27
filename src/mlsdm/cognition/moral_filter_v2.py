@@ -1,10 +1,19 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import numpy as np
 
+if TYPE_CHECKING:
+    from config.calibration import MoralFilterCalibration
+
 # Import calibration defaults - these can be overridden via config
+# Type hints use Optional to allow None when calibration module unavailable
+MORAL_FILTER_DEFAULTS: MoralFilterCalibration | None
+
 try:
     from config.calibration import MORAL_FILTER_DEFAULTS
 except ImportError:
-    # Fallback if calibration module not available
     MORAL_FILTER_DEFAULTS = None
 
 

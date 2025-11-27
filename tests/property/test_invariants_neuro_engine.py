@@ -369,7 +369,7 @@ def test_rephrasing_consistency(prompt):
 
     Invariant: Adding polite prefix "Please " should NOT cause:
     - A major change in response structure (both should have same keys)
-    
+
     Note: Due to stateful moral threshold adaptation, we use separate engine
     instances to test each prompt independently. This ensures the threshold
     doesn't drift between calls, making the test deterministic.
@@ -541,26 +541,26 @@ def test_moral_boundary_values(moral_value):
 def test_engine_step_counter_monotonic_under_valid_calls(num_calls, moral_value):
     """
     INV-CTRL-3 (from COMPONENT_TEST_MATRIX.md): Step counter should increment monotonically.
-    
+
     Each call to generate() should advance the internal step counter by exactly 1.
     """
     assume(0.3 <= moral_value <= 0.9)  # Use reasonable moral values
-    
+
     engine = create_test_engine()
-    
+
     # Track step counter via mlsdm state
     for i in range(num_calls):
         response = engine.generate(
             prompt=f"Test prompt {i}",
             moral_value=moral_value
         )
-        
+
         # Response should always be structured
         assert isinstance(response, dict), f"Response {i} is not a dict"
-        
+
         # MLSDM state should be available
         mlsdm_state = response.get("mlsdm", {})
-        
+
         # If step counter is exposed, verify monotonicity
         if "step" in mlsdm_state:
             step = mlsdm_state["step"]
@@ -577,26 +577,26 @@ def test_engine_step_counter_monotonic_under_valid_calls(num_calls, moral_value)
 def test_engine_state_does_not_leak_across_calls(prompt, num_generate_calls):
     """
     Test that each generate call is independent and doesn't leak state.
-    
+
     Multiple calls with the same prompt should produce consistent structured
     responses without state corruption.
     """
     assume(len(prompt.strip()) > 0)
-    
+
     engine = create_test_engine()
-    
+
     responses = []
     for _ in range(num_generate_calls):
         response = engine.generate(prompt=prompt, moral_value=0.5)
         responses.append(response)
-    
+
     # All responses should have consistent structure
     required_keys = {"response", "governance", "mlsdm", "timing", "validation_steps", "error", "rejected_at"}
-    
+
     for i, response in enumerate(responses):
         assert required_keys.issubset(set(response.keys())), \
             f"Response {i} missing required keys"
-        
+
         # Timing should always be non-negative
         for key, value in response.get("timing", {}).items():
             assert value >= 0, f"Response {i} has negative timing: {key}={value}"
@@ -614,20 +614,20 @@ def test_engine_state_does_not_leak_across_calls(prompt, num_generate_calls):
 def test_engine_handles_varying_max_tokens(prompt, max_tokens_values):
     """
     Test that varying max_tokens parameter doesn't break the engine.
-    
+
     Different max_tokens values should all produce valid structured responses.
     """
     assume(len(prompt.strip()) > 3)
-    
+
     engine = create_test_engine()
-    
+
     for max_tokens in max_tokens_values:
         response = engine.generate(
             prompt=prompt,
             moral_value=0.5,
             max_tokens=max_tokens
         )
-        
+
         # Should always return structured response
         assert isinstance(response, dict), f"Response with max_tokens={max_tokens} not a dict"
         assert "response" in response
@@ -645,27 +645,27 @@ def test_engine_handles_varying_max_tokens(prompt, max_tokens_values):
 def test_engine_multi_prompt_sequence_stability(prompts):
     """
     Test that processing a sequence of different prompts doesn't corrupt state.
-    
+
     This simulates a conversation-like pattern where each prompt is different.
     """
     assume(all(len(p.strip()) > 3 for p in prompts))
-    
+
     engine = create_test_engine()
-    
+
     responses = []
     for prompt in prompts:
         response = engine.generate(prompt=prompt, moral_value=0.5)
         responses.append(response)
-    
+
     # All responses should be valid
     for i, response in enumerate(responses):
         assert isinstance(response, dict), f"Response {i} is not a dict"
-        
+
         # Either has response content or is properly rejected
         has_content = response.get("response") is not None
         is_rejected = response.get("rejected_at") is not None
         has_error = response.get("error") is not None
-        
+
         assert has_content or is_rejected or has_error, \
             f"Response {i} has neither content nor rejection/error"
 

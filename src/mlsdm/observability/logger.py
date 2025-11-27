@@ -20,7 +20,6 @@ from pathlib import Path
 from threading import Lock
 from typing import Any
 
-
 # ---------------------------------------------------------------------------
 # Payload Scrubbing
 # ---------------------------------------------------------------------------

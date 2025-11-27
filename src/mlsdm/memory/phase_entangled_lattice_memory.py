@@ -1,15 +1,23 @@
+from __future__ import annotations
+
 import hashlib
 import math
 from dataclasses import dataclass
 from threading import Lock
+from typing import TYPE_CHECKING
 
 import numpy as np
 
+if TYPE_CHECKING:
+    from config.calibration import PELMCalibration
+
 # Import calibration defaults - these can be overridden via config
+# Type hints use Optional to allow None when calibration module unavailable
+PELM_DEFAULTS: PELMCalibration | None
+
 try:
     from config.calibration import PELM_DEFAULTS
 except ImportError:
-    # Fallback if calibration module not available
     PELM_DEFAULTS = None
 
 

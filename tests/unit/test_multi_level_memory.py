@@ -246,7 +246,7 @@ class TestState:
         state1 = memory.state()
         state2 = memory.get_state()
 
-        for s1, s2 in zip(state1, state2):
+        for s1, s2 in zip(state1, state2, strict=True):
             assert np.allclose(s1, s2)
 
 

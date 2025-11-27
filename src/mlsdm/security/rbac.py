@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from functools import wraps
 from threading import Lock
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from fastapi import HTTPException, Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -617,4 +617,4 @@ def get_current_user(request: Request) -> UserContext:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User context not found",
         )
-    return user_context
+    return cast("UserContext", user_context)
