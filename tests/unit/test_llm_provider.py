@@ -10,6 +10,7 @@ Tests cover:
 """
 
 import importlib.util
+from functools import cache
 
 import pytest
 
@@ -21,8 +22,12 @@ from mlsdm.adapters.llm_provider import (
 )
 
 
+@cache
 def _is_package_installed(name: str) -> bool:
-    """Check if a package is installed using importlib.util.find_spec."""
+    """Check if a package is installed using importlib.util.find_spec.
+
+    Results are cached since package installation status doesn't change during test execution.
+    """
     return importlib.util.find_spec(name) is not None
 
 
