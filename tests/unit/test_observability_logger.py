@@ -18,7 +18,99 @@ from mlsdm.observability.logger import (
     JSONFormatter,
     ObservabilityLogger,
     get_observability_logger,
+    payload_scrubber,
+    scrub_for_log,
 )
+
+
+class TestPayloadScrubber:
+    """Test payload scrubbing for safe logging."""
+
+    def test_empty_text_returns_empty_marker(self):
+        """Test that empty text returns [empty] marker."""
+        assert payload_scrubber("") == "[empty]"
+        assert payload_scrubber(None) == "[empty]"  # type: ignore
+
+    def test_non_string_returns_type_marker(self):
+        """Test that non-string returns type marker."""
+        assert payload_scrubber(123) == "[non-string:int]"  # type: ignore
+        assert payload_scrubber([1, 2, 3]) == "[non-string:list]"  # type: ignore
+        assert payload_scrubber({"key": "value"}) == "[non-string:dict]"  # type: ignore
+
+    def test_short_text_unchanged(self):
+        """Test that short text is returned unchanged."""
+        text = "short text"
+        result = payload_scrubber(text, max_length=50)
+        assert result == text
+
+    def test_long_text_is_masked(self):
+        """Test that long text is truncated and masked."""
+        text = "a" * 100
+        result = payload_scrubber(text, max_length=50)
+        assert "[100 chars]" in result
+        assert len(result) < len(text)
+
+    def test_newlines_removed(self):
+        """Test that newlines are replaced with spaces."""
+        text = "line1\nline2\r\nline3\ttabbed"
+        result = payload_scrubber(text)
+        assert "\n" not in result
+        assert "\r" not in result
+        assert "\t" not in result
+
+    def test_custom_mask_char(self):
+        """Test custom mask character."""
+        text = "a" * 100
+        result = payload_scrubber(text, max_length=50, mask_char="#")
+        assert "###" in result
+
+
+class TestScrubForLog:
+    """Test scrub_for_log function for various types."""
+
+    def test_none_returns_none_marker(self):
+        """Test that None returns [none] marker."""
+        assert scrub_for_log(None) == "[none]"
+
+    def test_string_scrubbed(self):
+        """Test that strings are scrubbed."""
+        assert scrub_for_log("test text") == "test text"
+        assert scrub_for_log("") == "[empty]"
+
+    def test_integers_converted(self):
+        """Test that integers are converted to string."""
+        assert scrub_for_log(123) == "123"
+        assert scrub_for_log(0) == "0"
+        assert scrub_for_log(-42) == "-42"
+
+    def test_floats_converted(self):
+        """Test that floats are converted to string."""
+        assert scrub_for_log(3.14) == "3.14"
+        assert scrub_for_log(0.0) == "0.0"
+
+    def test_booleans_converted(self):
+        """Test that booleans are converted to string."""
+        assert scrub_for_log(True) == "True"
+        assert scrub_for_log(False) == "False"
+
+    def test_list_returns_summary(self):
+        """Test that lists return a summary."""
+        assert scrub_for_log([1, 2, 3]) == "[list:3 items]"
+        assert scrub_for_log([]) == "[list:0 items]"
+
+    def test_tuple_returns_summary(self):
+        """Test that tuples return a summary."""
+        assert scrub_for_log((1, 2)) == "[tuple:2 items]"
+
+    def test_dict_returns_summary(self):
+        """Test that dicts return a summary."""
+        assert scrub_for_log({"a": 1, "b": 2}) == "[dict:2 keys]"
+        assert scrub_for_log({}) == "[dict:0 keys]"
+
+    def test_other_types_return_type_name(self):
+        """Test that other types return type name."""
+        result = scrub_for_log(object())
+        assert "[object]" in result
 
 
 class TestEventType:
