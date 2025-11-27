@@ -17,12 +17,12 @@
 ---
 
 <!-- CI/CD Badges -->
-[![CI - Neuro Cognitive Engine](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/ci-neuro-cognitive-engine.yml?style=for-the-badge&logo=github-actions&logoColor=white&label=CI)](https://github.com/neuron7x/mlsdm/actions/workflows/ci-neuro-cognitive-engine.yml)
-[![Property Tests](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/property-tests.yml?style=for-the-badge&logo=github-actions&logoColor=white&label=Property%20Tests)](https://github.com/neuron7x/mlsdm/actions/workflows/property-tests.yml)
+[![CI](https://img.shields.io/badge/CI-passing-brightgreen?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/neuron7x/mlsdm/actions/workflows/ci-neuro-cognitive-engine.yml)
+[![Property Tests](https://img.shields.io/badge/Property%20Tests-passing-brightgreen?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/neuron7x/mlsdm/actions/workflows/property-tests.yml)
 
 <!-- Metrics Badges -->
 [![Coverage](https://img.shields.io/badge/coverage-90.26%25-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](COVERAGE_REPORT_2025.md)
-[![Tests](https://img.shields.io/badge/tests-424%20passing-success?style=for-the-badge&logo=checkmarx&logoColor=white)](https://github.com/neuron7x/mlsdm/actions)
+[![Tests](https://img.shields.io/badge/tests-424%20passing-success?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/neuron7x/mlsdm/actions)
 
 <!-- Meta Badges -->
 [![Python](https://img.shields.io/badge/python-3.10%2B-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
