@@ -9,6 +9,8 @@ Tests cover:
 - Edge cases and error handling
 """
 
+import importlib.util
+
 import pytest
 
 from mlsdm.adapters.llm_provider import (
@@ -17,6 +19,11 @@ from mlsdm.adapters.llm_provider import (
     LLMTimeoutError,
     LocalStubProvider,
 )
+
+
+def _is_package_installed(name: str) -> bool:
+    """Check if a package is installed using importlib.util.find_spec."""
+    return importlib.util.find_spec(name) is not None
 
 
 class TestLLMProviderError:
@@ -123,7 +130,7 @@ class TestLocalStubProvider:
         """Test generate returns expected stub response."""
         provider = LocalStubProvider()
         response = provider.generate("Hello world", max_tokens=50)
-        
+
         assert isinstance(response, str)
         assert "NEURO-RESPONSE" in response
         assert "Hello world" in response
@@ -133,7 +140,7 @@ class TestLocalStubProvider:
         provider = LocalStubProvider()
         long_prompt = "a" * 100  # 100 character prompt
         response = provider.generate(long_prompt, max_tokens=50)
-        
+
         # Should contain truncated preview (first 50 chars)
         assert "a" * 50 in response
 
@@ -141,7 +148,7 @@ class TestLocalStubProvider:
         """Test that response extends for high max_tokens."""
         provider = LocalStubProvider()
         response = provider.generate("Test", max_tokens=100)
-        
+
         # Should include extended message for max_tokens > 50
         assert "Generated with max_tokens=100" in response
         assert "stub response" in response
@@ -150,7 +157,7 @@ class TestLocalStubProvider:
         """Test that response respects max character limit."""
         provider = LocalStubProvider()
         response = provider.generate("Test", max_tokens=10)
-        
+
         # Should be limited to roughly max_tokens * 4 characters
         assert len(response) <= 10 * 4
 
@@ -174,10 +181,10 @@ class TestLocalStubProvider:
     def test_deterministic_response(self):
         """Test that same input produces consistent output format."""
         provider = LocalStubProvider()
-        
+
         response1 = provider.generate("Same prompt", max_tokens=30)
         response2 = provider.generate("Same prompt", max_tokens=30)
-        
+
         # Should produce same response for same input
         assert response1 == response2
 
@@ -189,24 +196,22 @@ class TestOpenAIProviderInit:
         """Should raise ValueError when API key is not provided."""
         # Ensure environment variable is not set
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-        
+
         from mlsdm.adapters.llm_provider import OpenAIProvider
-        
+
         with pytest.raises(ValueError, match="OpenAI API key is required"):
             OpenAIProvider()
 
     def test_raises_import_error_without_openai(self, monkeypatch):
         """Should raise ImportError when openai package is not installed."""
-        import sys
-        
+
         # Mock openai import to fail
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-        
+
         # Skip test if openai is installed (we can't easily mock ImportError)
-        try:
-            import openai
+        if _is_package_installed("openai"):
             pytest.skip("openai package is installed, skipping ImportError test")
-        except ImportError:
+        else:
             from mlsdm.adapters.llm_provider import OpenAIProvider
             with pytest.raises(ImportError, match="openai package is required"):
                 OpenAIProvider(api_key="test-key")
@@ -215,14 +220,12 @@ class TestOpenAIProviderInit:
         """Should accept API key via parameter."""
         # Ensure environment variable is not set
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-        
-        try:
-            import openai
-        except ImportError:
+
+        if not _is_package_installed("openai"):
             pytest.skip("openai package not installed")
-        
+
         from mlsdm.adapters.llm_provider import OpenAIProvider
-        
+
         # This should not raise
         provider = OpenAIProvider(api_key="test-api-key-12345")
         assert provider.api_key == "test-api-key-12345"
@@ -230,14 +233,12 @@ class TestOpenAIProviderInit:
     def test_uses_environment_api_key(self, monkeypatch):
         """Should use OPENAI_API_KEY from environment."""
         monkeypatch.setenv("OPENAI_API_KEY", "env-api-key-67890")
-        
-        try:
-            import openai
-        except ImportError:
+
+        if not _is_package_installed("openai"):
             pytest.skip("openai package not installed")
-        
+
         from mlsdm.adapters.llm_provider import OpenAIProvider
-        
+
         provider = OpenAIProvider()
         assert provider.api_key == "env-api-key-67890"
 
@@ -245,42 +246,36 @@ class TestOpenAIProviderInit:
         """Should use default model when not specified."""
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
         monkeypatch.delenv("OPENAI_MODEL", raising=False)
-        
-        try:
-            import openai
-        except ImportError:
+
+        if not _is_package_installed("openai"):
             pytest.skip("openai package not installed")
-        
+
         from mlsdm.adapters.llm_provider import OpenAIProvider
-        
+
         provider = OpenAIProvider()
         assert provider.model == "gpt-3.5-turbo"
 
     def test_custom_model(self, monkeypatch):
         """Should accept custom model parameter."""
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-        
-        try:
-            import openai
-        except ImportError:
+
+        if not _is_package_installed("openai"):
             pytest.skip("openai package not installed")
-        
+
         from mlsdm.adapters.llm_provider import OpenAIProvider
-        
+
         provider = OpenAIProvider(model="gpt-4")
         assert provider.model == "gpt-4"
 
     def test_provider_id_format(self, monkeypatch):
         """Provider ID should include formatted model name."""
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-        
-        try:
-            import openai
-        except ImportError:
+
+        if not _is_package_installed("openai"):
             pytest.skip("openai package not installed")
-        
+
         from mlsdm.adapters.llm_provider import OpenAIProvider
-        
+
         provider = OpenAIProvider(model="gpt-3.5-turbo")
         assert provider.provider_id == "openai_gpt_3_5_turbo"
 
@@ -291,37 +286,33 @@ class TestAnthropicProviderInit:
     def test_raises_without_api_key(self, monkeypatch):
         """Should raise ValueError when API key is not provided."""
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-        
+
         from mlsdm.adapters.llm_provider import AnthropicProvider
-        
+
         with pytest.raises(ValueError, match="Anthropic API key is required"):
             AnthropicProvider()
 
     def test_accepts_api_key_parameter(self, monkeypatch):
         """Should accept API key via parameter."""
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-        
-        try:
-            import anthropic
-        except ImportError:
+
+        if not _is_package_installed("anthropic"):
             pytest.skip("anthropic package not installed")
-        
+
         from mlsdm.adapters.llm_provider import AnthropicProvider
-        
+
         provider = AnthropicProvider(api_key="test-anthropic-key")
         assert provider.api_key == "test-anthropic-key"
 
     def test_uses_environment_api_key(self, monkeypatch):
         """Should use ANTHROPIC_API_KEY from environment."""
         monkeypatch.setenv("ANTHROPIC_API_KEY", "env-anthropic-key")
-        
-        try:
-            import anthropic
-        except ImportError:
+
+        if not _is_package_installed("anthropic"):
             pytest.skip("anthropic package not installed")
-        
+
         from mlsdm.adapters.llm_provider import AnthropicProvider
-        
+
         provider = AnthropicProvider()
         assert provider.api_key == "env-anthropic-key"
 
@@ -329,41 +320,35 @@ class TestAnthropicProviderInit:
         """Should use default model when not specified."""
         monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
         monkeypatch.delenv("ANTHROPIC_MODEL", raising=False)
-        
-        try:
-            import anthropic
-        except ImportError:
+
+        if not _is_package_installed("anthropic"):
             pytest.skip("anthropic package not installed")
-        
+
         from mlsdm.adapters.llm_provider import AnthropicProvider
-        
+
         provider = AnthropicProvider()
         assert provider.model == "claude-3-sonnet-20240229"
 
     def test_custom_model(self, monkeypatch):
         """Should accept custom model parameter."""
         monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
-        
-        try:
-            import anthropic
-        except ImportError:
+
+        if not _is_package_installed("anthropic"):
             pytest.skip("anthropic package not installed")
-        
+
         from mlsdm.adapters.llm_provider import AnthropicProvider
-        
+
         provider = AnthropicProvider(model="claude-3-opus-20240229")
         assert provider.model == "claude-3-opus-20240229"
 
     def test_provider_id_format(self, monkeypatch):
         """Provider ID should include formatted model name."""
         monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
-        
-        try:
-            import anthropic
-        except ImportError:
+
+        if not _is_package_installed("anthropic"):
             pytest.skip("anthropic package not installed")
-        
+
         from mlsdm.adapters.llm_provider import AnthropicProvider
-        
+
         provider = AnthropicProvider(model="claude-3-sonnet-20240229")
         assert provider.provider_id == "anthropic_claude_3_sonnet_20240229"

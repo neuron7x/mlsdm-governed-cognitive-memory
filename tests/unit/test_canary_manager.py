@@ -172,11 +172,11 @@ class TestCanaryManagerVersionSelection:
         manager = CanaryManager(
             current_version="v1.0", candidate_version="v2.0", candidate_ratio=0.5
         )
-        
+
         versions = [manager.select_version() for _ in range(1000)]
         current_count = versions.count("v1.0")
         candidate_count = versions.count("v2.0")
-        
+
         # Allow for statistical variance (should be roughly 50/50)
         assert 300 < current_count < 700
         assert 300 < candidate_count < 700
@@ -229,7 +229,7 @@ class TestCanaryManagerOutcomeReporting:
         """Report successful outcome without latency."""
         manager = CanaryManager(current_version="v1.0", candidate_version="v2.0")
         manager.report_outcome("v1.0", success=True)
-        
+
         metrics = manager.get_metrics("v1.0")
         assert metrics["total_requests"] == 1
         assert metrics["successful_requests"] == 1
@@ -239,7 +239,7 @@ class TestCanaryManagerOutcomeReporting:
         """Report successful outcome with latency."""
         manager = CanaryManager(current_version="v1.0", candidate_version="v2.0")
         manager.report_outcome("v1.0", success=True, latency_ms=150.0)
-        
+
         metrics = manager.get_metrics("v1.0")
         assert metrics["total_requests"] == 1
         assert metrics["successful_requests"] == 1
@@ -249,7 +249,7 @@ class TestCanaryManagerOutcomeReporting:
         """Report failed outcome."""
         manager = CanaryManager(current_version="v1.0", candidate_version="v2.0")
         manager.report_outcome("v1.0", success=False)
-        
+
         metrics = manager.get_metrics("v1.0")
         assert metrics["total_requests"] == 1
         assert metrics["successful_requests"] == 0
@@ -259,18 +259,18 @@ class TestCanaryManagerOutcomeReporting:
         """Reporting outcome for unknown version should create metrics entry."""
         manager = CanaryManager(current_version="v1.0", candidate_version="v2.0")
         manager.report_outcome("v3.0", success=True)
-        
+
         metrics = manager.get_metrics("v3.0")
         assert metrics["total_requests"] == 1
 
     def test_multiple_outcomes_aggregated(self):
         """Multiple outcomes should be aggregated correctly."""
         manager = CanaryManager(current_version="v1.0", candidate_version="v2.0")
-        
+
         manager.report_outcome("v1.0", success=True, latency_ms=100.0)
         manager.report_outcome("v1.0", success=True, latency_ms=200.0)
         manager.report_outcome("v1.0", success=False)
-        
+
         metrics = manager.get_metrics("v1.0")
         assert metrics["total_requests"] == 3
         assert metrics["successful_requests"] == 2
@@ -291,11 +291,11 @@ class TestCanaryManagerAutoRollback:
             min_requests_before_decision=10,
             auto_rollback_enabled=True,
         )
-        
+
         # Generate failures exceeding error budget
         for _ in range(10):
             manager.report_outcome("v2.0", success=False)
-        
+
         # Should trigger rollback (100% error rate > 5% threshold)
         assert manager.is_rollback_triggered() is True
         assert manager.candidate_ratio == 0.0
@@ -310,12 +310,12 @@ class TestCanaryManagerAutoRollback:
             min_requests_before_decision=10,
             auto_rollback_enabled=True,
         )
-        
+
         # Generate 10% error rate
         for _ in range(9):
             manager.report_outcome("v2.0", success=True)
         manager.report_outcome("v2.0", success=False)
-        
+
         # Should NOT trigger rollback (10% < 20%)
         assert manager.is_rollback_triggered() is False
         assert manager.candidate_ratio == 0.5
@@ -330,11 +330,11 @@ class TestCanaryManagerAutoRollback:
             min_requests_before_decision=100,  # High threshold
             auto_rollback_enabled=True,
         )
-        
+
         # Generate high error rate but below min requests
         for _ in range(10):
             manager.report_outcome("v2.0", success=False)
-        
+
         # Should NOT trigger rollback yet (only 10 requests)
         assert manager.is_rollback_triggered() is False
 
@@ -348,11 +348,11 @@ class TestCanaryManagerAutoRollback:
             min_requests_before_decision=10,
             auto_rollback_enabled=False,
         )
-        
+
         # Generate 100% error rate
         for _ in range(10):
             manager.report_outcome("v2.0", success=False)
-        
+
         # Should NOT trigger rollback (disabled)
         assert manager.is_rollback_triggered() is False
         assert manager.candidate_ratio == 0.5
@@ -372,15 +372,15 @@ class TestCanaryManagerLatencyRollback:
             auto_rollback_enabled=True,
             latency_threshold_multiplier=1.5,  # Candidate can be 50% slower max
         )
-        
+
         # Current version with low latency
         for _ in range(10):
             manager.report_outcome("v1.0", success=True, latency_ms=100.0)
-        
+
         # Candidate with high latency (200ms > 100ms * 1.5 = 150ms)
         for _ in range(10):
             manager.report_outcome("v2.0", success=True, latency_ms=200.0)
-        
+
         assert manager.is_rollback_triggered() is True
         assert manager.candidate_ratio == 0.0
 
@@ -395,15 +395,15 @@ class TestCanaryManagerLatencyRollback:
             auto_rollback_enabled=True,
             latency_threshold_multiplier=2.0,  # Candidate can be 100% slower max
         )
-        
+
         # Current version with 100ms latency
         for _ in range(10):
             manager.report_outcome("v1.0", success=True, latency_ms=100.0)
-        
+
         # Candidate with 150ms latency (150ms < 100ms * 2.0 = 200ms)
         for _ in range(10):
             manager.report_outcome("v2.0", success=True, latency_ms=150.0)
-        
+
         assert manager.is_rollback_triggered() is False
         assert manager.candidate_ratio == 0.5
 
@@ -418,15 +418,15 @@ class TestCanaryManagerLatencyRollback:
             auto_rollback_enabled=True,
             latency_threshold_multiplier=None,  # Disabled
         )
-        
+
         # Current version with low latency
         for _ in range(10):
             manager.report_outcome("v1.0", success=True, latency_ms=100.0)
-        
+
         # Candidate with very high latency (10x slower)
         for _ in range(10):
             manager.report_outcome("v2.0", success=True, latency_ms=1000.0)
-        
+
         # No rollback because latency check is disabled
         assert manager.is_rollback_triggered() is False
 
@@ -441,14 +441,14 @@ class TestCanaryManagerLatencyRollback:
             auto_rollback_enabled=True,
             latency_threshold_multiplier=1.5,
         )
-        
+
         # Only candidate has metrics (current has insufficient for comparison)
         for _ in range(5):  # Less than min_requests_before_decision
             manager.report_outcome("v1.0", success=True, latency_ms=100.0)
-        
+
         for _ in range(10):
             manager.report_outcome("v2.0", success=True, latency_ms=1000.0)
-        
+
         # No rollback because current version doesn't have enough data
         assert manager.is_rollback_triggered() is False
 
@@ -460,7 +460,7 @@ class TestCanaryManagerMetricsRetrieval:
         """Get metrics for a specific version."""
         manager = CanaryManager(current_version="v1.0", candidate_version="v2.0")
         manager.report_outcome("v1.0", success=True, latency_ms=100.0)
-        
+
         metrics = manager.get_metrics("v1.0")
         assert metrics["version"] == "v1.0"
         assert metrics["total_requests"] == 1
@@ -485,7 +485,7 @@ class TestCanaryManagerMetricsRetrieval:
         )
         manager.report_outcome("v1.0", success=True)
         manager.report_outcome("v2.0", success=False)
-        
+
         metrics = manager.get_metrics()
         assert metrics["current_version"] == "v1.0"
         assert metrics["candidate_version"] == "v2.0"
@@ -508,16 +508,16 @@ class TestCanaryManagerResetMetrics:
             error_budget_threshold=0.05,
             min_requests_before_decision=5,
         )
-        
+
         # Generate some metrics and trigger rollback
         for _ in range(10):
             manager.report_outcome("v2.0", success=False)
-        
+
         assert manager.is_rollback_triggered() is True
-        
+
         # Reset metrics
         manager.reset_metrics()
-        
+
         # Verify reset
         assert manager.is_rollback_triggered() is False
         metrics = manager.get_metrics("v2.0")
@@ -530,9 +530,9 @@ class TestCanaryManagerResetMetrics:
             candidate_version="v2.0",
             candidate_ratio=0.7,
         )
-        
+
         manager.reset_metrics()
-        
+
         assert manager.current_version == "v1.0"
         assert manager.candidate_version == "v2.0"
         # Note: candidate_ratio may be 0 if rollback was triggered before reset
@@ -546,16 +546,16 @@ class TestCanaryManagerPromoteCandidate:
         manager = CanaryManager(
             current_version="v1.0", candidate_version="v2.0", candidate_ratio=0.1
         )
-        
+
         manager.promote_candidate()
-        
+
         assert manager.candidate_ratio == 1.0
 
     def test_promote_candidate_all_traffic_to_candidate(self):
         """After promotion, all traffic goes to candidate."""
         manager = CanaryManager(current_version="v1.0", candidate_version="v2.0")
         manager.promote_candidate()
-        
+
         # All selections should return candidate
         for _ in range(100):
             assert manager.select_version() == "v2.0"
@@ -605,16 +605,16 @@ class TestCanaryManagerEdgeCases:
     def test_concurrent_access_thread_safety(self):
         """Test thread safety with concurrent access."""
         import threading
-        
+
         manager = CanaryManager(
             current_version="v1.0",
             candidate_version="v2.0",
             candidate_ratio=0.5,
             auto_rollback_enabled=False,  # Disable to focus on thread safety
         )
-        
+
         errors = []
-        
+
         def worker():
             try:
                 for _ in range(100):
@@ -623,13 +623,13 @@ class TestCanaryManagerEdgeCases:
                     manager.get_metrics()
             except Exception as e:
                 errors.append(e)
-        
+
         threads = [threading.Thread(target=worker) for _ in range(10)]
         for t in threads:
             t.start()
         for t in threads:
             t.join()
-        
+
         assert len(errors) == 0
         metrics = manager.get_metrics("v1.0")
         assert metrics["total_requests"] == 1000  # 10 threads * 100 requests

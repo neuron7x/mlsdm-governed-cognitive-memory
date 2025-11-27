@@ -119,10 +119,9 @@ class TestTracingPipelineIntegration:
         """Test that exceptions are properly recorded on spans."""
         manager = get_tracer_manager()
 
-        with pytest.raises(ValueError):
-            with manager.start_span("error_operation") as span:
-                manager.record_exception(span, ValueError("Test error"))
-                raise ValueError("Test error")
+        with pytest.raises(ValueError), manager.start_span("error_operation") as span:
+            manager.record_exception(span, ValueError("Test error"))
+            raise ValueError("Test error")
 
 
 class TestTracingWithInMemoryExporter:
