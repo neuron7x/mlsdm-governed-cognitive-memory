@@ -12,11 +12,11 @@
 |-------|----------|------|--------|-----|
 | Core Reliability | 0 | 2 | 2 | 1 |
 | Observability | 0 | 2 | 3 | 1 |
-| Security | 0 | 3 | 2 | 2 |
+| Security | 0 | 2 | 2 | 2 |
 | Performance | 0 | 1 | 2 | 1 |
 | CI/CD | 0 | 4 | 2 | 1 |
 | Docs | 0 | 1 | 2 | 2 |
-| **Total** | **0** | **13** | **13** | **8** |
+| **Total** | **0** | **12** | **13** | **8** |
 
 ---
 
@@ -165,18 +165,18 @@ _All blockers resolved._
 
 ---
 
-### SEC-003: Add dependency vulnerability scanning to PR workflow
+### ~~SEC-003: Add dependency vulnerability scanning to PR workflow~~ ✅ COMPLETED
 
 **Block**: Security  
-**Criticality**: HIGH  
+**Criticality**: ~~HIGH~~ COMPLETED  
 **Type**: CI
 
-**Description**: Trivy scan only runs on release, not on PRs. Vulnerabilities can be introduced and merged.
+**Description**: ~~Trivy scan only runs on release, not on PRs. Vulnerabilities can be introduced and merged.~~ Added pip-audit security scanning to CI workflow.
 
 **Acceptance Criteria**:
-- Add `pip-audit` or `safety` check to PR CI
-- Fail PR if high/critical vulnerabilities found
-- Document exception process
+- ✅ Add `pip-audit` or `safety` check to PR CI
+- ✅ Fail PR if high/critical vulnerabilities found
+- ✅ Document exception process (fails build with clear error message)
 
 **Affected Files**:
 - `.github/workflows/ci-neuro-cognitive-engine.yml`
@@ -671,3 +671,4 @@ _Track completed items here:_
 | ID | Description | Completed Date | PR |
 |----|-------------|----------------|-----|
 | CICD-001 | Add linting and type checking to CI workflows | 2025-11-27 | #124 |
+| SEC-003 | Add dependency vulnerability scanning to PR workflow | 2025-11-27 | #124 |
