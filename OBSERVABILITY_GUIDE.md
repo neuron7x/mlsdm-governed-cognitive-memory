@@ -81,6 +81,10 @@ scrape_configs:
 | `mlsdm_request_latency_seconds` | Histogram | Request latency | `endpoint`, `phase` |
 | `mlsdm_events_processed_total` | Counter | Events processed | - |
 | `mlsdm_events_rejected_total` | Counter | Events rejected | - |
+| `mlsdm_generation_latency_milliseconds` | Histogram | End-to-end generation latency | - |
+| `mlsdm_llm_call_latency_milliseconds` | Histogram | Inner LLM API call latency | - |
+| `mlsdm_processing_latency_milliseconds` | Histogram | Event processing latency | - |
+| `mlsdm_retrieval_latency_milliseconds` | Histogram | Memory retrieval latency | - |
 
 ### Moral Governance Metrics
 
@@ -96,6 +100,12 @@ scrape_configs:
 | `mlsdm_aphasia_detected_total` | Counter | Aphasia detections | `severity_bucket` |
 | `mlsdm_aphasia_repaired_total` | Counter | Successful repairs | - |
 | `mlsdm_aphasia_events_total` | Counter | All aphasia events | `mode`, `is_aphasic`, `repair_applied` |
+
+### Security Mode Metrics
+
+| Metric | Type | Description | Labels |
+|--------|------|-------------|--------|
+| `mlsdm_secure_mode_requests_total` | Counter | Requests in secure mode | - |
 
 ### Emergency Shutdown Metrics
 
@@ -113,6 +123,8 @@ scrape_configs:
 | `mlsdm_memory_l1_norm` | Gauge | L1 memory layer norm | - |
 | `mlsdm_memory_l2_norm` | Gauge | L2 memory layer norm | - |
 | `mlsdm_memory_l3_norm` | Gauge | L3 memory layer norm | - |
+| `mlsdm_stateless_mode` | Gauge | Stateless/degraded mode (1/0) | - |
+| `mlsdm_phase_events_total` | Counter | Events per phase | `phase` |
 
 ## SLO Recommendations
 
@@ -168,10 +180,27 @@ api.generate (SERVER)
 │   ├── engine.moral_precheck (INTERNAL)
 │   ├── engine.grammar_precheck (INTERNAL)
 │   ├── engine.llm_generation (INTERNAL)
-│   │   ├── mlsdm.llm_call (CLIENT)
-│   │   └── mlsdm.speech_governance (INTERNAL)
-│   │       ├── mlsdm.aphasia_detection (INTERNAL)
-│   │       └── mlsdm.aphasia_repair (INTERNAL)
+│   │   ├── llm_wrapper.moral_filter (INTERNAL)    ← Inner moral validation
+│   │   ├── llm_wrapper.memory_retrieval (INTERNAL) ← Context retrieval from PELM
+│   │   ├── llm_wrapper.llm_call (INTERNAL)        ← Raw LLM API call
+│   │   └── llm_wrapper.memory_update (INTERNAL)   ← Memory entanglement
+│   └── engine.post_moral_check (INTERNAL)
+```
+
+For `/infer` endpoint with aphasia mode enabled:
+
+```
+api.infer (SERVER)
+├── engine.generate (INTERNAL)
+│   ├── engine.moral_precheck (INTERNAL)
+│   ├── engine.llm_generation (INTERNAL)
+│   │   ├── llm_wrapper.moral_filter (INTERNAL)
+│   │   ├── llm_wrapper.memory_retrieval (INTERNAL)
+│   │   ├── llm_wrapper.llm_call (INTERNAL)
+│   │   │   └── mlsdm.speech_governance (INTERNAL)
+│   │   │       ├── mlsdm.aphasia_detection (INTERNAL)
+│   │   │       └── mlsdm.aphasia_repair (INTERNAL)
+│   │   └── llm_wrapper.memory_update (INTERNAL)
 │   └── engine.post_moral_check (INTERNAL)
 ```
 
@@ -182,11 +211,18 @@ api.generate (SERVER)
 | `mlsdm.request_id` | Unique request identifier |
 | `mlsdm.phase` | Cognitive phase (wake/sleep) |
 | `mlsdm.moral_value` | Moral threshold used |
+| `mlsdm.moral_threshold` | Current moral threshold |
+| `mlsdm.moral.accepted` | Whether moral check passed |
 | `mlsdm.accepted` | Whether request was accepted |
 | `mlsdm.rejected_at` | Stage where rejection occurred |
 | `mlsdm.prompt_length` | Length of prompt (not content!) |
 | `mlsdm.response_length` | Length of response |
 | `mlsdm.latency_ms` | Processing latency |
+| `mlsdm.context_items_retrieved` | Number of memory items retrieved |
+| `mlsdm.stateless_mode` | Whether running in degraded stateless mode |
+| `mlsdm.secure_mode` | Whether secure mode is enabled |
+| `mlsdm.aphasia_mode` | Whether aphasia detection is enabled |
+| `mlsdm.rag_enabled` | Whether RAG retrieval is enabled |
 
 ## Logging Structure
 

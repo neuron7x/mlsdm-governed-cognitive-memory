@@ -201,6 +201,21 @@ class MetricsExporter:
             registry=self.registry,
         )
 
+        # Secure mode requests counter
+        self.secure_mode_requests = Counter(
+            "mlsdm_secure_mode_requests_total",
+            "Total number of requests processed in secure mode",
+            registry=self.registry,
+        )
+
+        # LLM call latency histogram (inner LLM call, separate from end-to-end)
+        self.llm_call_latency_ms = Histogram(
+            "mlsdm_llm_call_latency_milliseconds",
+            "LLM call latency in milliseconds (inner LLM API call)",
+            buckets=(50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000, 60000),
+            registry=self.registry,
+        )
+
         # Track timing contexts
         self._processing_start_times: dict[str, float] = {}
         self._retrieval_start_times: dict[str, float] = {}
@@ -453,6 +468,24 @@ class MetricsExporter:
         """
         with self._lock:
             self.aphasia_repaired_total.inc(count)
+
+    def increment_secure_mode_requests(self, count: int = 1) -> None:
+        """Increment the secure mode requests counter.
+
+        Args:
+            count: Number to add (default: 1)
+        """
+        with self._lock:
+            self.secure_mode_requests.inc(count)
+
+    def observe_llm_call_latency(self, latency_ms: float) -> None:
+        """Observe LLM call latency.
+
+        Args:
+            latency_ms: LLM call latency in milliseconds
+        """
+        with self._lock:
+            self.llm_call_latency_ms.observe(latency_ms)
 
     def get_severity_bucket(self, severity: float) -> str:
         """Convert aphasia severity score to bucket label.
