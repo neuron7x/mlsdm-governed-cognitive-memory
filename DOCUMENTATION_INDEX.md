@@ -171,13 +171,19 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.0.0.
 
 1. Read [SECURITY_POLICY.md](SECURITY_POLICY.md) for security practices
 2. Review [THREAT_MODEL.md](THREAT_MODEL.md) for threat analysis
-3. Check [TESTING_STRATEGY.md](TESTING_STRATEGY.md) for security testing
-4. See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for secure deployment
-5. Reference [API_REFERENCE.md](API_REFERENCE.md) for API security
+3. Check [RISK_REGISTER.md](RISK_REGISTER.md) for AI safety risks
+4. Review [SAFETY_POLICY.yaml](SAFETY_POLICY.yaml) for safety policies
+5. See [MORAL_FILTER_SPEC.md](MORAL_FILTER_SPEC.md) for moral governance
+6. Check [TESTING_STRATEGY.md](TESTING_STRATEGY.md) for security testing
+7. See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for secure deployment
+8. Reference [API_REFERENCE.md](API_REFERENCE.md) for API security
 
 **Key Documents:**
 - ✅ [SECURITY_POLICY.md](SECURITY_POLICY.md) - **Security Guidelines**
 - ✅ [THREAT_MODEL.md](THREAT_MODEL.md) - **Threat Analysis**
+- ✅ [RISK_REGISTER.md](RISK_REGISTER.md) - **AI Safety Risk Register**
+- ✅ [SAFETY_POLICY.yaml](SAFETY_POLICY.yaml) - **Structured Safety Policy**
+- ✅ [MORAL_FILTER_SPEC.md](MORAL_FILTER_SPEC.md) - **Moral Governance**
 - ✅ [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - **Secure Deployment**
 
 ---
