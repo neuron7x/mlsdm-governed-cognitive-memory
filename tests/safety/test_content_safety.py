@@ -85,11 +85,11 @@ class TestMoralFilterAdaptation:
         filter.ema_accept_rate = 0.50
 
         initial_threshold = filter.threshold
-        
+
         # After adaptation with EMA at 0.5, error should be within dead band
         # First adapt updates EMA, which moves it away from 0.5
         # So we need to test that small errors (< dead_band) don't cause large changes
-        
+
         # Simulate balanced input that keeps EMA near 0.5
         for _ in range(10):
             filter.adapt(True)
@@ -275,10 +275,7 @@ class TestAdversarialResilience:
 
         # Alternating pattern: toxic/safe
         for i in range(200):
-            if i % 2 == 0:
-                moral_value = 0.15  # Toxic
-            else:
-                moral_value = 0.85  # Safe
+            moral_value = 0.15 if i % 2 == 0 else 0.85  # Toxic/Safe
 
             vec = np.random.randn(384).astype(np.float32)
             state = controller.process_event(vec, moral_value=moral_value)

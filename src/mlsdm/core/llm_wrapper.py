@@ -29,9 +29,9 @@ from tenacity import (
 )
 
 from ..cognition.moral_filter_v2 import MoralFilterV2
-from ..observability.tracing import get_tracer_manager
 from ..memory.multi_level_memory import MultiLevelSynapticMemory
 from ..memory.phase_entangled_lattice_memory import PhaseEntangledLatticeMemory
+from ..observability.tracing import get_tracer_manager
 from ..rhythm.cognitive_rhythm import CognitiveRhythm
 from ..speech.governance import (  # noqa: TC001 - used at runtime in function signatures
     SpeechGovernanceResult,

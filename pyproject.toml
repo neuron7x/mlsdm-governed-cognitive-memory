@@ -128,6 +128,15 @@ disallow_untyped_calls = false
 check_untyped_defs = false
 # Note: This is explicitly an optional extension and does not affect core functionality
 
+# Experimental modules are not part of the stable API
+# They are for research/benchmarking purposes and have relaxed type checking
+[[tool.mypy.overrides]]
+module = "mlsdm.memory.experimental.*"
+disallow_untyped_defs = false
+disallow_any_generics = false
+check_untyped_defs = false
+# Note: Experimental modules require optional dependencies and are not production-ready
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = [

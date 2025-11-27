@@ -11,12 +11,6 @@ Tests cover:
 
 import json
 import logging
-import os
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch
-
-import pytest
 
 
 class TestPayloadScrubber:
@@ -49,7 +43,7 @@ class TestPayloadScrubber:
 
         long_text = "a" * 100
         result = payload_scrubber(long_text, max_length=50)
-        
+
         assert "***" in result
         assert "[100 chars]" in result
 
@@ -59,7 +53,7 @@ class TestPayloadScrubber:
 
         text = "Hello\nWorld\tTest\r\n"
         result = payload_scrubber(text, max_length=100)
-        
+
         assert "\n" not in result
         assert "\t" not in result
         assert "\r" not in result
@@ -70,7 +64,7 @@ class TestPayloadScrubber:
 
         long_text = "a" * 100
         result = payload_scrubber(long_text, max_length=50, mask_char="#")
-        
+
         assert "###" in result
 
     def test_exact_max_length(self):
@@ -79,7 +73,7 @@ class TestPayloadScrubber:
 
         text = "a" * 50
         result = payload_scrubber(text, max_length=50)
-        
+
         assert "***" not in result
         assert result == text
 
@@ -206,9 +200,9 @@ class TestJSONFormatter:
             args=(),
             exc_info=None,
         )
-        
+
         result = formatter.format(record)
-        
+
         # Should be valid JSON
         parsed = json.loads(result)
         assert parsed["message"] == "Test message"
@@ -229,10 +223,10 @@ class TestJSONFormatter:
             args=(),
             exc_info=None,
         )
-        
+
         result = formatter.format(record)
         parsed = json.loads(result)
-        
+
         assert "timestamp" in parsed
         assert "timestamp_unix" in parsed
 
@@ -251,10 +245,10 @@ class TestJSONFormatter:
             exc_info=None,
         )
         record.event_type = "custom_event"
-        
+
         result = formatter.format(record)
         parsed = json.loads(result)
-        
+
         assert parsed["event_type"] == "custom_event"
 
     def test_format_includes_correlation_id(self):
@@ -272,10 +266,10 @@ class TestJSONFormatter:
             exc_info=None,
         )
         record.correlation_id = "test-corr-id"
-        
+
         result = formatter.format(record)
         parsed = json.loads(result)
-        
+
         assert parsed["correlation_id"] == "test-corr-id"
 
     def test_format_includes_metrics(self):
@@ -293,10 +287,10 @@ class TestJSONFormatter:
             exc_info=None,
         )
         record.metrics = {"latency_ms": 100, "token_count": 50}
-        
+
         result = formatter.format(record)
         parsed = json.loads(result)
-        
+
         assert parsed["metrics"]["latency_ms"] == 100
         assert parsed["metrics"]["token_count"] == 50
 
@@ -305,13 +299,13 @@ class TestJSONFormatter:
         from mlsdm.observability.logger import JSONFormatter
 
         formatter = JSONFormatter()
-        
+
         try:
             raise ValueError("Test exception")
         except ValueError:
             import sys
             exc_info = sys.exc_info()
-        
+
         record = logging.LogRecord(
             name="test",
             level=logging.ERROR,
@@ -321,10 +315,10 @@ class TestJSONFormatter:
             args=(),
             exc_info=exc_info,
         )
-        
+
         result = formatter.format(record)
         parsed = json.loads(result)
-        
+
         assert "exception" in parsed
         assert "ValueError" in parsed["exception"]
 
@@ -342,10 +336,10 @@ class TestJSONFormatter:
             args=(),
             exc_info=None,
         )
-        
+
         result = formatter.format(record)
         parsed = json.loads(result)
-        
+
         # Should have a UUID-like correlation_id
         assert "correlation_id" in parsed
         assert len(parsed["correlation_id"]) > 0
@@ -362,7 +356,7 @@ class TestObservabilityLogger:
             log_dir=tmp_path,
             console_output=False,
         )
-        
+
         assert logger.max_bytes == 10 * 1024 * 1024
         assert logger.backup_count == 5
         assert logger.min_level == logging.INFO
@@ -380,7 +374,7 @@ class TestObservabilityLogger:
             min_level=logging.DEBUG,
             console_output=False,
         )
-        
+
         assert logger.max_bytes == 1024
         assert logger.backup_count == 3
         assert logger.max_age_days == 14
@@ -391,12 +385,12 @@ class TestObservabilityLogger:
         from mlsdm.observability.logger import ObservabilityLogger
 
         log_dir = tmp_path / "new_logs" / "subdir"
-        
-        logger = ObservabilityLogger(
+
+        ObservabilityLogger(
             log_dir=log_dir,
             console_output=False,
         )
-        
+
         assert log_dir.exists()
 
     def test_info_logging(self, tmp_path):
@@ -407,13 +401,13 @@ class TestObservabilityLogger:
             log_dir=tmp_path,
             console_output=False,
         )
-        
+
         corr_id = logger.info(
             EventType.SYSTEM_STARTUP,
             "System started",
             metrics={"version": "1.0"},
         )
-        
+
         # Should return a correlation ID
         assert isinstance(corr_id, str)
         assert len(corr_id) > 0
@@ -427,12 +421,12 @@ class TestObservabilityLogger:
             min_level=logging.DEBUG,
             console_output=False,
         )
-        
+
         corr_id = logger.debug(
             EventType.STATE_CHANGE,
             "State changed",
         )
-        
+
         assert isinstance(corr_id, str)
 
     def test_warn_logging(self, tmp_path):
@@ -443,12 +437,12 @@ class TestObservabilityLogger:
             log_dir=tmp_path,
             console_output=False,
         )
-        
+
         corr_id = logger.warn(
             EventType.SYSTEM_WARNING,
             "Warning message",
         )
-        
+
         assert isinstance(corr_id, str)
 
     def test_error_logging(self, tmp_path):
@@ -459,12 +453,12 @@ class TestObservabilityLogger:
             log_dir=tmp_path,
             console_output=False,
         )
-        
+
         corr_id = logger.error(
             EventType.SYSTEM_ERROR,
             "Error occurred",
         )
-        
+
         assert isinstance(corr_id, str)
 
     def test_correlation_id_propagation(self, tmp_path):
@@ -475,14 +469,14 @@ class TestObservabilityLogger:
             log_dir=tmp_path,
             console_output=False,
         )
-        
+
         custom_id = "custom-correlation-id-123"
         returned_id = logger.info(
             EventType.SYSTEM_STARTUP,
             "Test",
             correlation_id=custom_id,
         )
-        
+
         assert returned_id == custom_id
 
     def test_additional_kwargs(self, tmp_path):
@@ -493,14 +487,14 @@ class TestObservabilityLogger:
             log_dir=tmp_path,
             console_output=False,
         )
-        
+
         logger.info(
             EventType.SYSTEM_STARTUP,
             "Test",
             custom_field="custom_value",
             another_field=123,
         )
-        
+
         # Just verify it doesn't raise - checking log file content is complex
 
     def test_log_file_created(self, tmp_path):
@@ -512,9 +506,9 @@ class TestObservabilityLogger:
             log_file="test_log.log",
             console_output=False,
         )
-        
+
         logger.info(EventType.SYSTEM_STARTUP, "Test message")
-        
+
         # Check log files exist
         log_files = list(tmp_path.glob("*.log"))
         assert len(log_files) > 0
@@ -533,9 +527,9 @@ class TestObservabilityLoggerThreadSafety:
             log_dir=tmp_path,
             console_output=False,
         )
-        
+
         errors = []
-        
+
         def worker():
             try:
                 for i in range(50):
@@ -546,13 +540,13 @@ class TestObservabilityLoggerThreadSafety:
                     )
             except Exception as e:
                 errors.append(e)
-        
+
         threads = [threading.Thread(target=worker) for _ in range(5)]
         for t in threads:
             t.start()
         for t in threads:
             t.join()
-        
+
         assert len(errors) == 0
 
 
@@ -565,14 +559,14 @@ class TestObservabilityLoggerEdgeCases:
 
         # Change to tmp directory to avoid polluting working directory
         monkeypatch.chdir(tmp_path)
-        
+
         logger = ObservabilityLogger(
             log_dir=None,
             console_output=False,
         )
-        
+
         logger.info(EventType.SYSTEM_STARTUP, "Test")
-        
+
         # Should create log file in current directory
         log_files = list(tmp_path.glob("*.log"))
         assert len(log_files) > 0
@@ -585,13 +579,13 @@ class TestObservabilityLoggerEdgeCases:
             log_dir=tmp_path,
             console_output=False,
         )
-        
+
         corr_id = logger.info(
             EventType.SYSTEM_STARTUP,
             "Test",
             metrics={},
         )
-        
+
         assert isinstance(corr_id, str)
 
     def test_none_metrics(self, tmp_path):
@@ -602,13 +596,13 @@ class TestObservabilityLoggerEdgeCases:
             log_dir=tmp_path,
             console_output=False,
         )
-        
+
         corr_id = logger.info(
             EventType.SYSTEM_STARTUP,
             "Test",
             metrics=None,
         )
-        
+
         assert isinstance(corr_id, str)
 
     def test_special_characters_in_message(self, tmp_path):
@@ -619,13 +613,13 @@ class TestObservabilityLoggerEdgeCases:
             log_dir=tmp_path,
             console_output=False,
         )
-        
+
         message = 'Test "quotes" and \\ backslash and unicode: café ñ 日本語'
         corr_id = logger.info(
             EventType.SYSTEM_STARTUP,
             message,
         )
-        
+
         assert isinstance(corr_id, str)
 
     def test_large_metrics_dict(self, tmp_path):
@@ -636,15 +630,15 @@ class TestObservabilityLoggerEdgeCases:
             log_dir=tmp_path,
             console_output=False,
         )
-        
+
         large_metrics = {f"metric_{i}": i for i in range(100)}
-        
+
         corr_id = logger.info(
             EventType.EVENT_PROCESSED,
             "Test with large metrics",
             metrics=large_metrics,
         )
-        
+
         assert isinstance(corr_id, str)
 
     def test_multiple_loggers_same_file(self, tmp_path):
@@ -657,17 +651,17 @@ class TestObservabilityLoggerEdgeCases:
             log_file="shared.log",
             console_output=False,
         )
-        
+
         logger2 = ObservabilityLogger(
             logger_name="logger2",
             log_dir=tmp_path,
             log_file="shared.log",
             console_output=False,
         )
-        
+
         logger1.info(EventType.SYSTEM_STARTUP, "From logger 1")
         logger2.info(EventType.SYSTEM_STARTUP, "From logger 2")
-        
+
         # Should not raise errors
 
     def test_console_output_enabled(self, tmp_path, capsys):
@@ -678,9 +672,9 @@ class TestObservabilityLoggerEdgeCases:
             log_dir=tmp_path,
             console_output=True,
         )
-        
+
         logger.info(EventType.SYSTEM_STARTUP, "Console test message")
-        
+
         captured = capsys.readouterr()
         assert "Console test message" in captured.err or "Console test message" in captured.out
 
@@ -696,13 +690,13 @@ class TestLoggingHighLevelMethods:
             log_dir=tmp_path,
             console_output=False,
         )
-        
+
         corr_id = logger.info(
             EventType.REQUEST_STARTED,
             "Request started",
             metrics={"endpoint": "/generate"},
         )
-        
+
         assert isinstance(corr_id, str)
 
     def test_log_request_completed(self, tmp_path):
@@ -713,13 +707,13 @@ class TestLoggingHighLevelMethods:
             log_dir=tmp_path,
             console_output=False,
         )
-        
+
         corr_id = logger.info(
             EventType.REQUEST_COMPLETED,
             "Request completed",
             metrics={"latency_ms": 150, "status_code": 200},
         )
-        
+
         assert isinstance(corr_id, str)
 
     def test_log_moral_rejection(self, tmp_path):
@@ -730,14 +724,14 @@ class TestLoggingHighLevelMethods:
             log_dir=tmp_path,
             console_output=False,
         )
-        
+
         corr_id = logger.warn(
             EventType.MORAL_REJECTED,
             "Request rejected for moral reasons",
             metrics={"moral_score": 0.3, "threshold": 0.5},
             reason=RejectionReason.MORAL_REJECT.value,
         )
-        
+
         assert isinstance(corr_id, str)
 
     def test_log_emergency_shutdown(self, tmp_path):
@@ -748,13 +742,13 @@ class TestLoggingHighLevelMethods:
             log_dir=tmp_path,
             console_output=False,
         )
-        
+
         corr_id = logger.error(
             EventType.EMERGENCY_SHUTDOWN,
             "Emergency shutdown triggered",
             metrics={"memory_usage_percent": 95},
         )
-        
+
         assert isinstance(corr_id, str)
 
     def test_log_phase_transition(self, tmp_path):
@@ -765,11 +759,11 @@ class TestLoggingHighLevelMethods:
             log_dir=tmp_path,
             console_output=False,
         )
-        
+
         corr_id = logger.info(
             EventType.PHASE_TRANSITION,
             "Phase transition from wake to sleep",
             metrics={"from_phase": "wake", "to_phase": "sleep"},
         )
-        
+
         assert isinstance(corr_id, str)

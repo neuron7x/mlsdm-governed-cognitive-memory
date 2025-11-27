@@ -10,11 +10,7 @@ Tests cover:
 
 import argparse
 import os
-import sys
-from io import StringIO
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 
 class TestCmdCheck:
@@ -89,7 +85,7 @@ class TestCmdCheck:
         from mlsdm.cli import cmd_check
 
         monkeypatch.setenv("OPENAI_API_KEY", "sk-1234567890abcdef")
-        
+
         args = argparse.Namespace(verbose=False)
         cmd_check(args)
 
@@ -106,7 +102,7 @@ class TestCmdCheck:
 
         # Set non-existent config path
         monkeypatch.setenv("CONFIG_PATH", str(tmp_path / "nonexistent.yaml"))
-        
+
         args = argparse.Namespace(verbose=False)
         cmd_check(args)
 
@@ -140,7 +136,7 @@ class TestCmdDemo:
             sleep_duration=3,
             verbose=False,
         )
-        
+
         result = cmd_demo(args)
 
         assert result == 0
@@ -161,7 +157,7 @@ class TestCmdDemo:
             sleep_duration=3,
             verbose=False,
         )
-        
+
         result = cmd_demo(args)
 
         assert result == 0
@@ -182,7 +178,7 @@ class TestCmdDemo:
             sleep_duration=3,
             verbose=True,
         )
-        
+
         cmd_demo(args)
 
         captured = capsys.readouterr()
@@ -201,7 +197,7 @@ class TestCmdDemo:
             sleep_duration=5,
             verbose=False,
         )
-        
+
         cmd_demo(args)
 
         captured = capsys.readouterr()
@@ -279,7 +275,7 @@ class TestCmdServe:
 
         # Mock uvicorn to prevent actually starting server
         mock_uvicorn = MagicMock()
-        
+
         with patch.dict("sys.modules", {"uvicorn": mock_uvicorn}):
             args = argparse.Namespace(
                 host="0.0.0.0",
@@ -290,14 +286,14 @@ class TestCmdServe:
                 reload=True,
                 disable_rate_limit=True,
             )
-            
+
             # We need to mock the app import too
             with patch("mlsdm.api.app.app"):
                 try:
                     cmd_serve(args)
                 except Exception:
                     pass  # May fail on import, but env vars should be set
-            
+
             # Check environment variables were set
             assert os.environ.get("CONFIG_PATH") == "custom_config.yaml"
             assert os.environ.get("LLM_BACKEND") == "openai"
@@ -308,10 +304,10 @@ class TestCmdServe:
         # This test verifies the cmd_serve function has proper error handling
         # for missing uvicorn. Since uvicorn is installed in the test env,
         # we just verify the serve function exists and returns correct status.
-        from mlsdm.cli import cmd_serve
-
         # Verify the function exists and has expected signature
         import inspect
+
+        from mlsdm.cli import cmd_serve
         sig = inspect.signature(cmd_serve)
         assert "args" in sig.parameters
 
@@ -367,7 +363,7 @@ class TestEdgeCases:
             sleep_duration=3,
             verbose=False,
         )
-        
+
         # Should not raise
         result = cmd_demo(args)
         assert result == 0
@@ -380,7 +376,7 @@ class TestEdgeCases:
         # which would break the actual check. Just verify command runs.
         args = argparse.Namespace(verbose=False)
         result = cmd_check(args)
-        
+
         assert result == 0  # Should still pass on current Python
 
     def test_short_api_key_masking(self, capsys, monkeypatch):
@@ -388,12 +384,12 @@ class TestEdgeCases:
         from mlsdm.cli import cmd_check
 
         monkeypatch.setenv("OPENAI_API_KEY", "short")
-        
+
         args = argparse.Namespace(verbose=False)
         cmd_check(args)
 
         captured = capsys.readouterr()
-        # Short keys should show *** 
+        # Short keys should show ***
         assert "***" in captured.out or "shor" in captured.out
 
 
@@ -417,7 +413,7 @@ class TestDemoInteractiveMode:
             sleep_duration=3,
             verbose=False,
         )
-        
+
         result = cmd_demo(args)
 
         assert result == 0
@@ -440,7 +436,7 @@ class TestDemoInteractiveMode:
             sleep_duration=3,
             verbose=False,
         )
-        
+
         result = cmd_demo(args)
 
         assert result == 0
@@ -463,8 +459,8 @@ class TestDemoInteractiveMode:
             sleep_duration=3,
             verbose=False,
         )
-        
-        result = cmd_demo(args)
+
+        cmd_demo(args)
 
         captured = capsys.readouterr()
         assert "System State" in captured.out
@@ -485,7 +481,7 @@ class TestDemoInteractiveMode:
             sleep_duration=3,
             verbose=False,
         )
-        
+
         result = cmd_demo(args)
 
         assert result == 0
@@ -508,7 +504,7 @@ class TestDemoInteractiveMode:
             sleep_duration=3,
             verbose=False,
         )
-        
+
         result = cmd_demo(args)
 
         assert result == 0
@@ -533,7 +529,7 @@ class TestDemoInteractiveMode:
             sleep_duration=3,
             verbose=False,
         )
-        
+
         result = cmd_demo(args)
 
         assert result == 0
@@ -554,7 +550,7 @@ class TestDemoInteractiveMode:
             sleep_duration=3,
             verbose=False,
         )
-        
+
         result = cmd_demo(args)
 
         assert result == 0

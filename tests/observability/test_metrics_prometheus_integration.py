@@ -13,7 +13,6 @@ from prometheus_client import CollectorRegistry
 from mlsdm.observability.metrics import (
     MetricsExporter,
     MetricsRegistry,
-    get_metrics_exporter,
 )
 
 
@@ -346,8 +345,8 @@ class TestMetricsEndpointFormat:
 
         # Check for essential Prometheus format markers
         lines = metrics_text.split("\n")
-        help_lines = [l for l in lines if l.startswith("# HELP")]
-        type_lines = [l for l in lines if l.startswith("# TYPE")]
+        help_lines = [line for line in lines if line.startswith("# HELP")]
+        type_lines = [line for line in lines if line.startswith("# TYPE")]
 
         # Should have HELP and TYPE comments for each metric
         assert len(help_lines) > 0
