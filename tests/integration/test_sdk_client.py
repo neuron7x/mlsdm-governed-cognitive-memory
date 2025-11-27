@@ -183,7 +183,9 @@ class TestSDKConfiguration:
 
     def test_sdk_openai_with_mocked_factory(self):
         """Test SDK OpenAI configuration with mocked factory."""
-        with patch("mlsdm.sdk.neuro_engine_client.build_neuro_engine_from_env") as mock_factory:
+        import mlsdm.sdk.neuro_engine_client as sdk_module
+
+        with patch.object(sdk_module, "build_neuro_engine_from_env") as mock_factory:
             mock_engine = MagicMock()
             mock_engine.generate.return_value = {
                 "response": "test",

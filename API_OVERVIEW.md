@@ -1,7 +1,6 @@
 # API Overview
 
-**Version:** 1.2.0  
-**Last Updated:** November 2025
+Quick reference guide for MLSDM API endpoints and SDK usage.
 
 ## Quick Start
 

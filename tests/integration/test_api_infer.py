@@ -47,10 +47,13 @@ class TestInferHappyPath:
         )
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
+        # Verify response structure is valid
         assert "response" in data
+        assert "accepted" in data
+        assert "phase" in data
         assert isinstance(data["response"], str)
-        # Response may be empty if request was rejected during sleep phase
-        # but the structure should be valid
+        assert isinstance(data["accepted"], bool)
+        assert isinstance(data["phase"], str)
 
     def test_infer_response_contract(self, client):
         """Test that infer response matches InferResponse contract."""
