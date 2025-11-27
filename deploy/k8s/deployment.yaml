@@ -24,8 +24,8 @@ spec:
     spec:
       containers:
       - name: neuro-engine
-        image: ghcr.io/neuron7x/mlsdm-neuro-engine:latest
-        imagePullPolicy: Always
+        image: ghcr.io/neuron7x/mlsdm-neuro-engine:1.2.0
+        imagePullPolicy: IfNotPresent
         ports:
         - name: http
           containerPort: 8000
