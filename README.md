@@ -4,7 +4,11 @@
 
 ### Multi-Level Synaptic Dynamic Memory
 
-<img src="assets/mlsdm-hero.png" alt="MLSDM Neural Architecture Visualization" width="800">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/mlsdm-hero.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/mlsdm-hero.svg">
+  <img src="assets/mlsdm-hero.svg" alt="MLSDM Neural Architecture Visualization" width="100%" style="max-width: 1200px;">
+</picture>
 
 **Production-ready neurobiologically-inspired cognitive governance for LLMs**
 
