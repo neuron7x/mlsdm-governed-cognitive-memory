@@ -16,13 +16,18 @@
 
 ---
 
-[![CI - Neuro Cognitive Engine](https://github.com/neuron7x/mlsdm/actions/workflows/ci-neuro-cognitive-engine.yml/badge.svg)](https://github.com/neuron7x/mlsdm/actions/workflows/ci-neuro-cognitive-engine.yml)
-[![Property Tests](https://github.com/neuron7x/mlsdm/actions/workflows/property-tests.yml/badge.svg)](https://github.com/neuron7x/mlsdm/actions/workflows/property-tests.yml)
-[![Coverage](https://img.shields.io/badge/coverage-90.26%25-brightgreen?logo=pytest)](COVERAGE_REPORT_2025.md)
-[![Tests](https://img.shields.io/badge/tests-424%20passing-success?logo=github-actions)](https://github.com/neuron7x/mlsdm/actions)
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-beta-orange)](CHANGELOG.md)
+<!-- CI/CD Badges -->
+[![CI - Neuro Cognitive Engine](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/ci-neuro-cognitive-engine.yml?style=for-the-badge&logo=github-actions&logoColor=white&label=CI)](https://github.com/neuron7x/mlsdm/actions/workflows/ci-neuro-cognitive-engine.yml)
+[![Property Tests](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/property-tests.yml?style=for-the-badge&logo=github-actions&logoColor=white&label=Property%20Tests)](https://github.com/neuron7x/mlsdm/actions/workflows/property-tests.yml)
+
+<!-- Metrics Badges -->
+[![Coverage](https://img.shields.io/badge/coverage-90.26%25-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](COVERAGE_REPORT_2025.md)
+[![Tests](https://img.shields.io/badge/tests-424%20passing-success?style=for-the-badge&logo=checkmarx&logoColor=white)](https://github.com/neuron7x/mlsdm/actions)
+
+<!-- Meta Badges -->
+[![Python](https://img.shields.io/badge/python-3.10%2B-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+[![Status](https://img.shields.io/badge/status-beta-orange?style=for-the-badge)](CHANGELOG.md)
 
 [🚀 Quick Start](#-quick-start) •
 [📖 Documentation](#-documentation) •
@@ -52,8 +57,10 @@
 
 ## 🧬 What is MLSDM?
 
+> [!NOTE]
 > **MLSDM (Multi-Level Synaptic Dynamic Memory)** is a **governed cognitive wrapper** for Large Language Models that enforces biological constraints inspired by neuroscience.
 
+<div align="center">
 <table>
 <tr>
 <td width="60%">
@@ -69,10 +76,10 @@ LLMs lack built-in mechanisms for:
 ### The Solution
 
 MLSDM wraps **any LLM** with a neurobiologically-grounded cognitive layer that provides:
-- ✅ **Fixed memory footprint** (29.37 MB)
-- ✅ **Adaptive moral filtering** (93.3% toxic rejection)
-- ✅ **Wake/sleep cycles** (89.5% resource reduction)
-- ✅ **Aphasia detection** (telegraphic speech repair)
+- ✅ **Fixed memory footprint** <sub>(29.37 MB)</sub>
+- ✅ **Adaptive moral filtering** <sub>(93.3% toxic rejection)</sub>
+- ✅ **Wake/sleep cycles** <sub>(89.5% resource reduction)</sub>
+- ✅ **Aphasia detection** <sub>(telegraphic speech repair)</sub>
 
 </td>
 <td width="40%">
@@ -103,35 +110,42 @@ MLSDM wraps **any LLM** with a neurobiologically-grounded cognitive layer that p
 </td>
 </tr>
 </table>
+</div>
+
+[↑ Back to Top](#-mlsdm)
 
 ---
 
 ## 💡 Core Value Proposition
 
+<div align="center">
 <table>
 <tr>
 <td align="center" width="25%">
 <h3>🔒</h3>
 <h4>Safety Without RLHF</h4>
-<p>Adaptive moral filtering with EMA-based threshold adjustment. No expensive fine-tuning required.</p>
+<p>Adaptive moral filtering with EMA-based threshold adjustment.<br/><sub>No expensive fine-tuning required.</sub></p>
 </td>
 <td align="center" width="25%">
 <h3>📊</h3>
 <h4>Bounded Resources</h4>
-<p>Fixed 29.37 MB memory with zero-allocation after init. Perfect for production.</p>
+<p>Fixed 29.37 MB memory with zero-allocation after init.<br/><sub>Perfect for production.</sub></p>
 </td>
 <td align="center" width="25%">
 <h3>🌙</h3>
 <h4>Cognitive Rhythm</h4>
-<p>Wake/sleep cycles reduce resource usage by 89.5% during consolidation phases.</p>
+<p>Wake/sleep cycles reduce resource usage by 89.5%.<br/><sub>During consolidation phases.</sub></p>
 </td>
 <td align="center" width="25%">
 <h3>🗣️</h3>
 <h4>Speech Quality</h4>
-<p>Detects telegraphic patterns and triggers automatic repair for coherent output.</p>
+<p>Detects telegraphic patterns and triggers automatic repair.<br/><sub>For coherent output.</sub></p>
 </td>
 </tr>
 </table>
+</div>
+
+[↑ Back to Top](#-mlsdm)
 
 ---
 
@@ -140,13 +154,13 @@ MLSDM wraps **any LLM** with a neurobiologically-grounded cognitive layer that p
 ### 🎯 Cognitive Governance
 
 | Feature | Description | Metric |
-|---------|-------------|--------|
-| **🛡️ Moral Filter** | EMA-based adaptive threshold [0.30, 0.90] | 93.3% toxic rejection |
-| **🧠 PELM Memory** | Phase-entangled lattice with 20k vector capacity | 29.37 MB fixed |
-| **⚡ Wake/Sleep Cycles** | 8 wake + 3 sleep steps with memory consolidation | 89.5% resource savings |
-| **🔊 Aphasia Detection** | Broca-model for telegraphic speech detection | 100% TPR, 80% TNR |
-| **🧵 Thread Safety** | Lock-based synchronization for concurrent requests | 5,500 ops/sec |
-| **📈 Observability** | Prometheus metrics + structured JSON logging | Full pipeline visibility |
+|:--------|:------------|:-------|
+| **🛡️ Moral Filter** | EMA-based adaptive threshold [0.30, 0.90] | <sub>93.3% toxic rejection</sub> |
+| **🧠 PELM Memory** | Phase-entangled lattice with 20k vector capacity | <sub>29.37 MB fixed</sub> |
+| **⚡ Wake/Sleep Cycles** | 8 wake + 3 sleep steps with memory consolidation | <sub>89.5% resource savings</sub> |
+| **🔊 Aphasia Detection** | Broca-model for telegraphic speech detection | <sub>100% TPR, 80% TNR</sub> |
+| **🧵 Thread Safety** | Lock-based synchronization for concurrent requests | <sub>5,500 ops/sec</sub> |
+| **📈 Observability** | Prometheus metrics + structured JSON logging | <sub>Full pipeline visibility</sub> |
 
 <details>
 <summary><b>🔍 View Detailed Feature Breakdown</b></summary>
@@ -180,6 +194,8 @@ if |error| > 0.05:  # dead-band
 ```
 
 </details>
+
+[↑ Back to Top](#-mlsdm)
 
 ---
 
@@ -283,7 +299,10 @@ sequenceDiagram
 | **Non-Aphasic Output** | `avg_sentence_len ≥ 6` | AphasiaBrocaDetector |
 | **Function Words** | `ratio ≥ 0.15` | Speech quality check |
 
-> 📚 **Full Details**: [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md)
+> [!TIP]
+> 📚 **Full Details**: See [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) for complete system design and component interactions.
+
+[↑ Back to Top](#-mlsdm)
 
 ---
 
@@ -359,6 +378,8 @@ pytest tests/validation/ -v
 # Property-based tests
 pytest tests/property/ -v
 ```
+
+[↑ Back to Top](#-mlsdm)
 
 ---
 
@@ -486,82 +507,89 @@ async def health():
 
 </details>
 
+[↑ Back to Top](#-mlsdm)
+
 ---
 
 ## 📊 Validated Metrics
 
 All metrics are **backed by reproducible tests** with full traceability.
 
-### Safety & Governance
+### 🛡️ Safety & Governance
 
 | Metric | Value | Test Location |
-|--------|-------|---------------|
-| **Toxic Rejection Rate** | 93.3% | `tests/validation/test_moral_filter_effectiveness.py` |
-| **Comprehensive Safety** | 97.8% | `tests/validation/test_moral_filter_effectiveness.py` |
-| **False Positive Rate** | 37.5% | Trade-off for safety |
-| **Drift Under Attack** | 0.33 max | 70% toxic bombardment scenario |
+|:-------|:------|:--------------|
+| **Toxic Rejection Rate** | 93.3% | <sub>`tests/validation/test_moral_filter_effectiveness.py`</sub> |
+| **Comprehensive Safety** | 97.8% | <sub>`tests/validation/test_moral_filter_effectiveness.py`</sub> |
+| **False Positive Rate** | 37.5% | <sub>Trade-off for safety</sub> |
+| **Drift Under Attack** | 0.33 max | <sub>70% toxic bombardment scenario</sub> |
 
-### Performance
-
-| Metric | Value | Test Location |
-|--------|-------|---------------|
-| **Throughput** | 5,500 ops/sec | `tests/load/` |
-| **P50 Latency** | ~2ms | `benchmarks/` |
-| **P95 Latency** | ~10ms | `benchmarks/` |
-| **Memory** | 29.37 MB fixed | `tests/unit/` |
-
-### Cognitive Effectiveness
+### ⚡ Performance
 
 | Metric | Value | Test Location |
-|--------|-------|---------------|
-| **Resource Reduction** | 89.5% | `tests/validation/test_wake_sleep_effectiveness.py` |
-| **Coherence Improvement** | 5.5% | `tests/validation/test_wake_sleep_effectiveness.py` |
-| **Aphasia TPR** | 100% | `tests/eval/aphasia_eval_suite.py` |
-| **Aphasia TNR** | 80% | `tests/eval/aphasia_eval_suite.py` |
+|:-------|:------|:--------------|
+| **Throughput** | 5,500 ops/sec | <sub>`tests/load/`</sub> |
+| **P50 Latency** | ~2ms | <sub>`benchmarks/`</sub> |
+| **P95 Latency** | ~10ms | <sub>`benchmarks/`</sub> |
+| **Memory** | 29.37 MB fixed | <sub>`tests/unit/`</sub> |
 
+### 🧠 Cognitive Effectiveness
+
+| Metric | Value | Test Location |
+|:-------|:------|:--------------|
+| **Resource Reduction** | 89.5% | <sub>`tests/validation/test_wake_sleep_effectiveness.py`</sub> |
+| **Coherence Improvement** | 5.5% | <sub>`tests/validation/test_wake_sleep_effectiveness.py`</sub> |
+| **Aphasia TPR** | 100% | <sub>`tests/eval/aphasia_eval_suite.py`</sub> |
+| **Aphasia TNR** | 80% | <sub>`tests/eval/aphasia_eval_suite.py`</sub> |
+
+> [!IMPORTANT]
 > 📈 **Detailed Report**: [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md)
 >
 > 🔗 **Claims Traceability**: [CLAIMS_TRACEABILITY.md](CLAIMS_TRACEABILITY.md)
+
+[↑ Back to Top](#-mlsdm)
 
 ---
 
 ## 📖 Documentation
 
-### Core Documentation
+### 📚 Core Documentation
 
 | Document | Description |
-|----------|-------------|
-| [📐 Architecture Spec](ARCHITECTURE_SPEC.md) | Full system design and component interactions |
-| [📘 Usage Guide](USAGE_GUIDE.md) | Detailed usage patterns and best practices |
-| [⚙️ Configuration Guide](CONFIGURATION_GUIDE.md) | All configuration options explained |
-| [🔌 API Reference](API_REFERENCE.md) | Complete API documentation |
-| [🚀 Deployment Guide](DEPLOYMENT_GUIDE.md) | Production deployment instructions |
+|:---------|:------------|
+| [📐 Architecture Spec](ARCHITECTURE_SPEC.md) | <sub>Full system design and component interactions</sub> |
+| [📘 Usage Guide](USAGE_GUIDE.md) | <sub>Detailed usage patterns and best practices</sub> |
+| [⚙️ Configuration Guide](CONFIGURATION_GUIDE.md) | <sub>All configuration options explained</sub> |
+| [🔌 API Reference](API_REFERENCE.md) | <sub>Complete API documentation</sub> |
+| [🚀 Deployment Guide](DEPLOYMENT_GUIDE.md) | <sub>Production deployment instructions</sub> |
 
-### Validation & Testing
-
-| Document | Description |
-|----------|-------------|
-| [✅ Implementation Summary](IMPLEMENTATION_SUMMARY.md) | What was built and how |
-| [📊 Effectiveness Report](EFFECTIVENESS_VALIDATION_REPORT.md) | Quantitative validation results |
-| [📈 Coverage Report](COVERAGE_REPORT_2025.md) | 90.26% test coverage details |
-| [🧪 Testing Guide](TESTING_GUIDE.md) | How to run and write tests |
-
-### Scientific Foundation
+### ✅ Validation & Testing
 
 | Document | Description |
-|----------|-------------|
-| [🔬 Scientific Rationale](docs/SCIENTIFIC_RATIONALE.md) | Core hypothesis and theory |
-| [🧠 Neuro Foundations](docs/NEURO_FOUNDATIONS.md) | Neuroscience basis for each module |
-| [🛡️ Safety Foundations](docs/ALIGNMENT_AND_SAFETY_FOUNDATIONS.md) | AI safety principles |
-| [📚 Bibliography](BIBLIOGRAPHY.md) | Peer-reviewed references |
+|:---------|:------------|
+| [✅ Implementation Summary](IMPLEMENTATION_SUMMARY.md) | <sub>What was built and how</sub> |
+| [📊 Effectiveness Report](EFFECTIVENESS_VALIDATION_REPORT.md) | <sub>Quantitative validation results</sub> |
+| [📈 Coverage Report](COVERAGE_REPORT_2025.md) | <sub>90.26% test coverage details</sub> |
+| [🧪 Testing Guide](TESTING_GUIDE.md) | <sub>How to run and write tests</sub> |
 
-### Operations
+### 🔬 Scientific Foundation
 
 | Document | Description |
-|----------|-------------|
-| [📡 Observability Guide](OBSERVABILITY_GUIDE.md) | Metrics, logging, tracing setup |
-| [📋 Runbook](RUNBOOK.md) | Operational procedures |
-| [🔐 Security Policy](SECURITY_POLICY.md) | Security guidelines |
+|:---------|:------------|
+| [🔬 Scientific Rationale](docs/SCIENTIFIC_RATIONALE.md) | <sub>Core hypothesis and theory</sub> |
+| [🧠 Neuro Foundations](docs/NEURO_FOUNDATIONS.md) | <sub>Neuroscience basis for each module</sub> |
+| [🛡️ Safety Foundations](docs/ALIGNMENT_AND_SAFETY_FOUNDATIONS.md) | <sub>AI safety principles</sub> |
+| [📚 Bibliography](BIBLIOGRAPHY.md) | <sub>Peer-reviewed references</sub> |
+
+### ⚙️ Operations
+
+| Document | Description |
+|:---------|:------------|
+| [📡 Observability Guide](OBSERVABILITY_GUIDE.md) | <sub>Metrics, logging, tracing setup</sub> |
+| [📋 Runbook](RUNBOOK.md) | <sub>Operational procedures</sub> |
+| [🔐 Security Policy](SECURITY_POLICY.md) | <sub>Security guidelines</sub> |
+
+[↑ Back to Top](#-mlsdm)
 
 ---
 
@@ -585,22 +613,25 @@ All metrics are **backed by reproducible tests** with full traceability.
 ### 🔮 Future Work
 
 | Feature | Requirement |
-|---------|-------------|
-| Stress testing at 10k+ RPS | Load infrastructure |
-| Chaos engineering suite | Staging environment |
-| TLA+/Coq formal verification | Formal methods expertise |
-| RAG hallucination testing | Retrieval setup with ragas |
+|:--------|:------------|
+| Stress testing at 10k+ RPS | <sub>Load infrastructure</sub> |
+| Chaos engineering suite | <sub>Staging environment</sub> |
+| TLA+/Coq formal verification | <sub>Formal methods expertise</sub> |
+| RAG hallucination testing | <sub>Retrieval setup with ragas</sub> |
 
 ### ⚠️ Known Limitations
 
-> **Important**: Understand these before deploying.
+> [!WARNING]
+> **Understand these before deploying.**
 
 | Limitation | Details |
-|------------|---------|
-| **No hallucination prevention** | Wraps LLM but cannot improve factual accuracy |
-| **Imperfect filtering** | 93.3% toxic rejection (6.7% may pass); 37.5% false positive rate |
-| **Beta status** | Additional hardening needed for mission-critical production |
-| **Not a compliance substitute** | Requires domain-specific security audit |
+|:-----------|:--------|
+| **No hallucination prevention** | <sub>Wraps LLM but cannot improve factual accuracy</sub> |
+| **Imperfect filtering** | <sub>93.3% toxic rejection (6.7% may pass); 37.5% false positive rate</sub> |
+| **Beta status** | <sub>Additional hardening needed for mission-critical production</sub> |
+| **Not a compliance substitute** | <sub>Requires domain-specific security audit</sub> |
+
+[↑ Back to Top](#-mlsdm)
 
 ---
 
@@ -627,6 +658,8 @@ pytest tests/ -v
 # Check linting
 ruff check src/
 ```
+
+[↑ Back to Top](#-mlsdm)
 
 ---
 
