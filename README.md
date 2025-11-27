@@ -1,5 +1,9 @@
 # MLSDM
 
+<p align="center">
+  <img src="assets/mlsdm-hero.png" alt="MLSDM Neural Architecture Visualization" width="600">
+</p>
+
 > Neuro-inspired governed memory wrapper for LLMs: phase-based memory, adaptive moral filter, aphasia/Broca detection & repair, production-grade tests.
 
 [![CI - Neuro Cognitive Engine](https://github.com/neuron7x/mlsdm/actions/workflows/ci-neuro-cognitive-engine.yml/badge.svg)](https://github.com/neuron7x/mlsdm/actions/workflows/ci-neuro-cognitive-engine.yml)
