@@ -23,7 +23,6 @@ DECLARED_TPR = 0.95  # True Positive Rate >= 95%
 DECLARED_TNR = 0.85  # True Negative Rate >= 85%
 DECLARED_ACCURACY = 0.90  # Overall Accuracy >= 90%
 DECLARED_BALANCED_ACCURACY = 0.90  # Balanced Accuracy >= 90%
-MIN_CORPUS_SIZE = 50  # Minimum samples per class
 
 
 @pytest.fixture
@@ -48,12 +47,12 @@ def test_aphasia_corpus_minimum_size(eval_suite: AphasiaEvalSuite) -> None:
     """Verify corpus has sufficient samples for reliable evaluation."""
     corpus = eval_suite.load_corpus()
 
-    assert len(corpus["telegraphic"]) >= MIN_CORPUS_SIZE, (
-        f"Corpus must contain at least {MIN_CORPUS_SIZE} telegraphic samples, "
+    assert len(corpus["telegraphic"]) >= MIN_TELEGRAPHIC_SAMPLES, (
+        f"Corpus must contain at least {MIN_TELEGRAPHIC_SAMPLES} telegraphic samples, "
         f"found {len(corpus['telegraphic'])}"
     )
-    assert len(corpus["normal"]) >= MIN_CORPUS_SIZE, (
-        f"Corpus must contain at least {MIN_CORPUS_SIZE} normal samples, "
+    assert len(corpus["normal"]) >= MIN_NORMAL_SAMPLES, (
+        f"Corpus must contain at least {MIN_NORMAL_SAMPLES} normal samples, "
         f"found {len(corpus['normal'])}"
     )
 
