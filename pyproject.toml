@@ -213,6 +213,10 @@ ignore = [
 "tests/**/*.py" = ["N802", "N803", "N801", "B017", "B007"]  # test naming and test patterns
 "src/mlsdm/tests/**/*.py" = ["N802", "N803", "N801", "B017", "B007"]  # test naming and test patterns
 "src/mlsdm/utils/metrics.py" = ["N803"]  # Allow L1, L2, L3 parameter names
+# Core numerical engines use scientific notation (V, I_ext, g_L, etc.)
+"src/mlsdm/core/membrane_engine.py" = ["N802", "N803", "N815"]
+"src/mlsdm/core/reaction_diffusion_engine.py" = ["N802", "N803", "N815"]
+"src/mlsdm/core/fractal_growth_engine.py" = ["N802", "N803", "N815"]
 
 [tool.ruff.format]
 quote-style = "double"
