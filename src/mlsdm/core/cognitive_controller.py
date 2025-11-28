@@ -20,6 +20,9 @@ if TYPE_CHECKING:
 _SYNAPTIC_MEMORY_DEFAULTS: "SynapticMemoryCalibration | None" = None
 _get_synaptic_memory_config: Callable[[dict[str, Any] | None], "SynapticMemoryCalibration"] | None = None
 
+# Default max memory bytes: 1.4 GB
+_DEFAULT_MAX_MEMORY_BYTES = int(1.4 * 1024**3)
+
 try:
     from config.calibration import (
         COGNITIVE_CONTROLLER_DEFAULTS,
@@ -33,6 +36,7 @@ try:
     _CC_RECOVERY_COOLDOWN_STEPS = COGNITIVE_CONTROLLER_DEFAULTS.recovery_cooldown_steps
     _CC_RECOVERY_MEMORY_SAFETY_RATIO = COGNITIVE_CONTROLLER_DEFAULTS.recovery_memory_safety_ratio
     _CC_RECOVERY_MAX_ATTEMPTS = COGNITIVE_CONTROLLER_DEFAULTS.recovery_max_attempts
+    _CC_MAX_MEMORY_BYTES = COGNITIVE_CONTROLLER_DEFAULTS.max_memory_bytes
     _SYNAPTIC_MEMORY_DEFAULTS = _IMPORTED_DEFAULTS
     _get_synaptic_memory_config = _imported_get_config
 except ImportError:
@@ -40,6 +44,7 @@ except ImportError:
     _CC_RECOVERY_COOLDOWN_STEPS = 10
     _CC_RECOVERY_MEMORY_SAFETY_RATIO = 0.8
     _CC_RECOVERY_MAX_ATTEMPTS = 3
+    _CC_MAX_MEMORY_BYTES = _DEFAULT_MAX_MEMORY_BYTES
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +56,7 @@ class CognitiveController:
         memory_threshold_mb: float = 8192.0,
         max_processing_time_ms: float = 1000.0,
         *,
+        max_memory_bytes: int | None = None,
         synaptic_config: "SynapticMemoryCalibration | None" = None,
         yaml_config: dict[str, Any] | None = None,
     ) -> None:
@@ -60,6 +66,9 @@ class CognitiveController:
             dim: Vector dimension for embeddings.
             memory_threshold_mb: Memory threshold in MB before emergency shutdown.
             max_processing_time_ms: Maximum processing time in ms per event.
+            max_memory_bytes: Global memory bound in bytes for cognitive circuit
+                (PELM + SynapticMemory + controller buffers). Defaults to 1.4 GB.
+                This is the hard limit from CORE-04 specification.
             synaptic_config: Optional SynapticMemoryCalibration for synaptic memory.
                 If provided, uses these parameters for MultiLevelSynapticMemory.
             yaml_config: Optional YAML config dictionary. If provided and
@@ -91,7 +100,10 @@ class CognitiveController:
         # Memory monitoring and limits
         self.memory_threshold_mb = memory_threshold_mb
         self.max_processing_time_ms = max_processing_time_ms
+        # Global memory bound (CORE-04): PELM + Synaptic + controller buffers
+        self.max_memory_bytes = max_memory_bytes if max_memory_bytes is not None else _CC_MAX_MEMORY_BYTES
         self.emergency_shutdown = False
+        self._emergency_reason: str | None = None
         self._process = psutil.Process()
         # Auto-recovery state tracking
         self._last_emergency_step: int = 0
@@ -104,6 +116,30 @@ class CognitiveController:
         This property will be removed in v2.0.0. Migrate to using self.pelm directly.
         """
         return self.pelm
+
+    def memory_usage_bytes(self) -> int:
+        """Calculate total memory usage for cognitive circuit in bytes.
+
+        Aggregates memory usage from:
+        - PELM (Phase-Entangled Lattice Memory)
+        - MultiLevelSynapticMemory (L1/L2/L3)
+        - Controller internal buffers and overhead
+
+        Returns:
+            Total estimated memory usage in bytes (conservative estimate).
+
+        Note:
+            This method is thread-safe and can be called from outside the lock.
+            Used for enforcing the global memory bound (CORE-04 invariant).
+        """
+        pelm_bytes = self.pelm.memory_usage_bytes()
+        synaptic_bytes = self.synaptic.memory_usage_bytes()
+
+        # Controller internal overhead (caches, state, locks, etc.)
+        # Estimate: phase_cache dict, state_cache dict, misc Python object overhead
+        controller_overhead = 4096  # ~4KB for internal structures
+
+        return pelm_bytes + synaptic_bytes + controller_overhead
 
     def process_event(self, vector: np.ndarray, moral_value: float) -> dict[str, Any]:
         with self._lock:
@@ -123,10 +159,10 @@ class CognitiveController:
             # Optimization: Invalidate state cache when processing
             self._state_cache_valid = False
 
-            # Check memory usage before processing
+            # Check memory usage before processing (psutil-based, legacy)
             memory_mb = self._check_memory_usage()
             if memory_mb > self.memory_threshold_mb:
-                self._enter_emergency_shutdown()
+                self._enter_emergency_shutdown("process_memory_exceeded")
                 return self._build_state(rejected=True, note="emergency shutdown: memory exceeded")
 
             accepted = self.moral.evaluate(moral_value)
@@ -141,6 +177,16 @@ class CognitiveController:
             phase_val = self._phase_cache[self.rhythm.phase]
             self.pelm.entangle(vector.tolist(), phase=phase_val)
             self.rhythm.step()
+
+            # Check global memory bound (CORE-04) after memory-modifying operations
+            current_memory_bytes = self.memory_usage_bytes()
+            if current_memory_bytes > self.max_memory_bytes:
+                self._enter_emergency_shutdown("memory_limit_exceeded")
+                logger.warning(
+                    f"Global memory limit exceeded: {current_memory_bytes} > {self.max_memory_bytes} bytes. "
+                    "Emergency shutdown triggered."
+                )
+                return self._build_state(rejected=True, note="emergency shutdown: global memory limit exceeded")
 
             # Check processing time
             elapsed_ms = (time.perf_counter() - start_time) * 1000
@@ -172,13 +218,20 @@ class CognitiveController:
         to function again if the controller enters emergency state again.
         """
         self.emergency_shutdown = False
+        self._emergency_reason = None
         self._recovery_attempts = 0
 
-    def _enter_emergency_shutdown(self) -> None:
-        """Enter emergency shutdown state and record the step."""
+    def _enter_emergency_shutdown(self, reason: str = "unknown") -> None:
+        """Enter emergency shutdown state and record the step.
+
+        Args:
+            reason: The reason for emergency shutdown (e.g., 'memory_limit_exceeded').
+        """
         self.emergency_shutdown = True
+        self._emergency_reason = reason
         self._last_emergency_step = self.step_counter
         self._recovery_attempts += 1
+        logger.warning(f"Emergency shutdown entered: reason={reason}, step={self.step_counter}")
 
     def _try_auto_recovery(self) -> bool:
         """Attempt automatic recovery from emergency shutdown.

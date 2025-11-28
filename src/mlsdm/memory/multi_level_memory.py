@@ -133,6 +133,34 @@ class MultiLevelSynapticMemory:
         self.l2.fill(0.0)
         self.l3.fill(0.0)
 
+    def memory_usage_bytes(self) -> int:
+        """Calculate conservative memory usage estimate in bytes.
+
+        Returns:
+            Estimated memory usage for L1/L2/L3 arrays and configuration overhead.
+
+        Note:
+            This is a conservative estimate (10-20% overhead) to ensure we
+            never underestimate actual memory usage.
+        """
+        # L1, L2, L3 numpy arrays (each is dim × float32)
+        l1_bytes = self.l1.nbytes
+        l2_bytes = self.l2.nbytes
+        l3_bytes = self.l3.nbytes
+
+        # Subtotal for arrays
+        array_bytes = l1_bytes + l2_bytes + l3_bytes
+
+        # Metadata overhead for configuration floats and int
+        # Includes: dim, lambda_l1/l2/l3, theta_l1/l2, gating12/23, Python object headers
+        metadata_overhead = 512  # ~0.5KB for metadata and object overhead
+
+        # Conservative 15% overhead for Python object structures
+        conservative_multiplier = 1.15
+
+        total_bytes = int((array_bytes + metadata_overhead) * conservative_multiplier)
+        return total_bytes
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "dimension": self.dim,

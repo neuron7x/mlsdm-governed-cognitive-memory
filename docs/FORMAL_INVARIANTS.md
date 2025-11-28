@@ -291,9 +291,56 @@ This document defines the **formal invariants** for the MLSDM Governed Cognitive
 
 ---
 
-## 6. Testing Strategy
+## 6. Global Memory Safety (CognitiveController)
 
-### 6.1 Property-Based Testing with Hypothesis
+### 6.1 Critical Safety Invariant
+
+**INV_GLOBAL_MEM: Global Memory Bound (CORE-04)**
+- **Statement**: Total memory usage of the cognitive circuit MUST NOT exceed 1.4 GB
+- **Formal**: `∀t: memory_usage_bytes(t) ≤ MAX_MEMORY_BYTES` where `MAX_MEMORY_BYTES = 1.4 × 2³⁰ bytes`
+- **Components Covered**:
+  - `PELM.memory_usage_bytes()` - Phase-Entangled Lattice Memory arrays
+  - `MultiLevelSynapticMemory.memory_usage_bytes()` - L1/L2/L3 synaptic arrays
+  - Controller internal buffers (caches, state objects)
+- **Rationale**: Hard limit on memory prevents unbounded growth and enables edge deployment
+
+### 6.2 Memory Estimation Requirements
+
+**INV-GMEM-EST: Conservative Memory Estimation**
+- **Statement**: Memory estimation MUST be conservative (10-20% overhead)
+- **Formal**: `estimated_usage(component) ≥ actual_usage(component)`
+- **Rationale**: Better to slightly overestimate than underestimate and breach limit
+
+### 6.3 Emergency Shutdown Behavior
+
+**INV-GMEM-SHUTDOWN: Safe Emergency Transition**
+- **Statement**: When memory limit is exceeded, system MUST transition to emergency_shutdown
+- **Formal**: `memory_usage_bytes() > MAX_MEMORY_BYTES ⟹ emergency_shutdown = true`
+- **Enforcement**: Checked in `CognitiveController.process_event()` after memory-modifying operations
+
+**INV-GMEM-BLOCK: No Further Growth After Shutdown**
+- **Statement**: After emergency_shutdown, memory_usage_bytes() MUST NOT increase
+- **Formal**: `emergency_shutdown = true ⟹ ∀t' > t: memory_usage_bytes(t') ≤ memory_usage_bytes(t)`
+- **Rationale**: New events are rejected, preventing further memory allocation
+
+**INV-GMEM-REASON: Shutdown Reason Logging**
+- **Statement**: Emergency shutdown MUST record the cause for diagnostics
+- **Formal**: `emergency_shutdown = true ⟹ emergency_reason ∈ {"memory_limit_exceeded", ...}`
+- **Rationale**: Enables debugging and post-mortem analysis
+
+### 6.4 Recovery Constraints
+
+**INV-GMEM-RECOVERY: Safe Recovery Conditions**
+- **Statement**: Auto-recovery from memory-related shutdown requires memory to be below safety threshold
+- **Formal**: `auto_recovery() ⟹ memory_usage_bytes() < MAX_MEMORY_BYTES × safety_ratio`
+- **Default**: `safety_ratio = 0.8` (80% of max limit)
+- **Rationale**: Prevent immediate re-triggering of shutdown
+
+---
+
+## 7. Testing Strategy
+
+### 7.1 Property-Based Testing with Hypothesis
 
 All invariants are tested using Hypothesis with:
 - **Strategies**: Generate random inputs (prompts, vectors, scores, sequences)
@@ -301,14 +348,15 @@ All invariants are tested using Hypothesis with:
 - **Coverage**: 1000+ examples per property by default
 - **Determinism**: Fixed random seed for reproducibility
 
-### 6.2 Test Organization
+### 7.2 Test Organization
 
 - `tests/property/test_invariants_neuro_engine.py` - NCE invariants
 - `tests/property/test_invariants_memory.py` - Memory system invariants
 - `tests/property/test_invariants_moral_filter.py` - Moral filter invariants
+- `tests/property/test_global_memory_invariant.py` - Global memory bound tests (CORE-04)
 - `tests/property/test_counterexamples_regression.py` - Regression tests
 
-### 6.3 Counterexamples Bank
+### 7.3 Counterexamples Bank
 
 Failed property tests produce minimal counterexamples stored in:
 - `tests/property/counterexamples/moral_filter_counterexamples.json`
@@ -319,22 +367,22 @@ These serve as regression tests to ensure fixed bugs don't reappear.
 
 ---
 
-## 7. Enforcement
+## 8. Enforcement
 
-### 7.1 Runtime Assertions
+### 8.1 Runtime Assertions
 
 Critical invariants are enforced at runtime with assertions:
 ```python
 assert min_threshold <= threshold <= max_threshold, "INV-MF-S1 violated"
 ```
 
-### 7.2 CI Integration
+### 8.2 CI Integration
 
 Property tests run on every PR via `.github/workflows/property-tests.yml`
 
 Failure of any invariant test blocks merge.
 
-### 7.3 Monitoring
+### 8.3 Monitoring
 
 Production systems should monitor invariant violations via metrics:
 - `invariant_violation_total{invariant="INV-*"}` - Counter of violations
@@ -342,16 +390,16 @@ Production systems should monitor invariant violations via metrics:
 
 ---
 
-## 8. Maintenance
+## 9. Maintenance
 
-### 8.1 Adding New Invariants
+### 9.1 Adding New Invariants
 
 1. Document in this file with clear formal statement
 2. Implement property test in appropriate test file
 3. Add to CI workflow
 4. Update `VALIDATION_SUMMARY.md` coverage table
 
-### 8.2 Handling Violations
+### 9.2 Handling Violations
 
 When property test fails:
 1. Examine shrunk counterexample
@@ -362,7 +410,7 @@ When property test fails:
 
 ---
 
-## 9. References
+## 10. References
 
 - **Property-Based Testing**: [Hypothesis documentation](https://hypothesis.readthedocs.io/)
 - **Formal Methods**: "Software Foundations" (Pierce et al.)
@@ -373,5 +421,5 @@ When property test fails:
 
 **Status**: ✅ Documented  
 **Coverage**: 100% of core modules  
-**Last Updated**: 2025-11-22  
+**Last Updated**: 2025-11-28  
 **Maintainer**: neuron7x

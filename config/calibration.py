@@ -351,6 +351,15 @@ class CognitiveControllerCalibration:
     max_processing_time_ms: float = 1000.0
 
     # -------------------------------------------------------------------------
+    # GLOBAL MEMORY BOUND (CORE-04)
+    # -------------------------------------------------------------------------
+    # Hard limit on total memory usage for the cognitive circuit:
+    # PELM + MultiLevelSynapticMemory + controller internal buffers
+    # Default: 1.4 GB = 1.4 * 1024^3 bytes
+    # Direction: ↑ allows more memory, ↓ stricter bound
+    max_memory_bytes: int = int(1.4 * 1024**3)
+
+    # -------------------------------------------------------------------------
     # AUTO-RECOVERY PARAMETERS
     # -------------------------------------------------------------------------
     # These parameters control automatic recovery after emergency_shutdown.
@@ -494,6 +503,7 @@ def get_calibration_summary() -> dict[str, dict[str, Any]]:
         "cognitive_controller": {
             "memory_threshold_mb": config.cognitive_controller.memory_threshold_mb,
             "max_processing_time_ms": config.cognitive_controller.max_processing_time_ms,
+            "max_memory_bytes": config.cognitive_controller.max_memory_bytes,
             "recovery_cooldown_steps": config.cognitive_controller.recovery_cooldown_steps,
             "recovery_memory_safety_ratio": config.cognitive_controller.recovery_memory_safety_ratio,
             "recovery_max_attempts": config.cognitive_controller.recovery_max_attempts,

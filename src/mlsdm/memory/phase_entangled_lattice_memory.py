@@ -245,6 +245,36 @@ class PhaseEntangledLatticeMemory:
             "memory_mb": round((self.memory_bank.nbytes + self.phase_bank.nbytes) / 1024**2, 2)
         }
 
+    def memory_usage_bytes(self) -> int:
+        """Calculate conservative memory usage estimate in bytes.
+
+        Returns:
+            Estimated memory usage including all arrays and metadata overhead.
+
+        Note:
+            This is a conservative estimate (10-20% overhead) to ensure we
+            never underestimate actual memory usage.
+        """
+        # Core numpy arrays
+        memory_bank_bytes = self.memory_bank.nbytes  # capacity × dimension × float32
+        phase_bank_bytes = self.phase_bank.nbytes    # capacity × float32
+        norms_bytes = self.norms.nbytes              # capacity × float32
+
+        # Subtotal for arrays
+        array_bytes = memory_bank_bytes + phase_bank_bytes + norms_bytes
+
+        # Metadata overhead (conservative estimate for Python object overhead)
+        # Includes: dimension, capacity, pointer, size, checksum string,
+        # Lock object, and Python object headers
+        metadata_overhead = 1024  # ~1KB for metadata
+
+        # Conservative 15% overhead for potential fragmentation and internal
+        # Python structures
+        conservative_multiplier = 1.15
+
+        total_bytes = int((array_bytes + metadata_overhead) * conservative_multiplier)
+        return total_bytes
+
     def _compute_checksum(self) -> str:
         """Compute checksum for memory bank integrity validation."""
         # Create a hash of the used portion of memory banks
