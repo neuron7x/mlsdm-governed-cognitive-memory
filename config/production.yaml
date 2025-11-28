@@ -4,8 +4,8 @@
 # This is a production-ready configuration template with recommended
 # settings for deployment. Adjust values based on your requirements.
 #
-# For detailed parameter descriptions, see: src/utils/config_schema.py
-# For deployment guide, see: DEPLOYMENT_GUIDE.md
+# Schema documentation: src/mlsdm/utils/config_schema.py
+# Deployment Guide: DEPLOYMENT_GUIDE.md
 
 # ============================================================
 # System Configuration
@@ -133,4 +133,4 @@ neurolang:
 #   export MLSDM_COGNITIVE_RHYTHM__WAKE_DURATION=10
 #   export MLSDM_STRICT_MODE=false
 #
-# See src/utils/config_loader.py for details.
+# See src/mlsdm/utils/config_loader.py for details.

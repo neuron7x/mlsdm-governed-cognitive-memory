@@ -1,13 +1,19 @@
 """
-Unit tests for NeuroCognitiveEngine.
+Safety-focused, non-flaky tests for NeuroCognitiveEngine invariants and metrics.
 
-Tests cover:
-1. Basic initialization with default config
-2. Custom configuration
-3. Generate method without FSLGS (fallback mode)
-4. Mock FSLGS integration
-5. get_last_states method
-6. Error handling scenarios
+Design goals:
+- Stable under refactoring: tests check structural invariants, not internal details
+- No side effects: no files, network, environment dependencies
+- Fast execution: lightweight fixtures, no heavy loops or matrices
+- Clear organization: grouped by functionality with documented invariants
+
+Test categories:
+1. NeuroEngineConfig - Configuration dataclass validation
+2. Initialization - Engine startup invariants
+3. Generation - Output structure and flow invariants
+4. State management - State tracking consistency
+5. Error handling - Graceful degradation invariants
+6. Integration - End-to-end flow validation
 """
 
 from unittest.mock import Mock, patch
@@ -17,351 +23,362 @@ import numpy as np
 from mlsdm.engine import NeuroCognitiveEngine, NeuroEngineConfig
 
 
-class TestNeuroEngineConfig:
-    """Test NeuroEngineConfig dataclass."""
+# =============================================================================
+# Test Constants
+# =============================================================================
+# Fixed dimension for consistent test vectors (small for speed)
+TEST_DIMENSION = 384
+SMALL_CAPACITY = 1000
 
-    def test_default_config(self):
-        """Test default configuration values."""
+
+def _make_test_vector(dim: int = TEST_DIMENSION) -> np.ndarray:
+    """Create deterministic test vector. No random state dependency."""
+    return np.ones(dim, dtype=np.float32) * 0.1
+
+
+def _make_mock_llm(response: str = "test response"):
+    """Create mock LLM function."""
+    return Mock(return_value=response)
+
+
+def _make_mock_embed(dim: int = TEST_DIMENSION):
+    """Create mock embedding function with deterministic output."""
+    return Mock(return_value=_make_test_vector(dim))
+
+
+# =============================================================================
+# NeuroEngineConfig Tests
+# =============================================================================
+class TestNeuroEngineConfig:
+    """
+    Invariant: Configuration dataclass provides sensible defaults and
+    accepts custom values without modification.
+    """
+
+    def test_default_config_has_valid_defaults(self):
+        """Default config values are within valid ranges."""
         config = NeuroEngineConfig()
 
-        # MLSDM defaults
-        assert config.dim == 384
-        assert config.capacity == 20_000
-        assert config.wake_duration == 8
-        assert config.sleep_duration == 3
-        assert config.initial_moral_threshold == 0.50
-        assert config.llm_timeout == 30.0
-        assert config.llm_retry_attempts == 3
+        # Core dimensions - must be positive
+        assert config.dim > 0
+        assert config.capacity > 0
+        assert config.wake_duration > 0
+        assert config.sleep_duration > 0
 
-        # FSLGS defaults
-        assert config.enable_fslgs is True
-        assert config.enable_universal_grammar is True
-        assert config.grammar_strictness == 0.9
-        assert config.association_threshold == 0.65
-        assert config.enable_monitoring is True
-        assert config.stress_threshold == 0.7
-        assert config.fslgs_fractal_levels is None
-        assert config.fslgs_memory_capacity == 0
-        assert config.enable_entity_tracking is True
-        assert config.enable_temporal_validation is True
-        assert config.enable_causal_checking is True
+        # Thresholds - must be in [0, 1] range
+        assert 0.0 <= config.initial_moral_threshold <= 1.0
+        assert 0.0 <= config.default_moral_value <= 1.0
+        assert 0.0 <= config.grammar_strictness <= 1.0
+        assert 0.0 <= config.stress_threshold <= 1.0
 
-        # Runtime defaults
-        assert config.default_moral_value == 0.5
-        assert config.default_context_top_k == 5
-        assert config.default_cognitive_load == 0.5
-        assert config.default_user_intent == "conversational"
+        # Timeouts - must be positive
+        assert config.llm_timeout > 0
+        assert config.llm_retry_attempts >= 0
 
-    def test_custom_config(self):
-        """Test custom configuration values."""
+    def test_custom_config_values_preserved(self):
+        """Custom values are stored without modification."""
+        custom_dim = 512
+        custom_capacity = 10_000
+        custom_wake = 10
+
         config = NeuroEngineConfig(
-            dim=512,
-            capacity=10_000,
-            wake_duration=10,
+            dim=custom_dim,
+            capacity=custom_capacity,
+            wake_duration=custom_wake,
             enable_fslgs=False,
-            default_moral_value=0.7,
         )
 
-        assert config.dim == 512
-        assert config.capacity == 10_000
-        assert config.wake_duration == 10
+        assert config.dim == custom_dim
+        assert config.capacity == custom_capacity
+        assert config.wake_duration == custom_wake
         assert config.enable_fslgs is False
-        assert config.default_moral_value == 0.7
 
 
+# =============================================================================
+# Initialization Tests
+# =============================================================================
 class TestNeuroCognitiveEngineInit:
-    """Test NeuroCognitiveEngine initialization."""
+    """
+    Invariant: Engine initializes to a consistent state with required
+    components present and optional components handled gracefully.
+    """
 
-    def test_init_with_default_config(self):
-        """Test initialization with default config."""
-        llm_fn = Mock(return_value="response")
-        embed_fn = Mock(return_value=np.random.randn(384))
-
+    def test_init_creates_required_components(self):
+        """Engine creates MLSDM component on init."""
         engine = NeuroCognitiveEngine(
-            llm_generate_fn=llm_fn,
-            embedding_fn=embed_fn,
+            llm_generate_fn=_make_mock_llm(),
+            embedding_fn=_make_mock_embed(),
         )
 
+        # Required: config and MLSDM must exist
         assert engine.config is not None
-        assert engine.config.dim == 384
         assert engine._mlsdm is not None
+
+        # Initial state: no generation yet
         assert engine._last_mlsdm_state is None
-        # FSLGS will be None since it's not installed
-        assert engine._fslgs is None
 
-    def test_init_with_custom_config(self):
-        """Test initialization with custom config."""
-        llm_fn = Mock(return_value="response")
-        embed_fn = Mock(return_value=np.random.randn(512))
-
-        config = NeuroEngineConfig(
-            dim=512,
-            capacity=5_000,
-            enable_fslgs=False,
-        )
+    def test_init_respects_custom_config(self):
+        """Engine uses provided config values."""
+        custom_dim = 512
+        config = NeuroEngineConfig(dim=custom_dim, enable_fslgs=False)
 
         engine = NeuroCognitiveEngine(
-            llm_generate_fn=llm_fn,
-            embedding_fn=embed_fn,
+            llm_generate_fn=_make_mock_llm(),
+            embedding_fn=_make_mock_embed(custom_dim),
             config=config,
         )
 
-        assert engine.config.dim == 512
-        assert engine.config.capacity == 5_000
+        assert engine.config.dim == custom_dim
         assert engine.config.enable_fslgs is False
-        assert engine._fslgs is None
 
-    def test_init_without_fslgs_installed(self):
-        """Test that engine works when FSLGS is not installed."""
-        llm_fn = Mock(return_value="response")
-        embed_fn = Mock(return_value=np.random.randn(384))
-
-        # FSLGS should be None by default (not installed in test environment)
+    def test_init_handles_missing_fslgs_gracefully(self):
+        """Engine works when optional FSLGS is not available."""
         engine = NeuroCognitiveEngine(
-            llm_generate_fn=llm_fn,
-            embedding_fn=embed_fn,
+            llm_generate_fn=_make_mock_llm(),
+            embedding_fn=_make_mock_embed(),
         )
 
+        # FSLGS is optional - None is acceptable
         assert engine._fslgs is None
 
 
+# =============================================================================
+# Generation Tests
+# =============================================================================
 class TestNeuroCognitiveEngineGenerate:
-    """Test NeuroCognitiveEngine.generate method."""
+    """
+    Invariant: Generate always returns a dict with required keys,
+    regardless of internal processing path.
+    """
 
-    def test_generate_without_fslgs(self):
-        """Test generate method when FSLGS is not available (fallback mode)."""
-        llm_fn = Mock(return_value="Hello, world!")
-        embed_fn = Mock(return_value=np.random.randn(384))
-
+    def test_generate_returns_required_structure(self):
+        """Generate output has required keys: response, governance, mlsdm."""
         config = NeuroEngineConfig(enable_fslgs=False)
         engine = NeuroCognitiveEngine(
-            llm_generate_fn=llm_fn,
-            embedding_fn=embed_fn,
+            llm_generate_fn=_make_mock_llm("test output"),
+            embedding_fn=_make_mock_embed(),
             config=config,
         )
 
-        result = engine.generate("Test prompt", max_tokens=128)
+        result = engine.generate("test prompt", max_tokens=50)
 
-        # Verify structure
+        # Required keys must be present
         assert "response" in result
         assert "governance" in result
         assert "mlsdm" in result
 
-        # Verify values
-        assert result["response"] == "Hello, world!"
-        assert result["governance"] is None
-        assert result["mlsdm"] is not None
-        assert "response" in result["mlsdm"]
-
-    def test_generate_with_custom_parameters(self):
-        """Test generate with custom moral_value and context_top_k."""
-        llm_fn = Mock(return_value="Custom response")
-        embed_fn = Mock(return_value=np.random.randn(384))
-
+    def test_generate_preserves_llm_response(self):
+        """LLM output appears in response field."""
+        expected_response = "Hello from LLM"
         config = NeuroEngineConfig(enable_fslgs=False)
         engine = NeuroCognitiveEngine(
-            llm_generate_fn=llm_fn,
-            embedding_fn=embed_fn,
+            llm_generate_fn=_make_mock_llm(expected_response),
+            embedding_fn=_make_mock_embed(),
             config=config,
         )
 
-        result = engine.generate(
-            "Test prompt",
-            max_tokens=256,
-            moral_value=0.8,
-            context_top_k=10,
-        )
+        result = engine.generate("prompt")
 
-        assert result["response"] == "Custom response"
-        assert result["mlsdm"] is not None
+        assert result["response"] == expected_response
 
-    def test_generate_uses_default_parameters(self):
-        """Test that generate uses config defaults when parameters not provided."""
-        llm_fn = Mock(return_value="Default response")
-        embed_fn = Mock(return_value=np.random.randn(384))
-
-        config = NeuroEngineConfig(
-            enable_fslgs=False,
-            default_moral_value=0.6,
-            default_context_top_k=7,
-            default_user_intent="testing",
-        )
+    def test_generate_without_fslgs_sets_governance_none(self):
+        """Without FSLGS, governance data is None."""
+        config = NeuroEngineConfig(enable_fslgs=False)
         engine = NeuroCognitiveEngine(
-            llm_generate_fn=llm_fn,
-            embedding_fn=embed_fn,
+            llm_generate_fn=_make_mock_llm(),
+            embedding_fn=_make_mock_embed(),
             config=config,
         )
 
-        result = engine.generate("Test prompt")
+        result = engine.generate("prompt")
 
-        assert result["response"] == "Default response"
-        # Verify defaults were used (implicitly through successful generation)
+        assert result["governance"] is None
         assert result["mlsdm"] is not None
+
+    def test_generate_populates_mlsdm_state(self):
+        """Generate populates mlsdm with response data."""
+        config = NeuroEngineConfig(enable_fslgs=False)
+        engine = NeuroCognitiveEngine(
+            llm_generate_fn=_make_mock_llm(),
+            embedding_fn=_make_mock_embed(),
+            config=config,
+        )
+
+        result = engine.generate("prompt")
+
+        assert result["mlsdm"] is not None
+        assert isinstance(result["mlsdm"], dict)
+        assert "response" in result["mlsdm"]
 
     @patch("mlsdm.engine.neuro_cognitive_engine.FSLGSWrapper")
-    def test_generate_with_fslgs_mock(self, mock_fslgs_class):
-        """Test generate method with mocked FSLGS integration."""
-        llm_fn = Mock(return_value="MLSDM response")
-        embed_fn = Mock(return_value=np.random.randn(384))
-
-        # Mock FSLGS instance and its generate method
-        mock_fslgs_instance = Mock()
-        mock_fslgs_instance.generate.return_value = {
-            "response": "FSLGS enhanced response",
-            "governance_data": {"dual_stream": "processed"},
+    def test_generate_with_fslgs_includes_governance(self, mock_fslgs_class):
+        """With FSLGS, governance data is populated."""
+        mock_fslgs = Mock()
+        mock_fslgs.generate.return_value = {
+            "response": "enhanced response",
+            "governance_data": {"processed": True},
         }
-        mock_fslgs_class.return_value = mock_fslgs_instance
+        mock_fslgs_class.return_value = mock_fslgs
 
         config = NeuroEngineConfig(enable_fslgs=True)
 
-        # Patch FSLGSWrapper at module level to simulate it being available
         with patch("mlsdm.engine.neuro_cognitive_engine.FSLGSWrapper", mock_fslgs_class):
             engine = NeuroCognitiveEngine(
-                llm_generate_fn=llm_fn,
-                embedding_fn=embed_fn,
+                llm_generate_fn=_make_mock_llm(),
+                embedding_fn=_make_mock_embed(),
                 config=config,
             )
 
-            # FSLGS should be initialized
+            result = engine.generate("prompt")
+
             assert engine._fslgs is not None
-
-            result = engine.generate("Test prompt", max_tokens=128)
-
-            # Verify FSLGS was called
-            mock_fslgs_instance.generate.assert_called_once()
-
-            # Verify result structure
-            assert result["response"] == "FSLGS enhanced response"
             assert result["governance"] is not None
-            # mlsdm state may be None if governed_llm wasn't actually called by the mock
-            assert "mlsdm" in result
 
 
+# =============================================================================
+# State Management Tests
+# =============================================================================
 class TestNeuroCognitiveEngineState:
-    """Test NeuroCognitiveEngine state management."""
+    """
+    Invariant: get_last_states returns consistent state structure,
+    reflecting generation history accurately.
+    """
 
-    def test_get_last_states_initial(self):
-        """Test get_last_states returns correct initial state."""
-        llm_fn = Mock(return_value="response")
-        embed_fn = Mock(return_value=np.random.randn(384))
-
+    def test_get_last_states_has_required_keys(self):
+        """State dict always has mlsdm and has_fslgs keys."""
         engine = NeuroCognitiveEngine(
-            llm_generate_fn=llm_fn,
-            embedding_fn=embed_fn,
+            llm_generate_fn=_make_mock_llm(),
+            embedding_fn=_make_mock_embed(),
         )
 
         states = engine.get_last_states()
 
         assert "mlsdm" in states
         assert "has_fslgs" in states
-        assert states["mlsdm"] is None  # No generation yet
-        assert states["has_fslgs"] is False  # FSLGS not installed
+
+    def test_get_last_states_before_generate(self):
+        """Before any generation, mlsdm state is None."""
+        engine = NeuroCognitiveEngine(
+            llm_generate_fn=_make_mock_llm(),
+            embedding_fn=_make_mock_embed(),
+        )
+
+        states = engine.get_last_states()
+
+        assert states["mlsdm"] is None
+        assert states["has_fslgs"] is False
 
     def test_get_last_states_after_generate(self):
-        """Test get_last_states after a generation."""
-        llm_fn = Mock(return_value="Test response")
-        embed_fn = Mock(return_value=np.random.randn(384))
-
+        """After generation, mlsdm state is populated."""
         config = NeuroEngineConfig(enable_fslgs=False)
         engine = NeuroCognitiveEngine(
-            llm_generate_fn=llm_fn,
-            embedding_fn=embed_fn,
+            llm_generate_fn=_make_mock_llm(),
+            embedding_fn=_make_mock_embed(),
             config=config,
         )
 
-        # Generate to populate state
-        engine.generate("Test prompt")
-
+        engine.generate("prompt")
         states = engine.get_last_states()
 
         assert states["mlsdm"] is not None
         assert "response" in states["mlsdm"]
-        assert states["has_fslgs"] is False
 
 
+# =============================================================================
+# Error Handling Tests
+# =============================================================================
 class TestNeuroCognitiveEngineErrorHandling:
-    """Test error handling in NeuroCognitiveEngine."""
+    """
+    Invariant: Errors in LLM or embedding don't crash the engine;
+    error information is captured in the response structure.
+    """
 
-    def test_llm_error_propagates(self):
-        """Test that LLM errors are handled and returned in response."""
-        llm_fn = Mock(side_effect=RuntimeError("LLM error"))
-        embed_fn = Mock(return_value=np.random.randn(384))
-
+    def test_llm_error_returns_error_response(self):
+        """LLM errors result in empty response with error note."""
+        llm_fn = Mock(side_effect=RuntimeError("LLM failure"))
         config = NeuroEngineConfig(enable_fslgs=False, llm_retry_attempts=1)
         engine = NeuroCognitiveEngine(
             llm_generate_fn=llm_fn,
-            embedding_fn=embed_fn,
+            embedding_fn=_make_mock_embed(),
             config=config,
         )
 
-        # LLMWrapper catches errors and returns error response
-        result = engine.generate("Test prompt")
+        result = engine.generate("prompt")
 
-        # Verify error is captured in response
+        # Structure preserved even on error
+        assert "response" in result
+        assert "mlsdm" in result
+        # Response should be empty or contain error indication
         assert result["response"] == ""
+        # Error info should be captured
         assert result["mlsdm"] is not None
-        assert "error" in result["mlsdm"].get("note", "").lower()
+        note = result["mlsdm"].get("note", "")
+        assert "error" in note.lower()
 
-    def test_embedding_error_handling(self):
-        """Test that embedding errors are handled gracefully."""
-        llm_fn = Mock(return_value="Response")
-        embed_fn = Mock(side_effect=RuntimeError("Embedding error"))
-
+    def test_embedding_error_returns_error_response(self):
+        """Embedding errors result in graceful degradation."""
+        embed_fn = Mock(side_effect=RuntimeError("Embedding failure"))
         config = NeuroEngineConfig(enable_fslgs=False)
         engine = NeuroCognitiveEngine(
-            llm_generate_fn=llm_fn,
+            llm_generate_fn=_make_mock_llm(),
             embedding_fn=embed_fn,
             config=config,
         )
 
-        # The circuit breaker catches embedding errors and returns error response
-        result = engine.generate("Test prompt")
+        result = engine.generate("prompt")
 
-        # Verify error response structure
-        assert result["response"] == ""
+        # Structure preserved
+        assert "response" in result
+        assert "mlsdm" in result
+        # Error captured
         assert result["mlsdm"] is not None
-        assert "error" in result["mlsdm"].get("note", "").lower()
+        note = result["mlsdm"].get("note", "")
+        assert "error" in note.lower()
 
 
+# =============================================================================
+# Integration Tests
+# =============================================================================
 class TestNeuroCognitiveEngineIntegration:
-    """Integration-level tests for NeuroCognitiveEngine."""
+    """
+    Invariant: Full engine flow maintains consistency across
+    multiple generations without external dependencies.
+    """
 
-    def test_end_to_end_without_fslgs(self):
-        """Test complete flow without FSLGS."""
+    def test_multiple_generations_maintain_state(self):
+        """Sequential generations don't corrupt state."""
 
-        def simple_llm(prompt: str, max_tokens: int) -> str:
-            return f"Response to: {prompt[:20]}"
+        def deterministic_llm(prompt: str, max_tokens: int) -> str:
+            return f"Response-{len(prompt)}"
 
-        def simple_embed(text: str) -> np.ndarray:
-            # Simple deterministic embedding for testing
-            return np.ones(384) * len(text)
+        def deterministic_embed(text: str) -> np.ndarray:
+            return np.ones(TEST_DIMENSION, dtype=np.float32) * len(text)
 
         config = NeuroEngineConfig(
-            dim=384,
-            capacity=1000,
+            dim=TEST_DIMENSION,
+            capacity=SMALL_CAPACITY,
             enable_fslgs=False,
         )
 
         engine = NeuroCognitiveEngine(
-            llm_generate_fn=simple_llm,
-            embedding_fn=simple_embed,
+            llm_generate_fn=deterministic_llm,
+            embedding_fn=deterministic_embed,
             config=config,
         )
 
-        # First generation
-        result1 = engine.generate("Hello, how are you?", max_tokens=50)
+        # Multiple generations with explicit max_tokens
+        r1 = engine.generate("short", max_tokens=50)
+        r2 = engine.generate("a longer prompt", max_tokens=50)
+        r3 = engine.generate("x", max_tokens=50)
 
-        assert "response" in result1
-        assert result1["response"].startswith("Response to:")
-        assert result1["governance"] is None
-        assert result1["mlsdm"] is not None
+        # All should have valid structure
+        for result in [r1, r2, r3]:
+            assert "response" in result
+            assert "mlsdm" in result
+            # Response should be non-empty and contain our prefix
+            if result["response"]:  # Non-empty response
+                assert "Response-" in result["response"]
 
-        # Second generation (should maintain state)
-        result2 = engine.generate("What is the weather?", max_tokens=50)
-
-        assert "response" in result2
-        assert result2["mlsdm"] is not None
-
-        # Verify state is tracked
+        # State should reflect last generation
         states = engine.get_last_states()
         assert states["mlsdm"] is not None

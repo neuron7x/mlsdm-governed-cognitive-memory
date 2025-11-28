@@ -4,7 +4,7 @@
 # This configuration is suitable for development and testing.
 # For production deployments, use config/production.yaml
 #
-# Documentation: src/utils/config_schema.py
+# Schema documentation: src/mlsdm/utils/config_schema.py
 # Deployment Guide: DEPLOYMENT_GUIDE.md
 
 # Vector dimension (10 for testing, use 384+ in production)
