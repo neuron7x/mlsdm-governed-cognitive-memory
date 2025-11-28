@@ -11,11 +11,10 @@ from pathlib import Path
 import pytest
 
 from tests.eval.aphasia_eval_suite import (
-    AphasiaEvalSuite,
     MIN_NORMAL_SAMPLES,
     MIN_TELEGRAPHIC_SAMPLES,
+    AphasiaEvalSuite,
 )
-
 
 # Declared thresholds from CLAIMS_TRACEABILITY.md
 # These represent the minimum acceptable performance levels

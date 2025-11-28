@@ -22,7 +22,6 @@ from typing import Any
 
 from mlsdm.extensions.neuro_lang_extension import AphasiaBrocaDetector
 
-
 # Minimum corpus sizes for reliable metrics
 MIN_TELEGRAPHIC_SAMPLES = 50
 MIN_NORMAL_SAMPLES = 50
