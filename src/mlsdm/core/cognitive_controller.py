@@ -1,7 +1,7 @@
 import logging
 import time
 from threading import Lock
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import numpy as np
 import psutil
@@ -11,26 +11,30 @@ from ..memory.multi_level_memory import MultiLevelSynapticMemory
 from ..memory.phase_entangled_lattice_memory import MemoryRetrieval, PhaseEntangledLatticeMemory
 from ..rhythm.cognitive_rhythm import CognitiveRhythm
 
+if TYPE_CHECKING:
+    from config.calibration import SynapticMemoryCalibration
+
 # Import recovery calibration parameters and synaptic memory defaults
+# Type annotations use Optional since module may not be available
+_SYNAPTIC_MEMORY_DEFAULTS: Optional["SynapticMemoryCalibration"] = None
+_get_synaptic_memory_config: Optional[Callable[[dict[str, Any] | None], "SynapticMemoryCalibration"]] = None
+
 try:
     from config.calibration import (
         COGNITIVE_CONTROLLER_DEFAULTS,
-        SYNAPTIC_MEMORY_DEFAULTS,
-        get_synaptic_memory_config,
+        SYNAPTIC_MEMORY_DEFAULTS as _IMPORTED_DEFAULTS,
+        get_synaptic_memory_config as _imported_get_config,
     )
     _CC_RECOVERY_COOLDOWN_STEPS = COGNITIVE_CONTROLLER_DEFAULTS.recovery_cooldown_steps
     _CC_RECOVERY_MEMORY_SAFETY_RATIO = COGNITIVE_CONTROLLER_DEFAULTS.recovery_memory_safety_ratio
     _CC_RECOVERY_MAX_ATTEMPTS = COGNITIVE_CONTROLLER_DEFAULTS.recovery_max_attempts
+    _SYNAPTIC_MEMORY_DEFAULTS = _IMPORTED_DEFAULTS
+    _get_synaptic_memory_config = _imported_get_config
 except ImportError:
     # Fallback defaults if calibration module is not available
     _CC_RECOVERY_COOLDOWN_STEPS = 10
     _CC_RECOVERY_MEMORY_SAFETY_RATIO = 0.8
     _CC_RECOVERY_MAX_ATTEMPTS = 3
-    SYNAPTIC_MEMORY_DEFAULTS = None
-    get_synaptic_memory_config = None  # type: ignore[assignment, misc]
-
-if TYPE_CHECKING:
-    from config.calibration import SynapticMemoryCalibration
 
 logger = logging.getLogger(__name__)
 
@@ -65,12 +69,12 @@ class CognitiveController:
 
         # Resolve synaptic memory configuration:
         # Priority: synaptic_config > yaml_config > SYNAPTIC_MEMORY_DEFAULTS
-        resolved_config = synaptic_config
+        resolved_config: Optional["SynapticMemoryCalibration"] = synaptic_config
         if resolved_config is None and yaml_config is not None:
-            if get_synaptic_memory_config is not None:
-                resolved_config = get_synaptic_memory_config(yaml_config)
+            if _get_synaptic_memory_config is not None:
+                resolved_config = _get_synaptic_memory_config(yaml_config)
         if resolved_config is None:
-            resolved_config = SYNAPTIC_MEMORY_DEFAULTS
+            resolved_config = _SYNAPTIC_MEMORY_DEFAULTS
 
         self.synaptic = MultiLevelSynapticMemory(dimension=dim, config=resolved_config)
         self.step_counter = 0

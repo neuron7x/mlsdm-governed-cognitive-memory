@@ -1,22 +1,25 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
-
-# Import calibration defaults for consistent parameter values
-try:
-    from config.calibration import SYNAPTIC_MEMORY_DEFAULTS
-except ImportError:
-    # Fallback if calibration module is not available
-    SYNAPTIC_MEMORY_DEFAULTS = None
 
 if TYPE_CHECKING:
     from config.calibration import SynapticMemoryCalibration
 
+# Import calibration defaults for consistent parameter values
+# Type annotation uses Optional since module may not be available
+_SYNAPTIC_MEMORY_DEFAULTS: Optional["SynapticMemoryCalibration"] = None
+try:
+    from config.calibration import SYNAPTIC_MEMORY_DEFAULTS as _IMPORTED_DEFAULTS
+    _SYNAPTIC_MEMORY_DEFAULTS = _IMPORTED_DEFAULTS
+except ImportError:
+    # Fallback if calibration module is not available - already None
+    pass
+
 
 # Helper to get default value from calibration or fallback
 def _get_default(attr: str, fallback: float) -> float:
-    if SYNAPTIC_MEMORY_DEFAULTS is not None:
-        return getattr(SYNAPTIC_MEMORY_DEFAULTS, attr, fallback)
+    if _SYNAPTIC_MEMORY_DEFAULTS is not None:
+        return getattr(_SYNAPTIC_MEMORY_DEFAULTS, attr, fallback)
     return fallback
 
 
