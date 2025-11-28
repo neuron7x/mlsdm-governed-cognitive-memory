@@ -257,29 +257,48 @@ dt ≤ min(h² / (4D), 1/k)
 
 ### 5.3 NaN/Inf Detection
 
-All engines implement post-step validation:
+All engines implement post-step validation. Example from MembraneEngine:
 
 ```python
 def _validate_state(self) -> None:
-    if np.any(np.isnan(self.state)) or np.any(np.isinf(self.state)):
-        raise StabilityError("NaN or Inf detected in state")
-    if np.any(self.state < self.min_value) or np.any(self.state > self.max_value):
-        raise ValueOutOfRangeError(f"State outside [{self.min_value}, {self.max_value}]")
+    has_nan = bool(np.any(np.isnan(self._V)))
+    has_inf = bool(np.any(np.isinf(self._V)))
+
+    if has_nan or has_inf:
+        raise StabilityError(
+            "NaN or Inf detected in membrane potential",
+            step=self._step_count,
+            engine=self.ENGINE_NAME,
+            has_nan=has_nan,
+            has_inf=has_inf,
+        )
+
+    v_min, v_max = float(np.min(self._V)), float(np.max(self._V))
+    if v_min < self.config.V_min or v_max > self.config.V_max:
+        if self.config.clamp_values:
+            np.clip(self._V, self.config.V_min, self.config.V_max, out=self._V)
+        else:
+            raise ValueOutOfRangeError(
+                variable_name="V",
+                value=v_min if v_min < self.config.V_min else v_max,
+                min_value=self.config.V_min,
+                max_value=self.config.V_max,
+            )
 ```
 
 ### 5.4 Metrics Collection
 
-Each engine collects per-step statistics:
+Each engine collects per-step statistics via dataclass metrics:
 
 ```python
-metrics = {
-    "max": float(np.max(state)),
-    "min": float(np.min(state)),
-    "mean": float(np.mean(state)),
-    "std": float(np.std(state)),
-    "steps_completed": int,
-    "stability_violations": int,
-}
+@dataclass
+class MembraneMetrics:
+    max_V: float = float("-inf")
+    min_V: float = float("inf")
+    mean_V: float = 0.0
+    std_V: float = 0.0
+    steps_completed: int = 0
+    stability_violations: int = 0
 ```
 
 ---

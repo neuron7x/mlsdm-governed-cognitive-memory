@@ -49,9 +49,9 @@ class TestMembraneEngineInitialization:
             MembraneEngine(config)
 
     def test_invalid_tau_raises(self) -> None:
-        """Test that tau <= 0 raises ValueError."""
-        config = MembraneConfig(tau=-1.0)
-        with pytest.raises(ValueError, match="tau must be positive"):
+        """Test that tau outside range raises ValueError."""
+        config = MembraneConfig(tau=0.5)  # Below minimum of 1.0
+        with pytest.raises(ValueError, match="tau must be in"):
             MembraneEngine(config)
 
     def test_euler_stability_check(self) -> None:

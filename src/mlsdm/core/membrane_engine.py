@@ -96,12 +96,10 @@ class MembraneConfig:
         """
         if self.n_units <= 0:
             raise ValueError(f"n_units must be positive, got {self.n_units}")
-        if self.tau <= 0:
-            raise ValueError(f"tau must be positive, got {self.tau}")
-        if not (0.01 <= self.g_L <= 1.0):
-            raise ValueError(f"g_L must be in [0.01, 1.0], got {self.g_L}")
         if not (1.0 <= self.tau <= 100.0):
             raise ValueError(f"tau must be in [1.0, 100.0], got {self.tau}")
+        if not (0.01 <= self.g_L <= 1.0):
+            raise ValueError(f"g_L must be in [0.01, 1.0], got {self.g_L}")
         if self.dt <= 0:
             raise ValueError(f"dt must be positive, got {self.dt}")
         if self.V_min >= self.V_max:

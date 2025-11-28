@@ -252,7 +252,6 @@ class ReactionDiffusionEngine:
 
         self._step_count = 0
         self._stability_violations = 0
-        self._rng = np.random.default_rng(self.config.random_seed)
 
     @property
     def u(self) -> np.ndarray:
