@@ -18,7 +18,6 @@ from mlsdm.core.cognitive_controller import CognitiveController
 from mlsdm.memory.multi_level_memory import MultiLevelSynapticMemory
 from mlsdm.memory.phase_entangled_lattice_memory import PhaseEntangledLatticeMemory
 
-
 # ============================================================================
 # Test Constants - Using small values for CI-friendly tests
 # ============================================================================
@@ -313,7 +312,7 @@ class TestScenarioB_ForcedEmergencyShutdown:
 
         # Process an event - should trigger shutdown
         vec = np.random.randn(16).astype(np.float32)
-        result = controller.process_event(vec, moral_value=0.8)
+        controller.process_event(vec, moral_value=0.8)
 
         # Should be in emergency shutdown
         assert controller.emergency_shutdown, \
@@ -328,13 +327,11 @@ class TestScenarioB_ForcedEmergencyShutdown:
         controller = CognitiveController(dim=16, max_memory_bytes=small_limit)
 
         # Process events until shutdown
-        events_until_shutdown = 0
         for i in range(100):
             vec = np.random.randn(16).astype(np.float32)
-            result = controller.process_event(vec, moral_value=0.8)
+            controller.process_event(vec, moral_value=0.8)
 
             if controller.emergency_shutdown:
-                events_until_shutdown = i + 1
                 break
 
         # Capture memory usage at shutdown
