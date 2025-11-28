@@ -10,11 +10,14 @@ Usage:
     python scripts/security_audit.py [--fix] [--report]
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 
 def check_pip_audit_installed() -> bool:
@@ -46,7 +49,7 @@ def install_pip_audit() -> bool:
         return False
 
 
-def run_pip_audit(fix: bool = False) -> tuple[bool, dict]:
+def run_pip_audit(fix: bool = False) -> tuple[bool, dict[str, Any]]:
     """Run pip-audit to check for vulnerabilities.
 
     Args:
@@ -251,20 +254,27 @@ def generate_security_report(
     return "\n".join(report)
 
 
-def main():
-    """Main entry point."""
+def main(argv: list[str] | None = None) -> int:
+    """Main entry point.
+
+    Args:
+        argv: Command-line arguments (defaults to sys.argv)
+
+    Returns:
+        Exit code (0 for success, non-zero for failure)
+    """
     parser = argparse.ArgumentParser(description="Security audit for MLSDM Cognitive Memory")
     parser.add_argument(
         "--fix",
         action="store_true",
-        help="Attempt to fix vulnerabilities by upgrading packages"
+        help="Attempt to fix vulnerabilities by upgrading packages",
     )
     parser.add_argument(
         "--report",
         type=str,
-        help="Save report to file"
+        help="Save report to file",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     print("MLSDM Governed Cognitive Memory - Security Audit")
     print("=" * 60)
