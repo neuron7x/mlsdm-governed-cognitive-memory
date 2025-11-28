@@ -1,33 +1,73 @@
 #!/usr/bin/env python3
-"""
-Benchmark script for FractalPELMGPU experimental memory module.
+"""Benchmark script for FractalPELMGPU experimental memory module.
 
 This script demonstrates basic usage and performance characteristics
 of the GPU/CPU backend for phase-aware retrieval.
 
 NOT integrated into CI - for manual runs only.
 
-Run: python benchmarks/benchmark_fractal_pelm_gpu.py
+Usage:
+    python benchmarks/benchmark_fractal_pelm_gpu.py
+    python benchmarks/benchmark_fractal_pelm_gpu.py --mode quick
+    python benchmarks/benchmark_fractal_pelm_gpu.py --mode full --num-vectors 10000
+
+Modes:
+    quick: Reduced workload for fast validation (default)
+    full: Complete stress test with larger datasets
 """
 
+from __future__ import annotations
+
+import argparse
 import gc
+import logging
+import sys
 import time
 import tracemalloc
 
 import numpy as np
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+)
+logger = logging.getLogger(__name__)
 
-def check_torch_available():
-    """Check if torch is available."""
+
+def check_torch_available() -> tuple[bool, str | None, bool]:
+    """Check if torch is available.
+
+    Returns:
+        Tuple of (torch_available, version, cuda_available)
+    """
     try:
         import torch
+
         return True, torch.__version__, torch.cuda.is_available()
     except ImportError:
         return False, None, False
 
 
-def benchmark_fractal_pelm_gpu():
-    """Run FractalPELMGPU benchmark."""
+def benchmark_fractal_pelm_gpu(
+    num_vectors: int = 5_000,
+    num_queries: int = 100,
+    dimension: int = 384,
+    capacity: int = 10_000,
+    top_k: int = 10,
+) -> int:
+    """Run FractalPELMGPU benchmark.
+
+    Args:
+        num_vectors: Number of vectors to store
+        num_queries: Number of queries to run
+        dimension: Vector dimension
+        capacity: Memory capacity
+        top_k: Number of results to retrieve
+
+    Returns:
+        Exit code (0 for success, non-zero for failure)
+    """
     torch_available, torch_version, cuda_available = check_torch_available()
 
     print("=" * 70)
@@ -43,17 +83,10 @@ def benchmark_fractal_pelm_gpu():
     if not torch_available:
         print("ERROR: PyTorch is required for this benchmark.")
         print("Install with: pip install mlsdm[neurolang]")
-        return
+        return 1
 
     # Import after checking
     from mlsdm.memory.experimental import FractalPELMGPU
-
-    # Configuration
-    dimension = 384
-    capacity = 10_000
-    num_vectors = 5_000
-    num_queries = 100
-    top_k = 10
 
     print("Configuration:")
     print(f"  Dimension: {dimension}")
@@ -185,7 +218,61 @@ def benchmark_fractal_pelm_gpu():
     print()
     print("=" * 70)
     print("Benchmark complete.")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Main entry point.
+
+    Args:
+        argv: Command-line arguments (defaults to sys.argv)
+
+    Returns:
+        Exit code (0 for success, non-zero for failure)
+    """
+    parser = argparse.ArgumentParser(
+        description="FractalPELMGPU benchmark for experimental memory module",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Modes:
+  quick - Reduced workload for fast validation (1000 vectors, 50 queries)
+  full  - Complete stress test (10000 vectors, 500 queries)
+        """,
+    )
+    parser.add_argument(
+        "--mode",
+        type=str,
+        choices=["quick", "full"],
+        default="quick",
+        help="Benchmark mode (default: quick)",
+    )
+    parser.add_argument(
+        "--num-vectors",
+        type=int,
+        default=None,
+        help="Override number of vectors to store",
+    )
+    parser.add_argument(
+        "--num-queries",
+        type=int,
+        default=None,
+        help="Override number of queries to run",
+    )
+    args = parser.parse_args(argv)
+
+    # Set defaults based on mode
+    if args.mode == "quick":
+        num_vectors = args.num_vectors or 1_000
+        num_queries = args.num_queries or 50
+    else:  # full
+        num_vectors = args.num_vectors or 10_000
+        num_queries = args.num_queries or 500
+
+    return benchmark_fractal_pelm_gpu(
+        num_vectors=num_vectors,
+        num_queries=num_queries,
+    )
 
 
 if __name__ == "__main__":
-    benchmark_fractal_pelm_gpu()
+    sys.exit(main())

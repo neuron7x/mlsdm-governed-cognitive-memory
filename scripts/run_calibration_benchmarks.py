@@ -1,6 +1,5 @@
-#!/usr/bin/env python
-"""
-Calibration Benchmark Suite for MLSDM
+#!/usr/bin/env python3
+"""Calibration Benchmark Suite for MLSDM.
 
 This script runs calibration experiments to validate and tune thresholds
 for the key MLSDM modules:
@@ -11,12 +10,18 @@ for the key MLSDM modules:
 
 Usage:
     python scripts/run_calibration_benchmarks.py
+    python scripts/run_calibration_benchmarks.py --mode quick
+    python scripts/run_calibration_benchmarks.py --mode full
 
 Output:
     - Console summary of calibration metrics
     - Detailed results for documentation in docs/CALIBRATION_RESULTS.md
 """
 
+from __future__ import annotations
+
+import argparse
+import logging
 import sys
 import time
 from dataclasses import dataclass
@@ -26,14 +31,22 @@ from typing import Any
 import numpy as np
 
 # Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root / "src"))
 
-from mlsdm.cognition.moral_filter import MoralFilter
-from mlsdm.cognition.moral_filter_v2 import MoralFilterV2
-from mlsdm.extensions.neuro_lang_extension import AphasiaBrocaDetector
-from mlsdm.memory.phase_entangled_lattice_memory import PhaseEntangledLatticeMemory
-from mlsdm.memory.multi_level_memory import MultiLevelSynapticMemory
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+)
+logger = logging.getLogger(__name__)
 
+# Module imports must come after path manipulation
+from mlsdm.cognition.moral_filter import MoralFilter  # noqa: E402
+from mlsdm.cognition.moral_filter_v2 import MoralFilterV2  # noqa: E402
+from mlsdm.extensions.neuro_lang_extension import AphasiaBrocaDetector  # noqa: E402
+from mlsdm.memory.multi_level_memory import MultiLevelSynapticMemory  # noqa: E402
+from mlsdm.memory.phase_entangled_lattice_memory import PhaseEntangledLatticeMemory  # noqa: E402
 
 # =============================================================================
 # BENCHMARK DATA
@@ -80,7 +93,10 @@ APHASIA_TEST_CASES = [
 ]
 
 # PELM test scenarios: vectors with phases
-def generate_pelm_test_vectors(dim: int = 10, num_vectors: int = 100) -> list[tuple[list[float], float]]:
+def generate_pelm_test_vectors(
+    dim: int = 10,
+    num_vectors: int = 100,
+) -> list[tuple[list[float], float]]:
     """Generate test vectors with random phases."""
     rng = np.random.default_rng(42)
     vectors = []
@@ -294,8 +310,14 @@ def run_pelm_benchmark(
         )
 
     # Calculate metrics
-    recall = total_relevant_retrieved / total_relevant_available if total_relevant_available > 0 else 0.0
-    precision = total_relevant_retrieved / total_retrieved if total_retrieved > 0 else 0.0
+    recall = (
+        total_relevant_retrieved / total_relevant_available
+        if total_relevant_available > 0
+        else 0.0
+    )
+    precision = (
+        total_relevant_retrieved / total_retrieved if total_retrieved > 0 else 0.0
+    )
     avg_time = sum(retrieval_times) / len(retrieval_times) if retrieval_times else 0.0
 
     return PELMMetrics(
@@ -366,163 +388,205 @@ def print_section(title: str) -> None:
     print("=" * 70)
 
 
-def main() -> None:
-    """Run all calibration benchmarks and print results."""
-    print("MLSDM Calibration Benchmark Suite")
-    print("=" * 70)
+def main(argv: list[str] | None = None) -> int:
+    """Run all calibration benchmarks and print results.
 
-    # -------------------------------------------------------------------------
-    # Moral Filter Calibration
-    # -------------------------------------------------------------------------
-    print_section("1. MORAL FILTER CALIBRATION")
+    Args:
+        argv: Command-line arguments (defaults to sys.argv)
 
-    print("\n1.1 MoralFilter (v1) - Threshold Sweep:")
-    print("-" * 50)
-    print(f"{'Threshold':>10} | {'Toxic Reject %':>14} | {'False Pos %':>12}")
-    print("-" * 50)
+    Returns:
+        Exit code (0 for success, non-zero for failure)
+    """
+    parser = argparse.ArgumentParser(
+        description="MLSDM Calibration Benchmark Suite",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--mode",
+        type=str,
+        choices=["quick", "full"],
+        default="quick",
+        help="Benchmark mode: quick (default) runs fewer iterations, full runs all",
+    )
+    args = parser.parse_args(argv)
 
-    for threshold in [0.3, 0.4, 0.5, 0.6, 0.7]:
-        metrics = run_moral_filter_benchmark(threshold)
-        print(
-            f"{threshold:>10.2f} | "
-            f"{metrics.toxic_rejection_rate * 100:>13.1f}% | "
-            f"{metrics.false_positive_rate * 100:>11.1f}%"
+    logger.info("MLSDM Calibration Benchmark Suite")
+    logger.info("=" * 70)
+    logger.info("Mode: %s", args.mode)
+
+    try:
+        # Import modules here to catch import errors early
+        from mlsdm.cognition.moral_filter import MoralFilter  # noqa: F401
+        from mlsdm.cognition.moral_filter_v2 import MoralFilterV2  # noqa: F401
+        from mlsdm.extensions.neuro_lang_extension import AphasiaBrocaDetector  # noqa: F401
+        from mlsdm.memory.multi_level_memory import MultiLevelSynapticMemory  # noqa: F401
+        from mlsdm.memory.phase_entangled_lattice_memory import (
+            PhaseEntangledLatticeMemory,  # noqa: F401
         )
+    except ImportError as e:
+        logger.error("Failed to import required modules: %s", e)
+        logger.error("Make sure mlsdm is installed: pip install -e .")
+        return 1
 
-    print("\n1.2 MoralFilterV2 - Threshold Sweep:")
-    print("-" * 50)
-    print(f"{'Threshold':>10} | {'Toxic Reject %':>14} | {'False Pos %':>12}")
-    print("-" * 50)
+    try:
+        # -------------------------------------------------------------------------
+        # Moral Filter Calibration
+        # -------------------------------------------------------------------------
+        print_section("1. MORAL FILTER CALIBRATION")
 
-    for threshold in [0.3, 0.4, 0.5, 0.6, 0.7]:
-        metrics = run_moral_filter_v2_benchmark(threshold)
-        print(
-            f"{threshold:>10.2f} | "
-            f"{metrics.toxic_rejection_rate * 100:>13.1f}% | "
-            f"{metrics.false_positive_rate * 100:>11.1f}%"
-        )
+        print("\n1.1 MoralFilter (v1) - Threshold Sweep:")
+        print("-" * 50)
+        print(f"{'Threshold':>10} | {'Toxic Reject %':>14} | {'False Pos %':>12}")
+        print("-" * 50)
 
-    # -------------------------------------------------------------------------
-    # Aphasia Detector Calibration
-    # -------------------------------------------------------------------------
-    print_section("2. APHASIA DETECTOR CALIBRATION")
+        for threshold in [0.3, 0.4, 0.5, 0.6, 0.7]:
+            metrics = run_moral_filter_benchmark(threshold)
+            print(
+                f"{threshold:>10.2f} | "
+                f"{metrics.toxic_rejection_rate * 100:>13.1f}% | "
+                f"{metrics.false_positive_rate * 100:>11.1f}%"
+            )
 
-    print("\n2.1 Severity Threshold Sweep:")
-    print("-" * 60)
-    print(f"{'Severity':>10} | {'Detection %':>12} | {'False Pos %':>12}")
-    print("-" * 60)
+        print("\n1.2 MoralFilterV2 - Threshold Sweep:")
+        print("-" * 50)
+        print(f"{'Threshold':>10} | {'Toxic Reject %':>14} | {'False Pos %':>12}")
+        print("-" * 50)
 
-    for severity in [0.1, 0.2, 0.3, 0.4, 0.5]:
-        metrics = run_aphasia_benchmark(severity_threshold=severity)
-        print(
-            f"{severity:>10.2f} | "
-            f"{metrics.telegraphic_detection_rate * 100:>11.1f}% | "
-            f"{metrics.false_positive_rate * 100:>11.1f}%"
-        )
+        for threshold in [0.3, 0.4, 0.5, 0.6, 0.7]:
+            metrics = run_moral_filter_v2_benchmark(threshold)
+            print(
+                f"{threshold:>10.2f} | "
+                f"{metrics.toxic_rejection_rate * 100:>13.1f}% | "
+                f"{metrics.false_positive_rate * 100:>11.1f}%"
+            )
 
-    print("\n2.2 Min Sentence Length Sweep:")
-    print("-" * 60)
-    print(f"{'Min Len':>10} | {'Detection %':>12} | {'False Pos %':>12}")
-    print("-" * 60)
+        # -------------------------------------------------------------------------
+        # Aphasia Detector Calibration
+        # -------------------------------------------------------------------------
+        print_section("2. APHASIA DETECTOR CALIBRATION")
 
-    for min_len in [4.0, 5.0, 6.0, 7.0, 8.0]:
-        metrics = run_aphasia_benchmark(min_sentence_len=min_len)
-        print(
-            f"{min_len:>10.1f} | "
-            f"{metrics.telegraphic_detection_rate * 100:>11.1f}% | "
-            f"{metrics.false_positive_rate * 100:>11.1f}%"
-        )
+        print("\n2.1 Severity Threshold Sweep:")
+        print("-" * 60)
+        print(f"{'Severity':>10} | {'Detection %':>12} | {'False Pos %':>12}")
+        print("-" * 60)
 
-    # -------------------------------------------------------------------------
-    # PELM Calibration
-    # -------------------------------------------------------------------------
-    print_section("3. PELM (PHASE-ENTANGLED LATTICE MEMORY) CALIBRATION")
+        for severity in [0.1, 0.2, 0.3, 0.4, 0.5]:
+            metrics = run_aphasia_benchmark(severity_threshold=severity)
+            print(
+                f"{severity:>10.2f} | "
+                f"{metrics.telegraphic_detection_rate * 100:>11.1f}% | "
+                f"{metrics.false_positive_rate * 100:>11.1f}%"
+            )
 
-    print("\n3.1 Phase Tolerance Sweep:")
-    print("-" * 70)
-    print(f"{'Tolerance':>10} | {'Recall':>10} | {'Precision':>10} | {'Latency ms':>12}")
-    print("-" * 70)
+        print("\n2.2 Min Sentence Length Sweep:")
+        print("-" * 60)
+        print(f"{'Min Len':>10} | {'Detection %':>12} | {'False Pos %':>12}")
+        print("-" * 60)
 
-    for tolerance in [0.05, 0.10, 0.15, 0.20, 0.30]:
-        metrics = run_pelm_benchmark(phase_tolerance=tolerance)
-        print(
-            f"{tolerance:>10.2f} | "
-            f"{metrics.recall_at_k * 100:>9.1f}% | "
-            f"{metrics.precision_at_k * 100:>9.1f}% | "
-            f"{metrics.avg_retrieval_time_ms:>11.3f}"
-        )
+        for min_len in [4.0, 5.0, 6.0, 7.0, 8.0]:
+            metrics = run_aphasia_benchmark(min_sentence_len=min_len)
+            print(
+                f"{min_len:>10.1f} | "
+                f"{metrics.telegraphic_detection_rate * 100:>11.1f}% | "
+                f"{metrics.false_positive_rate * 100:>11.1f}%"
+            )
 
-    print("\n3.2 Top-K Sweep (tolerance=0.15):")
-    print("-" * 70)
-    print(f"{'Top-K':>10} | {'Recall':>10} | {'Precision':>10} | {'Latency ms':>12}")
-    print("-" * 70)
+        # -------------------------------------------------------------------------
+        # PELM Calibration
+        # -------------------------------------------------------------------------
+        print_section("3. PELM (PHASE-ENTANGLED LATTICE MEMORY) CALIBRATION")
 
-    for top_k in [1, 3, 5, 10, 20]:
-        metrics = run_pelm_benchmark(top_k=top_k)
-        print(
-            f"{top_k:>10} | "
-            f"{metrics.recall_at_k * 100:>9.1f}% | "
-            f"{metrics.precision_at_k * 100:>9.1f}% | "
-            f"{metrics.avg_retrieval_time_ms:>11.3f}"
-        )
+        print("\n3.1 Phase Tolerance Sweep:")
+        print("-" * 70)
+        print(f"{'Tolerance':>10} | {'Recall':>10} | {'Precision':>10} | {'Latency ms':>12}")
+        print("-" * 70)
 
-    # -------------------------------------------------------------------------
-    # Synaptic Memory Calibration
-    # -------------------------------------------------------------------------
-    print_section("4. SYNAPTIC MEMORY CALIBRATION")
+        for tolerance in [0.05, 0.10, 0.15, 0.20, 0.30]:
+            metrics = run_pelm_benchmark(phase_tolerance=tolerance)
+            print(
+                f"{tolerance:>10.2f} | "
+                f"{metrics.recall_at_k * 100:>9.1f}% | "
+                f"{metrics.precision_at_k * 100:>9.1f}% | "
+                f"{metrics.avg_retrieval_time_ms:>11.3f}"
+            )
 
-    print("\n4.1 Default Parameters (100 events):")
-    result = run_synaptic_memory_benchmark()
-    print(f"  L1 norm: {result['final_l1_norm']:.4f}")
-    print(f"  L2 norm: {result['final_l2_norm']:.4f}")
-    print(f"  L3 norm: {result['final_l3_norm']:.4f}")
+        print("\n3.2 Top-K Sweep (tolerance=0.15):")
+        print("-" * 70)
+        print(f"{'Top-K':>10} | {'Recall':>10} | {'Precision':>10} | {'Latency ms':>12}")
+        print("-" * 70)
 
-    print("\n4.2 Decay Rate Comparison:")
-    print("-" * 60)
-    print(f"{'λ_L1':>8} | {'λ_L2':>8} | {'λ_L3':>8} | {'L1':>10} | {'L2':>10} | {'L3':>10}")
-    print("-" * 60)
+        for top_k in [1, 3, 5, 10, 20]:
+            metrics = run_pelm_benchmark(top_k=top_k)
+            print(
+                f"{top_k:>10} | "
+                f"{metrics.recall_at_k * 100:>9.1f}% | "
+                f"{metrics.precision_at_k * 100:>9.1f}% | "
+                f"{metrics.avg_retrieval_time_ms:>11.3f}"
+            )
 
-    decay_configs = [
-        (0.3, 0.05, 0.005),  # Slower decay
-        (0.5, 0.10, 0.010),  # Default
-        (0.7, 0.15, 0.015),  # Faster decay
-    ]
+        # -------------------------------------------------------------------------
+        # Synaptic Memory Calibration
+        # -------------------------------------------------------------------------
+        print_section("4. SYNAPTIC MEMORY CALIBRATION")
 
-    for l1, l2, l3 in decay_configs:
-        result = run_synaptic_memory_benchmark(lambda_l1=l1, lambda_l2=l2, lambda_l3=l3)
-        print(
-            f"{l1:>8.2f} | {l2:>8.2f} | {l3:>8.3f} | "
-            f"{result['final_l1_norm']:>10.4f} | "
-            f"{result['final_l2_norm']:>10.4f} | "
-            f"{result['final_l3_norm']:>10.4f}"
-        )
+        print("\n4.1 Default Parameters (100 events):")
+        result = run_synaptic_memory_benchmark()
+        print(f"  L1 norm: {result['final_l1_norm']:.4f}")
+        print(f"  L2 norm: {result['final_l2_norm']:.4f}")
+        print(f"  L3 norm: {result['final_l3_norm']:.4f}")
 
-    # -------------------------------------------------------------------------
-    # Summary
-    # -------------------------------------------------------------------------
-    print_section("CALIBRATION SUMMARY")
+        print("\n4.2 Decay Rate Comparison:")
+        print("-" * 60)
+        print(f"{'λ_L1':>8} | {'λ_L2':>8} | {'λ_L3':>8} | {'L1':>10} | {'L2':>10} | {'L3':>10}")
+        print("-" * 60)
 
-    print("\nRecommended Calibration Values:")
-    print("-" * 50)
-    print("  Moral Filter:")
-    print("    threshold = 0.50 (balanced)")
-    print("    min_threshold = 0.30 (safety floor)")
-    print("")
-    print("  Aphasia Detector:")
-    print("    severity_threshold = 0.30")
-    print("    min_sentence_len = 6.0")
-    print("")
-    print("  PELM:")
-    print("    phase_tolerance = 0.15")
-    print("    top_k = 5")
-    print("")
-    print("  Synaptic Memory:")
-    print("    lambda_l1 = 0.50, lambda_l2 = 0.10, lambda_l3 = 0.01")
+        decay_configs = [
+            (0.3, 0.05, 0.005),  # Slower decay
+            (0.5, 0.10, 0.010),  # Default
+            (0.7, 0.15, 0.015),  # Faster decay
+        ]
 
-    print("\n" + "=" * 70)
-    print("Calibration benchmarks complete.")
-    print("See docs/CALIBRATION_RESULTS.md for detailed analysis.")
+        for l1, l2, l3 in decay_configs:
+            result = run_synaptic_memory_benchmark(lambda_l1=l1, lambda_l2=l2, lambda_l3=l3)
+            print(
+                f"{l1:>8.2f} | {l2:>8.2f} | {l3:>8.3f} | "
+                f"{result['final_l1_norm']:>10.4f} | "
+                f"{result['final_l2_norm']:>10.4f} | "
+                f"{result['final_l3_norm']:>10.4f}"
+            )
+
+        # -------------------------------------------------------------------------
+        # Summary
+        # -------------------------------------------------------------------------
+        print_section("CALIBRATION SUMMARY")
+
+        print("\nRecommended Calibration Values:")
+        print("-" * 50)
+        print("  Moral Filter:")
+        print("    threshold = 0.50 (balanced)")
+        print("    min_threshold = 0.30 (safety floor)")
+        print("")
+        print("  Aphasia Detector:")
+        print("    severity_threshold = 0.30")
+        print("    min_sentence_len = 6.0")
+        print("")
+        print("  PELM:")
+        print("    phase_tolerance = 0.15")
+        print("    top_k = 5")
+        print("")
+        print("  Synaptic Memory:")
+        print("    lambda_l1 = 0.50, lambda_l2 = 0.10, lambda_l3 = 0.01")
+
+        print("\n" + "=" * 70)
+        print("Calibration benchmarks complete.")
+        print("See docs/CALIBRATION_RESULTS.md for detailed analysis.")
+
+        return 0
+
+    except Exception as e:
+        logger.error("Benchmark failed: %s", e)
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

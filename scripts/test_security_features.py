@@ -1,36 +1,49 @@
 #!/usr/bin/env python3
-"""
-Integration test script for security features.
+"""Integration test script for security features.
 
 This script validates that all security features are working correctly
 by running comprehensive integration tests.
+
+Usage:
+    python scripts/test_security_features.py
 """
 
+from __future__ import annotations
+
+import argparse
+import logging
 import subprocess
 import sys
 from pathlib import Path
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+)
+logger = logging.getLogger(__name__)
 
-def run_command(cmd: list, description: str) -> tuple[bool, str]:
+
+def run_command(cmd: list[str], description: str) -> tuple[bool, str]:
     """Run a command and return success status and output.
-    
+
     Args:
         cmd: Command to run as list of strings
         description: Description of the test
-        
+
     Returns:
         Tuple of (success, output)
     """
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Running: {description}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     try:
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
-            check=False
+            check=False,
         )
 
         output = result.stdout + result.stderr
@@ -52,53 +65,80 @@ def run_command(cmd: list, description: str) -> tuple[bool, str]:
         return False, str(e)
 
 
-def main():
-    """Main test runner."""
-    print("="*60)
-    print("MLSDM Security Features Integration Test")
-    print("="*60)
+def main(argv: list[str] | None = None) -> int:
+    """Main test runner.
 
-    results = []
+    Args:
+        argv: Command-line arguments (defaults to sys.argv)
+
+    Returns:
+        Exit code (0 for success, non-zero for failure)
+    """
+    parser = argparse.ArgumentParser(
+        description="MLSDM Security Features Integration Test",
+    )
+    parser.parse_args(argv)  # Just for --help support
+
+    print("=" * 60)
+    print("MLSDM Security Features Integration Test")
+    print("=" * 60)
+
+    results: list[tuple[str, bool]] = []
 
     # Test 1: Security unit tests
-    success, output = run_command(
-        ["python", "-m", "pytest", "src/tests/unit/test_security.py", "-v", "--tb=short", "--no-cov"],
-        "Security Unit Tests"
+    success, _ = run_command(
+        [
+            "python", "-m", "pytest",
+            "src/tests/unit/test_security.py", "-v", "--tb=short", "--no-cov",
+        ],
+        "Security Unit Tests",
     )
     results.append(("Security Unit Tests", success))
 
     # Test 2: API tests with security features
-    success, output = run_command(
-        ["python", "-m", "pytest", "src/tests/unit/test_api.py", "-v", "--tb=short", "--no-cov"],
-        "API Tests with Security"
+    success, _ = run_command(
+        [
+            "python", "-m", "pytest",
+            "src/tests/unit/test_api.py", "-v", "--tb=short", "--no-cov",
+        ],
+        "API Tests with Security",
     )
     results.append(("API Tests", success))
 
     # Test 3: Rate limiter tests
-    success, output = run_command(
-        ["python", "-m", "pytest", "src/tests/unit/test_security.py::TestRateLimiter", "-v", "--no-cov"],
-        "Rate Limiter Tests"
+    success, _ = run_command(
+        [
+            "python", "-m", "pytest",
+            "src/tests/unit/test_security.py::TestRateLimiter", "-v", "--no-cov",
+        ],
+        "Rate Limiter Tests",
     )
     results.append(("Rate Limiter", success))
 
     # Test 4: Input validator tests
-    success, output = run_command(
-        ["python", "-m", "pytest", "src/tests/unit/test_security.py::TestInputValidator", "-v", "--no-cov"],
-        "Input Validator Tests"
+    success, _ = run_command(
+        [
+            "python", "-m", "pytest",
+            "src/tests/unit/test_security.py::TestInputValidator", "-v", "--no-cov",
+        ],
+        "Input Validator Tests",
     )
     results.append(("Input Validator", success))
 
     # Test 5: Security logger tests
-    success, output = run_command(
-        ["python", "-m", "pytest", "src/tests/unit/test_security.py::TestSecurityLogger", "-v", "--no-cov"],
-        "Security Logger Tests"
+    success, _ = run_command(
+        [
+            "python", "-m", "pytest",
+            "src/tests/unit/test_security.py::TestSecurityLogger", "-v", "--no-cov",
+        ],
+        "Security Logger Tests",
     )
     results.append(("Security Logger", success))
 
     # Test 6: Check security files exist
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Checking Security Artifacts")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     required_files = [
         "src/utils/rate_limiter.py",
@@ -123,15 +163,13 @@ def main():
     results.append(("Security Artifacts", all_present))
 
     # Test 7: Verify security implementations are importable
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Verifying Security Imports")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     try:
-        import sys as sys_module
-        from pathlib import Path as PathLib
         # Add project root to path for imports
-        sys_module.path.insert(0, str(PathLib.cwd()))
+        sys.path.insert(0, str(Path.cwd()))
 
         print("✓ RateLimiter can be imported")
 
@@ -145,20 +183,20 @@ def main():
         results.append(("Security Imports", False))
 
     # Print summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("TEST SUMMARY")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
-    passed = sum(1 for _, success in results if success)
+    passed = sum(1 for _, success_flag in results if success_flag)
     total = len(results)
 
-    for test_name, success in results:
-        status = "✓ PASS" if success else "✗ FAIL"
+    for test_name, success_flag in results:
+        status = "✓ PASS" if success_flag else "✗ FAIL"
         print(f"{status:8} - {test_name}")
 
-    print(f"\n{'-'*60}")
-    print(f"Total: {passed}/{total} tests passed ({100*passed//total}%)")
-    print(f"{'-'*60}")
+    print(f"\n{'-' * 60}")
+    print(f"Total: {passed}/{total} tests passed ({100 * passed // total}%)")
+    print(f"{'-' * 60}")
 
     if passed == total:
         print("\n✓ All security features are working correctly!")

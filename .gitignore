@@ -14,6 +14,10 @@ results/
 htmlcov/
 .hypothesis/
 
+# Environment configuration (contains secrets)
+mlsdm_config.sh
+.env
+
 # Observability logs
 *.log
 *.log.*

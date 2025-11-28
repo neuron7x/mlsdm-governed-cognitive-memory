@@ -1,24 +1,60 @@
-"""
-Generate visualization charts for effectiveness validation results
+#!/usr/bin/env python3
+"""Generate visualization charts for effectiveness validation results.
 
 This script creates professional charts demonstrating the measurable
 improvements from wake/sleep cycles and moral filtering.
+
+Usage:
+    python scripts/generate_effectiveness_charts.py [--output-dir DIR]
+
+Examples:
+    # Generate charts to default ./results directory
+    python scripts/generate_effectiveness_charts.py
+
+    # Generate charts to custom directory
+    python scripts/generate_effectiveness_charts.py --output-dir /tmp/charts
 """
 
+from __future__ import annotations
+
+import argparse
+import logging
+import os
 import sys
+from pathlib import Path
+from typing import Any
 
-import matplotlib.pyplot as plt
-import numpy as np
+# Add project root to path for imports
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
-sys.path.insert(0, '.')
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+)
+logger = logging.getLogger(__name__)
 
-from tests.validation.test_moral_filter_effectiveness import run_all_tests as run_moral_tests
-from tests.validation.test_wake_sleep_effectiveness import run_all_tests as run_wake_sleep_tests
 
+def create_wake_sleep_charts(
+    results: dict[str, Any],
+    output_dir: str = "./results",
+) -> None:
+    """Create charts for wake/sleep effectiveness.
 
-def create_wake_sleep_charts(results, output_dir='./results'):
-    """Create charts for wake/sleep effectiveness"""
-    import os
+    Args:
+        results: Dictionary containing wake/sleep test results
+        output_dir: Directory to save charts to
+    """
+    try:
+        import matplotlib.pyplot as plt
+        import numpy as np
+    except ImportError:
+        logger.error(
+            "matplotlib or numpy not installed. Install with: pip install matplotlib numpy"
+        )
+        raise
+
     os.makedirs(output_dir, exist_ok=True)
 
     # Chart 1: Resource Efficiency
@@ -47,14 +83,14 @@ def create_wake_sleep_charts(results, output_dir='./results'):
     ax.text(0.5, max(processed) * 0.95,
             '89.5% Reduction',
             ha='center', fontsize=14, fontweight='bold',
-            bbox=dict(boxstyle='round', facecolor='yellow', alpha=0.7),
+            bbox={"boxstyle": "round", "facecolor": "yellow", "alpha": 0.7},
             transform=ax.transData)
 
     plt.tight_layout()
     plt.savefig(f'{output_dir}/wake_sleep_resource_efficiency.png', dpi=300, bbox_inches='tight')
     plt.close()
 
-    print(f"✓ Saved: {output_dir}/wake_sleep_resource_efficiency.png")
+    logger.info("✓ Saved: %s/wake_sleep_resource_efficiency.png", output_dir)
 
     # Chart 2: Coherence Metrics
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -90,12 +126,25 @@ def create_wake_sleep_charts(results, output_dir='./results'):
     plt.savefig(f'{output_dir}/wake_sleep_coherence_metrics.png', dpi=300, bbox_inches='tight')
     plt.close()
 
-    print(f"✓ Saved: {output_dir}/wake_sleep_coherence_metrics.png")
+    logger.info("✓ Saved: %s/wake_sleep_coherence_metrics.png", output_dir)
 
 
-def create_moral_filter_charts(results, output_dir='./results'):
-    """Create charts for moral filtering effectiveness"""
-    import os
+def create_moral_filter_charts(
+    results: dict[str, Any],
+    output_dir: str = "./results",
+) -> None:
+    """Create charts for moral filtering effectiveness.
+
+    Args:
+        results: Dictionary containing moral filter test results
+        output_dir: Directory to save charts to
+    """
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        logger.error("matplotlib not installed. Install with: pip install matplotlib")
+        raise
+
     os.makedirs(output_dir, exist_ok=True)
 
     # Chart 1: Toxic Rejection Rate
@@ -124,14 +173,14 @@ def create_moral_filter_charts(results, output_dir='./results'):
     ax.text(0.5, 80,
             '+93.3%\nImprovement',
             ha='center', fontsize=14, fontweight='bold',
-            bbox=dict(boxstyle='round', facecolor='lightgreen', alpha=0.7),
+            bbox={"boxstyle": "round", "facecolor": "lightgreen", "alpha": 0.7},
             transform=ax.transData)
 
     plt.tight_layout()
     plt.savefig(f'{output_dir}/moral_filter_toxic_rejection.png', dpi=300, bbox_inches='tight')
     plt.close()
 
-    print(f"✓ Saved: {output_dir}/moral_filter_toxic_rejection.png")
+    logger.info("✓ Saved: %s/moral_filter_toxic_rejection.png", output_dir)
 
     # Chart 2: Threshold Adaptation
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
@@ -167,7 +216,7 @@ def create_moral_filter_charts(results, output_dir='./results'):
     plt.savefig(f'{output_dir}/moral_filter_adaptation.png', dpi=300, bbox_inches='tight')
     plt.close()
 
-    print(f"✓ Saved: {output_dir}/moral_filter_adaptation.png")
+    logger.info("✓ Saved: %s/moral_filter_adaptation.png", output_dir)
 
     # Chart 3: Safety Metrics
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -206,35 +255,81 @@ def create_moral_filter_charts(results, output_dir='./results'):
     plt.savefig(f'{output_dir}/moral_filter_safety_metrics.png', dpi=300, bbox_inches='tight')
     plt.close()
 
-    print(f"✓ Saved: {output_dir}/moral_filter_safety_metrics.png")
+    logger.info("✓ Saved: %s/moral_filter_safety_metrics.png", output_dir)
 
 
-def main():
-    """Generate all effectiveness charts"""
-    print("\n" + "="*60)
-    print("Generating Effectiveness Validation Charts")
-    print("="*60 + "\n")
+def main(argv: list[str] | None = None) -> int:
+    """Generate all effectiveness charts.
 
-    # Run tests to get results
-    print("Running wake/sleep effectiveness tests...")
-    wake_sleep_results = run_wake_sleep_tests()
+    Args:
+        argv: Command-line arguments (defaults to sys.argv)
 
-    print("\nRunning moral filter effectiveness tests...")
-    moral_results = run_moral_tests()
+    Returns:
+        Exit code (0 for success, non-zero for failure)
+    """
+    parser = argparse.ArgumentParser(
+        description="Generate effectiveness validation charts for MLSDM",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--output-dir",
+        "-o",
+        type=str,
+        default="./results",
+        help="Output directory for charts (default: ./results)",
+    )
+    args = parser.parse_args(argv)
 
-    # Generate charts
-    print("\n" + "="*60)
-    print("Creating Visualizations")
-    print("="*60 + "\n")
+    try:
+        # Import matplotlib here to get a clear error message if missing
+        import matplotlib.pyplot as plt  # noqa: F401
+    except ImportError:
+        logger.error("matplotlib not installed. Install with: pip install matplotlib")
+        return 1
 
-    create_wake_sleep_charts(wake_sleep_results)
-    create_moral_filter_charts(moral_results)
+    try:
+        from tests.validation.test_moral_filter_effectiveness import (
+            run_all_tests as run_moral_tests,
+        )
+        from tests.validation.test_wake_sleep_effectiveness import (
+            run_all_tests as run_wake_sleep_tests,
+        )
+    except ImportError as e:
+        logger.error("Failed to import test modules: %s", e)
+        logger.error("Make sure to run from the project root directory.")
+        return 1
 
-    print("\n" + "="*60)
-    print("✅ All charts generated successfully!")
-    print("Charts saved in: ./results/")
-    print("="*60 + "\n")
+    logger.info("\n" + "=" * 60)
+    logger.info("Generating Effectiveness Validation Charts")
+    logger.info("=" * 60 + "\n")
+
+    try:
+        # Run tests to get results
+        logger.info("Running wake/sleep effectiveness tests...")
+        wake_sleep_results = run_wake_sleep_tests()
+
+        logger.info("\nRunning moral filter effectiveness tests...")
+        moral_results = run_moral_tests()
+
+        # Generate charts
+        logger.info("\n" + "=" * 60)
+        logger.info("Creating Visualizations")
+        logger.info("=" * 60 + "\n")
+
+        create_wake_sleep_charts(wake_sleep_results, args.output_dir)
+        create_moral_filter_charts(moral_results, args.output_dir)
+
+        logger.info("\n" + "=" * 60)
+        logger.info("✅ All charts generated successfully!")
+        logger.info("Charts saved in: %s", args.output_dir)
+        logger.info("=" * 60 + "\n")
+
+        return 0
+
+    except Exception as e:
+        logger.error("Failed to generate charts: %s", e)
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

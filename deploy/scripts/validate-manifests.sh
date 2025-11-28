@@ -1,8 +1,11 @@
-#!/bin/bash
-# ====================================================
+#!/usr/bin/env bash
+# ==============================================================================
 # MLSDM Kubernetes Manifest Validation Script
-# ====================================================
-# Validates all Kubernetes manifests for syntax and 
+# ==============================================================================
+# Copyright (c) 2024 MLSDM Project
+# SPDX-License-Identifier: MIT
+#
+# Validates all Kubernetes manifests for syntax and
 # common issues before deployment.
 #
 # Usage:
@@ -13,9 +16,12 @@
 #   - yq or Python with PyYAML (for YAML validation)
 #   - kubectl (optional, for kustomize validation)
 #   - kubeconform (optional, for schema validation)
-# ====================================================
+# ==============================================================================
 
-set -e
+# Strict mode: exit on error, error in pipes, undefined vars, fail on glob miss
+set -eEfuo pipefail
+shopt -s nullglob
+IFS=$'\n\t'
 
 # Colors for output
 RED='\033[0;31m'

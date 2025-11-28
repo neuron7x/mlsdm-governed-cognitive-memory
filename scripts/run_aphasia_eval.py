@@ -41,11 +41,11 @@ def parse_args(argv=None):
 def main(argv=None):
     args = parse_args(argv)
     corpus_path = Path(args.corpus)
-    
+
     if not corpus_path.exists():
         print(f"Error: Corpus file not found: {corpus_path}")
         return 1
-    
+
     suite = AphasiaEvalSuite(corpus_path=corpus_path)
     result = suite.run()
 
@@ -64,7 +64,7 @@ def main(argv=None):
         ):
             print("\n⚠ Warning: Metrics below recommended thresholds!")
             return 1
-    
+
     return 0
 
 

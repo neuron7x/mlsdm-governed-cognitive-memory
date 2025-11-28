@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
+# ==============================================================================
 # MLSDM Core Implementation Verification Script
-# 
+# ==============================================================================
+# Copyright (c) 2024 MLSDM Project
+# SPDX-License-Identifier: MIT
+#
 # This script validates that the core cognitive components are fully implemented
 # by running test collection and checking for TODOs/stubs/NotImplementedError.
 #
@@ -9,12 +13,18 @@
 # Exit codes:
 #   0 - All checks passed
 #   1 - One or more checks failed
+# ==============================================================================
 
-set -e
+# Strict mode: exit on error, error in pipes, undefined vars, fail on glob miss
+set -eEfuo pipefail
+shopt -s nullglob
+IFS=$'\n\t'
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+# YELLOW is available for future use
+# shellcheck disable=SC2034
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
@@ -61,7 +71,7 @@ echo ""
 
 # Run grep and capture both output and exit code
 GREP_OUTPUT=$(grep -rn "TODO\|NotImplementedError" src/mlsdm/memory/ src/mlsdm/cognition/ src/mlsdm/core/ src/mlsdm/rhythm/ src/mlsdm/speech/ src/mlsdm/extensions/ 2>&1 || true)
-GREP_COUNT=$(echo "$GREP_OUTPUT" | grep -v "^$" | wc -l)
+GREP_COUNT=$(echo "$GREP_OUTPUT" | grep -cv "^$" || echo "0")
 
 if [ "$GREP_COUNT" -eq 0 ] || [ -z "$GREP_OUTPUT" ]; then
     echo -e "${GREEN}✓ PASSED: No TODOs or NotImplementedError found${NC}"
