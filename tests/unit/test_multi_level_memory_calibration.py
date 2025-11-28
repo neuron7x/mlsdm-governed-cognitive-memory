@@ -139,7 +139,7 @@ class TestLambdaAffectsForgettingRate:
         dim = 10
         num_decay_steps = 5
 
-        # Config with default λ_l1 = 0.50
+        # Config with default λ values from SYNAPTIC_MEMORY_DEFAULTS
         mem_default = MultiLevelSynapticMemory(
             dimension=dim,
             config=SYNAPTIC_MEMORY_DEFAULTS,
@@ -198,7 +198,7 @@ class TestLambdaAffectsForgettingRate:
         dim = 10
         num_decay_steps = 5
 
-        # Config with default λ_l1 = 0.50
+        # Config with default λ values from SYNAPTIC_MEMORY_DEFAULTS
         mem_default = MultiLevelSynapticMemory(
             dimension=dim,
             config=SYNAPTIC_MEMORY_DEFAULTS,
