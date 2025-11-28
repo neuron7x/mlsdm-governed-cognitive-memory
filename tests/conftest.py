@@ -27,6 +27,7 @@ def pytest_configure(config: Any) -> None:
     config.addinivalue_line("markers", "security: marks security-related tests")
     config.addinivalue_line("markers", "benchmark: marks performance benchmark tests")
     config.addinivalue_line("markers", "safety: marks AI safety tests")
+    config.addinivalue_line("markers", "load: marks tests as load/stress tests (concurrency, stress)")
 
 
 # ============================================================
