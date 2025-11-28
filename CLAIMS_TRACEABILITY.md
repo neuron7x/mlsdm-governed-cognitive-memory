@@ -67,21 +67,23 @@ This document maps theoretical claims and documented metrics to their validation
 | Concurrent Requests | 1,000+ | `tests/load/locust_load_test.py` | Requires running server |
 | Thread Safety | Zero data races | `tests/property/test_concurrency_safety.py` | Lock-based protection |
 
+### Aphasia-Broca Detection
+
+| Claim | Value | Source Test/Benchmark | Notes |
+|-------|-------|----------------------|-------|
+| True Positive Rate (TPR) | ≥95% (actual: 100%) | `tests/eval/test_aphasia_eval_suite.py::test_aphasia_metrics_meet_declared_thresholds` | 50 telegraphic samples |
+| True Negative Rate (TNR) | ≥85% (actual: 88%) | `tests/eval/test_aphasia_eval_suite.py::test_aphasia_metrics_meet_declared_thresholds` | 50 normal samples |
+| Overall Accuracy | ≥90% (actual: 94%) | `tests/eval/test_aphasia_eval_suite.py::test_aphasia_metrics_meet_declared_thresholds` | 100 total samples |
+| Balanced Accuracy | ≥90% (actual: 94%) | `tests/eval/test_aphasia_eval_suite.py::test_aphasia_metrics_meet_declared_thresholds` | (TPR + TNR) / 2 |
+| Mean Severity | 0.885 | `tests/eval/aphasia_eval_suite.py` | Average severity for telegraphic |
+| Detection Thresholds | avg_len≥6, func≥0.15, frag≤0.5 | `tests/validation/test_aphasia_detection.py` | Configurable via constructor |
+| Corpus Size | 100 samples (50+50) | `tests/eval/aphasia_corpus.json` | Min 50 per class enforced |
+
+**Validation**: Run `python tests/eval/aphasia_eval_suite.py` to reproduce metrics. Tests in `tests/eval/test_aphasia_eval_suite.py` enforce minimum thresholds and prevent corpus degradation.
+
 ---
 
 ## B. Partially Backed Claims
-
-### Aphasia-Broca Detection
-
-| Claim | Value | Source Test/Benchmark | Status | Notes |
-|-------|-------|----------------------|--------|-------|
-| Telegraphic Response Reduction | 87.2% | `APHASIA_SPEC.md` | ⚠️ Partial | Based on empirical study (1,000 samples) not in repo. Test corpus has 5 samples. |
-| True Positive Rate | 100% | `tests/eval/test_aphasia_eval_suite.py` | ⚠️ Partial | Verified but corpus limited (5 telegraphic samples) |
-| True Negative Rate | 80% | `tests/eval/test_aphasia_eval_suite.py` | ⚠️ Partial | 20% false positive rate on small corpus |
-| Mean Severity | 0.89 | `tests/eval/aphasia_eval_suite.py` | ✅ Backed | From corpus evaluation |
-| Detection Thresholds | avg_len≥6, func≥0.15, frag≤0.5 | `tests/validation/test_aphasia_detection.py` | ✅ Backed | Configurable via constructor |
-
-**Clarification**: The 87.2% metric comes from a reported internal study on 1,000 LLM responses. The repository contains a validation test suite with a smaller corpus (5 telegraphic + 5 normal samples) that verifies detection logic works correctly. The detection algorithm is sound but the 87.2% figure requires external validation with a larger corpus.
 
 ### Throughput Claims
 
@@ -89,8 +91,9 @@ This document maps theoretical claims and documented metrics to their validation
 |-------|-------|----------------------|--------|-------|
 | Maximum Verified RPS | 5,500 ops/sec | Documentation | ⚠️ Partial | Mentioned in ARCHITECTURE_SPEC.md, requires load test with server |
 | Sustained Target | 1,000 RPS | `SLO_SPEC.md` | ⚠️ Partial | SLO target, verified via Locust but requires server deployment |
+| Telegraphic Response Reduction | 87.2% | `APHASIA_SPEC.md` | ⚠️ Partial | Based on empirical study (1,000 samples) not in repo; corpus validates detection logic only |
 
-**Clarification**: These throughput claims require running the actual server and load testing infrastructure. The Locust test file exists (`tests/load/locust_load_test.py`) but cannot be run in CI without server deployment.
+**Clarification**: These throughput claims require running the actual server and load testing infrastructure. The Locust test file exists (`tests/load/locust_load_test.py`) but cannot be run in CI without server deployment. The 87.2% reduction claim is from an internal study on 1,000 LLM responses; the repository corpus validates the detection algorithm but not end-to-end reduction rates.
 
 ---
 

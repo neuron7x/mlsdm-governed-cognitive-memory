@@ -509,19 +509,51 @@ neurolang:
    - Severity range validation [0.0, 1.0]
 
 4. **Evaluation Suite**: `tests/eval/aphasia_eval_suite.py`
-   - True Positive Rate: 100% (5 telegraphic samples)
-   - True Negative Rate: 80% (5 normal samples)
-   - Mean Severity: 0.89
+   - Corpus: `tests/eval/aphasia_corpus.json` (100 samples: 50 telegraphic + 50 normal)
+   - True Positive Rate (TPR): 100% (all telegraphic detected)
+   - True Negative Rate (TNR): 88% (44/50 normal correctly classified)
+   - Overall Accuracy: 94%
+   - Balanced Accuracy: 94%
+   - Mean Severity (telegraphic): 0.885
+
+### Key Metrics
+
+The following metrics are **fully validated** against the repository corpus:
+
+| Metric | Threshold | Actual | Status |
+|--------|-----------|--------|--------|
+| True Positive Rate (TPR) | ≥95% | 100% | ✅ Backed |
+| True Negative Rate (TNR) | ≥85% | 88% | ✅ Backed |
+| Overall Accuracy | ≥90% | 94% | ✅ Backed |
+| Balanced Accuracy | ≥90% | 94% | ✅ Backed |
+| Mean Severity | ≥0.3 | 0.885 | ✅ Backed |
+
+### Running the Evaluation Locally
+
+```bash
+# Run the eval suite directly (prints detailed metrics)
+python tests/eval/aphasia_eval_suite.py
+
+# Run tests with assertions (enforces thresholds)
+pytest tests/eval/test_aphasia_eval_suite.py -v
+```
+
+### Corpus Characteristics
+
+**Repository Corpus** (`tests/eval/aphasia_corpus.json`):
+- **Telegraphic samples**: 50 short, fragmented texts (e.g., "Me go store now.", "Server down. Check logs.")
+- **Normal samples**: 50 well-formed sentences with proper grammar and function words
+- **Edge cases**: Empty text, punctuation-only, URLs, code snippets, multilingual (English, Ukrainian, Russian)
+
+The corpus is designed to test:
+- Short telegraphic phrases with missing function words
+- Longer but grammatically broken sentences
+- Normal sentences of varying complexity
+- Edge cases that might cause false positives
 
 ### Empirical Results
 
-**Note on Metrics**: The 87.2% reduction figure is from an internal empirical study on 1,000 LLM responses (not included in repository). The repository validation suite uses a smaller corpus for functional verification. Real-world effectiveness depends on LLM backend and prompt patterns.
-
-**Repository Corpus** (`tests/eval/aphasia_corpus.json`):
-- Telegraphic samples: 5
-- Normal samples: 5
-- TPR: 100% (all telegraphic detected)
-- TNR: 80% (4/5 normal correctly classified)
+**Note on Metrics**: The 87.2% reduction figure is from an internal empirical study on 1,000 LLM responses (not included in repository). The repository validation suite uses a balanced corpus for detection accuracy verification. Real-world effectiveness depends on LLM backend and prompt patterns.
 
 **Reported Study Results** (1,000 LLM responses, v1.1.0):
 - Baseline telegraphic rate: 23.4%
