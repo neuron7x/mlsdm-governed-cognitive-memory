@@ -36,3 +36,18 @@ class CognitiveRhythm:
             "phase": self.phase,
             "counter": self.counter,
         }
+
+    def get_state_label(self) -> str:
+        """Get a short label describing the current rhythm state.
+
+        Read-only method for introspection - no side effects.
+
+        Returns:
+            State label: "wake", "sleep", or "unknown" if in an unexpected state.
+        """
+        if self.phase == "wake":
+            return "wake"
+        elif self.phase == "sleep":
+            return "sleep"
+        else:
+            return "unknown"

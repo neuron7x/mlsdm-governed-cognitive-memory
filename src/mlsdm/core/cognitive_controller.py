@@ -141,6 +141,36 @@ class CognitiveController:
 
         return pelm_bytes + synaptic_bytes + controller_overhead
 
+    def get_phase(self) -> str:
+        """Get the current cognitive phase from rhythm.
+
+        Read-only method for introspection - no side effects.
+
+        Returns:
+            Current phase as string (e.g., "wake", "sleep").
+        """
+        return self.rhythm.phase
+
+    def get_step_counter(self) -> int:
+        """Get the current step counter.
+
+        Read-only method for introspection - no side effects.
+
+        Returns:
+            Current step count (number of processed events).
+        """
+        return self.step_counter
+
+    def is_emergency_shutdown(self) -> bool:
+        """Check if the controller is in emergency shutdown state.
+
+        Read-only method for introspection - no side effects.
+
+        Returns:
+            True if emergency shutdown is active, False otherwise.
+        """
+        return self.emergency_shutdown
+
     def process_event(self, vector: np.ndarray, moral_value: float) -> dict[str, Any]:
         with self._lock:
             # Check emergency shutdown and attempt auto-recovery if applicable

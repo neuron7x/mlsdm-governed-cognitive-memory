@@ -37,6 +37,7 @@ from ..speech.governance import (  # noqa: TC001 - used at runtime in function s
     SpeechGovernanceResult,
     SpeechGovernor,
 )
+from .cognitive_state import CognitiveState
 
 if TYPE_CHECKING:
     from config.calibration import (
@@ -816,6 +817,37 @@ class LLMWrapper:
                     "llm_failure_count": self.llm_failure_count
                 }
             }
+
+    def get_cognitive_state(self) -> CognitiveState:
+        """
+        Return a snapshot of the current cognitive state of MLSDM core.
+
+        Safe for observability/health-checks:
+        - read-only
+        - O(1) over main components
+        - thread-safe
+
+        Returns:
+            CognitiveState dataclass with aggregated state from all core components.
+        """
+        with self._lock:
+            # Aggregate memory usage from PELM and synaptic memory
+            pelm_bytes = self.pelm.memory_usage_bytes()
+            synaptic_bytes = self.synaptic.memory_usage_bytes()
+            total_memory_bytes = pelm_bytes + synaptic_bytes
+
+            return CognitiveState(
+                phase=self.rhythm.phase,
+                stateless_mode=self.stateless_mode,
+                memory_used_bytes=total_memory_bytes,
+                moral_threshold=self.moral.get_current_threshold(),
+                moral_ema=self.moral.get_ema_value(),
+                rhythm_state=self.rhythm.get_state_label(),
+                step_counter=self.step_counter,
+                emergency_shutdown=False,  # LLMWrapper doesn't have controller-level shutdown
+                aphasia_flags=None,  # Reserved for future use
+                extra={},
+            )
 
     def reset(self) -> None:
         """Reset the wrapper to initial state (for testing)."""

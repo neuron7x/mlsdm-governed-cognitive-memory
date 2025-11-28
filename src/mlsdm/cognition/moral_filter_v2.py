@@ -56,3 +56,23 @@ class MoralFilterV2:
 
     def get_state(self) -> dict[str, float]:
         return {"threshold": float(self.threshold), "ema": float(self.ema_accept_rate)}
+
+    def get_current_threshold(self) -> float:
+        """Get the current moral threshold value.
+
+        Read-only method for introspection - no side effects.
+
+        Returns:
+            Current threshold value (0.0-1.0).
+        """
+        return float(self.threshold)
+
+    def get_ema_value(self) -> float:
+        """Get the current EMA (exponential moving average) of acceptance rate.
+
+        Read-only method for introspection - no side effects.
+
+        Returns:
+            Current EMA value (0.0-1.0).
+        """
+        return float(self.ema_accept_rate)
