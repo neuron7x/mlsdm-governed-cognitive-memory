@@ -1,3 +1,4 @@
+import logging
 import time
 from threading import Lock
 from typing import Any
@@ -9,6 +10,20 @@ from ..cognition.moral_filter_v2 import MoralFilterV2
 from ..memory.multi_level_memory import MultiLevelSynapticMemory
 from ..memory.phase_entangled_lattice_memory import MemoryRetrieval, PhaseEntangledLatticeMemory
 from ..rhythm.cognitive_rhythm import CognitiveRhythm
+
+# Import recovery calibration parameters
+try:
+    from config.calibration import COGNITIVE_CONTROLLER_DEFAULTS
+    _CC_RECOVERY_COOLDOWN_STEPS = COGNITIVE_CONTROLLER_DEFAULTS.recovery_cooldown_steps
+    _CC_RECOVERY_MEMORY_SAFETY_RATIO = COGNITIVE_CONTROLLER_DEFAULTS.recovery_memory_safety_ratio
+    _CC_RECOVERY_MAX_ATTEMPTS = COGNITIVE_CONTROLLER_DEFAULTS.recovery_max_attempts
+except ImportError:
+    # Fallback defaults if calibration module is not available
+    _CC_RECOVERY_COOLDOWN_STEPS = 10
+    _CC_RECOVERY_MEMORY_SAFETY_RATIO = 0.8
+    _CC_RECOVERY_MAX_ATTEMPTS = 3
+
+logger = logging.getLogger(__name__)
 
 
 class CognitiveController:
@@ -35,6 +50,9 @@ class CognitiveController:
         self.max_processing_time_ms = max_processing_time_ms
         self.emergency_shutdown = False
         self._process = psutil.Process()
+        # Auto-recovery state tracking
+        self._last_emergency_step: int = 0
+        self._recovery_attempts: int = 0
 
     @property
     def qilm(self) -> PhaseEntangledLatticeMemory:
@@ -46,9 +64,16 @@ class CognitiveController:
 
     def process_event(self, vector: np.ndarray, moral_value: float) -> dict[str, Any]:
         with self._lock:
-            # Check emergency shutdown
+            # Check emergency shutdown and attempt auto-recovery if applicable
             if self.emergency_shutdown:
-                return self._build_state(rejected=True, note="emergency shutdown")
+                if self._try_auto_recovery():
+                    logger.info(
+                        "auto-recovery succeeded after emergency_shutdown "
+                        f"(cooldown_steps={self.step_counter - self._last_emergency_step}, "
+                        f"recovery_attempt={self._recovery_attempts})"
+                    )
+                else:
+                    return self._build_state(rejected=True, note="emergency shutdown")
 
             start_time = time.perf_counter()
             self.step_counter += 1
@@ -58,7 +83,7 @@ class CognitiveController:
             # Check memory usage before processing
             memory_mb = self._check_memory_usage()
             if memory_mb > self.memory_threshold_mb:
-                self.emergency_shutdown = True
+                self._enter_emergency_shutdown()
                 return self._build_state(rejected=True, note="emergency shutdown: memory exceeded")
 
             accepted = self.moral.evaluate(moral_value)
@@ -98,8 +123,50 @@ class CognitiveController:
         return self._check_memory_usage()
 
     def reset_emergency_shutdown(self) -> None:
-        """Reset emergency shutdown flag (use with caution)."""
+        """Reset emergency shutdown flag (use with caution).
+
+        This also resets recovery attempt counter, allowing auto-recovery
+        to function again if the controller enters emergency state again.
+        """
         self.emergency_shutdown = False
+        self._recovery_attempts = 0
+
+    def _enter_emergency_shutdown(self) -> None:
+        """Enter emergency shutdown state and record the step."""
+        self.emergency_shutdown = True
+        self._last_emergency_step = self.step_counter
+        self._recovery_attempts += 1
+
+    def _try_auto_recovery(self) -> bool:
+        """Attempt automatic recovery from emergency shutdown.
+
+        Returns:
+            True if recovery succeeded and emergency_shutdown was cleared,
+            False if recovery conditions are not met.
+
+        Recovery requires:
+        1. Cooldown period has passed (step_counter - _last_emergency_step >= cooldown)
+        2. Memory usage is below safety threshold
+        3. Recovery attempts have not exceeded the maximum limit
+        """
+        # Guard: check if max recovery attempts exceeded
+        if self._recovery_attempts >= _CC_RECOVERY_MAX_ATTEMPTS:
+            return False
+
+        # Check cooldown period
+        steps_since_emergency = self.step_counter - self._last_emergency_step
+        if steps_since_emergency < _CC_RECOVERY_COOLDOWN_STEPS:
+            return False
+
+        # Health check: verify memory is within safe limits
+        memory_mb = self._check_memory_usage()
+        memory_safety_threshold = self.memory_threshold_mb * _CC_RECOVERY_MEMORY_SAFETY_RATIO
+        if memory_mb > memory_safety_threshold:
+            return False
+
+        # All conditions met - perform recovery
+        self.emergency_shutdown = False
+        return True
 
     def _build_state(self, rejected: bool, note: str) -> dict[str, Any]:
         # Optimization: Use cached norm calculations when state hasn't changed

@@ -22,7 +22,6 @@ Usage:
 from dataclasses import dataclass
 from typing import Any
 
-
 # =============================================================================
 # MORAL FILTER CALIBRATION
 # =============================================================================
@@ -351,6 +350,29 @@ class CognitiveControllerCalibration:
     # Direction: ↑ more patient, ↓ stricter latency
     max_processing_time_ms: float = 1000.0
 
+    # -------------------------------------------------------------------------
+    # AUTO-RECOVERY PARAMETERS
+    # -------------------------------------------------------------------------
+    # These parameters control automatic recovery after emergency_shutdown.
+    # Conservative defaults are chosen to ensure safe behavior.
+
+    # Cooldown steps after emergency before attempting auto-recovery
+    # Direction: ↑ longer wait before recovery, ↓ faster recovery attempts
+    # Conservative default: 10 steps minimum wait before recovery
+    recovery_cooldown_steps: int = 10
+
+    # Memory safety threshold (percentage of memory_threshold_mb, 0.0-1.0)
+    # Auto-recovery only allowed when memory usage is below this ratio
+    # Direction: ↑ more permissive (allow recovery at higher memory), ↓ stricter
+    # Conservative default: 0.8 (80% of threshold) - requires significant headroom
+    recovery_memory_safety_ratio: float = 0.8
+
+    # Maximum recovery attempts before giving up auto-recovery
+    # After this many attempts, controller stays in emergency until manual reset
+    # Direction: ↑ more attempts allowed, ↓ faster permanent emergency
+    # Conservative default: 3 - allow limited retries before requiring intervention
+    recovery_max_attempts: int = 3
+
 
 COGNITIVE_CONTROLLER_DEFAULTS = CognitiveControllerCalibration()
 
@@ -472,5 +494,8 @@ def get_calibration_summary() -> dict[str, dict[str, Any]]:
         "cognitive_controller": {
             "memory_threshold_mb": config.cognitive_controller.memory_threshold_mb,
             "max_processing_time_ms": config.cognitive_controller.max_processing_time_ms,
+            "recovery_cooldown_steps": config.cognitive_controller.recovery_cooldown_steps,
+            "recovery_memory_safety_ratio": config.cognitive_controller.recovery_memory_safety_ratio,
+            "recovery_max_attempts": config.cognitive_controller.recovery_max_attempts,
         },
     }

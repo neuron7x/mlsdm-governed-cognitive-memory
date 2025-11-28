@@ -249,3 +249,259 @@ class TestCognitiveControllerRetrieveContext:
 
         assert isinstance(results, list)
         assert len(results) <= 5
+
+
+class TestCognitiveControllerAutoRecovery:
+    """Test health-based auto-recovery after emergency shutdown."""
+
+    def test_normal_to_emergency_to_recovery_to_normal(self):
+        """Test full cycle: Normal → Emergency → Recovery → Normal.
+
+        This verifies that after emergency shutdown:
+        1. Controller stays in emergency mode during cooldown
+        2. Auto-recovery succeeds after cooldown with healthy conditions
+        3. Controller continues normal operation after recovery
+        """
+        # Use low memory threshold to trigger emergency shutdown easily
+        controller = CognitiveController(memory_threshold_mb=0.001)
+        vector = np.random.randn(384).astype(np.float32)
+
+        # Step 1: Trigger emergency shutdown
+        result = controller.process_event(vector, moral_value=0.8)
+        assert controller.emergency_shutdown is True
+        assert result["rejected"] is True
+        assert "emergency shutdown" in result["note"]
+        initial_emergency_step = controller._last_emergency_step
+        initial_recovery_attempts = controller._recovery_attempts
+
+        # Verify internal state was updated
+        assert initial_emergency_step == 1  # First event triggers shutdown
+        assert initial_recovery_attempts == 1
+
+        # Step 2: Simulate passing of cooldown period by incrementing step_counter
+        # We need to increase memory_threshold_mb to allow recovery
+        controller.memory_threshold_mb = 10000.0  # Reset to safe threshold
+
+        # Import calibration to get actual cooldown value
+        from mlsdm.core.cognitive_controller import _CC_RECOVERY_COOLDOWN_STEPS
+
+        # Manually increment step counter to simulate cooldown
+        controller.step_counter += _CC_RECOVERY_COOLDOWN_STEPS
+
+        # Step 3: Attempt recovery by processing another event
+        result = controller.process_event(vector, moral_value=0.8)
+
+        # Verify auto-recovery succeeded
+        assert controller.emergency_shutdown is False, "Emergency should be cleared after recovery"
+        # After recovery, the event should be processed normally (or rejected for other reasons)
+        # Note: could be rejected due to sleep phase or moral filter
+        assert result is not None
+
+        # Step 4: Verify controller continues normal operation
+        result2 = controller.process_event(vector, moral_value=0.8)
+        assert result2 is not None
+        assert controller.step_counter > initial_emergency_step
+
+    def test_recovery_does_not_trigger_without_cooldown(self):
+        """Test that recovery does not happen if cooldown period has not passed."""
+        controller = CognitiveController(memory_threshold_mb=0.001)
+        vector = np.random.randn(384).astype(np.float32)
+
+        # Trigger emergency shutdown
+        result1 = controller.process_event(vector, moral_value=0.8)
+        assert controller.emergency_shutdown is True
+        assert result1["rejected"] is True
+
+        # Increase threshold but don't wait for cooldown
+        controller.memory_threshold_mb = 10000.0
+
+        # Try to process another event immediately (no cooldown passed)
+        # Note: step_counter hasn't increased enough yet
+        result2 = controller.process_event(vector, moral_value=0.8)
+
+        # Should still be in emergency shutdown (cooldown not passed)
+        assert controller.emergency_shutdown is True
+        assert result2["rejected"] is True
+        assert result2["note"] == "emergency shutdown"
+
+    def test_recovery_does_not_trigger_with_high_memory(self):
+        """Test that recovery does not happen if memory is still high."""
+        controller = CognitiveController(memory_threshold_mb=0.001)
+        vector = np.random.randn(384).astype(np.float32)
+
+        # Trigger emergency shutdown
+        controller.process_event(vector, moral_value=0.8)
+        assert controller.emergency_shutdown is True
+
+        # Import calibration values
+        from mlsdm.core.cognitive_controller import _CC_RECOVERY_COOLDOWN_STEPS
+
+        # Simulate cooldown period
+        controller.step_counter += _CC_RECOVERY_COOLDOWN_STEPS
+
+        # Keep memory threshold very low (memory will still exceed threshold)
+        # Process another event - should remain in emergency
+        result = controller.process_event(vector, moral_value=0.8)
+
+        assert controller.emergency_shutdown is True
+        assert result["rejected"] is True
+        assert result["note"] == "emergency shutdown"
+
+    def test_no_state_leak_after_recovery(self):
+        """Test that recovery doesn't create memory/state leaks.
+
+        After Normal → Emergency → Recovery → Normal cycle:
+        - No duplicate state objects
+        - Counters don't increase uncontrollably
+        - Buffer sizes remain reasonable
+        """
+        controller = CognitiveController(memory_threshold_mb=0.001)
+        vector = np.random.randn(384).astype(np.float32)
+
+        # Trigger emergency
+        controller.process_event(vector, moral_value=0.8)
+        initial_pelm_used = controller.pelm.get_state_stats()["used"]
+
+        # Recover by adjusting threshold and passing cooldown
+        controller.memory_threshold_mb = 10000.0
+        from mlsdm.core.cognitive_controller import _CC_RECOVERY_COOLDOWN_STEPS
+        controller.step_counter += _CC_RECOVERY_COOLDOWN_STEPS
+
+        # Process recovery event
+        controller.process_event(vector, moral_value=0.8)
+
+        # Continue with several more events
+        for _ in range(10):
+            controller.process_event(vector, moral_value=0.8)
+
+        # Check state is reasonable
+        final_pelm_used = controller.pelm.get_state_stats()["used"]
+        l1, l2, l3 = controller.synaptic.state()
+
+        # Memory structures should have bounded growth
+        # initial_pelm_used could be 0 or 1 depending on timing
+        assert final_pelm_used <= initial_pelm_used + 15  # At most ~11 new entries
+
+        # Norms should be finite
+        assert np.isfinite(np.linalg.norm(l1))
+        assert np.isfinite(np.linalg.norm(l2))
+        assert np.isfinite(np.linalg.norm(l3))
+
+        # Recovery attempts should not grow beyond initial attempt
+        assert controller._recovery_attempts == 1
+
+    def test_recovery_guard_against_infinite_loop(self):
+        """Test that controller stops auto-recovery after max attempts.
+
+        After exceeding max recovery attempts:
+        - Controller should stay in emergency
+        - No more auto-recovery attempts should succeed
+        """
+        controller = CognitiveController(memory_threshold_mb=0.001)
+        vector = np.random.randn(384).astype(np.float32)
+
+        from mlsdm.core.cognitive_controller import (
+            _CC_RECOVERY_COOLDOWN_STEPS,
+            _CC_RECOVERY_MAX_ATTEMPTS,
+        )
+
+        # Perform multiple emergency → recovery cycles up to max attempts
+        for attempt in range(_CC_RECOVERY_MAX_ATTEMPTS):
+            # Trigger emergency
+            controller.process_event(vector, moral_value=0.8)
+            assert controller.emergency_shutdown is True
+            assert controller._recovery_attempts == attempt + 1
+
+            # Simulate cooldown and fix memory threshold
+            controller.memory_threshold_mb = 10000.0
+            controller.step_counter += _CC_RECOVERY_COOLDOWN_STEPS
+
+            # Attempt recovery
+            controller.process_event(vector, moral_value=0.8)
+
+            # Recovery should succeed if under max attempts
+            if attempt < _CC_RECOVERY_MAX_ATTEMPTS - 1:
+                assert controller.emergency_shutdown is False
+                # Re-trigger emergency with low threshold for next iteration
+                controller.memory_threshold_mb = 0.001
+
+        # At this point, we've hit max attempts and recovery should have failed on last attempt
+        # Controller is still in emergency because recovery failed when attempts == max_attempts
+        assert controller.emergency_shutdown is True
+        assert controller._recovery_attempts == _CC_RECOVERY_MAX_ATTEMPTS
+
+        # Try recovery again after more cooldown - should still fail
+        controller.step_counter += _CC_RECOVERY_COOLDOWN_STEPS
+        result = controller.process_event(vector, moral_value=0.8)
+
+        # Recovery should NOT succeed - max attempts exceeded
+        assert controller.emergency_shutdown is True
+        assert result["rejected"] is True
+        assert result["note"] == "emergency shutdown"
+
+    def test_manual_reset_enables_auto_recovery_again(self):
+        """Test that manual reset clears recovery attempts, enabling auto-recovery again."""
+        controller = CognitiveController(memory_threshold_mb=0.001)
+        vector = np.random.randn(384).astype(np.float32)
+
+        from mlsdm.core.cognitive_controller import _CC_RECOVERY_MAX_ATTEMPTS
+
+        # Exhaust all recovery attempts
+        for _ in range(_CC_RECOVERY_MAX_ATTEMPTS + 2):
+            controller.process_event(vector, moral_value=0.8)
+            controller.memory_threshold_mb = 10000.0
+            controller.step_counter += 20
+            controller.process_event(vector, moral_value=0.8)
+            controller.memory_threshold_mb = 0.001
+
+        assert controller._recovery_attempts >= _CC_RECOVERY_MAX_ATTEMPTS
+
+        # Manual reset
+        controller.reset_emergency_shutdown()
+
+        # Verify reset cleared both flags
+        assert controller.emergency_shutdown is False
+        assert controller._recovery_attempts == 0
+
+        # Trigger emergency again
+        controller.memory_threshold_mb = 0.001
+        controller.process_event(vector, moral_value=0.8)
+        assert controller.emergency_shutdown is True
+        assert controller._recovery_attempts == 1  # Reset counter
+
+        # Auto-recovery should work again
+        controller.memory_threshold_mb = 10000.0
+        from mlsdm.core.cognitive_controller import _CC_RECOVERY_COOLDOWN_STEPS
+        controller.step_counter += _CC_RECOVERY_COOLDOWN_STEPS
+        controller.process_event(vector, moral_value=0.8)
+
+        assert controller.emergency_shutdown is False
+
+    def test_internal_state_tracking_accuracy(self):
+        """Test that _last_emergency_step and _recovery_attempts are tracked correctly."""
+        controller = CognitiveController(memory_threshold_mb=0.001)
+        vector = np.random.randn(384).astype(np.float32)
+
+        # Initially, tracking fields should be at defaults
+        assert controller._last_emergency_step == 0
+        assert controller._recovery_attempts == 0
+
+        # Trigger emergency
+        controller.process_event(vector, moral_value=0.8)
+
+        # Verify tracking updated
+        assert controller._last_emergency_step == controller.step_counter
+        assert controller._recovery_attempts == 1
+
+        # Trigger another emergency (if we can recover first)
+        controller.memory_threshold_mb = 10000.0
+        from mlsdm.core.cognitive_controller import _CC_RECOVERY_COOLDOWN_STEPS
+        controller.step_counter += _CC_RECOVERY_COOLDOWN_STEPS
+        controller.process_event(vector, moral_value=0.8)  # Should recover
+
+        controller.memory_threshold_mb = 0.001
+        controller.process_event(vector, moral_value=0.8)  # Trigger again
+
+        # Recovery attempts should increment
+        assert controller._recovery_attempts == 2
+        assert controller._last_emergency_step == controller.step_counter
