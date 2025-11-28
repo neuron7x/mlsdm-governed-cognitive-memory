@@ -1,7 +1,8 @@
 import logging
 import time
+from collections.abc import Callable
 from threading import Lock
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import psutil
@@ -15,14 +16,18 @@ if TYPE_CHECKING:
     from config.calibration import SynapticMemoryCalibration
 
 # Import recovery calibration parameters and synaptic memory defaults
-# Type annotations use Optional since module may not be available
-_SYNAPTIC_MEMORY_DEFAULTS: Optional["SynapticMemoryCalibration"] = None
-_get_synaptic_memory_config: Optional[Callable[[dict[str, Any] | None], "SynapticMemoryCalibration"]] = None
+# Type annotations use X | None since module may not be available
+_SYNAPTIC_MEMORY_DEFAULTS: "SynapticMemoryCalibration | None" = None
+_get_synaptic_memory_config: Callable[[dict[str, Any] | None], "SynapticMemoryCalibration"] | None = None
 
 try:
     from config.calibration import (
         COGNITIVE_CONTROLLER_DEFAULTS,
+    )
+    from config.calibration import (
         SYNAPTIC_MEMORY_DEFAULTS as _IMPORTED_DEFAULTS,
+    )
+    from config.calibration import (
         get_synaptic_memory_config as _imported_get_config,
     )
     _CC_RECOVERY_COOLDOWN_STEPS = COGNITIVE_CONTROLLER_DEFAULTS.recovery_cooldown_steps
@@ -69,7 +74,7 @@ class CognitiveController:
 
         # Resolve synaptic memory configuration:
         # Priority: synaptic_config > yaml_config > SYNAPTIC_MEMORY_DEFAULTS
-        resolved_config: Optional["SynapticMemoryCalibration"] = synaptic_config
+        resolved_config: SynapticMemoryCalibration | None = synaptic_config
         if resolved_config is None and yaml_config is not None:
             if _get_synaptic_memory_config is not None:
                 resolved_config = _get_synaptic_memory_config(yaml_config)
