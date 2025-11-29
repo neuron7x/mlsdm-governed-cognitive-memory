@@ -2,6 +2,16 @@
 
 Provides liveness, readiness, and detailed health status endpoints
 with appropriate HTTP status codes based on system state.
+
+## Contract Stability
+
+The following endpoints are **stable contract** and will not change without
+a major version bump:
+
+- GET /health - Simple health check (returns SimpleHealthStatus)
+- GET /health/liveness - Liveness probe (returns HealthStatus)
+- GET /health/readiness - Readiness probe (returns ReadinessStatus)
+- GET /ready - Alias for /health/readiness
 """
 
 import logging
@@ -12,8 +22,13 @@ import numpy as np
 import psutil
 from fastapi import APIRouter, Response, status
 from fastapi.responses import PlainTextResponse
-from pydantic import BaseModel
 
+from mlsdm.api.schemas import (
+    DetailedHealthStatus,
+    HealthStatus,
+    ReadinessStatus,
+    SimpleHealthStatus,
+)
 from mlsdm.observability.metrics import get_metrics_exporter
 
 logger = logging.getLogger(__name__)
@@ -21,46 +36,14 @@ logger = logging.getLogger(__name__)
 # Health check router
 router = APIRouter(prefix="/health", tags=["health"])
 
-
-class SimpleHealthStatus(BaseModel):
-    """Simple health status response for basic health check."""
-
-    status: str
-
-
-class HealthStatus(BaseModel):
-    """Basic health status response."""
-
-    status: str
-    timestamp: float
-
-
-class ReadinessStatus(BaseModel):
-    """Readiness status response."""
-
-    ready: bool
-    status: str
-    timestamp: float
-    checks: dict[str, bool]
-
-
-class DetailedHealthStatus(BaseModel):
-    """Detailed health status response."""
-
-    status: str
-    timestamp: float
-    uptime_seconds: float
-    system: dict[str, Any]
-    memory_state: dict[str, Any] | None
-    phase: str | None
-    statistics: dict[str, Any] | None
-
-
 # Track when the service started
 _start_time = time.time()
 
 # Global manager reference (to be set by the application)
 _memory_manager: Any | None = None
+
+# Global LLM wrapper reference for cognitive state (optional)
+_llm_wrapper: Any | None = None
 
 
 def set_memory_manager(manager: Any) -> None:
@@ -80,6 +63,52 @@ def get_memory_manager() -> Any | None:
         MemoryManager instance or None
     """
     return _memory_manager
+
+
+def set_llm_wrapper(wrapper: Any) -> None:
+    """Set the global LLM wrapper reference for cognitive state checks.
+
+    Args:
+        wrapper: LLMWrapper instance (optional)
+    """
+    global _llm_wrapper
+    _llm_wrapper = wrapper
+
+
+def get_llm_wrapper() -> Any | None:
+    """Get the global LLM wrapper reference.
+
+    Returns:
+        LLMWrapper instance or None
+    """
+    return _llm_wrapper
+
+
+def _get_cognitive_state_safe() -> dict[str, Any] | None:
+    """Get aggregated cognitive state for health checks (safe, non-sensitive data only).
+
+    Returns aggregated state from LLMWrapper.get_cognitive_state() if available,
+    filtering out sensitive implementation details.
+
+    Returns:
+        Safe cognitive state dict or None if unavailable.
+    """
+    wrapper = get_llm_wrapper()
+    if wrapper is None or not hasattr(wrapper, "get_cognitive_state"):
+        return None
+
+    try:
+        state = wrapper.get_cognitive_state()
+        # Return only safe, aggregated fields
+        return {
+            "phase": state.phase,
+            "stateless_mode": state.stateless_mode,
+            "rhythm_state": state.rhythm_state,
+            "emergency_shutdown": state.emergency_shutdown,
+        }
+    except Exception as e:
+        logger.warning(f"Failed to get cognitive state: {e}")
+        return None
 
 
 @router.get("", response_model=SimpleHealthStatus)
@@ -157,6 +186,19 @@ async def readiness(response: Response) -> ReadinessStatus:
         checks["cpu_available"] = False
         all_ready = False
 
+    # Get cognitive state for emergency shutdown check
+    cognitive_state = _get_cognitive_state_safe()
+    emergency_shutdown: bool | None = None
+
+    if cognitive_state is not None:
+        emergency_shutdown = cognitive_state.get("emergency_shutdown", False)
+        # If emergency shutdown is active, mark as not ready
+        if emergency_shutdown:
+            all_ready = False
+            checks["emergency_shutdown_inactive"] = False
+        else:
+            checks["emergency_shutdown_inactive"] = True
+
     # Set response status code
     if all_ready:
         response.status_code = status.HTTP_200_OK
@@ -170,6 +212,8 @@ async def readiness(response: Response) -> ReadinessStatus:
         status=status_str,
         timestamp=time.time(),
         checks=checks,
+        emergency_shutdown=emergency_shutdown,
+        cognitive_state=cognitive_state,
     )
 
 
@@ -299,3 +343,24 @@ async def metrics() -> str:
     """
     metrics_exporter = get_metrics_exporter()
     return metrics_exporter.get_metrics_text()
+
+
+# Create a separate router for the /ready alias (without /health prefix)
+ready_router = APIRouter(tags=["health"])
+
+
+@ready_router.get("/ready", response_model=ReadinessStatus)
+async def ready_alias(response: Response) -> ReadinessStatus:
+    """Alias for /health/readiness endpoint.
+
+    This is a convenience endpoint that provides the same functionality
+    as /health/readiness but at a shorter path for easier access.
+
+    ## Contract Stability
+    This endpoint is **stable contract** and will not change without
+    a major version bump.
+
+    Returns:
+        ReadinessStatus with appropriate status code (200 if ready, 503 if not).
+    """
+    return await readiness(response)

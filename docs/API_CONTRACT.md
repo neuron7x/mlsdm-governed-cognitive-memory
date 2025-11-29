@@ -1,6 +1,6 @@
 # MLSDM API Contract
 
-**Document Version:** 1.0.0  
+**Document Version:** 1.1.0  
 **Last Updated:** November 2025  
 **Status:** Production
 
@@ -11,6 +11,7 @@ This document defines the HTTP API contract for the MLSDM (Governed Cognitive Me
 ## Table of Contents
 
 - [Overview](#overview)
+- [Contract Stability Guarantees](#contract-stability-guarantees)
 - [Base URL](#base-url)
 - [Authentication](#authentication)
 - [Common Response Format](#common-response-format)
@@ -20,6 +21,7 @@ This document defines the HTTP API contract for the MLSDM (Governed Cognitive Me
   - [State Endpoints](#state-endpoints)
 - [Error Responses](#error-responses)
 - [Pydantic Schema Reference](#pydantic-schema-reference)
+- [SDK Reference](#sdk-reference)
 
 ---
 
@@ -31,6 +33,42 @@ The MLSDM API provides endpoints for:
 - **State management**: System state queries and event processing
 
 All endpoints return JSON responses with standardized error formats.
+
+---
+
+## Contract Stability Guarantees
+
+The following fields are considered **stable contract** and will **not change without a major version bump** (breaking change). Clients can safely rely on these fields being present and having the documented types.
+
+### GenerateResponse Stable Fields
+| Field | Type | Stability |
+|-------|------|-----------|
+| `response` | string | ✅ Stable |
+| `phase` | string | ✅ Stable |
+| `accepted` | boolean | ✅ Stable |
+
+### HealthStatus Stable Fields
+| Field | Type | Stability |
+|-------|------|-----------|
+| `status` | string | ✅ Stable |
+| `timestamp` | float | ✅ Stable |
+
+### ReadinessStatus Stable Fields
+| Field | Type | Stability |
+|-------|------|-----------|
+| `ready` | boolean | ✅ Stable |
+| `status` | string | ✅ Stable |
+| `timestamp` | float | ✅ Stable |
+| `checks` | object | ✅ Stable |
+
+### ErrorResponse Stable Fields
+| Field | Type | Stability |
+|-------|------|-----------|
+| `error.error_type` | string | ✅ Stable |
+| `error.message` | string | ✅ Stable |
+| `error.details` | object \| null | ✅ Stable |
+
+**Note:** Optional/diagnostic fields (e.g., `metrics`, `safety_flags`, `memory_stats`) may be added or modified in minor versions without breaking changes.
 
 ---
 
@@ -80,13 +118,14 @@ All errors use the `ErrorResponse` schema:
 
 ### Health Endpoints
 
-All health endpoints are under the `/health` prefix.
+All health endpoints are under the `/health` prefix, with `/ready` as a convenience alias.
 
 | Endpoint | Method | Description | Auth Required |
 |----------|--------|-------------|---------------|
 | `/health` | GET | Simple health check | No |
 | `/health/liveness` | GET | Kubernetes liveness probe | No |
 | `/health/readiness` | GET | Kubernetes readiness probe | No |
+| `/ready` | GET | Alias for /health/readiness | No |
 | `/health/detailed` | GET | Detailed system health | No |
 | `/health/metrics` | GET | Prometheus metrics | No |
 
@@ -142,6 +181,8 @@ Kubernetes readiness probe. Returns 200 if ready to accept traffic, 503 if not.
 | `status` | string | "ready" or "not_ready" |
 | `timestamp` | float | Unix timestamp |
 | `checks` | object | Individual check results |
+| `emergency_shutdown` | boolean \| null | Whether emergency shutdown is active (optional) |
+| `cognitive_state` | object \| null | Aggregated cognitive state (optional, safe subset only) |
 
 **Example Response (200 OK):**
 ```json
@@ -152,7 +193,15 @@ Kubernetes readiness probe. Returns 200 if ready to accept traffic, 503 if not.
   "checks": {
     "memory_manager": true,
     "memory_available": true,
-    "cpu_available": true
+    "cpu_available": true,
+    "emergency_shutdown_inactive": true
+  },
+  "emergency_shutdown": false,
+  "cognitive_state": {
+    "phase": "wake",
+    "stateless_mode": false,
+    "rhythm_state": "wake",
+    "emergency_shutdown": false
   }
 }
 ```
@@ -167,9 +216,19 @@ Kubernetes readiness probe. Returns 200 if ready to accept traffic, 503 if not.
     "memory_manager": false,
     "memory_available": true,
     "cpu_available": true
-  }
+  },
+  "emergency_shutdown": null,
+  "cognitive_state": null
 }
 ```
+
+---
+
+#### GET /ready
+
+Convenience alias for `/health/readiness`. Returns the same `ReadinessStatus` schema.
+
+**Response Schema:** `ReadinessStatus` (same as `/health/readiness`)
 
 ---
 
@@ -556,6 +615,70 @@ class ErrorDetail(BaseModel):
     error_type: str
     message: str
     details: dict[str, Any] | None = None
+    debug_id: str | None = None
+```
+
+---
+
+## SDK Reference
+
+The MLSDM Python SDK provides two client interfaces:
+
+### MLSDMHttpClient (HTTP Client)
+
+For remote API server communication with typed responses and exception handling.
+
+```python
+from mlsdm.sdk import MLSDMHttpClient, MLSDMClientError, MLSDMServerError, MLSDMTimeoutError
+
+# Create client
+client = MLSDMHttpClient(base_url="http://localhost:8000", timeout=30.0)
+
+# Generate with typed response
+try:
+    response = client.generate(
+        prompt="What is consciousness?",
+        moral_value=0.7,
+        max_tokens=256
+    )
+    print(f"Response: {response.response}")
+    print(f"Phase: {response.phase}")
+    print(f"Accepted: {response.accepted}")
+except MLSDMClientError as e:
+    print(f"Client error [{e.status_code}]: {e.message}")
+except MLSDMServerError as e:
+    print(f"Server error [{e.status_code}]: {e.message}")
+except MLSDMTimeoutError as e:
+    print(f"Timeout after {e.timeout_seconds}s: {e.message}")
+```
+
+### SDK Exceptions
+
+| Exception | Description | Attributes |
+|-----------|-------------|------------|
+| `MLSDMError` | Base exception | `message`, `debug_id` |
+| `MLSDMClientError` | 4xx HTTP errors | `status_code`, `error_type`, `details` |
+| `MLSDMServerError` | 5xx HTTP errors | `status_code`, `error_type` |
+| `MLSDMTimeoutError` | Request timeout | `timeout_seconds` |
+| `MLSDMConnectionError` | Connection failed | `url` |
+
+### GenerateResponseDTO
+
+The SDK returns a typed `GenerateResponseDTO` that mirrors the API's `GenerateResponse`:
+
+```python
+class GenerateResponseDTO(BaseModel):
+    response: str          # Generated text (stable)
+    phase: str             # Cognitive phase (stable)
+    accepted: bool         # Request accepted (stable)
+    metrics: dict | None   # Timing metrics
+    safety_flags: dict | None
+    memory_stats: dict | None
+    moral_score: float | None
+    aphasia_flags: dict | None
+    emergency_shutdown: bool | None
+    latency_ms: float | None
+    cognitive_state: dict | None
 ```
 
 ---
