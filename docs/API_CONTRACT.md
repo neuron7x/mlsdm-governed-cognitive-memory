@@ -560,6 +560,125 @@ class ErrorDetail(BaseModel):
 
 ---
 
+## Contract Stability Guarantees
+
+### Stable Fields (Contract Guarantee)
+
+The following fields are **part of the stable API contract** and will NOT be changed without a **major version bump** (e.g., 1.x.x → 2.0.0):
+
+#### GenerateResponse
+| Field | Type | Stable Since |
+|-------|------|--------------|
+| `response` | string | v1.0.0 |
+| `phase` | string | v1.0.0 |
+| `accepted` | boolean | v1.0.0 |
+
+#### InferResponse
+| Field | Type | Stable Since |
+|-------|------|--------------|
+| `response` | string | v1.0.0 |
+| `accepted` | boolean | v1.0.0 |
+| `phase` | string | v1.0.0 |
+
+#### ReadinessStatus
+| Field | Type | Stable Since |
+|-------|------|--------------|
+| `ready` | boolean | v1.0.0 |
+| `status` | string | v1.0.0 |
+| `timestamp` | float | v1.0.0 |
+| `checks` | object | v1.0.0 |
+
+#### ErrorResponse
+| Field | Type | Stable Since |
+|-------|------|--------------|
+| `error.error_type` | string | v1.0.0 |
+| `error.message` | string | v1.0.0 |
+| `error.details` | object\|null | v1.0.0 |
+
+### Extension Fields (Non-Breaking)
+
+The following fields may be added in minor versions and are considered **optional extensions**. Clients should handle their absence gracefully:
+
+- `GenerateResponse.moral_score` (v1.2+)
+- `GenerateResponse.aphasia_flags` (v1.2+)
+- `GenerateResponse.emergency_shutdown` (v1.2+)
+- `GenerateResponse.latency_ms` (v1.2+)
+- `GenerateResponse.cognitive_state` (v1.2+)
+- `ReadinessStatus.cognitive_state` (v1.2+)
+- `ErrorResponse.error.debug_id` (v1.2+)
+
+### Backward Compatibility Rules
+
+1. **Required fields** (stable) will never be renamed or removed
+2. **New optional fields** may be added in minor versions
+3. **Field types** for stable fields will never change
+4. **Enum values** (e.g., phase values) may be extended but existing values won't be removed
+
+---
+
+## SDK Client Reference
+
+### HTTP SDK Client (`NeuroEngineHTTPClient`)
+
+The Python SDK provides a typed HTTP client for interacting with the MLSDM API:
+
+```python
+from mlsdm.sdk import NeuroEngineHTTPClient, MLSDMTimeoutError
+
+# Create client
+client = NeuroEngineHTTPClient(
+    base_url="http://localhost:8000",
+    timeout=30.0,
+    api_key="optional-api-key"
+)
+
+# Generate response
+response = client.generate(
+    prompt="What is consciousness?",
+    max_tokens=256,
+    moral_value=0.7
+)
+print(response.response)  # Generated text
+print(response.phase)     # "wake" or "sleep"
+print(response.accepted)  # True/False
+```
+
+### SDK Exceptions
+
+| Exception | HTTP Status | Description |
+|-----------|-------------|-------------|
+| `MLSDMClientError` | 4xx | Base class for client errors |
+| `MLSDMValidationError` | 422 | Request validation failed |
+| `MLSDMRateLimitError` | 429 | Rate limit exceeded |
+| `MLSDMAuthenticationError` | 401 | Authentication required/invalid |
+| `MLSDMServerError` | 5xx | Server-side error |
+| `MLSDMTimeoutError` | - | Request timed out |
+| `MLSDMConnectionError` | - | Connection failed |
+
+Example error handling:
+
+```python
+from mlsdm.sdk import (
+    NeuroEngineHTTPClient,
+    MLSDMValidationError,
+    MLSDMRateLimitError,
+    MLSDMTimeoutError,
+)
+
+client = NeuroEngineHTTPClient()
+
+try:
+    response = client.generate("Test prompt")
+except MLSDMValidationError as e:
+    print(f"Invalid input: {e.validation_errors}")
+except MLSDMRateLimitError as e:
+    print(f"Rate limited. Retry after: {e.retry_after}s")
+except MLSDMTimeoutError as e:
+    print(f"Request timed out after {e.timeout_seconds}s")
+```
+
+---
+
 ## Document Maintenance
 
 This API contract should be updated when:
@@ -567,5 +686,6 @@ This API contract should be updated when:
 2. Request/response schemas change
 3. Error handling is modified
 4. Authentication requirements change
+5. Stability guarantees are modified
 
 **Owner:** Principal API & Boundary-Security Engineer

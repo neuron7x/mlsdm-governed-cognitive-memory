@@ -2,6 +2,14 @@
 
 Provides liveness, readiness, and detailed health status endpoints
 with appropriate HTTP status codes based on system state.
+
+**Contract Stability:**
+The following fields are considered part of the stable API contract
+and MUST NOT be changed without a major version bump:
+- SimpleHealthStatus.status
+- HealthStatus.status, timestamp
+- ReadinessStatus.ready, status, timestamp, checks
+- DetailedHealthStatus.status, timestamp, uptime_seconds, system
 """
 
 import logging
@@ -12,8 +20,13 @@ import numpy as np
 import psutil
 from fastapi import APIRouter, Response, status
 from fastapi.responses import PlainTextResponse
-from pydantic import BaseModel
 
+from mlsdm.api.schemas import (
+    DetailedHealthStatus,
+    HealthStatus,
+    ReadinessStatus,
+    SimpleHealthStatus,
+)
 from mlsdm.observability.metrics import get_metrics_exporter
 
 logger = logging.getLogger(__name__)
@@ -22,45 +35,15 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/health", tags=["health"])
 
 
-class SimpleHealthStatus(BaseModel):
-    """Simple health status response for basic health check."""
-
-    status: str
-
-
-class HealthStatus(BaseModel):
-    """Basic health status response."""
-
-    status: str
-    timestamp: float
-
-
-class ReadinessStatus(BaseModel):
-    """Readiness status response."""
-
-    ready: bool
-    status: str
-    timestamp: float
-    checks: dict[str, bool]
-
-
-class DetailedHealthStatus(BaseModel):
-    """Detailed health status response."""
-
-    status: str
-    timestamp: float
-    uptime_seconds: float
-    system: dict[str, Any]
-    memory_state: dict[str, Any] | None
-    phase: str | None
-    statistics: dict[str, Any] | None
-
-
 # Track when the service started
 _start_time = time.time()
 
 # Global manager reference (to be set by the application)
 _memory_manager: Any | None = None
+
+# Global neuro engine reference (to be set by the application)
+# Used for cognitive state introspection in readiness checks
+_neuro_engine: Any | None = None
 
 
 def set_memory_manager(manager: Any) -> None:
@@ -80,6 +63,64 @@ def get_memory_manager() -> Any | None:
         MemoryManager instance or None
     """
     return _memory_manager
+
+
+def set_neuro_engine(engine: Any) -> None:
+    """Set the global neuro engine reference for cognitive state checks.
+
+    Args:
+        engine: NeuroCognitiveEngine instance
+    """
+    global _neuro_engine
+    _neuro_engine = engine
+
+
+def get_neuro_engine() -> Any | None:
+    """Get the global neuro engine reference.
+
+    Returns:
+        NeuroCognitiveEngine instance or None
+    """
+    return _neuro_engine
+
+
+def _get_safe_cognitive_state() -> dict[str, Any] | None:
+    """Get safe aggregated cognitive state for health/readiness endpoints.
+
+    Returns aggregated state without exposing sensitive internal details.
+    This is safe for observability purposes.
+
+    Returns:
+        Dictionary with safe cognitive state fields, or None if unavailable
+    """
+    engine = get_neuro_engine()
+    if engine is None:
+        return None
+
+    try:
+        # Try to get cognitive state if the engine supports it
+        if hasattr(engine, "get_cognitive_state"):
+            state = engine.get_cognitive_state()
+            # Return only safe aggregated fields
+            return {
+                "phase": state.phase,
+                "emergency_shutdown": state.emergency_shutdown,
+                "rhythm_state": state.rhythm_state,
+                "stateless_mode": state.stateless_mode,
+            }
+        # Fallback: try to get basic state
+        if hasattr(engine, "get_state"):
+            raw_state = engine.get_state()
+            return {
+                "phase": raw_state.get("phase", "unknown"),
+                "emergency_shutdown": raw_state.get("emergency_shutdown", False),
+                "rhythm_state": raw_state.get("rhythm_state"),
+                "stateless_mode": raw_state.get("stateless_mode", False),
+            }
+    except Exception as e:
+        logger.warning(f"Failed to get cognitive state: {e}")
+
+    return None
 
 
 @router.get("", response_model=SimpleHealthStatus)
@@ -157,6 +198,24 @@ async def readiness(response: Response) -> ReadinessStatus:
         checks["cpu_available"] = False
         all_ready = False
 
+    # Get cognitive state for introspection (safe aggregated data only)
+    cognitive_state = _get_safe_cognitive_state()
+
+    # Check cognitive layer readiness
+    if cognitive_state is not None:
+        # Check for emergency shutdown - not ready if in emergency state
+        if cognitive_state.get("emergency_shutdown", False):
+            checks["emergency_shutdown"] = False
+            all_ready = False
+        else:
+            checks["emergency_shutdown"] = True
+
+        # Check for stateless/degraded mode - still ready, but flagged
+        checks["cognitive_healthy"] = not cognitive_state.get("stateless_mode", False)
+    else:
+        # If no cognitive state available, mark as unavailable but don't block
+        checks["cognitive_state_available"] = False
+
     # Set response status code
     if all_ready:
         response.status_code = status.HTTP_200_OK
@@ -170,6 +229,7 @@ async def readiness(response: Response) -> ReadinessStatus:
         status=status_str,
         timestamp=time.time(),
         checks=checks,
+        cognitive_state=cognitive_state,
     )
 
 

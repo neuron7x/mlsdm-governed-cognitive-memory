@@ -8,11 +8,19 @@ from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from opentelemetry.trace import SpanKind
-from pydantic import BaseModel, Field
 
 from mlsdm.api import health
 from mlsdm.api.lifecycle import cleanup_memory_manager, get_lifecycle_manager
 from mlsdm.api.middleware import RequestIDMiddleware, SecurityHeadersMiddleware
+from mlsdm.api.schemas import (
+    ErrorResponse,
+    EventInput,
+    GenerateRequest,
+    GenerateResponse,
+    InferRequest,
+    InferResponse,
+    StateResponse,
+)
 from mlsdm.core.memory_manager import MemoryManager
 from mlsdm.engine import NeuroEngineConfig, build_neuro_engine_from_env
 from mlsdm.observability.tracing import (
@@ -82,6 +90,9 @@ _engine_config = NeuroEngineConfig(
 )
 _neuro_engine = build_neuro_engine_from_env(config=_engine_config)
 
+# Set neuro engine for health checks (cognitive state introspection)
+health.set_neuro_engine(_neuro_engine)
+
 
 def _get_client_id(request: Request) -> str:
     """Get pseudonymized client identifier from request.
@@ -111,133 +122,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
 
     security_logger.log_auth_success(client_id="unknown")
     return token
-
-
-class EventInput(BaseModel):
-    event_vector: list[float]
-    moral_value: float
-
-
-class StateResponse(BaseModel):
-    L1_norm: float
-    L2_norm: float
-    L3_norm: float
-    current_phase: str
-    latent_events_count: int
-    accepted_events_count: int
-    total_events_processed: int
-    moral_filter_threshold: float
-
-
-# Request/Response models for /generate endpoint
-class GenerateRequest(BaseModel):
-    """Request model for generate endpoint."""
-
-    prompt: str = Field(..., min_length=1, description="Input text prompt to process")
-    max_tokens: int | None = Field(
-        None, ge=1, le=4096, description="Maximum number of tokens to generate"
-    )
-    moral_value: float | None = Field(
-        None, ge=0.0, le=1.0, description="Moral threshold value"
-    )
-
-
-# Request/Response models for /infer endpoint (extended API)
-class InferRequest(BaseModel):
-    """Request model for infer endpoint with extended governance options."""
-
-    prompt: str = Field(..., min_length=1, description="Input text prompt to process")
-    moral_value: float | None = Field(
-        None, ge=0.0, le=1.0, description="Moral threshold value (default: 0.5)"
-    )
-    max_tokens: int | None = Field(
-        None, ge=1, le=4096, description="Maximum number of tokens to generate"
-    )
-    secure_mode: bool = Field(
-        default=False,
-        description="Enable enhanced security filtering for sensitive contexts"
-    )
-    aphasia_mode: bool = Field(
-        default=False,
-        description="Enable aphasia detection and repair for output quality"
-    )
-    rag_enabled: bool = Field(
-        default=True,
-        description="Enable RAG-based context retrieval from memory"
-    )
-    context_top_k: int | None = Field(
-        None, ge=1, le=100, description="Number of context items for RAG (default: 5)"
-    )
-    user_intent: str | None = Field(
-        None, description="User intent category (e.g., 'conversational', 'analytical')"
-    )
-
-
-class InferResponse(BaseModel):
-    """Response model for infer endpoint with detailed metadata."""
-
-    response: str = Field(description="Generated response text")
-    accepted: bool = Field(description="Whether the request was accepted")
-    phase: str = Field(description="Current cognitive phase ('wake' or 'sleep')")
-    moral_metadata: dict[str, Any] | None = Field(
-        default=None, description="Moral filtering metadata"
-    )
-    aphasia_metadata: dict[str, Any] | None = Field(
-        default=None, description="Aphasia detection/repair metadata (if aphasia_mode enabled)"
-    )
-    rag_metadata: dict[str, Any] | None = Field(
-        default=None, description="RAG retrieval metadata (context items, relevance)"
-    )
-    timing: dict[str, float] | None = Field(
-        default=None, description="Performance timing in milliseconds"
-    )
-    governance: dict[str, Any] | None = Field(
-        default=None, description="Full governance state information"
-    )
-
-
-class GenerateResponse(BaseModel):
-    """Response model for generate endpoint.
-
-    Core fields (always present):
-    - response: Generated text
-    - phase: Current cognitive phase
-    - accepted: Whether the request was accepted
-
-    Optional metrics/diagnostics:
-    - metrics: Performance and timing information
-    - safety_flags: Safety-related validation results
-    - memory_stats: Memory state statistics
-    """
-
-    response: str = Field(description="Generated response text")
-    phase: str = Field(description="Current cognitive phase")
-    accepted: bool = Field(description="Whether the request was accepted")
-    metrics: dict[str, Any] | None = Field(
-        default=None, description="Performance timing metrics"
-    )
-    safety_flags: dict[str, Any] | None = Field(
-        default=None, description="Safety validation results"
-    )
-    memory_stats: dict[str, Any] | None = Field(
-        default=None, description="Memory state statistics"
-    )
-
-
-class ErrorDetail(BaseModel):
-    """Structured error detail."""
-
-    error_type: str = Field(description="Type of error")
-    message: str = Field(description="Human-readable error message")
-    details: dict[str, Any] | None = Field(
-        default=None, description="Additional error details"
-    )
-
-
-class ErrorResponse(BaseModel):
-    """Structured error response."""
-
-    error: ErrorDetail
 
 
 @app.post("/v1/process_event/", response_model=StateResponse)
