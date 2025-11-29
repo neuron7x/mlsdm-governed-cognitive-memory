@@ -7,7 +7,7 @@ Example:
     >>> from sdk.python.client import MLSDMClient
     >>> client = MLSDMClient(base_url="http://localhost:8000")
     >>> result = client.infer("What is machine learning?")
-    >>> print(result["response"])
+    >>> print(result.response)
 """
 
 from dataclasses import dataclass
