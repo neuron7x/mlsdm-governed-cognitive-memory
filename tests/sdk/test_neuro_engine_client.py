@@ -6,6 +6,8 @@ Tests cover:
 - Error handling (timeouts, retries, network errors)
 - Parameter passing and response handling
 - Backend configuration
+- Typed DTO response structure
+- SDK-specific exceptions
 
 Note: These tests use the local_stub backend to simulate HTTP behavior
 since the SDK wraps the engine directly rather than making HTTP calls.
@@ -18,7 +20,12 @@ import pytest
 
 from mlsdm.adapters import LLMProviderError, LLMTimeoutError
 from mlsdm.engine import NeuroEngineConfig
-from mlsdm.sdk import NeuroCognitiveClient
+from mlsdm.sdk import (
+    GenerateResponseDTO,
+    MLSDMServerError,
+    MLSDMTimeoutError,
+    NeuroCognitiveClient,
+)
 
 
 class TestNeuroCognitiveClientHttpBehavior:
@@ -29,14 +36,16 @@ class TestNeuroCognitiveClientHttpBehavior:
         client = NeuroCognitiveClient(backend="local_stub")
         result = client.generate("Test prompt")
 
-        # Verify response structure matches API contract
-        assert "response" in result
-        assert "timing" in result
-        assert "validation_steps" in result
-        assert "mlsdm" in result
-        assert "governance" in result
-        assert "error" in result
-        assert "rejected_at" in result
+        # Verify response is a typed DTO
+        assert isinstance(result, GenerateResponseDTO)
+
+        # Verify DTO has required fields
+        assert hasattr(result, "response")
+        assert hasattr(result, "phase")
+        assert hasattr(result, "accepted")
+        assert hasattr(result, "metrics")
+        assert hasattr(result, "safety_flags")
+        assert hasattr(result, "memory_stats")
 
     def test_generate_passes_all_parameters(self):
         """Test that all parameters are passed to engine."""
@@ -76,15 +85,28 @@ class TestNeuroCognitiveClientHttpBehavior:
         client = NeuroCognitiveClient()
         result = client.generate("Minimal test")
 
-        assert "response" in result
-        assert len(result["response"]) > 0
+        # Result is a DTO
+        assert isinstance(result, GenerateResponseDTO)
+        assert len(result.response) > 0
 
     def test_generate_returns_neuro_response_prefix(self):
         """Test that local_stub returns recognizable response."""
         client = NeuroCognitiveClient(backend="local_stub")
         result = client.generate("Hello world")
 
-        assert "NEURO-RESPONSE" in result["response"]
+        # Access response via DTO attribute
+        assert "NEURO-RESPONSE" in result.response
+
+    def test_generate_raw_returns_dict(self):
+        """Test that generate_raw returns raw dictionary."""
+        client = NeuroCognitiveClient(backend="local_stub")
+        result = client.generate_raw("Test prompt")
+
+        # Verify raw dict structure
+        assert isinstance(result, dict)
+        assert "response" in result
+        assert "timing" in result
+        assert "mlsdm" in result
 
 
 class TestNeuroCognitiveClientErrorHandling:
@@ -100,8 +122,8 @@ class TestNeuroCognitiveClientErrorHandling:
             with pytest.raises(RuntimeError, match="Engine error"):
                 client.generate("Test")
 
-    def test_handles_provider_error(self):
-        """Test that LLMProviderError is propagated."""
+    def test_handles_provider_error_as_sdk_error(self):
+        """Test that LLMProviderError is wrapped in MLSDMServerError."""
         client = NeuroCognitiveClient()
 
         with patch.object(client._engine, "generate") as mock_generate:
@@ -110,11 +132,13 @@ class TestNeuroCognitiveClientErrorHandling:
                 provider_id="test",
             )
 
-            with pytest.raises(LLMProviderError, match="Provider failed"):
+            with pytest.raises(MLSDMServerError) as exc_info:
                 client.generate("Test")
 
-    def test_handles_timeout_error(self):
-        """Test that timeout errors are propagated."""
+            assert "Provider failed" in str(exc_info.value)
+
+    def test_handles_timeout_error_as_sdk_error(self):
+        """Test that timeout errors are wrapped in MLSDMTimeoutError."""
         client = NeuroCognitiveClient()
 
         with patch.object(client._engine, "generate") as mock_generate:
@@ -124,13 +148,13 @@ class TestNeuroCognitiveClientErrorHandling:
                 timeout_seconds=30.0,
             )
 
-            with pytest.raises(LLMTimeoutError) as exc_info:
+            with pytest.raises(MLSDMTimeoutError) as exc_info:
                 client.generate("Test")
 
             assert exc_info.value.timeout_seconds == 30.0
 
-    def test_error_contains_provider_id(self):
-        """Test that error includes provider information."""
+    def test_sdk_error_contains_details(self):
+        """Test that SDK error includes relevant details."""
         client = NeuroCognitiveClient()
 
         with patch.object(client._engine, "generate") as mock_generate:
@@ -139,10 +163,10 @@ class TestNeuroCognitiveClientErrorHandling:
                 provider_id="local_stub",
             )
 
-            with pytest.raises(LLMProviderError) as exc_info:
+            with pytest.raises(MLSDMServerError) as exc_info:
                 client.generate("Test")
 
-            assert exc_info.value.provider_id == "local_stub"
+            assert exc_info.value.details.get("provider_id") == "local_stub"
 
 
 class TestNeuroCognitiveClientTimeout:
@@ -153,7 +177,8 @@ class TestNeuroCognitiveClientTimeout:
         client = NeuroCognitiveClient()
         # Should complete without timeout on local stub
         result = client.generate("Quick test")
-        assert "response" in result
+        assert isinstance(result, GenerateResponseDTO)
+        assert result.response  # Non-empty response
 
     def test_engine_with_different_max_tokens(self):
         """Test that max_tokens parameter is passed to engine."""
@@ -163,9 +188,14 @@ class TestNeuroCognitiveClientTimeout:
         result_small = client.generate("Test", max_tokens=10)
         result_large = client.generate("Test", max_tokens=500)
 
-        # Both should return responses
-        assert "response" in result_small
-        assert "response" in result_large
+        # Both should return valid DTOs with responses
+        assert isinstance(result_small, GenerateResponseDTO)
+        assert isinstance(result_large, GenerateResponseDTO)
+
+    def test_client_has_timeout_property(self):
+        """Test that client exposes timeout configuration."""
+        client = NeuroCognitiveClient(timeout=60.0)
+        assert client.timeout == 60.0
 
 
 class TestNeuroCognitiveClient4xxErrors:
@@ -191,7 +221,7 @@ class TestNeuroCognitiveClient4xxErrors:
         # The SDK passes through to engine, validation happens there
         # Local stub will process even empty prompts
         result = client.generate("")
-        assert "response" in result
+        assert isinstance(result, GenerateResponseDTO)
 
 
 class TestNeuroCognitiveClient5xxErrors:
@@ -207,8 +237,8 @@ class TestNeuroCognitiveClient5xxErrors:
             with pytest.raises(Exception, match="Internal server error"):
                 client.generate("Test")
 
-    def test_generator_failure_propagates(self):
-        """Test that generator failure is handled."""
+    def test_generator_failure_wraps_in_sdk_error(self):
+        """Test that generator failure is wrapped in SDK error."""
         client = NeuroCognitiveClient()
 
         with patch.object(client._engine, "generate") as mock_generate:
@@ -218,10 +248,10 @@ class TestNeuroCognitiveClient5xxErrors:
                 original_error=RuntimeError("LLM crash"),
             )
 
-            with pytest.raises(LLMProviderError) as exc_info:
+            with pytest.raises(MLSDMServerError) as exc_info:
                 client.generate("Test")
 
-            assert exc_info.value.original_error is not None
+            assert "Generator failed" in str(exc_info.value)
 
 
 class TestNeuroCognitiveClientBackendConfiguration:
@@ -233,7 +263,7 @@ class TestNeuroCognitiveClientBackendConfiguration:
         assert client.backend == "local_stub"
 
         result = client.generate("Test")
-        assert "NEURO-RESPONSE" in result["response"]
+        assert "NEURO-RESPONSE" in result.response
 
     def test_openai_backend_with_api_key(self):
         """Test client initialization with OpenAI backend (mocked)."""
@@ -263,46 +293,60 @@ class TestNeuroCognitiveClientBackendConfiguration:
 class TestNeuroCognitiveClientResponseStructure:
     """Test SDK client response structure matches API contract."""
 
-    def test_response_has_all_required_fields(self):
-        """Test that response includes all expected fields."""
+    def test_response_dto_has_all_required_fields(self):
+        """Test that response DTO includes all expected fields."""
         client = NeuroCognitiveClient()
         result = client.generate("Test prompt")
 
-        # Core fields
-        assert "response" in result
-        assert isinstance(result["response"], str)
+        # Core fields (STABLE CONTRACT)
+        assert hasattr(result, "response")
+        assert isinstance(result.response, str)
+        assert hasattr(result, "phase")
+        assert isinstance(result.phase, str)
+        assert hasattr(result, "accepted")
+        assert isinstance(result.accepted, bool)
 
-        # Governance fields
-        assert "governance" in result
-        assert "mlsdm" in result
+        # Optional fields
+        assert hasattr(result, "metrics")
+        assert hasattr(result, "safety_flags")
+        assert hasattr(result, "memory_stats")
+        assert hasattr(result, "error")
+        assert hasattr(result, "rejected_at")
 
-        # Timing and validation
-        assert "timing" in result
-        assert "validation_steps" in result
-
-        # Error tracking
-        assert "error" in result
-        assert "rejected_at" in result
-
-    def test_mlsdm_state_contains_phase(self):
-        """Test that mlsdm state includes phase information."""
+    def test_dto_phase_is_valid(self):
+        """Test that phase is a valid value."""
         client = NeuroCognitiveClient()
         result = client.generate("Test")
 
-        mlsdm_state = result.get("mlsdm", {})
-        assert "phase" in mlsdm_state
-        assert mlsdm_state["phase"] in ["wake", "sleep", "unknown"]
+        assert result.phase in ["wake", "sleep", "unknown"]
 
-    def test_timing_is_dict_with_metrics(self):
-        """Test that timing contains performance metrics."""
+    def test_dto_has_helper_properties(self):
+        """Test that DTO has helper properties."""
         client = NeuroCognitiveClient()
         result = client.generate("Test")
 
-        timing = result.get("timing")
-        if timing is not None:
-            assert isinstance(timing, dict)
-            # Should have at least total timing
-            assert "total" in timing or len(timing) > 0
+        # Helper properties
+        assert hasattr(result, "is_success")
+        assert hasattr(result, "is_rejected")
+        assert hasattr(result, "has_error")
+        assert hasattr(result, "raw")
+
+        # A successful response should be marked as success
+        assert result.is_success is True
+        assert result.is_rejected is False
+        assert result.has_error is False
+
+    def test_dto_to_dict_conversion(self):
+        """Test that DTO can be converted to dictionary."""
+        client = NeuroCognitiveClient()
+        result = client.generate("Test")
+
+        result_dict = result.to_dict()
+
+        assert isinstance(result_dict, dict)
+        assert "response" in result_dict
+        assert "phase" in result_dict
+        assert "accepted" in result_dict
 
 
 class TestNeuroCognitiveClientRetryBehavior:
@@ -320,7 +364,7 @@ class TestNeuroCognitiveClientRetryBehavior:
 
         with (
             patch.object(client._engine, "generate", side_effect=fail_once),
-            pytest.raises(LLMProviderError),
+            pytest.raises(MLSDMServerError),
         ):
             client.generate("Test")
 
@@ -334,11 +378,52 @@ class TestNeuroCognitiveClientRetryBehavior:
         result1 = client.generate("Test 1")
         result2 = client.generate("Test 2")
 
-        # Both should have same structure
+        # Both should be DTOs with same structure
         for result in [result1, result2]:
-            assert "response" in result
-            assert "timing" in result
-            assert "mlsdm" in result
+            assert isinstance(result, GenerateResponseDTO)
+            assert hasattr(result, "response")
+            assert hasattr(result, "phase")
+            assert hasattr(result, "accepted")
+
+
+class TestNeuroCognitiveClientSDKExceptions:
+    """Test SDK-specific exception handling."""
+
+    def test_sdk_exceptions_are_exported(self):
+        """Test that SDK exceptions are exported from module."""
+        from mlsdm.sdk import (
+            MLSDMClientError,
+            MLSDMConfigError,
+            MLSDMError,
+            MLSDMRateLimitError,
+            MLSDMServerError,
+            MLSDMTimeoutError,
+            MLSDMValidationError,
+        )
+
+        # Verify exception hierarchy
+        assert issubclass(MLSDMClientError, MLSDMError)
+        assert issubclass(MLSDMServerError, MLSDMError)
+        assert issubclass(MLSDMTimeoutError, MLSDMError)
+        assert issubclass(MLSDMValidationError, MLSDMClientError)
+        assert issubclass(MLSDMConfigError, MLSDMClientError)
+        assert issubclass(MLSDMRateLimitError, MLSDMClientError)
+
+    def test_server_error_has_error_type(self):
+        """Test that MLSDMServerError has error_type attribute."""
+        from mlsdm.sdk import MLSDMServerError
+
+        error = MLSDMServerError("Test error", error_type="test_error")
+        assert error.error_type == "test_error"
+        assert error.message == "Test error"
+
+    def test_timeout_error_has_timeout_seconds(self):
+        """Test that MLSDMTimeoutError has timeout_seconds attribute."""
+        from mlsdm.sdk import MLSDMTimeoutError
+
+        error = MLSDMTimeoutError("Timeout", timeout_seconds=30.0, operation="generate")
+        assert error.timeout_seconds == 30.0
+        assert error.operation == "generate"
 
 
 if __name__ == "__main__":

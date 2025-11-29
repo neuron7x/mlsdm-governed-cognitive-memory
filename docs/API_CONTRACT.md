@@ -1,6 +1,6 @@
 # MLSDM API Contract
 
-**Document Version:** 1.0.0  
+**Document Version:** 1.1.0  
 **Last Updated:** November 2025  
 **Status:** Production
 
@@ -8,8 +8,42 @@ This document defines the HTTP API contract for the MLSDM (Governed Cognitive Me
 
 ---
 
+## Stability Guarantees
+
+The MLSDM API follows semantic versioning for stability guarantees:
+
+### Stable Fields (Contract)
+
+The following fields are part of the **stable API contract** and will NOT be removed or renamed without a major version bump:
+
+**GenerateResponse (stable)**:
+- `response` (str): Generated response text
+- `phase` (str): Current cognitive phase ('wake' or 'sleep')
+- `accepted` (bool): Whether the request was accepted
+
+**InferResponse (stable)**:
+- `response` (str): Generated response text
+- `accepted` (bool): Whether the request was accepted
+- `phase` (str): Current cognitive phase
+
+**ErrorResponse (stable)**:
+- `error.error_type` (str): Type of error
+- `error.message` (str): Human-readable error message
+
+**Health Endpoints (stable)**:
+- `/health` status field
+- `/health/liveness` status and timestamp fields
+- `/health/readiness` ready, status, timestamp, and checks fields
+
+### Optional Fields (May Change)
+
+Optional fields (those marked as `| null`) may be added, modified, or removed in minor versions. Consumers should handle their absence gracefully.
+
+---
+
 ## Table of Contents
 
+- [Stability Guarantees](#stability-guarantees)
 - [Overview](#overview)
 - [Base URL](#base-url)
 - [Authentication](#authentication)
@@ -20,6 +54,7 @@ This document defines the HTTP API contract for the MLSDM (Governed Cognitive Me
   - [State Endpoints](#state-endpoints)
 - [Error Responses](#error-responses)
 - [Pydantic Schema Reference](#pydantic-schema-reference)
+- [Python SDK](#python-sdk)
 
 ---
 
@@ -489,7 +524,7 @@ Pydantic validation errors follow FastAPI's standard format:
 
 ## Pydantic Schema Reference
 
-All schemas are defined in `src/mlsdm/api/app.py` and `src/mlsdm/api/health.py`.
+All schemas are centralized in `src/mlsdm/api/schemas.py` for maintainability and consistency.
 
 ### Request Schemas
 
@@ -556,6 +591,93 @@ class ErrorDetail(BaseModel):
     error_type: str
     message: str
     details: dict[str, Any] | None = None
+    debug_id: str | None = None  # Request ID for correlation
+```
+
+---
+
+## Python SDK
+
+The MLSDM Python SDK provides a typed client interface for interacting with the API.
+
+### Installation
+
+```python
+from mlsdm.sdk import NeuroCognitiveClient
+```
+
+### Basic Usage
+
+```python
+# Create client
+client = NeuroCognitiveClient(backend="local_stub")
+
+# Generate response (returns typed DTO)
+result = client.generate(
+    prompt="What is consciousness?",
+    max_tokens=256,
+    moral_value=0.7,
+)
+
+# Access response via typed attributes
+print(result.response)
+print(f"Phase: {result.phase}, Accepted: {result.accepted}")
+
+# Check success/failure
+if result.is_success:
+    print("Generation succeeded!")
+elif result.is_rejected:
+    print(f"Rejected at: {result.rejected_at}")
+```
+
+### SDK Exceptions
+
+The SDK provides typed exceptions for error handling:
+
+```python
+from mlsdm.sdk import (
+    MLSDMError,           # Base exception
+    MLSDMClientError,     # Client-side errors (4xx-like)
+    MLSDMServerError,     # Server-side errors (5xx-like)
+    MLSDMTimeoutError,    # Timeout errors
+    MLSDMValidationError, # Input validation errors
+    MLSDMConfigError,     # Configuration errors
+)
+
+try:
+    result = client.generate("Test prompt")
+except MLSDMTimeoutError as e:
+    print(f"Request timed out after {e.timeout_seconds}s")
+except MLSDMServerError as e:
+    print(f"Server error: {e.message}")
+except MLSDMClientError as e:
+    print(f"Client error: {e.message}")
+```
+
+### Response DTO
+
+The `GenerateResponseDTO` provides typed access to response data:
+
+```python
+# Stable contract fields (guaranteed)
+result.response      # str: Generated text
+result.phase         # str: Cognitive phase ('wake' or 'sleep')
+result.accepted      # bool: Whether accepted
+
+# Optional fields
+result.metrics       # dict | None: Timing metrics
+result.safety_flags  # dict | None: Safety validation
+result.memory_stats  # dict | None: Memory statistics
+result.latency_ms    # float | None: Total latency in ms
+
+# Helper properties
+result.is_success    # bool: True if accepted with response
+result.is_rejected   # bool: True if rejected at some stage
+result.has_error     # bool: True if error occurred
+
+# Access raw dict (for backward compatibility)
+result.raw           # dict: Original engine response
+result.to_dict()     # dict: DTO as dictionary
 ```
 
 ---

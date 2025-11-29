@@ -2,6 +2,31 @@
 
 Provides liveness, readiness, and detailed health status endpoints
 with appropriate HTTP status codes based on system state.
+
+API Contract Stability Policy:
+-----------------------------
+The following fields are part of the stable API contract:
+
+/health (SimpleHealthStatus):
+    - status: str (always "healthy" when service is responsive)
+
+/health/liveness (HealthStatus):
+    - status: str (always "alive")
+    - timestamp: float
+
+/health/readiness (ReadinessStatus):
+    - ready: bool
+    - status: str ("ready" or "not_ready")
+    - timestamp: float
+    - checks: dict[str, bool]
+
+/health/detailed (DetailedHealthStatus):
+    - status: str ("healthy" or "unhealthy")
+    - timestamp: float
+    - uptime_seconds: float
+    - system: dict[str, Any]
+
+These fields will not be removed or renamed without a major version bump.
 """
 
 import logging
@@ -12,48 +37,19 @@ import numpy as np
 import psutil
 from fastapi import APIRouter, Response, status
 from fastapi.responses import PlainTextResponse
-from pydantic import BaseModel
 
+from mlsdm.api.schemas import (
+    DetailedHealthStatus,
+    HealthStatus,
+    ReadinessStatus,
+    SimpleHealthStatus,
+)
 from mlsdm.observability.metrics import get_metrics_exporter
 
 logger = logging.getLogger(__name__)
 
 # Health check router
 router = APIRouter(prefix="/health", tags=["health"])
-
-
-class SimpleHealthStatus(BaseModel):
-    """Simple health status response for basic health check."""
-
-    status: str
-
-
-class HealthStatus(BaseModel):
-    """Basic health status response."""
-
-    status: str
-    timestamp: float
-
-
-class ReadinessStatus(BaseModel):
-    """Readiness status response."""
-
-    ready: bool
-    status: str
-    timestamp: float
-    checks: dict[str, bool]
-
-
-class DetailedHealthStatus(BaseModel):
-    """Detailed health status response."""
-
-    status: str
-    timestamp: float
-    uptime_seconds: float
-    system: dict[str, Any]
-    memory_state: dict[str, Any] | None
-    phase: str | None
-    statistics: dict[str, Any] | None
 
 
 # Track when the service started
