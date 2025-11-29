@@ -9,7 +9,6 @@ Tests validate:
 
 import json
 import logging
-import os
 import tempfile
 from io import StringIO
 from pathlib import Path
@@ -17,7 +16,6 @@ from pathlib import Path
 import pytest
 
 from mlsdm.observability.logger import (
-    EventType,
     ObservabilityLogger,
     get_observability_logger,
 )
@@ -218,9 +216,6 @@ class TestLoggerIntegration:
 
     def test_singleton_logger_works(self, temp_log_dir):
         """Test that the global singleton logger can log emergency shutdown."""
-        # Use the singleton but with different temp dir
-        from mlsdm.observability import logger as logger_module
-
         # Get or create singleton
         obs_logger = get_observability_logger()
 

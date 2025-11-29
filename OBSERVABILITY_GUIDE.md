@@ -46,6 +46,116 @@ export MLSDM_OTEL_ENDPOINT=http://jaeger:4318
 3. Select your Prometheus data source
 4. Click Import
 
+## Health Endpoints for DevOps
+
+MLSDM provides health endpoints for Kubernetes liveness and readiness probes, as well as detailed system diagnostics.
+
+### Endpoint Summary
+
+| Endpoint | Purpose | Response Code |
+|----------|---------|---------------|
+| `GET /health` | Simple health check | 200 always |
+| `GET /health/live` | **Liveness probe** - process alive | 200 always |
+| `GET /health/ready` | **Readiness probe** - can accept traffic | 200 or 503 |
+| `GET /health/readiness` | Legacy alias for `/health/ready` | 200 or 503 |
+| `GET /health/detailed` | Full system diagnostics | 200 or 503 |
+| `GET /health/metrics` | Prometheus metrics | 200 |
+
+### Liveness Probe: `/health/live`
+
+Use this endpoint for Kubernetes liveness probes. It returns 200 if the process is alive - no dependency checks are performed.
+
+```bash
+curl http://localhost:8000/health/live
+```
+
+Response:
+```json
+{
+  "status": "alive",
+  "timestamp": 1234567890.123
+}
+```
+
+### Readiness Probe: `/health/ready`
+
+Use this endpoint for Kubernetes readiness probes. It performs comprehensive health checks on critical components.
+
+**Components Checked:**
+- **cognitive_controller**: Not in `emergency_shutdown` state
+- **memory_bounds**: Global memory usage within configured limit (default: 1.4 GB)
+- **moral_filter**: Initialized without critical errors
+- **system_memory**: System RAM usage < 95%
+- **system_cpu**: System CPU usage < 98%
+
+```bash
+curl http://localhost:8000/health/ready
+```
+
+Response (ready):
+```json
+{
+  "ready": true,
+  "status": "ready",
+  "timestamp": 1234567890.123,
+  "components": {
+    "cognitive_controller": {"healthy": true, "details": null},
+    "memory_bounds": {"healthy": true, "details": "usage: 45.2%"},
+    "moral_filter": {"healthy": true, "details": "threshold=0.50"},
+    "system_memory": {"healthy": true, "details": "usage: 68.5%"},
+    "system_cpu": {"healthy": true, "details": "usage: 35.2%"}
+  },
+  "details": null,
+  "checks": {
+    "cognitive_controller": true,
+    "memory_bounds": true,
+    "moral_filter": true,
+    "memory_available": true,
+    "cpu_available": true
+  }
+}
+```
+
+Response (not ready - emergency shutdown):
+```json
+{
+  "ready": false,
+  "status": "not_ready",
+  "timestamp": 1234567890.123,
+  "components": {
+    "cognitive_controller": {"healthy": false, "details": "emergency_shutdown_active"},
+    ...
+  },
+  "details": {
+    "unhealthy_components": ["cognitive_controller"]
+  },
+  "checks": {...}
+}
+```
+
+### Kubernetes Configuration Example
+
+```yaml
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: mlsdm-api
+    livenessProbe:
+      httpGet:
+        path: /health/live
+        port: 8000
+      initialDelaySeconds: 5
+      periodSeconds: 10
+    readinessProbe:
+      httpGet:
+        path: /health/ready
+        port: 8000
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      failureThreshold: 3
+```
+
 ## Minimal Observability Schema for Core Pipeline
 
 This section defines the **minimal** observability requirements for the core MLSDM pipeline (`generate()` → engine → controller → memory). This schema ensures incidents and system behavior are observable without excessive overhead.
@@ -151,7 +261,9 @@ scrape_configs:
 | Metric | Type | Description | Labels |
 |--------|------|-------------|--------|
 | `mlsdm_requests_total` | Counter | Total requests | `endpoint`, `status` |
+| `mlsdm_requests_inflight` | Gauge | **NEW** Concurrent requests in progress | - |
 | `mlsdm_request_latency_seconds` | Histogram | Request latency | `endpoint`, `phase` |
+| `mlsdm_generate_latency_seconds` | Histogram | **NEW** End-to-end generate() latency (seconds) | - |
 | `mlsdm_events_processed_total` | Counter | Events processed | - |
 | `mlsdm_events_rejected_total` | Counter | Events rejected | - |
 | `mlsdm_generation_latency_milliseconds` | Histogram | End-to-end generation latency | - |
@@ -184,6 +296,7 @@ scrape_configs:
 
 | Metric | Type | Description | Labels |
 |--------|------|-------------|--------|
+| `mlsdm_cognitive_emergency_total` | Counter | **NEW** Total cognitive emergency events | - |
 | `mlsdm_emergency_shutdowns_total` | Counter | Shutdown events | `reason` |
 | `mlsdm_emergency_shutdown_active` | Gauge | Shutdown active (1/0) | - |
 
@@ -192,7 +305,7 @@ scrape_configs:
 | Metric | Type | Description | Labels |
 |--------|------|-------------|--------|
 | `mlsdm_phase` | Gauge | Current phase (wake=1, sleep=0) | - |
-| `mlsdm_memory_usage_bytes` | Gauge | Memory usage | - |
+| `mlsdm_memory_usage_bytes` | Gauge | Memory usage in bytes | - |
 | `mlsdm_memory_l1_norm` | Gauge | L1 memory layer norm | - |
 | `mlsdm_memory_l2_norm` | Gauge | L2 memory layer norm | - |
 | `mlsdm_memory_l3_norm` | Gauge | L3 memory layer norm | - |
@@ -323,6 +436,63 @@ All logs are JSON-formatted with mandatory fields:
 ### Privacy Invariant
 
 **CRITICAL**: Raw user input and LLM responses are NEVER logged. Only metadata (lengths, scores, counts) is captured. The `payload_scrubber` function masks any text content before logging.
+
+## Emergency Shutdown Logs
+
+When an emergency shutdown is triggered, a structured log entry is created with full context for incident response.
+
+### Log Format
+
+Emergency shutdown events are logged at ERROR level with `event_type` set to one of:
+- `emergency_shutdown` - General emergency
+- `emergency_shutdown_memory` - Memory limit exceeded
+- `emergency_shutdown_timeout` - Processing timeout
+
+### Log Fields
+
+```json
+{
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "level": "ERROR",
+  "event_type": "emergency_shutdown",
+  "correlation_id": "abc-123",
+  "message": "EMERGENCY SHUTDOWN triggered: memory_limit",
+  "metrics": {
+    "event": "emergency_shutdown",
+    "reason": "memory_limit",
+    "phase": "wake",
+    "memory_used": 1500000000,
+    "is_stateless": false,
+    "aphasia_flags": ["repetition"],
+    "step_counter": 1542,
+    "moral_threshold": 0.75
+  }
+}
+```
+
+### Reason Codes
+
+| Reason | Description | Common Cause |
+|--------|-------------|--------------|
+| `memory_limit` | Global memory bound exceeded (1.4 GB) | High traffic, memory leak |
+| `memory_exceeded` | Process memory threshold exceeded | Same as above |
+| `processing_timeout` | Event processing took too long | Slow LLM, resource contention |
+| `config_error` | Configuration validation failed | Invalid config, missing keys |
+| `safety_violation` | Safety constraint violated | Moral filter failure |
+
+### How to Respond
+
+1. **Immediate**: Check `/health/ready` - will return 503 during emergency
+2. **Diagnose**: Look for `reason` field in logs to identify root cause
+3. **Memory Issues**:
+   - Check `mlsdm_memory_usage_bytes` metric
+   - Check `memory_used` field in log
+   - Consider restarting pod or scaling down
+4. **Timeout Issues**:
+   - Check `mlsdm_generate_latency_seconds` histogram
+   - Check LLM backend health
+   - Consider increasing timeout or scaling LLM
+5. **Recovery**: System has auto-recovery (after cooldown period), or manually restart
 
 ## Alerting Rules
 
