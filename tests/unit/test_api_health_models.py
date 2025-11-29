@@ -12,6 +12,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from mlsdm.api.health import (
+    ComponentStatus,
     DetailedHealthStatus,
     HealthStatus,
     ReadinessStatus,
@@ -55,11 +56,16 @@ class TestReadinessStatus:
             status="ready",
             timestamp=1234567890.0,
             checks={"memory": True, "llm": True},
+            components={
+                "memory": ComponentStatus(healthy=True),
+                "llm": ComponentStatus(healthy=True),
+            },
         )
         assert status.ready is True
         assert status.status == "ready"
         assert status.checks["memory"] is True
         assert status.checks["llm"] is True
+        assert status.components["memory"].healthy is True
 
     def test_readiness_status_not_ready(self):
         """Test ReadinessStatus when not ready."""
@@ -68,9 +74,14 @@ class TestReadinessStatus:
             status="degraded",
             timestamp=1234567890.0,
             checks={"memory": True, "llm": False},
+            components={
+                "memory": ComponentStatus(healthy=True),
+                "llm": ComponentStatus(healthy=False, details="LLM unavailable"),
+            },
         )
         assert status.ready is False
         assert status.checks["llm"] is False
+        assert status.components["llm"].healthy is False
 
 
 class TestDetailedHealthStatus:

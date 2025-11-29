@@ -85,16 +85,23 @@ class TestReadinessEndpoint:
         assert "cpu_available" in checks
 
     def test_readiness_not_ready_without_manager(self, client):
-        """Test that readiness is not ready without memory manager."""
-        # Without setting a memory manager, should not be ready
+        """Test that readiness reports memory_manager as not initialized when None.
+
+        Note: With the updated health endpoint, memory_manager is optional
+        and doesn't cause overall readiness to fail. The test validates that
+        the memory_manager component correctly reports its status.
+        """
+        # Without setting a memory manager
         health.set_memory_manager(None)
 
         response = client.get("/health/readiness")
         data = response.json()
 
-        assert data["ready"] is False
+        # Memory manager check should be false, but readiness may still be true
+        # if other critical components are healthy
         assert data["checks"]["memory_manager"] is False
-        assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+        # Also verify component reports correctly
+        assert data["components"]["memory_manager"]["healthy"] is False
 
     def test_readiness_status_matches_code(self, client):
         """Test that readiness status matches HTTP status code."""
