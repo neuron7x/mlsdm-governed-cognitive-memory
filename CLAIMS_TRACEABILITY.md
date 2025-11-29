@@ -191,6 +191,23 @@ All validation tests use:
 | Secret Patterns | 10+ patterns | `tests/security/test_payload_scrubber.py::TestSecretPatternCoverage` | API keys, passwords, private keys |
 | Large Payload Handling | 1MB+ | `tests/security/test_payload_scrubber.py::TestLargePayloadHandling` | Unicode, nested structures |
 | Dict Immutability | Preserved | `tests/security/test_payload_scrubber.py::TestScrubDictOriginalUnmodified` | Original data not modified |
+| Forbidden Fields Scrubbing | 30+ fields | `tests/security/test_payload_scrubber.py::TestForbiddenFields` | user_id, ip, prompt, raw_input, etc. |
+| Request Payload Scrubbing | Verified | `tests/security/test_payload_scrubber.py::TestScrubRequestPayload` | Full payload scrubbing for secure mode |
+| Log Record Scrubbing | Verified | `tests/security/test_payload_scrubber.py::TestScrubLogRecord` | Log scrubbing for secure mode |
+| Case-Insensitive Keys | Verified | `tests/security/test_payload_scrubber.py::TestScrubRequestPayload::test_case_insensitive_scrubbing` | User_ID, USER_ID all scrubbed |
+| Exception Safety | Verified | `tests/security/test_payload_scrubber.py::TestExceptionSafety` | Never raises, returns partial data |
+
+### Secure Mode
+
+| Claim | Value | Source Test/Benchmark | Notes |
+|-------|-------|----------------------|-------|
+| NeuroLang Disabled | Forced | `tests/security/test_secure_mode.py::test_secure_mode_forces_neurolang_disabled` | Training disabled in secure mode |
+| Checkpoint Ignored | Verified | `tests/security/test_secure_mode.py::test_secure_mode_ignores_checkpoint_path` | No checkpoint loading |
+| Aphasia Repair Disabled | Verified | `tests/security/test_secure_mode.py::test_secure_mode_disables_aphasia_repair` | Detection only |
+| Generate Works | Verified | `tests/security/test_secure_mode.py::test_secure_mode_generate_works_without_training` | No exceptions, valid response |
+| Response Structure Valid | Verified | `tests/security/test_secure_mode.py::test_secure_mode_generate_returns_valid_response_structure` | All fields present |
+| Prompt Scrubbed from Logs | Verified | `tests/security/test_secure_mode.py::test_secure_mode_scrubbing_removes_prompt_from_log_records` | No prompt leakage |
+| Response Scrubbed from Telemetry | Verified | `tests/security/test_secure_mode.py::test_secure_mode_scrubbing_removes_response_from_telemetry` | No response leakage |
 
 ### Adapters
 

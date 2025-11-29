@@ -7,6 +7,8 @@ Tests focus on:
 - Raw LLM payload scrubbing
 - Large/malformed payload handling
 - Edge cases and robustness
+- New scrub_request_payload and scrub_log_record functions
+- Forbidden fields for secure mode
 """
 
 import os
@@ -18,6 +20,8 @@ from mlsdm.security.payload_scrubber import (
     PII_FIELDS,
     SECRET_PATTERNS,
     scrub_dict,
+    scrub_log_record,
+    scrub_request_payload,
     scrub_text,
     should_log_payload,
 )
@@ -469,6 +473,270 @@ class TestEnvironmentVariableScrubbing:
                 assert should_log_payload() is False
             finally:
                 del os.environ["LOG_PAYLOADS"]
+
+
+class TestScrubRequestPayload:
+    """Tests for scrub_request_payload function."""
+
+    def test_scrubs_user_id(self):
+        """Test that user_id is scrubbed."""
+        payload = {"user_id": "user123", "message": "hello"}
+        result = scrub_request_payload(payload)
+        assert result["user_id"] == "***REDACTED***"
+        assert result["message"] == "hello"
+
+    def test_scrubs_prompt_field(self):
+        """Test that prompt field is scrubbed."""
+        payload = {"prompt": "What is the meaning of life?", "max_tokens": 100}
+        result = scrub_request_payload(payload)
+        assert result["prompt"] == "***REDACTED***"
+        assert result["max_tokens"] == 100
+
+    def test_scrubs_raw_input(self):
+        """Test that raw_input is scrubbed."""
+        payload = {"raw_input": "sensitive data", "model": "gpt-4"}
+        result = scrub_request_payload(payload)
+        assert result["raw_input"] == "***REDACTED***"
+        assert result["model"] == "gpt-4"
+
+    def test_scrubs_ip_address(self):
+        """Test that ip_address is scrubbed."""
+        payload = {"ip_address": "192.168.1.1", "request_id": "abc123"}
+        result = scrub_request_payload(payload)
+        assert result["ip_address"] == "***REDACTED***"
+        assert result["request_id"] == "abc123"
+
+    def test_scrubs_nested_forbidden_fields(self):
+        """Test that nested forbidden fields are scrubbed."""
+        payload = {
+            "user": {
+                "user_id": "user123",
+                "email": "test@example.com"
+            },
+            "request": {
+                "prompt": "sensitive prompt"
+            }
+        }
+        result = scrub_request_payload(payload)
+        assert result["user"]["user_id"] == "***REDACTED***"
+        assert result["user"]["email"] == "***REDACTED***"
+        assert result["request"]["prompt"] == "***REDACTED***"
+
+    def test_scrubs_full_prompt_and_full_response(self):
+        """Test that full_prompt and full_response are scrubbed."""
+        payload = {
+            "full_prompt": "What is AI?",
+            "full_response": "AI is artificial intelligence."
+        }
+        result = scrub_request_payload(payload)
+        assert result["full_prompt"] == "***REDACTED***"
+        assert result["full_response"] == "***REDACTED***"
+
+    def test_case_insensitive_scrubbing(self):
+        """Test that scrubbing is case-insensitive."""
+        payload = {
+            "User_ID": "user123",
+            "USER_ID": "user456",
+            "IP_ADDRESS": "192.168.1.1"
+        }
+        result = scrub_request_payload(payload)
+        assert result["User_ID"] == "***REDACTED***"
+        assert result["USER_ID"] == "***REDACTED***"
+        assert result["IP_ADDRESS"] == "***REDACTED***"
+
+    def test_preserves_safe_fields(self):
+        """Test that safe fields are preserved."""
+        payload = {
+            "model": "gpt-4",
+            "max_tokens": 100,
+            "temperature": 0.7,
+            "status": "success"
+        }
+        result = scrub_request_payload(payload)
+        assert result == payload
+
+    def test_never_raises_exceptions(self):
+        """Test that scrub_request_payload never raises exceptions."""
+        # Test with malformed data
+        assert scrub_request_payload({}) == {}
+        assert scrub_request_payload({"key": None})["key"] is None
+        # Original data should still be usable on error
+
+
+class TestScrubLogRecord:
+    """Tests for scrub_log_record function."""
+
+    def test_scrubs_user_id_in_log(self):
+        """Test that user_id is scrubbed from log records."""
+        record = {"message": "User logged in", "user_id": "user123"}
+        result = scrub_log_record(record)
+        assert result["user_id"] == "***REDACTED***"
+        assert result["message"] == "User logged in"
+
+    def test_scrubs_raw_text_in_log(self):
+        """Test that raw_text is scrubbed from log records."""
+        record = {"message": "Processing", "raw_text": "sensitive content"}
+        result = scrub_log_record(record)
+        assert result["raw_text"] == "***REDACTED***"
+
+    def test_scrubs_ip_in_log(self):
+        """Test that ip is scrubbed from log records."""
+        record = {"message": "Request received", "ip": "10.0.0.1"}
+        result = scrub_log_record(record)
+        assert result["ip"] == "***REDACTED***"
+
+    def test_scrubs_metadata_field(self):
+        """Test that metadata field is scrubbed."""
+        record = {
+            "message": "Event logged",
+            "metadata": {"user_info": "sensitive"}
+        }
+        result = scrub_log_record(record)
+        assert result["metadata"] == "***REDACTED***"
+
+    def test_scrubs_session_id(self):
+        """Test that session_id is scrubbed."""
+        record = {"action": "login", "session_id": "sess_abc123"}
+        result = scrub_log_record(record)
+        assert result["session_id"] == "***REDACTED***"
+
+    def test_scrubs_nested_log_data(self):
+        """Test that nested log data is scrubbed."""
+        record = {
+            "event": "api_call",
+            "data": {
+                "user_id": "user123",
+                "prompt": "Hello"
+            }
+        }
+        result = scrub_log_record(record)
+        assert result["data"]["user_id"] == "***REDACTED***"
+        assert result["data"]["prompt"] == "***REDACTED***"
+
+    def test_scrubs_list_with_sensitive_data(self):
+        """Test that lists with sensitive data are scrubbed."""
+        record = {
+            "events": [
+                {"user_id": "user1"},
+                {"user_id": "user2"}
+            ]
+        }
+        result = scrub_log_record(record)
+        assert result["events"][0]["user_id"] == "***REDACTED***"
+        assert result["events"][1]["user_id"] == "***REDACTED***"
+
+    def test_never_raises_exceptions(self):
+        """Test that scrub_log_record never raises exceptions."""
+        assert scrub_log_record({}) == {}
+        assert scrub_log_record({"key": None})["key"] is None
+
+
+class TestForbiddenFields:
+    """Tests for FORBIDDEN_FIELDS coverage."""
+
+    def test_forbidden_fields_contains_user_identifiers(self):
+        """Test that user identifiers are in FORBIDDEN_FIELDS."""
+        from mlsdm.security.payload_scrubber import FORBIDDEN_FIELDS
+        user_ids = {"user_id", "userid", "username", "account_id", "session_id"}
+        assert user_ids.issubset(FORBIDDEN_FIELDS)
+
+    def test_forbidden_fields_contains_network_identifiers(self):
+        """Test that network identifiers are in FORBIDDEN_FIELDS."""
+        from mlsdm.security.payload_scrubber import FORBIDDEN_FIELDS
+        network_ids = {"ip", "ip_address", "client_ip", "remote_addr"}
+        assert network_ids.issubset(FORBIDDEN_FIELDS)
+
+    def test_forbidden_fields_contains_raw_content(self):
+        """Test that raw content fields are in FORBIDDEN_FIELDS."""
+        from mlsdm.security.payload_scrubber import FORBIDDEN_FIELDS
+        raw_fields = {"raw_input", "raw_text", "full_prompt", "full_response", "prompt"}
+        assert raw_fields.issubset(FORBIDDEN_FIELDS)
+
+
+class TestIsSecureMode:
+    """Tests for is_secure_mode function."""
+
+    def test_secure_mode_default_false(self):
+        """Test that secure mode is disabled by default."""
+        from mlsdm.security.payload_scrubber import is_secure_mode
+        if "MLSDM_SECURE_MODE" in os.environ:
+            del os.environ["MLSDM_SECURE_MODE"]
+        assert is_secure_mode() is False
+
+    def test_secure_mode_enabled_with_1(self):
+        """Test that secure mode is enabled with MLSDM_SECURE_MODE=1."""
+        from mlsdm.security.payload_scrubber import is_secure_mode
+        os.environ["MLSDM_SECURE_MODE"] = "1"
+        try:
+            assert is_secure_mode() is True
+        finally:
+            del os.environ["MLSDM_SECURE_MODE"]
+
+    def test_secure_mode_enabled_with_true(self):
+        """Test that secure mode is enabled with MLSDM_SECURE_MODE=true."""
+        from mlsdm.security.payload_scrubber import is_secure_mode
+        os.environ["MLSDM_SECURE_MODE"] = "true"
+        try:
+            assert is_secure_mode() is True
+        finally:
+            del os.environ["MLSDM_SECURE_MODE"]
+
+    def test_secure_mode_enabled_with_TRUE(self):
+        """Test that secure mode is enabled with MLSDM_SECURE_MODE=TRUE."""
+        from mlsdm.security.payload_scrubber import is_secure_mode
+        os.environ["MLSDM_SECURE_MODE"] = "TRUE"
+        try:
+            assert is_secure_mode() is True
+        finally:
+            del os.environ["MLSDM_SECURE_MODE"]
+
+    def test_secure_mode_disabled_with_0(self):
+        """Test that secure mode is disabled with MLSDM_SECURE_MODE=0."""
+        from mlsdm.security.payload_scrubber import is_secure_mode
+        os.environ["MLSDM_SECURE_MODE"] = "0"
+        try:
+            assert is_secure_mode() is False
+        finally:
+            del os.environ["MLSDM_SECURE_MODE"]
+
+
+class TestExceptionSafety:
+    """Tests that scrubber functions never raise exceptions."""
+
+    def test_scrub_text_with_malformed_input(self):
+        """Test that scrub_text handles malformed input."""
+        # These should not raise
+        assert scrub_text("") == ""
+        assert scrub_text(None) is None  # type: ignore
+
+    def test_scrub_dict_with_malformed_input(self):
+        """Test that scrub_dict handles malformed input."""
+        # These should not raise
+        assert scrub_dict({}) == {}
+        assert scrub_dict({"key": None})["key"] is None
+
+    def test_scrub_request_payload_robust(self):
+        """Test that scrub_request_payload is robust."""
+        # Empty dict
+        assert scrub_request_payload({}) == {}
+        # None values
+        result = scrub_request_payload({"key": None})
+        assert result["key"] is None
+        # Complex nested structure
+        complex_data = {
+            "a": {"b": {"c": {"d": {"e": "value"}}}},
+            "list": [1, 2, {"nested": "data"}]
+        }
+        result = scrub_request_payload(complex_data)
+        assert "a" in result
+
+    def test_scrub_log_record_robust(self):
+        """Test that scrub_log_record is robust."""
+        # Empty dict
+        assert scrub_log_record({}) == {}
+        # None values
+        result = scrub_log_record({"key": None})
+        assert result["key"] is None
 
 
 if __name__ == "__main__":

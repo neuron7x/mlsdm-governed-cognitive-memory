@@ -5,8 +5,10 @@ This test suite validates that when MLSDM_SECURE_MODE is enabled:
 - NeuroLang training and checkpoint loading are disabled
 - Aphasia repair is disabled (detection only)
 - The system operates in a security-hardened mode
+- Logs and telemetry are scrubbed of sensitive data
 """
 
+import logging
 import os
 from unittest.mock import patch
 
@@ -16,6 +18,11 @@ import pytest
 from mlsdm.extensions.neuro_lang_extension import (
     NeuroLangWrapper,
     is_secure_mode_enabled,
+)
+from mlsdm.security.payload_scrubber import (
+    is_secure_mode,
+    scrub_log_record,
+    scrub_request_payload,
 )
 
 
@@ -184,3 +191,181 @@ def test_without_secure_mode_training_works_normally():
         assert wrapper.aphasia_repair_enabled is True
         assert wrapper.actor is not None
         assert wrapper.critic is not None
+
+
+@pytest.mark.security
+def test_secure_mode_generate_returns_valid_response_structure():
+    """Test that generate() in secure mode returns valid response structure."""
+    with patch.dict(os.environ, {"MLSDM_SECURE_MODE": "1"}):
+        wrapper = NeuroLangWrapper(
+            llm_generate_fn=dummy_llm,
+            embedding_fn=dummy_embedder,
+            dim=384,
+            capacity=256,
+        )
+
+        result = wrapper.generate(
+            prompt="Test prompt for secure mode",
+            moral_value=0.8,
+            max_tokens=100
+        )
+
+        # Verify response structure
+        assert result is not None
+        assert isinstance(result, dict)
+        assert "response" in result
+        assert "phase" in result
+        assert "accepted" in result
+        assert "neuro_enhancement" in result
+        assert "aphasia_flags" in result
+
+        # Verify response is valid (not an error)
+        assert result["accepted"] is True
+        assert isinstance(result["response"], str)
+        assert len(result["response"]) > 0
+
+
+@pytest.mark.security
+def test_secure_mode_scrubbing_removes_prompt_from_log_records():
+    """Test that secure mode scrubbing removes prompt from log records."""
+    with patch.dict(os.environ, {"MLSDM_SECURE_MODE": "1"}):
+        assert is_secure_mode() is True
+
+        log_record = {
+            "message": "Processing request",
+            "prompt": "This is a secret prompt that should not be logged",
+            "user_id": "user123"
+        }
+
+        scrubbed = scrub_log_record(log_record)
+
+        # Prompt and user_id should be scrubbed
+        assert scrubbed["prompt"] == "***REDACTED***"
+        assert scrubbed["user_id"] == "***REDACTED***"
+        # Message should be preserved
+        assert scrubbed["message"] == "Processing request"
+
+
+@pytest.mark.security
+def test_secure_mode_scrubbing_removes_response_from_telemetry():
+    """Test that secure mode scrubbing removes full response from telemetry."""
+    with patch.dict(os.environ, {"MLSDM_SECURE_MODE": "1"}):
+        telemetry = {
+            "event": "generation_complete",
+            "full_response": "This is the complete LLM response",
+            "full_prompt": "This is the complete user prompt",
+            "latency_ms": 150
+        }
+
+        scrubbed = scrub_request_payload(telemetry)
+
+        # Full response and prompt should be scrubbed
+        assert scrubbed["full_response"] == "***REDACTED***"
+        assert scrubbed["full_prompt"] == "***REDACTED***"
+        # Metadata should be preserved
+        assert scrubbed["latency_ms"] == 150
+        assert scrubbed["event"] == "generation_complete"
+
+
+@pytest.mark.security
+def test_secure_mode_does_not_break_normal_generation():
+    """Test that secure mode doesn't break normal text generation."""
+    with patch.dict(os.environ, {"MLSDM_SECURE_MODE": "1"}):
+        wrapper = NeuroLangWrapper(
+            llm_generate_fn=dummy_llm,
+            embedding_fn=dummy_embedder,
+            dim=384,
+            capacity=256,
+        )
+
+        # Multiple generations should work without exceptions
+        for i in range(3):
+            result = wrapper.generate(
+                prompt=f"Test prompt {i}",
+                moral_value=0.7,
+                max_tokens=50
+            )
+            assert result["accepted"] is True
+            assert "Rejected" not in result["response"]
+
+
+@pytest.mark.security
+def test_secure_mode_neuro_enhancement_shows_disabled():
+    """Test that neuro_enhancement field indicates disabled state in secure mode."""
+    with patch.dict(os.environ, {"MLSDM_SECURE_MODE": "1"}):
+        wrapper = NeuroLangWrapper(
+            llm_generate_fn=dummy_llm,
+            embedding_fn=dummy_embedder,
+            dim=384,
+            capacity=256,
+            neurolang_mode="eager_train",
+        )
+
+        result = wrapper.generate(
+            prompt="Test prompt",
+            moral_value=0.8,
+            max_tokens=50
+        )
+
+        # neuro_enhancement should indicate disabled state
+        assert result["neuro_enhancement"] == "NeuroLang disabled"
+
+
+@pytest.mark.security
+def test_secure_mode_function_matches_extension_function():
+    """Test that security module is_secure_mode matches extension is_secure_mode_enabled."""
+    with patch.dict(os.environ, {"MLSDM_SECURE_MODE": "1"}):
+        assert is_secure_mode() is True
+        assert is_secure_mode_enabled() is True
+
+    with patch.dict(os.environ, {"MLSDM_SECURE_MODE": "0"}):
+        assert is_secure_mode() is False
+        assert is_secure_mode_enabled() is False
+
+    with patch.dict(os.environ, {}, clear=True):
+        assert is_secure_mode() is False
+        assert is_secure_mode_enabled() is False
+
+
+@pytest.mark.security
+def test_secure_mode_scrubber_handles_nested_sensitive_data():
+    """Test that scrubber handles nested sensitive data in secure mode."""
+    with patch.dict(os.environ, {"MLSDM_SECURE_MODE": "1"}):
+        nested_data = {
+            "request": {
+                "user_id": "user123",
+                "input": {
+                    "prompt": "Secret prompt",
+                    "raw_input": "Raw sensitive data"
+                }
+            },
+            "network": {
+                "ip_address": "192.168.1.1",
+                "session_id": "sess_abc123"
+            }
+        }
+
+        scrubbed = scrub_request_payload(nested_data)
+
+        # All nested sensitive fields should be scrubbed
+        assert scrubbed["request"]["user_id"] == "***REDACTED***"
+        assert scrubbed["request"]["input"]["prompt"] == "***REDACTED***"
+        assert scrubbed["request"]["input"]["raw_input"] == "***REDACTED***"
+        assert scrubbed["network"]["ip_address"] == "***REDACTED***"
+        assert scrubbed["network"]["session_id"] == "***REDACTED***"
+
+
+@pytest.mark.security
+def test_secure_mode_scrubs_metadata_at_top_level():
+    """Test that metadata field itself is scrubbed (it's in forbidden fields)."""
+    with patch.dict(os.environ, {"MLSDM_SECURE_MODE": "1"}):
+        data = {
+            "event": "request",
+            "metadata": {"user_info": "sensitive"}
+        }
+
+        scrubbed = scrub_request_payload(data)
+
+        # metadata field itself is in FORBIDDEN_FIELDS, so it's scrubbed entirely
+        assert scrubbed["metadata"] == "***REDACTED***"
+        assert scrubbed["event"] == "request"
