@@ -39,6 +39,7 @@
 - [Core Value Proposition](#-core-value-proposition)
 - [Key Features](#-key-features)
 - [Architecture](#-architecture)
+- [Engineering & Production Readiness](#-engineering--production-readiness)
 - [Quick Start](#-quick-start)
 - [Usage Examples](#-usage-examples)
 - [Validated Metrics](#-validated-metrics)
@@ -265,6 +266,72 @@ sequenceDiagram
 | Function Words | `ratio ≥ 0.15` | Speech quality check |
 
 For complete system design, see [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md).
+
+---
+
+## ⚙️ Engineering & Production Readiness
+
+> [!NOTE]
+> MLSDM is designed as an infrastructure component with comprehensive testing, observability, security controls, and production deployment patterns.
+
+### 🧪 Quality & Reliability Matrix
+
+| Dimension | Status | Implementation | Key References |
+|:----------|:-------|:---------------|:---------------|
+| **Test Coverage** | 97.63% | `pytest`, `pytest-cov`, unit/integration/e2e/property | [TESTING_GUIDE.md](TESTING_GUIDE.md), [COVERAGE_REPORT_2025.md](COVERAGE_REPORT_2025.md) |
+| **Test Types** | Unit, Integration, E2E, Property, Load, Security | `tests/unit/`, `tests/integration/`, `tests/e2e/`, `tests/property/`, `tests/load/`, `tests/security/` | [tests/](tests/) |
+| **Type Safety** | Strict mypy | Configured in `pyproject.toml` with strict mode | [pyproject.toml](pyproject.toml) |
+| **Static Analysis** | ruff, bandit | Pre-commit hooks and CI checks | [.pre-commit-config.yaml](.pre-commit-config.yaml) |
+| **CI/CD** | GitHub Actions | Multi-workflow pipeline (CI, property tests, release) | [.github/workflows/](.github/workflows/) |
+| **Security** | Policy + Implementation | Rate limiting, input validation, audit logging, threat model | [SECURITY_POLICY.md](SECURITY_POLICY.md), [THREAT_MODEL.md](THREAT_MODEL.md) |
+| **Observability** | Prometheus + OpenTelemetry | Metrics, structured logging, distributed tracing | [OBSERVABILITY_GUIDE.md](OBSERVABILITY_GUIDE.md), [SLO_SPEC.md](SLO_SPEC.md) |
+
+### 🚀 Deployment Topologies
+
+MLSDM supports multiple deployment patterns:
+
+| Topology | Description | Key Files |
+|:---------|:------------|:----------|
+| **Local/Dev** | Single container or bare metal | [`docker/Dockerfile`](docker/Dockerfile), [`docker/docker-compose.yaml`](docker/docker-compose.yaml) |
+| **Service Image** | Production-ready container | [`Dockerfile.neuro-engine-service`](Dockerfile.neuro-engine-service) |
+| **Kubernetes** | Full k8s manifests with monitoring | [`deploy/k8s/`](deploy/k8s/) |
+| **Production** | Hardened deployment with security contexts | [`deploy/k8s/production-deployment.yaml`](deploy/k8s/production-deployment.yaml) |
+
+**Kubernetes artifacts:**
+- [`deploy/k8s/deployment.yaml`](deploy/k8s/deployment.yaml) — Base deployment configuration
+- [`deploy/k8s/service.yaml`](deploy/k8s/service.yaml) — Service definition
+- [`deploy/k8s/configmap.yaml`](deploy/k8s/configmap.yaml) — Configuration
+- [`deploy/k8s/secrets.yaml`](deploy/k8s/secrets.yaml) — Secrets template
+- [`deploy/k8s/service-monitor.yaml`](deploy/k8s/service-monitor.yaml) — Prometheus ServiceMonitor
+- [`deploy/k8s/network-policy.yaml`](deploy/k8s/network-policy.yaml) — Network policies
+
+### 📈 Observability & Ops
+
+| Category | Description | Reference |
+|:---------|:------------|:----------|
+| **Metrics** | Prometheus-compatible metrics at `/health/metrics` | [OBSERVABILITY_GUIDE.md](OBSERVABILITY_GUIDE.md) |
+| **Logging** | Structured JSON logs with correlation IDs, PII scrubbing | [OBSERVABILITY_GUIDE.md](OBSERVABILITY_GUIDE.md) |
+| **Tracing** | OpenTelemetry distributed tracing (optional) | [OBSERVABILITY_GUIDE.md](OBSERVABILITY_GUIDE.md) |
+| **Dashboards** | Grafana JSON dashboard | [`deploy/grafana/mlsdm_observability_dashboard.json`](deploy/grafana/mlsdm_observability_dashboard.json) |
+| **Alerting** | Alertmanager rules | [`deploy/monitoring/alertmanager-rules.yaml`](deploy/monitoring/alertmanager-rules.yaml) |
+| **SLOs** | Availability ≥99.9%, P95 latency <120ms, memory ≤50MB | [SLO_SPEC.md](SLO_SPEC.md) |
+| **Runbook** | Operational procedures for incidents | [RUNBOOK.md](RUNBOOK.md) |
+
+### 🛡️ Safety-by-Design
+
+MLSDM implements defense-in-depth security:
+
+| Control | Implementation | Reference |
+|:--------|:---------------|:----------|
+| **Rate Limiting** | 5 RPS per client (leaky bucket) | [SECURITY_IMPLEMENTATION.md](SECURITY_IMPLEMENTATION.md) |
+| **Input Validation** | Type, range, dimension, sanitization | [SECURITY_POLICY.md](SECURITY_POLICY.md) |
+| **Authentication** | Bearer token (OAuth2 scheme) | [SECURITY_POLICY.md](SECURITY_POLICY.md) |
+| **Memory Bounds** | Fixed 29.37 MB, zero-growth | [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) |
+| **Threat Model** | STRIDE analysis | [THREAT_MODEL.md](THREAT_MODEL.md) |
+| **Risk Register** | AI safety risks tracked | [RISK_REGISTER.md](RISK_REGISTER.md) |
+| **Secure Mode** | `MLSDM_SECURE_MODE=1` disables training in production | [SECURITY_POLICY.md](SECURITY_POLICY.md) |
+
+For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md).
 
 ---
 
