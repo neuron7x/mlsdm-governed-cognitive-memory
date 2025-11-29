@@ -647,7 +647,13 @@ def record_aphasia_event(mode: str = "detect", severity: float = 0.0) -> None:
     """Record an aphasia detection or repair event.
 
     This is the primary helper for instrumenting aphasia pipeline events.
-    It updates the aphasia detection counter with the appropriate severity bucket.
+    It updates the appropriate counter based on the mode:
+    - mode="detect": Increments aphasia_detected_total with severity bucket
+    - mode="repair": Increments only aphasia_repaired_total (no double-counting)
+
+    Note: To track both detection and repair, call this function twice:
+        record_aphasia_event(mode="detect", severity=0.7)
+        record_aphasia_event(mode="repair", severity=0.7)
 
     Safe to call even if metrics are not configured - will gracefully
     no-op if MetricsExporter is not available.
@@ -669,9 +675,8 @@ def record_aphasia_event(mode: str = "detect", severity: float = 0.0) -> None:
         if mode == "detect":
             exporter.increment_aphasia_detected(severity_bucket)
         elif mode == "repair":
+            # Only increment repair counter - detection should be recorded separately
             exporter.increment_aphasia_repaired()
-            # Also record the detection that led to repair
-            exporter.increment_aphasia_detected(severity_bucket)
 
     except Exception:
         # Graceful degradation - don't crash if metrics fail

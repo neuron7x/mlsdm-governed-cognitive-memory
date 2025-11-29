@@ -43,6 +43,10 @@ logger = logging.getLogger(__name__)
 # Version constant for consistency across the codebase
 MLSDM_VERSION = "1.0.0"
 
+# Span attribute prefix constants
+SPAN_ATTR_PREFIX_MLSDM = "mlsdm."
+SPAN_ATTR_PREFIX_HTTP = "http."
+
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -453,8 +457,8 @@ def span(name: str, **attrs: Any) -> Iterator[Span]:
     # Normalize attribute keys to use mlsdm prefix
     normalized_attrs: dict[str, Any] = {}
     for key, value in attrs.items():
-        if not key.startswith("mlsdm.") and not key.startswith("http."):
-            normalized_attrs[f"mlsdm.{key}"] = value
+        if not key.startswith(SPAN_ATTR_PREFIX_MLSDM) and not key.startswith(SPAN_ATTR_PREFIX_HTTP):
+            normalized_attrs[f"{SPAN_ATTR_PREFIX_MLSDM}{key}"] = value
         else:
             normalized_attrs[key] = value
 

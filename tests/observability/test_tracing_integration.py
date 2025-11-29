@@ -284,7 +284,12 @@ class TestGracefulFallback:
                 child.set_attribute("mlsdm.context_items", 5)
 
     def test_trace_helper_functions_when_disabled(self, disabled_tracer):
-        """Test trace_* helper functions work when tracing is disabled."""
+        """Test trace_* helper functions work when tracing is disabled.
+
+        These helpers create independent spans that work correctly even when
+        tracing is disabled. In production, they would typically be nested
+        inside a parent span like mlsdm.generate.
+        """
         # trace_generate
         with trace_generate("test prompt", moral_value=0.8, max_tokens=128) as s:
             s.set_attribute("mlsdm.accepted", True)
