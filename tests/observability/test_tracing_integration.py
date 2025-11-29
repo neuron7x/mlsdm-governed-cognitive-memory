@@ -86,7 +86,8 @@ class TestChildSpanCreation:
         """Test mlsdm.cognitive_controller.step child span."""
         manager = get_tracer_manager()
 
-        with manager.start_span("mlsdm.generate") as root:
+        # Nested with statements are intentional to test parent-child span hierarchy
+        with manager.start_span("mlsdm.generate"):  # noqa: SIM117
             with manager.start_span(
                 "mlsdm.cognitive_controller.step",
                 attributes={"mlsdm.step": 1},
@@ -98,7 +99,8 @@ class TestChildSpanCreation:
         """Test mlsdm.memory.query child span for PELM/Synaptic retrieval."""
         manager = get_tracer_manager()
 
-        with manager.start_span("mlsdm.generate") as root:
+        # Nested with statements are intentional to test parent-child span hierarchy
+        with manager.start_span("mlsdm.generate"):  # noqa: SIM117
             with manager.start_span(
                 "mlsdm.memory.query",
                 attributes={
@@ -113,7 +115,8 @@ class TestChildSpanCreation:
         """Test mlsdm.moral_filter.evaluate child span."""
         manager = get_tracer_manager()
 
-        with manager.start_span("mlsdm.generate") as root:
+        # Nested with statements are intentional to test parent-child span hierarchy
+        with manager.start_span("mlsdm.generate"):  # noqa: SIM117
             with manager.start_span(
                 "mlsdm.moral_filter.evaluate",
                 attributes={
@@ -128,7 +131,8 @@ class TestChildSpanCreation:
         """Test mlsdm.aphasia.detect_repair child span."""
         manager = get_tracer_manager()
 
-        with manager.start_span("mlsdm.generate") as root:
+        # Nested with statements are intentional to test parent-child span hierarchy
+        with manager.start_span("mlsdm.generate"):  # noqa: SIM117
             with manager.start_span(
                 "mlsdm.aphasia.detect_repair",
                 attributes={
@@ -279,7 +283,8 @@ class TestGracefulFallback:
         """Test nested spans work when tracing is disabled."""
         manager = get_tracer_manager()
 
-        with manager.start_span("mlsdm.generate") as root:
+        # Nested with statements are intentional to test parent-child span hierarchy
+        with manager.start_span("mlsdm.generate"):  # noqa: SIM117
             with manager.start_span("mlsdm.memory.query") as child:
                 child.set_attribute("mlsdm.context_items", 5)
 
@@ -314,7 +319,8 @@ class TestExceptionHandling:
         """Test that exceptions are properly recorded on spans."""
         manager = get_tracer_manager()
 
-        with pytest.raises(ValueError):
+        # Nested with statements are intentional to test exception handling in spans
+        with pytest.raises(ValueError):  # noqa: SIM117
             with manager.start_span("mlsdm.generate") as s:
                 manager.record_exception(s, ValueError("Test error"))
                 raise ValueError("Test error")
