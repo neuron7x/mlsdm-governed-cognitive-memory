@@ -37,14 +37,27 @@ SECRET_PATTERNS = [
 ]
 
 # PII field names that should be scrubbed
-PII_FIELDS = {
+PII_FIELDS = frozenset({
     'email', 'e-mail', 'email_address',
     'ssn', 'social_security', 'social_security_number',
     'phone', 'phone_number', 'telephone',
     'address', 'home_address', 'street_address',
     'date_of_birth', 'dob', 'birth_date',
     'credit_card', 'card_number', 'cc_number',
-}
+})
+
+# Default keys to scrub (secrets)
+DEFAULT_SECRET_KEYS = frozenset({
+    'api_key', 'apikey', 'api-key',
+    'password', 'passwd', 'pwd',
+    'token', 'access_token', 'refresh_token',
+    'secret', 'secret_key', 'private_key',
+    'openai_api_key', 'openai_key',
+    'authorization', 'auth',
+})
+
+# Pre-computed combined set for scrub_pii=True
+_SECRET_AND_PII_KEYS = DEFAULT_SECRET_KEYS | PII_FIELDS
 
 # Email pattern for scrubbing PII in text
 EMAIL_PATTERN = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
@@ -82,7 +95,7 @@ def scrub_text(text: str, scrub_emails: bool = False) -> str:
 
 def scrub_dict(
     data: dict[str, Any],
-    keys_to_scrub: set[str] | None = None,
+    keys_to_scrub: frozenset[str] | set[str] | None = None,
     scrub_emails: bool = False,
     scrub_pii: bool = False,
 ) -> dict[str, Any]:
@@ -107,20 +120,15 @@ def scrub_dict(
         >>> scrub_dict({"email": "user@example.com"}, scrub_pii=True)
         {'email': '***REDACTED***'}
     """
+    # Determine effective keys to scrub
     if keys_to_scrub is None:
-        keys_to_scrub = {
-            'api_key', 'apikey', 'api-key',
-            'password', 'passwd', 'pwd',
-            'token', 'access_token', 'refresh_token',
-            'secret', 'secret_key', 'private_key',
-            'openai_api_key', 'openai_key',
-            'authorization', 'auth',
-        }
-
-    # Add PII fields if scrub_pii is enabled
-    effective_keys = keys_to_scrub
-    if scrub_pii:
-        effective_keys = keys_to_scrub | PII_FIELDS
+        # Use pre-computed sets for efficiency
+        effective_keys: frozenset[str] | set[str] = (
+            _SECRET_AND_PII_KEYS if scrub_pii else DEFAULT_SECRET_KEYS
+        )
+    else:
+        # Custom keys provided - need to compute union if scrub_pii
+        effective_keys = keys_to_scrub | PII_FIELDS if scrub_pii else keys_to_scrub
 
     def _scrub_value(key: str, value: Any) -> Any:
         # Check if key should always be scrubbed

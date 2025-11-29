@@ -6,6 +6,7 @@ payload scrubbing, and logging controls.
 """
 
 from mlsdm.security.payload_scrubber import (
+    DEFAULT_SECRET_KEYS,
     EMAIL_PATTERN,
     PII_FIELDS,
     SECRET_PATTERNS,
@@ -24,4 +25,5 @@ __all__ = [
     "SECRET_PATTERNS",
     "PII_FIELDS",
     "EMAIL_PATTERN",
+    "DEFAULT_SECRET_KEYS",
 ]
