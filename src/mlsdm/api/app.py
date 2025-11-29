@@ -196,13 +196,35 @@ class InferResponse(BaseModel):
     )
 
 
+class CognitiveStateDTO(BaseModel):
+    """Cognitive state snapshot for API responses.
+
+    CONTRACT: These fields are part of the stable API contract.
+    Do not modify without a major version bump.
+    """
+
+    phase: str = Field(description="Current cognitive phase (wake/sleep)")
+    stateless_mode: bool = Field(description="Whether running in stateless/degraded mode")
+    emergency_shutdown: bool = Field(description="Whether emergency shutdown is active")
+    memory_used_mb: float | None = Field(
+        default=None, description="Aggregated memory usage in MB"
+    )
+    moral_threshold: float | None = Field(
+        default=None, description="Current moral filter threshold (0.0-1.0)"
+    )
+
+
 class GenerateResponse(BaseModel):
     """Response model for generate endpoint.
 
-    Core fields (always present):
+    CONTRACT: Core fields (always present, part of stable API contract):
     - response: Generated text
+    - accepted: Whether the request was morally accepted
     - phase: Current cognitive phase
-    - accepted: Whether the request was accepted
+    - moral_score: Moral score used for this request
+    - aphasia_flags: Aphasia detection flags (if available)
+    - emergency_shutdown: Whether system is in emergency shutdown state
+    - cognitive_state: Aggregated cognitive state snapshot
 
     Optional metrics/diagnostics:
     - metrics: Performance and timing information
@@ -210,9 +232,24 @@ class GenerateResponse(BaseModel):
     - memory_stats: Memory state statistics
     """
 
+    # Core contract fields (always present)
     response: str = Field(description="Generated response text")
+    accepted: bool = Field(description="Whether the request was morally accepted")
     phase: str = Field(description="Current cognitive phase")
-    accepted: bool = Field(description="Whether the request was accepted")
+    moral_score: float | None = Field(
+        default=None, description="Moral score used for this request"
+    )
+    aphasia_flags: dict[str, Any] | None = Field(
+        default=None, description="Aphasia detection flags (if available)"
+    )
+    emergency_shutdown: bool = Field(
+        default=False, description="Whether system is in emergency shutdown state"
+    )
+    cognitive_state: CognitiveStateDTO | None = Field(
+        default=None, description="Aggregated cognitive state snapshot (stable fields only)"
+    )
+
+    # Optional diagnostic fields
     metrics: dict[str, Any] | None = Field(
         default=None, description="Performance timing metrics"
     )
@@ -462,10 +499,40 @@ async def generate(
                     "context_items": mlsdm_state.get("context_items"),
                 }
 
+            # Extract moral_score from request or mlsdm state
+            moral_score = request_body.moral_value
+            if moral_score is None:
+                moral_score = mlsdm_state.get("moral_threshold")
+
+            # Extract aphasia_flags from speech_governance if available
+            aphasia_flags = None
+            speech_gov = mlsdm_state.get("speech_governance")
+            if speech_gov and "metadata" in speech_gov:
+                aphasia_report = speech_gov["metadata"].get("aphasia_report")
+                if aphasia_report:
+                    aphasia_flags = {
+                        "is_aphasic": aphasia_report.get("is_aphasic", False),
+                        "severity": aphasia_report.get("severity", 0.0),
+                    }
+
+            # Build cognitive_state snapshot (stable, safe fields only)
+            # CONTRACT: These fields are part of the stable API contract
+            cognitive_state = CognitiveStateDTO(
+                phase=phase,
+                stateless_mode=mlsdm_state.get("stateless_mode", False),
+                emergency_shutdown=False,  # Engine doesn't have controller-level shutdown
+                memory_used_mb=mlsdm_state.get("memory_used_mb"),
+                moral_threshold=mlsdm_state.get("moral_threshold"),
+            )
+
             return GenerateResponse(
                 response=result.get("response", ""),
-                phase=phase,
                 accepted=accepted,
+                phase=phase,
+                moral_score=moral_score,
+                aphasia_flags=aphasia_flags,
+                emergency_shutdown=False,  # Engine doesn't have controller-level shutdown
+                cognitive_state=cognitive_state,
                 metrics=metrics,
                 safety_flags=safety_flags,
                 memory_stats=memory_stats,

@@ -247,14 +247,38 @@ Generate a response using the NeuroCognitiveEngine.
 
 **Response Schema:** `GenerateResponse`
 
+**Core Contract Fields (always present):**
+
 | Field | Type | Description |
 |-------|------|-------------|
 | `response` | string | Generated response text |
-| `phase` | string | Current cognitive phase |
-| `accepted` | boolean | Whether request was accepted |
+| `accepted` | boolean | Whether request was morally accepted |
+| `phase` | string | Current cognitive phase (wake/sleep) |
+| `moral_score` | float \| null | Moral score used for this request |
+| `aphasia_flags` | object \| null | Aphasia detection flags (if available) |
+| `emergency_shutdown` | boolean | Whether system is in emergency shutdown |
+| `cognitive_state` | CognitiveStateDTO \| null | Aggregated cognitive state snapshot |
+
+**Optional Diagnostic Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
 | `metrics` | object \| null | Performance timing metrics |
 | `safety_flags` | object \| null | Safety validation results |
 | `memory_stats` | object \| null | Memory state statistics |
+
+**CognitiveStateDTO Schema:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `phase` | string | Current cognitive phase (wake/sleep) |
+| `stateless_mode` | boolean | Whether running in stateless/degraded mode |
+| `emergency_shutdown` | boolean | Whether emergency shutdown is active |
+| `memory_used_mb` | float \| null | Aggregated memory usage in MB |
+| `moral_threshold` | float \| null | Current moral filter threshold (0.0-1.0) |
+
+> **CONTRACT NOTE:** Core contract fields are part of the stable API contract. 
+> Do not modify without a major version bump.
 
 **Example Request:**
 ```json
@@ -269,8 +293,18 @@ Generate a response using the NeuroCognitiveEngine.
 ```json
 {
   "response": "NEURO-RESPONSE: What is consciousness?...",
-  "phase": "wake",
   "accepted": true,
+  "phase": "wake",
+  "moral_score": 0.7,
+  "aphasia_flags": null,
+  "emergency_shutdown": false,
+  "cognitive_state": {
+    "phase": "wake",
+    "stateless_mode": false,
+    "emergency_shutdown": false,
+    "memory_used_mb": 128.5,
+    "moral_threshold": 0.5
+  },
   "metrics": {
     "timing": {
       "pre_flight_ms": 0.5,
@@ -523,12 +557,37 @@ class EventInput(BaseModel):
 
 ### Response Schemas
 
+#### CognitiveStateDTO
+```python
+class CognitiveStateDTO(BaseModel):
+    """Cognitive state snapshot for API responses.
+    
+    CONTRACT: These fields are part of the stable API contract.
+    """
+    phase: str
+    stateless_mode: bool
+    emergency_shutdown: bool
+    memory_used_mb: float | None = None
+    moral_threshold: float | None = None
+```
+
 #### GenerateResponse
 ```python
 class GenerateResponse(BaseModel):
+    """Response model for /generate endpoint.
+    
+    CONTRACT: Core fields are part of the stable API contract.
+    """
+    # Core contract fields (always present)
     response: str
-    phase: str
     accepted: bool
+    phase: str
+    moral_score: float | None = None
+    aphasia_flags: dict[str, Any] | None = None
+    emergency_shutdown: bool = False
+    cognitive_state: CognitiveStateDTO | None = None
+    
+    # Optional diagnostic fields
     metrics: dict[str, Any] | None = None
     safety_flags: dict[str, Any] | None = None
     memory_stats: dict[str, Any] | None = None

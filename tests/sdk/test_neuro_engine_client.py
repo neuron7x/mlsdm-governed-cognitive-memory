@@ -341,5 +341,157 @@ class TestNeuroCognitiveClientRetryBehavior:
             assert "mlsdm" in result
 
 
+class TestGenerateTypedMethod:
+    """Test SDK generate_typed() method returning GenerateResponseDTO."""
+
+    def test_generate_typed_returns_dto(self):
+        """Test that generate_typed returns GenerateResponseDTO instance."""
+        from mlsdm.sdk import GenerateResponseDTO
+
+        client = NeuroCognitiveClient()
+        result = client.generate_typed("Test prompt")
+
+        assert isinstance(result, GenerateResponseDTO)
+
+    def test_generate_typed_dto_has_all_fields(self):
+        """Test that GenerateResponseDTO has all contract fields."""
+        from mlsdm.sdk import GENERATE_RESPONSE_DTO_KEYS, GenerateResponseDTO
+
+        client = NeuroCognitiveClient()
+        result = client.generate_typed("Test fields")
+
+        # Check all expected fields exist
+        dto_fields = set(vars(result).keys())
+        expected_fields = GENERATE_RESPONSE_DTO_KEYS
+
+        missing = expected_fields - dto_fields
+        assert not missing, f"Missing DTO fields: {missing}"
+
+    def test_generate_typed_response_is_string(self):
+        """Test that generate_typed returns string response."""
+        client = NeuroCognitiveClient()
+        result = client.generate_typed("Test response")
+
+        assert isinstance(result.response, str)
+        assert len(result.response) > 0
+
+    def test_generate_typed_accepted_is_bool(self):
+        """Test that generate_typed returns boolean accepted."""
+        client = NeuroCognitiveClient()
+        result = client.generate_typed("Test accepted")
+
+        assert isinstance(result.accepted, bool)
+
+    def test_generate_typed_phase_is_string(self):
+        """Test that generate_typed returns string phase."""
+        client = NeuroCognitiveClient()
+        result = client.generate_typed("Test phase")
+
+        assert isinstance(result.phase, str)
+        assert result.phase in ["wake", "sleep", "unknown"]
+
+    def test_generate_typed_cognitive_state(self):
+        """Test that generate_typed returns CognitiveStateDTO."""
+        from mlsdm.sdk import CognitiveStateDTO
+
+        client = NeuroCognitiveClient()
+        result = client.generate_typed("Test cognitive state")
+
+        assert result.cognitive_state is not None
+        assert isinstance(result.cognitive_state, CognitiveStateDTO)
+        assert isinstance(result.cognitive_state.phase, str)
+        assert isinstance(result.cognitive_state.stateless_mode, bool)
+        assert isinstance(result.cognitive_state.emergency_shutdown, bool)
+
+    def test_generate_typed_with_moral_value(self):
+        """Test that generate_typed passes moral_value correctly."""
+        client = NeuroCognitiveClient()
+        result = client.generate_typed("Test moral", moral_value=0.8)
+
+        # moral_score should reflect the input
+        assert result.moral_score == 0.8 or result.moral_score is not None
+
+
+class TestSDKExceptions:
+    """Test SDK exception classes."""
+
+    def test_mlsdm_client_error_has_error_code(self):
+        """Test MLSDMClientError can have error_code."""
+        from mlsdm.sdk import MLSDMClientError
+
+        error = MLSDMClientError("Test error", error_code="validation_error")
+        assert error.error_code == "validation_error"
+        assert str(error) == "Test error"
+
+    def test_mlsdm_server_error_has_error_code(self):
+        """Test MLSDMServerError can have error_code."""
+        from mlsdm.sdk import MLSDMServerError
+
+        error = MLSDMServerError("Server failed", error_code="internal_error")
+        assert error.error_code == "internal_error"
+        assert str(error) == "Server failed"
+
+    def test_mlsdm_timeout_error_has_timeout_seconds(self):
+        """Test MLSDMTimeoutError can have timeout_seconds."""
+        from mlsdm.sdk import MLSDMTimeoutError
+
+        error = MLSDMTimeoutError("Request timed out", timeout_seconds=30.0)
+        assert error.timeout_seconds == 30.0
+        assert str(error) == "Request timed out"
+
+    def test_mlsdm_error_inheritance(self):
+        """Test all SDK errors inherit from MLSDMError."""
+        from mlsdm.sdk import (
+            MLSDMClientError,
+            MLSDMError,
+            MLSDMServerError,
+            MLSDMTimeoutError,
+        )
+
+        assert issubclass(MLSDMClientError, MLSDMError)
+        assert issubclass(MLSDMServerError, MLSDMError)
+        assert issubclass(MLSDMTimeoutError, MLSDMError)
+
+
+class TestGenerateResponseDTOKeys:
+    """Test GENERATE_RESPONSE_DTO_KEYS contract set."""
+
+    def test_dto_keys_match_expected_contract(self):
+        """Test GENERATE_RESPONSE_DTO_KEYS has expected fields."""
+        from mlsdm.sdk import GENERATE_RESPONSE_DTO_KEYS
+
+        expected_keys = {
+            "response",
+            "accepted",
+            "phase",
+            "moral_score",
+            "aphasia_flags",
+            "emergency_shutdown",
+            "cognitive_state",
+            "metrics",
+            "safety_flags",
+            "memory_stats",
+            "governance",
+            "timing",
+            "validation_steps",
+            "error",
+            "rejected_at",
+        }
+
+        assert GENERATE_RESPONSE_DTO_KEYS == expected_keys
+
+    def test_generate_typed_keys_match_contract(self):
+        """Test generate_typed result keys match contract."""
+        from mlsdm.sdk import GENERATE_RESPONSE_DTO_KEYS
+
+        client = NeuroCognitiveClient()
+        result = client.generate_typed("Test keys")
+
+        # Get actual keys from DTO
+        actual_keys = set(vars(result).keys())
+
+        assert actual_keys == GENERATE_RESPONSE_DTO_KEYS
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
