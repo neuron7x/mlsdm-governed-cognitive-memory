@@ -14,6 +14,8 @@ import os
 import pytest
 
 from mlsdm.security.payload_scrubber import (
+    EMAIL_PATTERN,
+    PII_FIELDS,
     SECRET_PATTERNS,
     scrub_dict,
     scrub_text,
@@ -26,12 +28,41 @@ class TestPIIScrubbing:
 
     def test_email_in_text_preserved_by_default(self):
         """Test that email addresses are preserved by default (configurable)."""
-        # Note: Email scrubbing is commented out in the module by default
         text = "Contact john.doe@example.com for support"
         result = scrub_text(text)
-        # By default, emails are NOT scrubbed (per code comment)
-        # If privacy requirements change, this test should be updated
+        # By default, emails are NOT scrubbed
         assert "john.doe@example.com" in result
+
+    def test_email_scrubbed_when_enabled(self):
+        """Test that email addresses are scrubbed when scrub_emails=True."""
+        text = "Contact john.doe@example.com for support"
+        result = scrub_text(text, scrub_emails=True)
+        assert "john.doe@example.com" not in result
+        assert "***@***.***" in result
+
+    def test_multiple_emails_scrubbed(self):
+        """Test that multiple email addresses are scrubbed."""
+        text = "From: alice@company.com, To: bob@example.org"
+        result = scrub_text(text, scrub_emails=True)
+        assert "alice@company.com" not in result
+        assert "bob@example.org" not in result
+        assert result.count("***@***.***") == 2
+
+    def test_email_pattern_matches_valid_emails(self):
+        """Test that EMAIL_PATTERN matches various valid email formats."""
+        valid_emails = [
+            "simple@example.com",
+            "user.name@example.com",
+            "user+tag@example.org",
+            "user123@sub.domain.co.uk",
+        ]
+        for email in valid_emails:
+            assert EMAIL_PATTERN.search(email), f"Should match: {email}"
+
+    def test_pii_fields_contain_expected_keys(self):
+        """Test that PII_FIELDS contains expected field names."""
+        expected_keys = {"email", "phone", "ssn", "address"}
+        assert expected_keys.issubset(PII_FIELDS)
 
     def test_credit_card_scrubbed(self):
         """Test that credit card numbers are scrubbed."""
@@ -61,6 +92,45 @@ class TestPIIScrubbing:
         result = scrub_text(text)
         # Current implementation does not scrub SSN patterns
         assert "123-45-6789" in result
+
+    def test_scrub_dict_with_pii_flag(self):
+        """Test that scrub_dict with scrub_pii=True scrubs PII fields."""
+        payload = {
+            "email": "user@example.com",
+            "phone": "555-123-4567",
+            "ssn": "123-45-6789",
+            "name": "John Doe",
+        }
+        result = scrub_dict(payload, scrub_pii=True)
+        assert result["email"] == "***REDACTED***"
+        assert result["phone"] == "***REDACTED***"
+        assert result["ssn"] == "***REDACTED***"
+        assert result["name"] == "John Doe"  # Name is preserved
+
+    def test_scrub_dict_pii_nested(self):
+        """Test that scrub_dict with scrub_pii=True works on nested structures."""
+        payload = {
+            "user": {
+                "email": "nested@example.com",
+                "profile": {
+                    "phone": "555-987-6543",
+                }
+            }
+        }
+        result = scrub_dict(payload, scrub_pii=True)
+        assert result["user"]["email"] == "***REDACTED***"
+        assert result["user"]["profile"]["phone"] == "***REDACTED***"
+
+    def test_scrub_dict_with_email_in_text_field(self):
+        """Test scrub_dict with scrub_emails=True scrubs emails in text values."""
+        payload = {
+            "message": "Contact us at support@company.com",
+            "subject": "Hello",
+        }
+        result = scrub_dict(payload, scrub_emails=True)
+        assert "support@company.com" not in result["message"]
+        assert "***@***.***" in result["message"]
+        assert result["subject"] == "Hello"
 
 
 class TestTokenScrubbing:

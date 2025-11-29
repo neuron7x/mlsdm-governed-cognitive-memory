@@ -489,6 +489,19 @@ All API errors follow the `ErrorResponse` schema:
 }
 ```
 
+### Request ID in Responses
+
+All responses (success and error) include an `X-Request-ID` header for request tracing and correlation:
+
+```
+X-Request-ID: 550e8400-e29b-41d4-a716-446655440000
+```
+
+This can be used to:
+- Correlate logs across services
+- Track request flow for debugging
+- Report issues with specific requests
+
 ### HTTP Status Codes
 
 | Code | Error Type | Description |
