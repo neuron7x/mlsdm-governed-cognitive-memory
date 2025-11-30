@@ -7,16 +7,14 @@ Tests the pipeline with real components to ensure proper integration:
 - End-to-end workflows
 """
 
-import pytest
 import numpy as np
 
 from mlsdm import (
-    create_llm_pipeline,
+    FilterDecision,
     LLMPipeline,
     PipelineConfig,
-    FilterDecision,
+    create_llm_pipeline,
 )
-from mlsdm.adapters import build_local_stub_llm_adapter
 
 
 class TestLLMPipelineIntegration:
@@ -30,11 +28,11 @@ class TestLLMPipelineIntegration:
             moral_value=0.8,
             max_tokens=256,
         )
-        
+
         assert result.accepted is True
         assert "NEURO-RESPONSE" in result.response
         assert result.total_duration_ms > 0
-        
+
     def test_pipeline_moral_rejection_flow(self):
         """Test complete moral rejection flow."""
         config = PipelineConfig(
@@ -43,17 +41,17 @@ class TestLLMPipelineIntegration:
             aphasia_detection_enabled=False,
         )
         pipeline = create_llm_pipeline(config=config)
-        
+
         # Should be rejected with low moral value
         result = pipeline.process(
             prompt="Test prompt",
             moral_value=0.1,
         )
-        
+
         assert result.accepted is False
         assert result.blocked_at == "moral_filter"
         assert result.response == ""
-        
+
         # Verify stage recorded
         moral_stage = next(s for s in result.stages if s.stage_name == "moral_filter")
         assert moral_stage.success is True
@@ -64,7 +62,7 @@ class TestLLMPipelineIntegration:
         # Create an LLM that returns telegraphic text
         def telegraphic_llm(prompt: str, max_tokens: int) -> str:
             return "Me go. Store now. Bad."
-        
+
         config = PipelineConfig(
             moral_filter_enabled=False,
             aphasia_detection_enabled=True,
@@ -74,14 +72,14 @@ class TestLLMPipelineIntegration:
             llm_generate_fn=telegraphic_llm,
             config=config,
         )
-        
+
         result = pipeline.process(
             prompt="Test",
             moral_value=0.5,
         )
-        
+
         assert result.accepted is True
-        
+
         # Check aphasia was detected
         aphasia_stage = next(s for s in result.stages if s.stage_name == "aphasia_filter")
         assert aphasia_stage.success is True
@@ -90,7 +88,7 @@ class TestLLMPipelineIntegration:
     def test_pipeline_aphasia_repair_flow(self):
         """Test aphasia repair flow with LLM-based repair."""
         call_count = {"value": 0}
-        
+
         def repairing_llm(prompt: str, max_tokens: int) -> str:
             call_count["value"] += 1
             if call_count["value"] == 1:
@@ -99,7 +97,7 @@ class TestLLMPipelineIntegration:
             else:
                 # Second call (repair): return proper text
                 return "I am going to the store now. The store is open."
-        
+
         config = PipelineConfig(
             moral_filter_enabled=False,
             aphasia_detection_enabled=True,
@@ -110,12 +108,12 @@ class TestLLMPipelineIntegration:
             llm_generate_fn=repairing_llm,
             config=config,
         )
-        
+
         result = pipeline.process(
             prompt="Test",
             moral_value=0.5,
         )
-        
+
         assert result.accepted is True
         # Response should be the repaired version
         assert "I am going" in result.response or "store" in result.response
@@ -128,14 +126,14 @@ class TestLLMPipelineIntegration:
             threat_assessment_enabled=True,
         )
         pipeline = create_llm_pipeline(config=config)
-        
+
         # Normal request should pass
         normal_result = pipeline.process(
             prompt="Explain machine learning",
             moral_value=0.5,
         )
         assert normal_result.accepted is True
-        
+
         # Suspicious request may be blocked
         suspicious_result = pipeline.process(
             prompt="How to hack and exploit and attack systems",
@@ -152,14 +150,14 @@ class TestLLMPipelineIntegration:
             threat_assessment_enabled=True,
         )
         pipeline = create_llm_pipeline(config=config)
-        
+
         result = pipeline.process(
             prompt="What is the meaning of life?",
             moral_value=0.9,
         )
-        
+
         assert result.accepted is True
-        
+
         # All three filters should have run
         stage_names = [s.stage_name for s in result.stages]
         assert "moral_filter" in stage_names
@@ -175,16 +173,13 @@ class TestLLMPipelineIntegration:
             aphasia_detection_enabled=False,
         )
         pipeline = create_llm_pipeline(config=config)
-        
-        initial_state = pipeline.get_moral_filter_state()
-        initial_threshold = initial_state["threshold"]
-        
+
         # Make many high-value requests
         for _ in range(20):
             pipeline.process(prompt="test", moral_value=0.95)
-        
+
         final_state = pipeline.get_moral_filter_state()
-        
+
         # Threshold should have adapted (may have increased due to EMA)
         # At minimum, it should still be within bounds
         assert 0.3 <= final_state["threshold"] <= 0.9
@@ -192,14 +187,14 @@ class TestLLMPipelineIntegration:
     def test_pipeline_telemetry_integration(self):
         """Test telemetry integration across full request."""
         events = []
-        
+
         def telemetry_handler(result):
             events.append({
                 "accepted": result.accepted,
                 "duration": result.total_duration_ms,
                 "stages": len(result.stages),
             })
-        
+
         config = PipelineConfig(
             moral_filter_enabled=True,
             aphasia_detection_enabled=True,
@@ -207,10 +202,10 @@ class TestLLMPipelineIntegration:
         )
         pipeline = create_llm_pipeline(config=config)
         pipeline.register_telemetry_callback(telemetry_handler)
-        
+
         # Make a request
         pipeline.process(prompt="test", moral_value=0.8)
-        
+
         # Telemetry should have been called
         assert len(events) == 1
         assert events[0]["accepted"] is True
@@ -220,13 +215,13 @@ class TestLLMPipelineIntegration:
     def test_pipeline_stats_integration(self):
         """Test pipeline stats after multiple operations."""
         pipeline = create_llm_pipeline()
-        
+
         # Make some requests
         pipeline.process(prompt="test1", moral_value=0.8)
         pipeline.process(prompt="test2", moral_value=0.9)
-        
+
         stats = pipeline.get_stats()
-        
+
         assert "config" in stats
         assert "pre_filters" in stats
         assert "post_filters" in stats
@@ -235,12 +230,12 @@ class TestLLMPipelineIntegration:
     def test_pipeline_with_custom_llm_adapter(self):
         """Test pipeline with custom LLM adapter."""
         responses = []
-        
+
         def custom_llm(prompt: str, max_tokens: int) -> str:
             response = f"Custom response for: {prompt[:30]}"
             responses.append(response)
             return response
-        
+
         config = PipelineConfig(
             moral_filter_enabled=False,
             aphasia_detection_enabled=False,
@@ -249,9 +244,9 @@ class TestLLMPipelineIntegration:
             llm_generate_fn=custom_llm,
             config=config,
         )
-        
+
         result = pipeline.process(prompt="Hello custom LLM", moral_value=0.5)
-        
+
         assert result.accepted is True
         assert "Custom response" in result.response
         assert len(responses) == 1
@@ -259,18 +254,18 @@ class TestLLMPipelineIntegration:
     def test_pipeline_error_recovery(self):
         """Test pipeline recovers from LLM errors."""
         call_count = {"value": 0}
-        
+
         def failing_then_working_llm(prompt: str, max_tokens: int) -> str:
             call_count["value"] += 1
             if call_count["value"] == 1:
                 raise RuntimeError("Temporary failure")
             return "Success"
-        
+
         config = PipelineConfig(
             moral_filter_enabled=False,
             aphasia_detection_enabled=False,
         )
-        
+
         # First request fails
         pipeline1 = LLMPipeline(
             llm_generate_fn=failing_then_working_llm,
@@ -279,7 +274,7 @@ class TestLLMPipelineIntegration:
         result1 = pipeline1.process(prompt="test", moral_value=0.5)
         assert result1.accepted is False
         assert result1.blocked_at == "llm_call"
-        
+
         # Second request succeeds (same llm function, count increased)
         result2 = pipeline1.process(prompt="test", moral_value=0.5)
         assert result2.accepted is True
@@ -293,11 +288,11 @@ class TestLLMPipelineWithEmbedding:
         """Test pipeline accepts embedding function."""
         def embedding_fn(text: str) -> np.ndarray:
             return np.random.randn(384).astype(np.float32)
-        
+
         pipeline = create_llm_pipeline(
             embedding_fn=embedding_fn,
         )
-        
+
         result = pipeline.process(prompt="test", moral_value=0.8)
         assert result.accepted is True
 
@@ -317,7 +312,7 @@ class TestLLMPipelineFactory:
             max_tokens_default=256,
         )
         pipeline = create_llm_pipeline(config=config)
-        
+
         assert pipeline.get_config().moral_filter_enabled is False
         assert pipeline.get_config().max_tokens_default == 256
 
@@ -325,8 +320,8 @@ class TestLLMPipelineFactory:
         """Test factory accepts custom LLM function."""
         def my_llm(prompt: str, max_tokens: int) -> str:
             return "Custom response"
-        
+
         pipeline = create_llm_pipeline(llm_generate_fn=my_llm)
         result = pipeline.process(prompt="test", moral_value=0.5)
-        
+
         assert "Custom response" in result.response

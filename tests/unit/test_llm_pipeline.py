@@ -8,21 +8,20 @@ Tests the unified LLM pipeline with integrated pre/post filters:
 - Telemetry hooks
 """
 
-import pytest
-import numpy as np
 from unittest.mock import MagicMock, patch
 
+import numpy as np
+import pytest
+
 from mlsdm.core.llm_pipeline import (
+    AphasiaPostFilter,
+    FilterDecision,
     LLMPipeline,
+    MoralPreFilter,
     PipelineConfig,
     PipelineResult,
-    FilterDecision,
-    FilterResult,
-    MoralPreFilter,
     ThreatPreFilter,
-    AphasiaPostFilter,
 )
-
 
 # Test fixtures
 
@@ -172,7 +171,6 @@ class TestMoralPreFilter:
     def test_moral_filter_adapts_threshold(self):
         """Test moral filter adapts threshold over time."""
         filter = MoralPreFilter(initial_threshold=0.5)
-        initial_threshold = filter.threshold
 
         # Multiple accepts should increase threshold
         for _ in range(10):
