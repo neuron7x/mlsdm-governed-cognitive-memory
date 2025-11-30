@@ -10,6 +10,11 @@ permissions:
   packages: write
   security-events: write
 
+env:
+  PYTHON_VERSION: '3.11'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/mlsdm-neuro-engine
+
 jobs:
   # Gate 1: Unit Tests
   unit-tests:
@@ -18,23 +23,24 @@ jobs:
     timeout-minutes: 15
     strategy:
       matrix:
-        python-version: ['3.10', '3.11']
-    
+        python-version: ['3.10', '3.11', '3.12']
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      
+          cache: 'pip'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
-      
+
       - name: Run unit tests
         run: |
           pytest tests/unit/ -v --tb=short
@@ -44,213 +50,217 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up Python 3.11
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
-      
+
       - name: Run integration tests
         run: |
           pytest tests/integration/ -v --tb=short
-  
+
   # Gate 3: Property-Based Tests
   property-tests:
     name: Property-Based Tests
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 15
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up Python 3.11
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
-      
+
       - name: Run property-based tests
         run: |
           pytest tests/property/ -v --tb=short --maxfail=5
-        timeout-minutes: 15
-  
+
   # Gate 4: Validation Tests
   validation-tests:
     name: Validation Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up Python 3.11
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
-      
+
       - name: Run validation tests
         run: |
           pytest tests/validation/ -v --tb=short
-  
+
   # Gate 5: Security Tests
   security-tests:
     name: Security Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up Python 3.11
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
-      
+
       - name: Run security tests
         run: |
           pytest tests/security/ -v --tb=short
-  
+
   # Gate 6: Observability Tests
   observability-tests:
     name: Observability Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up Python 3.11
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
-      
+
       - name: Run observability tests
         run: |
           pytest tests/observability/ -v --tb=short
-  
+
   # Gate 7: Benchmarks (Performance Gate)
   benchmarks:
     name: Performance Benchmarks
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up Python 3.11
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
-      
+
       - name: Run benchmarks
         run: |
           pytest benchmarks/test_neuro_engine_performance.py -v -s --tb=short
-        timeout-minutes: 10
-  
+
   # Gate 8: Code Quality (Linting + Type Checking)
   code-quality:
     name: Code Quality
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up Python 3.11
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install ruff mypy
           pip install -r requirements.txt
           pip install -e ".[test]"
-      
+
       - name: Run linting
-        run: |
-          ruff check src tests
-      
+        run: ruff check src tests
+
       - name: Run type checking
-        run: |
-          mypy src/mlsdm --ignore-missing-imports
-  
+        run: mypy src/mlsdm --ignore-missing-imports
+
   # Gate 9: Coverage Check
   coverage-check:
     name: Coverage Check
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up Python 3.11
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
-      
+
       - name: Run coverage check
-        run: |
-          pytest --ignore=tests/load --cov=src --cov-report=term-missing --cov-fail-under=90 -q
-  
+        run: pytest --ignore=tests/load --cov=src --cov-report=term-missing --cov-fail-under=90 -q
+
   # Build and Push Docker Image (only after ALL gates pass)
   build-and-push-docker:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: 
+    needs:
       - unit-tests
       - integration-tests
       - property-tests
@@ -260,27 +270,27 @@ jobs:
       - benchmarks
       - code-quality
       - coverage-check
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Extract version from tag
         id: get_version
         run: |
           echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
           echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-      
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -288,52 +298,104 @@ jobs:
           file: ./Dockerfile.neuro-engine-service
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/mlsdm-neuro-engine:${{ steps.get_version.outputs.VERSION }}
-            ghcr.io/${{ github.repository_owner }}/mlsdm-neuro-engine:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.VERSION }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
-      
-      - name: Create release notes
+
+      - name: Extract release notes from CHANGELOG
+        id: release_notes
         run: |
-          # Extract release notes from CHANGELOG.md
-          awk '/^## \['${{ steps.get_version.outputs.VERSION }}'\]/,/^## \[/' CHANGELOG.md | head -n -1 > release-notes.md || echo "Release ${{ steps.get_version.outputs.TAG }}" > release-notes.md
-      
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          # Extract changelog section for this version
+          if grep -q "## \[${VERSION}\]" CHANGELOG.md; then
+            awk "/^## \[${VERSION}\]/,/^## \[/" CHANGELOG.md | head -n -1 > release-notes.md
+          else
+            echo "Release ${VERSION}" > release-notes.md
+            echo "" >> release-notes.md
+            echo "See CHANGELOG.md for details." >> release-notes.md
+          fi
+          cat release-notes.md
+
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           body_path: release-notes.md
           draft: false
-          prerelease: false
+          prerelease: ${{ contains(github.ref, 'rc') || contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  
+
+  # Build Python Package
+  build-wheel:
+    name: Build Python Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build-and-push-docker
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build wheel and sdist
+        run: python -m build
+
+      - name: Verify package
+        run: twine check dist/*
+
+      - name: Upload release artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-release
+          path: dist/
+          retention-days: 90
+
   # Publish to TestPyPI (after Docker build succeeds)
   publish-to-testpypi:
     name: Publish to TestPyPI
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: build-and-push-docker
-    if: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, 'rc') == false
-    
+    needs: build-wheel
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, 'rc') && !contains(github.ref, 'beta') && !contains(github.ref, 'alpha')
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
           pip install build twine
-      
+
       - name: Build package
-        run: |
-          python -m build
-      
+        run: python -m build
+
       - name: Publish to TestPyPI
         env:
           TWINE_USERNAME: __token__
@@ -346,26 +408,26 @@ jobs:
             echo "TEST_PYPI_API_TOKEN not configured, skipping TestPyPI upload"
           fi
         continue-on-error: true
-  
+
   # Security Scan (after Docker build)
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: build-and-push-docker
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/mlsdm-neuro-engine:latest
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           format: 'sarif'
           output: 'trivy-results.sarif'
         continue-on-error: true
-      
+
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         with:
