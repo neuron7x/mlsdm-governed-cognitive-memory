@@ -127,10 +127,7 @@ class TestInferEndpoint:
         - phase: str (wake/sleep)
         - governance: dict or None
         """
-        response = http_client.post(
-            "/infer",
-            json={"prompt": "Hello, how are you?"}
-        )
+        response = http_client.post("/infer", json={"prompt": "Hello, how are you?"})
 
         assert response.status_code == 200
         data = response.json()
@@ -152,11 +149,7 @@ class TestInferEndpoint:
         POST /infer with moral_value parameter applies moral threshold.
         """
         response = http_client.post(
-            "/infer",
-            json={
-                "prompt": "Explain machine learning",
-                "moral_value": 0.7
-            }
+            "/infer", json={"prompt": "Explain machine learning", "moral_value": 0.7}
         )
 
         assert response.status_code == 200
@@ -172,10 +165,7 @@ class TestInferEndpoint:
 
         Pydantic validation rejects min_length=1 violation.
         """
-        response = http_client.post(
-            "/infer",
-            json={"prompt": ""}
-        )
+        response = http_client.post("/infer", json={"prompt": ""})
 
         assert response.status_code == 422
 
@@ -185,10 +175,7 @@ class TestInferEndpoint:
 
         Prompt passes min_length=1 but fails semantic validation.
         """
-        response = http_client.post(
-            "/infer",
-            json={"prompt": "   "}
-        )
+        response = http_client.post("/infer", json={"prompt": "   "})
 
         assert response.status_code == 400
         data = response.json()
@@ -199,13 +186,7 @@ class TestInferEndpoint:
         """
         POST /infer with moral_value > 1.0 returns 422.
         """
-        response = http_client.post(
-            "/infer",
-            json={
-                "prompt": "Test",
-                "moral_value": 1.5
-            }
-        )
+        response = http_client.post("/infer", json={"prompt": "Test", "moral_value": 1.5})
 
         assert response.status_code == 422
 
@@ -213,13 +194,7 @@ class TestInferEndpoint:
         """
         POST /infer with moral_value < 0.0 returns 422.
         """
-        response = http_client.post(
-            "/infer",
-            json={
-                "prompt": "Test",
-                "moral_value": -0.1
-            }
-        )
+        response = http_client.post("/infer", json={"prompt": "Test", "moral_value": -0.1})
 
         assert response.status_code == 422
 
@@ -227,10 +202,7 @@ class TestInferEndpoint:
         """
         POST /infer response includes governance metadata when available.
         """
-        response = http_client.post(
-            "/infer",
-            json={"prompt": "What is AI safety?"}
-        )
+        response = http_client.post("/infer", json={"prompt": "What is AI safety?"})
 
         assert response.status_code == 200
         data = response.json()
@@ -257,8 +229,8 @@ class TestInferEndpoint:
                 "aphasia_mode": True,
                 "rag_enabled": True,
                 "context_top_k": 3,
-                "user_intent": "educational"
-            }
+                "user_intent": "educational",
+            },
         )
 
         assert response.status_code == 200
@@ -279,10 +251,7 @@ class TestGenerateEndpoint:
         """
         POST /generate with simple prompt returns 200 with valid response.
         """
-        response = http_client.post(
-            "/generate",
-            json={"prompt": "Hello world"}
-        )
+        response = http_client.post("/generate", json={"prompt": "Hello world"})
 
         assert response.status_code == 200
         data = response.json()
@@ -298,10 +267,7 @@ class TestGenerateEndpoint:
         """
         POST /generate response has complete structure.
         """
-        response = http_client.post(
-            "/generate",
-            json={"prompt": "Describe the weather"}
-        )
+        response = http_client.post("/generate", json={"prompt": "Describe the weather"})
 
         assert response.status_code == 200
         data = response.json()
@@ -387,10 +353,7 @@ class TestInferenceContractValidation:
 
         CONTRACT: These fields MUST be present in every /infer response.
         """
-        response = http_client.post(
-            "/infer",
-            json={"prompt": "Contract test prompt"}
-        )
+        response = http_client.post("/infer", json={"prompt": "Contract test prompt"})
 
         assert response.status_code == 200
         data = response.json()
@@ -406,10 +369,7 @@ class TestInferenceContractValidation:
 
         CONTRACT: Field types must not change without major version bump.
         """
-        response = http_client.post(
-            "/infer",
-            json={"prompt": "Type validation prompt"}
-        )
+        response = http_client.post("/infer", json={"prompt": "Type validation prompt"})
 
         data = response.json()
 
@@ -430,11 +390,7 @@ class TestInferenceContractValidation:
         """
         Multiple sequential requests return consistent response structure.
         """
-        prompts = [
-            "First request",
-            "Second request",
-            "Third request"
-        ]
+        prompts = ["First request", "Second request", "Third request"]
 
         for prompt in prompts:
             response = http_client.post("/infer", json={"prompt": prompt})

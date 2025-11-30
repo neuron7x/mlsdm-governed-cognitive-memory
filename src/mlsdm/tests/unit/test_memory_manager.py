@@ -1,10 +1,11 @@
 """Comprehensive unit tests for MemoryManager."""
+
 import numpy as np
 import pytest
 
 from mlsdm.core.memory_manager import MemoryManager
 
-pytest_plugins = ('pytest_asyncio',)
+pytest_plugins = ("pytest_asyncio",)
 
 
 class TestMemoryManager:
@@ -34,19 +35,16 @@ class TestMemoryManager:
                 "theta_l1": 1.5,
                 "theta_l2": 2.5,
                 "gating12": 0.4,
-                "gating23": 0.25
+                "gating23": 0.25,
             },
             "moral_filter": {
                 "threshold": 0.6,
                 "adapt_rate": 0.1,
                 "min_threshold": 0.2,
-                "max_threshold": 0.95
+                "max_threshold": 0.95,
             },
-            "cognitive_rhythm": {
-                "wake_duration": 10,
-                "sleep_duration": 3
-            },
-            "strict_mode": True
+            "cognitive_rhythm": {"wake_duration": 10, "sleep_duration": 3},
+            "strict_mode": True,
         }
 
         manager = MemoryManager(config)
@@ -185,7 +183,7 @@ class TestMemoryManager:
         config = {"dimension": 10}
         manager = MemoryManager(config)
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             filepath = f.name
 
         try:
@@ -216,25 +214,20 @@ class TestMemoryManager:
         config = {"dimension": 10}
         manager = MemoryManager(config)
 
-
         # Process events to trigger adaptation
         for _ in range(20):
             event_vector = np.random.randn(10)
             await manager.process_event(event_vector, moral_value=0.9)
 
         # Threshold should have adapted (may increase or stay at bounds)
-        assert manager.filter.min_threshold <= manager.filter.threshold <= manager.filter.max_threshold
+        assert (
+            manager.filter.min_threshold <= manager.filter.threshold <= manager.filter.max_threshold
+        )
 
     @pytest.mark.asyncio
     async def test_rhythm_wake_sleep_cycle(self):
         """Test that rhythm transitions between wake and sleep."""
-        config = {
-            "dimension": 10,
-            "cognitive_rhythm": {
-                "wake_duration": 3,
-                "sleep_duration": 2
-            }
-        }
+        config = {"dimension": 10, "cognitive_rhythm": {"wake_duration": 3, "sleep_duration": 2}}
         manager = MemoryManager(config)
 
         def event_gen():
@@ -268,10 +261,12 @@ class TestMemoryManager:
         config = {
             "dimension": 10,
             "ontology_matcher": {
-                "ontology_vectors": [[1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                    [0, 1, 0, 0, 0, 0, 0, 0, 0, 0]],
-                "ontology_labels": ["A", "B"]
-            }
+                "ontology_vectors": [
+                    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                ],
+                "ontology_labels": ["A", "B"],
+            },
         }
         manager = MemoryManager(config)
 

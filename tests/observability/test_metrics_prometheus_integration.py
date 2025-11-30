@@ -89,27 +89,38 @@ class TestMetricsCountersBehavior:
         fresh_prometheus_metrics.increment_requests("/infer", "5xx", 1)
 
         # Verify individual label combinations
-        assert fresh_prometheus_metrics.requests_total.labels(
-            endpoint="/generate", status="2xx"
-        )._value.get() == 5.0
-        assert fresh_prometheus_metrics.requests_total.labels(
-            endpoint="/generate", status="4xx"
-        )._value.get() == 2.0
-        assert fresh_prometheus_metrics.requests_total.labels(
-            endpoint="/infer", status="2xx"
-        )._value.get() == 3.0
+        assert (
+            fresh_prometheus_metrics.requests_total.labels(
+                endpoint="/generate", status="2xx"
+            )._value.get()
+            == 5.0
+        )
+        assert (
+            fresh_prometheus_metrics.requests_total.labels(
+                endpoint="/generate", status="4xx"
+            )._value.get()
+            == 2.0
+        )
+        assert (
+            fresh_prometheus_metrics.requests_total.labels(
+                endpoint="/infer", status="2xx"
+            )._value.get()
+            == 3.0
+        )
 
     def test_moral_rejection_counter_labels(self, fresh_prometheus_metrics):
         """Test moral rejection counter with reason labels."""
         fresh_prometheus_metrics.increment_moral_rejection("below_threshold", 3)
         fresh_prometheus_metrics.increment_moral_rejection("sleep_phase", 1)
 
-        assert fresh_prometheus_metrics.moral_rejections.labels(
-            reason="below_threshold"
-        )._value.get() == 3.0
-        assert fresh_prometheus_metrics.moral_rejections.labels(
-            reason="sleep_phase"
-        )._value.get() == 1.0
+        assert (
+            fresh_prometheus_metrics.moral_rejections.labels(reason="below_threshold")._value.get()
+            == 3.0
+        )
+        assert (
+            fresh_prometheus_metrics.moral_rejections.labels(reason="sleep_phase")._value.get()
+            == 1.0
+        )
 
     def test_aphasia_detection_counter(self, fresh_prometheus_metrics):
         """Test aphasia detection counter with severity bucket labels."""
@@ -118,12 +129,18 @@ class TestMetricsCountersBehavior:
         fresh_prometheus_metrics.increment_aphasia_detected("high", 2)
         fresh_prometheus_metrics.increment_aphasia_detected("critical", 1)
 
-        assert fresh_prometheus_metrics.aphasia_detected_total.labels(
-            severity_bucket="low"
-        )._value.get() == 5.0
-        assert fresh_prometheus_metrics.aphasia_detected_total.labels(
-            severity_bucket="critical"
-        )._value.get() == 1.0
+        assert (
+            fresh_prometheus_metrics.aphasia_detected_total.labels(
+                severity_bucket="low"
+            )._value.get()
+            == 5.0
+        )
+        assert (
+            fresh_prometheus_metrics.aphasia_detected_total.labels(
+                severity_bucket="critical"
+            )._value.get()
+            == 1.0
+        )
 
     def test_secure_mode_counter(self, fresh_prometheus_metrics):
         """Test secure mode requests counter."""
@@ -136,12 +153,18 @@ class TestMetricsCountersBehavior:
         fresh_prometheus_metrics.increment_emergency_shutdown("memory_exceeded")
         fresh_prometheus_metrics.increment_emergency_shutdown("processing_timeout", 2)
 
-        assert fresh_prometheus_metrics.emergency_shutdowns.labels(
-            reason="memory_exceeded"
-        )._value.get() == 1.0
-        assert fresh_prometheus_metrics.emergency_shutdowns.labels(
-            reason="processing_timeout"
-        )._value.get() == 2.0
+        assert (
+            fresh_prometheus_metrics.emergency_shutdowns.labels(
+                reason="memory_exceeded"
+            )._value.get()
+            == 1.0
+        )
+        assert (
+            fresh_prometheus_metrics.emergency_shutdowns.labels(
+                reason="processing_timeout"
+            )._value.get()
+            == 2.0
+        )
 
 
 class TestMetricsGaugesBehavior:

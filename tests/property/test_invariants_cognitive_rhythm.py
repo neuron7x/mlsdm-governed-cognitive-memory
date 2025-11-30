@@ -28,6 +28,7 @@ RHYTHM_TEST_SEED = 42
 # Test Strategies
 # ============================================================================
 
+
 @st.composite
 def duration_strategy(draw):
     """Generate valid positive durations for wake/sleep."""
@@ -44,11 +45,9 @@ def step_count_strategy(draw):
 # Safety Invariants
 # ============================================================================
 
+
 @settings(max_examples=50, deadline=None)
-@given(
-    wake_duration=duration_strategy(),
-    sleep_duration=duration_strategy()
-)
+@given(wake_duration=duration_strategy(), sleep_duration=duration_strategy())
 def test_rhythm_duration_positivity(wake_duration, sleep_duration):
     """
     INV-WS-S1: Duration Positivity
@@ -83,7 +82,7 @@ def test_rhythm_invalid_durations_rejected():
 @given(
     wake_duration=duration_strategy(),
     sleep_duration=duration_strategy(),
-    num_steps=step_count_strategy()
+    num_steps=step_count_strategy(),
 )
 def test_rhythm_phase_validity(wake_duration, sleep_duration, num_steps):
     """
@@ -96,23 +95,25 @@ def test_rhythm_phase_validity(wake_duration, sleep_duration, num_steps):
 
     # Check initial phase
     assert rhythm.phase in valid_phases, f"Invalid initial phase: {rhythm.phase}"
-    assert rhythm.get_current_phase() in valid_phases, f"Invalid get_current_phase: {rhythm.get_current_phase()}"
+    assert rhythm.get_current_phase() in valid_phases, (
+        f"Invalid get_current_phase: {rhythm.get_current_phase()}"
+    )
 
     # Check phase after each step
     for i in range(num_steps):
         rhythm.step()
 
-        assert rhythm.phase in valid_phases, \
-            f"Invalid phase after step {i+1}: {rhythm.phase}"
-        assert rhythm.get_current_phase() in valid_phases, \
-            f"get_current_phase invalid after step {i+1}: {rhythm.get_current_phase()}"
+        assert rhythm.phase in valid_phases, f"Invalid phase after step {i + 1}: {rhythm.phase}"
+        assert rhythm.get_current_phase() in valid_phases, (
+            f"get_current_phase invalid after step {i + 1}: {rhythm.get_current_phase()}"
+        )
 
 
 @settings(max_examples=50, deadline=None)
 @given(
     wake_duration=duration_strategy(),
     sleep_duration=duration_strategy(),
-    num_steps=step_count_strategy()
+    num_steps=step_count_strategy(),
 )
 def test_rhythm_counter_non_negativity(wake_duration, sleep_duration, num_steps):
     """
@@ -129,19 +130,16 @@ def test_rhythm_counter_non_negativity(wake_duration, sleep_duration, num_steps)
         rhythm.step()
 
         # Counter should reset when phase changes, never go negative
-        assert rhythm.counter >= 0, \
-            f"Counter negative after step {i+1}: {rhythm.counter}"
+        assert rhythm.counter >= 0, f"Counter negative after step {i + 1}: {rhythm.counter}"
 
 
 # ============================================================================
 # Liveness Invariants
 # ============================================================================
 
+
 @settings(max_examples=30, deadline=None)
-@given(
-    wake_duration=duration_strategy(),
-    sleep_duration=duration_strategy()
-)
+@given(wake_duration=duration_strategy(), sleep_duration=duration_strategy())
 def test_rhythm_eventual_phase_transition(wake_duration, sleep_duration):
     """
     INV-WS-L1: Eventual Phase Transition
@@ -160,15 +158,14 @@ def test_rhythm_eventual_phase_transition(wake_duration, sleep_duration):
             phase_changed = True
             break
 
-    assert phase_changed, \
-        f"Phase never changed from {initial_phase} after {max_steps} steps"
+    assert phase_changed, f"Phase never changed from {initial_phase} after {max_steps} steps"
 
 
 @settings(max_examples=50, deadline=None)
 @given(
     wake_duration=duration_strategy(),
     sleep_duration=duration_strategy(),
-    num_steps=step_count_strategy()
+    num_steps=step_count_strategy(),
 )
 def test_rhythm_step_progress(wake_duration, sleep_duration, num_steps):
     """
@@ -192,17 +189,15 @@ def test_rhythm_step_progress(wake_duration, sleep_duration, num_steps):
 
         # When counter reaches 0, phase changes and counter resets
         if counter_before == 1:
-            assert phase_changed, f"Phase should change when counter was 1 (step {i+1})"
+            assert phase_changed, f"Phase should change when counter was 1 (step {i + 1})"
         else:
-            assert counter_decreased or phase_changed, \
-                f"Step {i+1} made no progress: counter {counter_before}->{counter_after}, phase {phase_before}->{phase_after}"
+            assert counter_decreased or phase_changed, (
+                f"Step {i + 1} made no progress: counter {counter_before}->{counter_after}, phase {phase_before}->{phase_after}"
+            )
 
 
 @settings(max_examples=30, deadline=None)
-@given(
-    wake_duration=duration_strategy(),
-    sleep_duration=duration_strategy()
-)
+@given(wake_duration=duration_strategy(), sleep_duration=duration_strategy())
 def test_rhythm_is_wake_is_sleep_consistency(wake_duration, sleep_duration):
     """
     INV-WS-S2 consistency: is_wake() and is_sleep() must be mutually exclusive.
@@ -213,8 +208,9 @@ def test_rhythm_is_wake_is_sleep_consistency(wake_duration, sleep_duration):
 
     for _ in range(cycle_length * 3):  # Test through 3 full cycles
         # Exactly one must be true
-        assert rhythm.is_wake() != rhythm.is_sleep(), \
+        assert rhythm.is_wake() != rhythm.is_sleep(), (
             f"is_wake={rhythm.is_wake()}, is_sleep={rhythm.is_sleep()} - not mutually exclusive"
+        )
 
         # Must match phase attribute
         if rhythm.is_wake():
@@ -229,11 +225,9 @@ def test_rhythm_is_wake_is_sleep_consistency(wake_duration, sleep_duration):
 # Metamorphic Invariants
 # ============================================================================
 
+
 @settings(max_examples=30, deadline=None)
-@given(
-    wake_duration=duration_strategy(),
-    sleep_duration=duration_strategy()
-)
+@given(wake_duration=duration_strategy(), sleep_duration=duration_strategy())
 def test_rhythm_cycle_periodicity(wake_duration, sleep_duration):
     """
     INV-WS-M1: Cycle Periodicity
@@ -262,15 +256,13 @@ def test_rhythm_cycle_periodicity(wake_duration, sleep_duration):
         if steps > expected_cycle * 2:
             break
 
-    assert steps == expected_cycle, \
+    assert steps == expected_cycle, (
         f"Cycle duration {steps} != expected {expected_cycle} (wake={wake_duration}, sleep={sleep_duration})"
+    )
 
 
 @settings(max_examples=30, deadline=None)
-@given(
-    wake_duration=duration_strategy(),
-    sleep_duration=duration_strategy()
-)
+@given(wake_duration=duration_strategy(), sleep_duration=duration_strategy())
 def test_rhythm_phase_alternation(wake_duration, sleep_duration):
     """
     INV-WS-M2: Phase Alternation
@@ -295,15 +287,13 @@ def test_rhythm_phase_alternation(wake_duration, sleep_duration):
 
     # Verify alternation: no two consecutive identical phases in history
     for i in range(len(phase_history) - 1):
-        assert phase_history[i] != phase_history[i + 1], \
+        assert phase_history[i] != phase_history[i + 1], (
             f"Phase repetition at index {i}: {phase_history}"
+        )
 
 
 @settings(max_examples=30, deadline=None)
-@given(
-    wake_duration=duration_strategy(),
-    sleep_duration=duration_strategy()
-)
+@given(wake_duration=duration_strategy(), sleep_duration=duration_strategy())
 def test_rhythm_wake_duration_exact(wake_duration, sleep_duration):
     """
     Verify that wake phase lasts exactly wake_duration steps.
@@ -322,15 +312,13 @@ def test_rhythm_wake_duration_exact(wake_duration, sleep_duration):
         if wake_steps > wake_duration + 1:
             break
 
-    assert wake_steps == wake_duration, \
+    assert wake_steps == wake_duration, (
         f"Wake phase lasted {wake_steps} steps, expected {wake_duration}"
+    )
 
 
 @settings(max_examples=30, deadline=None)
-@given(
-    wake_duration=duration_strategy(),
-    sleep_duration=duration_strategy()
-)
+@given(wake_duration=duration_strategy(), sleep_duration=duration_strategy())
 def test_rhythm_sleep_duration_exact(wake_duration, sleep_duration):
     """
     Verify that sleep phase lasts exactly sleep_duration steps.
@@ -353,19 +341,21 @@ def test_rhythm_sleep_duration_exact(wake_duration, sleep_duration):
         if sleep_steps > sleep_duration + 1:
             break
 
-    assert sleep_steps == sleep_duration, \
+    assert sleep_steps == sleep_duration, (
         f"Sleep phase lasted {sleep_steps} steps, expected {sleep_duration}"
+    )
 
 
 # ============================================================================
 # Serialization Tests
 # ============================================================================
 
+
 @settings(max_examples=30, deadline=None)
 @given(
     wake_duration=duration_strategy(),
     sleep_duration=duration_strategy(),
-    num_steps=st.integers(min_value=0, max_value=50)
+    num_steps=st.integers(min_value=0, max_value=50),
 )
 def test_rhythm_to_dict_complete(wake_duration, sleep_duration, num_steps):
     """
@@ -396,12 +386,16 @@ def test_rhythm_to_dict_complete(wake_duration, sleep_duration, num_steps):
 # Edge Cases
 # ============================================================================
 
-@pytest.mark.parametrize("wake,sleep", [
-    (1, 1),   # Minimum valid durations
-    (1, 10),  # Asymmetric (short wake)
-    (10, 1),  # Asymmetric (short sleep)
-    (100, 100),  # Large equal durations
-])
+
+@pytest.mark.parametrize(
+    "wake,sleep",
+    [
+        (1, 1),  # Minimum valid durations
+        (1, 10),  # Asymmetric (short wake)
+        (10, 1),  # Asymmetric (short sleep)
+        (100, 100),  # Large equal durations
+    ],
+)
 def test_rhythm_edge_case_durations(wake, sleep):
     """Test rhythm with various edge case durations."""
     rhythm = CognitiveRhythm(wake_duration=wake, sleep_duration=sleep)

@@ -31,15 +31,11 @@ class GenerateRequest(BaseModel):
     max_tokens: int | None = Field(
         None, ge=1, le=4096, description="Maximum number of tokens to generate"
     )
-    moral_value: float | None = Field(
-        None, ge=0.0, le=1.0, description="Moral threshold value"
-    )
+    moral_value: float | None = Field(None, ge=0.0, le=1.0, description="Moral threshold value")
     user_intent: str | None = Field(
         None, description="User intent category (e.g., 'conversational', 'analytical')"
     )
-    cognitive_load: float | None = Field(
-        None, ge=0.0, le=1.0, description="Cognitive load value"
-    )
+    cognitive_load: float | None = Field(None, ge=0.0, le=1.0, description="Cognitive load value")
     context_top_k: int | None = Field(
         None, ge=1, le=100, description="Number of top context items to retrieve"
     )
@@ -52,21 +48,13 @@ class GenerateResponse(BaseModel):
     governance: dict[str, Any] | None = Field(
         default_factory=dict, description="Governance state information"
     )
-    mlsdm: dict[str, Any] | None = Field(
-        default_factory=dict, description="MLSDM internal state"
-    )
-    timing: dict[str, float] = Field(
-        default_factory=dict, description="Performance timing metrics"
-    )
+    mlsdm: dict[str, Any] | None = Field(default_factory=dict, description="MLSDM internal state")
+    timing: dict[str, float] = Field(default_factory=dict, description="Performance timing metrics")
     validation_steps: list[dict[str, Any]] = Field(
         default_factory=list, description="Validation steps executed"
     )
-    error: dict[str, Any] | None = Field(
-        None, description="Error information if generation failed"
-    )
-    rejected_at: str | None = Field(
-        None, description="Stage at which request was rejected"
-    )
+    error: dict[str, Any] | None = Field(None, description="Error information if generation failed")
+    rejected_at: str | None = Field(None, description="Stage at which request was rejected")
 
 
 class HealthResponse(BaseModel):
@@ -153,7 +141,9 @@ def create_app() -> FastAPI:
 
         # Rate limiting check
         client_ip = request.client.host if request.client else "unknown"
-        if request.app.state.rate_limiter and not request.app.state.rate_limiter.is_allowed(client_ip):
+        if request.app.state.rate_limiter and not request.app.state.rate_limiter.is_allowed(
+            client_ip
+        ):
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Rate limit exceeded. Please try again later.",
@@ -254,28 +244,28 @@ def create_app() -> FastAPI:
 
         lines.append("# HELP neuro_rejections_total Total number of rejections by stage")
         lines.append("# TYPE neuro_rejections_total counter")
-        for stage, count in summary['rejections_total'].items():
+        for stage, count in summary["rejections_total"].items():
             lines.append(f'neuro_rejections_total{{stage="{stage}"}} {count}')
         lines.append("")
 
         lines.append("# HELP neuro_errors_total Total number of errors by type")
         lines.append("# TYPE neuro_errors_total counter")
-        for error_type, count in summary['errors_total'].items():
+        for error_type, count in summary["errors_total"].items():
             lines.append(f'neuro_errors_total{{type="{error_type}"}} {count}')
         lines.append("")
 
         # Latency metrics
-        latency_stats = summary['latency_stats']
+        latency_stats = summary["latency_stats"]
         for latency_type, stats in latency_stats.items():
-            if stats['count'] > 0:
+            if stats["count"] > 0:
                 metric_name = f"neuro_latency_{latency_type}"
                 lines.append(f"# HELP {metric_name} Latency in milliseconds")
                 lines.append(f"# TYPE {metric_name} histogram")
                 lines.append(f'{metric_name}{{quantile="0.5"}} {stats["p50"]:.2f}')
                 lines.append(f'{metric_name}{{quantile="0.95"}} {stats["p95"]:.2f}')
                 lines.append(f'{metric_name}{{quantile="0.99"}} {stats["p99"]:.2f}')
-                lines.append(f'{metric_name}_sum {stats["mean"] * stats["count"]:.2f}')
-                lines.append(f'{metric_name}_count {stats["count"]}')
+                lines.append(f"{metric_name}_sum {stats['mean'] * stats['count']:.2f}")
+                lines.append(f"{metric_name}_count {stats['count']}")
                 lines.append("")
 
         return "\n".join(lines)

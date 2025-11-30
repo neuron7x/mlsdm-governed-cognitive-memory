@@ -54,9 +54,6 @@ def test_run_aphasia_eval_fail_on_low_metrics(tmp_path, monkeypatch, capsys):
         encoding="utf-8",
     )
 
-    exit_code = run_aphasia_eval.main([
-        "--corpus", str(corpus),
-        "--fail-on-low-metrics"
-    ])
+    exit_code = run_aphasia_eval.main(["--corpus", str(corpus), "--fail-on-low-metrics"])
     # This should fail because the corpus has inverted samples
     assert exit_code == 1

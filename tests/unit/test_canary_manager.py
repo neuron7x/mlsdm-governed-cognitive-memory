@@ -98,16 +98,12 @@ class TestCanaryManagerInit:
     def test_invalid_candidate_ratio_negative(self):
         """Negative candidate ratio should raise ValueError."""
         with pytest.raises(ValueError, match="candidate_ratio must be between"):
-            CanaryManager(
-                current_version="v1.0", candidate_version="v2.0", candidate_ratio=-0.1
-            )
+            CanaryManager(current_version="v1.0", candidate_version="v2.0", candidate_ratio=-0.1)
 
     def test_invalid_candidate_ratio_above_one(self):
         """Candidate ratio above 1.0 should raise ValueError."""
         with pytest.raises(ValueError, match="candidate_ratio must be between"):
-            CanaryManager(
-                current_version="v1.0", candidate_version="v2.0", candidate_ratio=1.5
-            )
+            CanaryManager(current_version="v1.0", candidate_version="v2.0", candidate_ratio=1.5)
 
     def test_invalid_error_budget_threshold_negative(self):
         """Negative error budget threshold should raise ValueError."""

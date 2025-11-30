@@ -31,8 +31,7 @@ def _load_data(filepath: str) -> dict[str, Any]:
         arrs = np.load(filepath, allow_pickle=True)
         # Convert NpzFile to dict - explicit type to satisfy mypy
         result: dict[str, Any] = {
-            k: v.tolist() if isinstance(v, np.ndarray) else v
-            for k, v in arrs.items()
+            k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in arrs.items()
         }
         return result
     else:

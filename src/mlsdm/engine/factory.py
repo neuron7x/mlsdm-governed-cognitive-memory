@@ -160,10 +160,7 @@ def build_neuro_engine_from_env(
                 providers[treatment] = providers["default"]
 
         router = ABTestRouter(
-            providers,
-            control=control,
-            treatment=treatment,
-            treatment_ratio=treatment_ratio
+            providers, control=control, treatment=treatment, treatment_ratio=treatment_ratio
         )
 
     elif router_mode == "ab_test_canary":
@@ -193,7 +190,7 @@ def build_neuro_engine_from_env(
             providers,
             control=control,
             treatment=treatment,
-            treatment_ratio=canary_manager.candidate_ratio
+            treatment_ratio=canary_manager.candidate_ratio,
         )
 
     else:

@@ -18,11 +18,7 @@ class ConfigLoader:
     """Load and validate configuration files with schema validation."""
 
     @staticmethod
-    def load_config(
-        path: str,
-        validate: bool = True,
-        env_override: bool = True
-    ) -> dict[str, Any]:
+    def load_config(path: str, validate: bool = True, env_override: bool = True) -> dict[str, Any]:
         """Load configuration from file with optional validation.
 
         Args:
@@ -133,7 +129,7 @@ class ConfigLoader:
                 continue
 
             # Remove prefix and convert to lowercase
-            config_key = env_key[len(prefix):].lower()
+            config_key = env_key[len(prefix) :].lower()
 
             # Handle nested keys (e.g., MORAL_FILTER__THRESHOLD)
             if "__" in config_key:

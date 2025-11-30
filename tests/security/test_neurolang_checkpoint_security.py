@@ -51,9 +51,7 @@ def test_invalid_checkpoint_structure_raises_value_error():
 
     # Create a temporary checkpoint file with invalid structure
     with tempfile.NamedTemporaryFile(
-        suffix=".pt",
-        dir=str(ALLOWED_CHECKPOINT_DIR),
-        delete=False
+        suffix=".pt", dir=str(ALLOWED_CHECKPOINT_DIR), delete=False
     ) as tmp_file:
         temp_path = Path(tmp_file.name)
 
@@ -68,13 +66,17 @@ def test_invalid_checkpoint_structure_raises_value_error():
             torch.save({"wrong_key": "value"}, temp_path)
             with pytest.raises(ValueError) as exc_info:
                 safe_load_neurolang_checkpoint(str(temp_path), device)
-            assert "Invalid checkpoint structure: missing 'actor' or 'critic' keys" in str(exc_info.value)
+            assert "Invalid checkpoint structure: missing 'actor' or 'critic' keys" in str(
+                exc_info.value
+            )
 
             # Test 3: Dict with only 'actor' key
             torch.save({"actor": {}}, temp_path)
             with pytest.raises(ValueError) as exc_info:
                 safe_load_neurolang_checkpoint(str(temp_path), device)
-            assert "Invalid checkpoint structure: missing 'actor' or 'critic' keys" in str(exc_info.value)
+            assert "Invalid checkpoint structure: missing 'actor' or 'critic' keys" in str(
+                exc_info.value
+            )
 
         finally:
             # Clean up temporary file
@@ -89,9 +91,7 @@ def test_valid_checkpoint_loads_successfully():
 
     # Create a temporary valid checkpoint
     with tempfile.NamedTemporaryFile(
-        suffix=".pt",
-        dir=str(ALLOWED_CHECKPOINT_DIR),
-        delete=False
+        suffix=".pt", dir=str(ALLOWED_CHECKPOINT_DIR), delete=False
     ) as tmp_file:
         temp_path = Path(tmp_file.name)
 

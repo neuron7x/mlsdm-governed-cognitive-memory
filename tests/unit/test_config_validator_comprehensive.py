@@ -23,10 +23,7 @@ class TestValidationError:
     def test_validation_error_str(self):
         """Test ValidationError string representation."""
         error = ValidationError(
-            parameter="dim",
-            value=0,
-            expected="positive integer",
-            component="TestComponent"
+            parameter="dim", value=0, expected="positive integer", component="TestComponent"
         )
         error_str = str(error)
         assert "Invalid configuration" in error_str
@@ -41,7 +38,7 @@ class TestValidationError:
             parameter="threshold",
             value=1.5,
             expected="float in range [0, 1]",
-            component="MoralFilter"
+            component="MoralFilter",
         )
         assert error.parameter == "threshold"
         assert error.value == 1.5
@@ -328,6 +325,7 @@ class TestValidateLLMWrapperConfig:
 
     def test_valid_config(self):
         """Test valid LLM wrapper configuration."""
+
         def dummy_generate(prompt):
             return "response"
 
@@ -335,20 +333,21 @@ class TestValidateLLMWrapperConfig:
             return [0.1] * 384
 
         config = {
-            'llm_generate_fn': dummy_generate,
-            'embedding_fn': dummy_embed,
+            "llm_generate_fn": dummy_generate,
+            "embedding_fn": dummy_embed,
         }
         validated = ConfigValidator.validate_llm_wrapper_config(config)
-        assert validated['llm_generate_fn'] is dummy_generate
-        assert validated['embedding_fn'] is dummy_embed
-        assert validated['dim'] == 384  # Default
-        assert validated['capacity'] == 20000  # Default
-        assert validated['wake_duration'] == 8  # Default
-        assert validated['sleep_duration'] == 3  # Default
-        assert validated['initial_moral_threshold'] == 0.50  # Default
+        assert validated["llm_generate_fn"] is dummy_generate
+        assert validated["embedding_fn"] is dummy_embed
+        assert validated["dim"] == 384  # Default
+        assert validated["capacity"] == 20000  # Default
+        assert validated["wake_duration"] == 8  # Default
+        assert validated["sleep_duration"] == 3  # Default
+        assert validated["initial_moral_threshold"] == 0.50  # Default
 
     def test_custom_parameters(self):
         """Test custom parameter values."""
+
         def dummy_generate(prompt):
             return "response"
 
@@ -356,28 +355,29 @@ class TestValidateLLMWrapperConfig:
             return [0.1] * 128
 
         config = {
-            'llm_generate_fn': dummy_generate,
-            'embedding_fn': dummy_embed,
-            'dim': 128,
-            'capacity': 10000,
-            'wake_duration': 10,
-            'sleep_duration': 5,
-            'initial_moral_threshold': 0.6,
+            "llm_generate_fn": dummy_generate,
+            "embedding_fn": dummy_embed,
+            "dim": 128,
+            "capacity": 10000,
+            "wake_duration": 10,
+            "sleep_duration": 5,
+            "initial_moral_threshold": 0.6,
         }
         validated = ConfigValidator.validate_llm_wrapper_config(config)
-        assert validated['dim'] == 128
-        assert validated['capacity'] == 10000
-        assert validated['wake_duration'] == 10
-        assert validated['sleep_duration'] == 5
-        assert validated['initial_moral_threshold'] == 0.6
+        assert validated["dim"] == 128
+        assert validated["capacity"] == 10000
+        assert validated["wake_duration"] == 10
+        assert validated["sleep_duration"] == 5
+        assert validated["initial_moral_threshold"] == 0.6
 
     def test_missing_llm_generate_fn(self):
         """Test missing llm_generate_fn raises error."""
+
         def dummy_embed(text):
             return [0.1] * 384
 
         config = {
-            'embedding_fn': dummy_embed,
+            "embedding_fn": dummy_embed,
         }
         with pytest.raises(ValidationError) as exc_info:
             ConfigValidator.validate_llm_wrapper_config(config)
@@ -386,12 +386,13 @@ class TestValidateLLMWrapperConfig:
 
     def test_non_callable_llm_generate_fn(self):
         """Test non-callable llm_generate_fn raises error."""
+
         def dummy_embed(text):
             return [0.1] * 384
 
         config = {
-            'llm_generate_fn': "not a function",
-            'embedding_fn': dummy_embed,
+            "llm_generate_fn": "not a function",
+            "embedding_fn": dummy_embed,
         }
         with pytest.raises(ValidationError) as exc_info:
             ConfigValidator.validate_llm_wrapper_config(config)
@@ -400,11 +401,12 @@ class TestValidateLLMWrapperConfig:
 
     def test_missing_embedding_fn(self):
         """Test missing embedding_fn raises error."""
+
         def dummy_generate(prompt):
             return "response"
 
         config = {
-            'llm_generate_fn': dummy_generate,
+            "llm_generate_fn": dummy_generate,
         }
         with pytest.raises(ValidationError) as exc_info:
             ConfigValidator.validate_llm_wrapper_config(config)
@@ -412,12 +414,13 @@ class TestValidateLLMWrapperConfig:
 
     def test_non_callable_embedding_fn(self):
         """Test non-callable embedding_fn raises error."""
+
         def dummy_generate(prompt):
             return "response"
 
         config = {
-            'llm_generate_fn': dummy_generate,
-            'embedding_fn': 12345,
+            "llm_generate_fn": dummy_generate,
+            "embedding_fn": 12345,
         }
         with pytest.raises(ValidationError) as exc_info:
             ConfigValidator.validate_llm_wrapper_config(config)
@@ -431,32 +434,32 @@ class TestValidateMoralFilterConfig:
         """Test valid moral filter configuration."""
         config = {}
         validated = ConfigValidator.validate_moral_filter_config(config)
-        assert validated['initial_threshold'] == 0.50
-        assert validated['adapt_rate'] == 0.05
-        assert validated['ema_alpha'] == 0.1
+        assert validated["initial_threshold"] == 0.50
+        assert validated["adapt_rate"] == 0.05
+        assert validated["ema_alpha"] == 0.1
 
     def test_custom_parameters(self):
         """Test custom parameter values."""
         config = {
-            'initial_threshold': 0.7,
-            'adapt_rate': 0.1,
-            'ema_alpha': 0.2,
+            "initial_threshold": 0.7,
+            "adapt_rate": 0.1,
+            "ema_alpha": 0.2,
         }
         validated = ConfigValidator.validate_moral_filter_config(config)
-        assert validated['initial_threshold'] == 0.7
-        assert validated['adapt_rate'] == 0.1
-        assert validated['ema_alpha'] == 0.2
+        assert validated["initial_threshold"] == 0.7
+        assert validated["adapt_rate"] == 0.1
+        assert validated["ema_alpha"] == 0.2
 
     def test_invalid_threshold(self):
         """Test invalid threshold raises error."""
-        config = {'initial_threshold': 0.2}  # Below 0.30
+        config = {"initial_threshold": 0.2}  # Below 0.30
         with pytest.raises(ValidationError) as exc_info:
             ConfigValidator.validate_moral_filter_config(config)
         assert "[0.3, 0.9]" in str(exc_info.value)
 
     def test_invalid_adapt_rate(self):
         """Test invalid adapt_rate raises error."""
-        config = {'adapt_rate': 1.5}  # Above 1.0
+        config = {"adapt_rate": 1.5}  # Above 1.0
         with pytest.raises(ValidationError):
             ConfigValidator.validate_moral_filter_config(config)
 
@@ -468,22 +471,22 @@ class TestValidateQILMConfig:
         """Test valid QILM configuration."""
         config = {}
         validated = ConfigValidator.validate_qilm_config(config)
-        assert validated['dim'] == 384
-        assert validated['capacity'] == 20000
+        assert validated["dim"] == 384
+        assert validated["capacity"] == 20000
 
     def test_custom_parameters(self):
         """Test custom parameter values."""
         config = {
-            'dim': 256,
-            'capacity': 10000,
+            "dim": 256,
+            "capacity": 10000,
         }
         validated = ConfigValidator.validate_qilm_config(config)
-        assert validated['dim'] == 256
-        assert validated['capacity'] == 10000
+        assert validated["dim"] == 256
+        assert validated["capacity"] == 10000
 
     def test_invalid_dim(self):
         """Test invalid dim raises error."""
-        config = {'dim': -10}
+        config = {"dim": -10}
         with pytest.raises(ValidationError):
             ConfigValidator.validate_qilm_config(config)
 
@@ -493,6 +496,7 @@ class TestValidateConfig:
 
     def test_llm_wrapper_type(self):
         """Test validate_config with llm_wrapper type."""
+
         def dummy_generate(prompt):
             return "response"
 
@@ -500,28 +504,28 @@ class TestValidateConfig:
             return [0.1] * 384
 
         config = {
-            'llm_generate_fn': dummy_generate,
-            'embedding_fn': dummy_embed,
+            "llm_generate_fn": dummy_generate,
+            "embedding_fn": dummy_embed,
         }
-        validated = validate_config(config, 'llm_wrapper')
-        assert 'llm_generate_fn' in validated
+        validated = validate_config(config, "llm_wrapper")
+        assert "llm_generate_fn" in validated
 
     def test_moral_filter_type(self):
         """Test validate_config with moral_filter type."""
-        config = {'initial_threshold': 0.6}
-        validated = validate_config(config, 'moral_filter')
-        assert validated['initial_threshold'] == 0.6
+        config = {"initial_threshold": 0.6}
+        validated = validate_config(config, "moral_filter")
+        assert validated["initial_threshold"] == 0.6
 
     def test_qilm_type(self):
         """Test validate_config with qilm type."""
-        config = {'dim': 256}
-        validated = validate_config(config, 'qilm')
-        assert validated['dim'] == 256
+        config = {"dim": 256}
+        validated = validate_config(config, "qilm")
+        assert validated["dim"] == 256
 
     def test_unknown_component_type(self):
         """Test unknown component type raises ValueError."""
         with pytest.raises(ValueError) as exc_info:
-            validate_config({}, 'unknown_type')
+            validate_config({}, "unknown_type")
         assert "Unknown component type: unknown_type" in str(exc_info.value)
         assert "llm_wrapper" in str(exc_info.value)
         assert "moral_filter" in str(exc_info.value)

@@ -1,4 +1,5 @@
 """Comprehensive unit tests for MoralFilterV2."""
+
 from mlsdm.cognition.moral_filter_v2 import MoralFilterV2
 
 
@@ -189,6 +190,7 @@ class TestMoralFilterV2:
 
         # Mix of accepts and rejects
         import random
+
         random.seed(42)
 
         for _ in range(100):

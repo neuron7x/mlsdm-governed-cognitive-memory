@@ -141,9 +141,7 @@ def test_secure_mode_generate_works_without_training():
 
         # Should not raise any errors
         result = wrapper.generate(
-            prompt="Test secure mode generation",
-            moral_value=0.7,
-            max_tokens=50
+            prompt="Test secure mode generation", moral_value=0.7, max_tokens=50
         )
 
         assert result is not None
@@ -204,9 +202,7 @@ def test_secure_mode_generate_returns_valid_response_structure():
         )
 
         result = wrapper.generate(
-            prompt="Test prompt for secure mode",
-            moral_value=0.8,
-            max_tokens=100
+            prompt="Test prompt for secure mode", moral_value=0.8, max_tokens=100
         )
 
         # Verify response structure
@@ -233,7 +229,7 @@ def test_secure_mode_scrubbing_removes_prompt_from_log_records():
         log_record = {
             "message": "Processing request",
             "prompt": "This is a secret prompt that should not be logged",
-            "user_id": "user123"
+            "user_id": "user123",
         }
 
         scrubbed = scrub_log_record(log_record)
@@ -253,7 +249,7 @@ def test_secure_mode_scrubbing_removes_response_from_telemetry():
             "event": "generation_complete",
             "full_response": "This is the complete LLM response",
             "full_prompt": "This is the complete user prompt",
-            "latency_ms": 150
+            "latency_ms": 150,
         }
 
         scrubbed = scrub_request_payload(telemetry)
@@ -279,11 +275,7 @@ def test_secure_mode_does_not_break_normal_generation():
 
         # Multiple generations should work without exceptions
         for i in range(3):
-            result = wrapper.generate(
-                prompt=f"Test prompt {i}",
-                moral_value=0.7,
-                max_tokens=50
-            )
+            result = wrapper.generate(prompt=f"Test prompt {i}", moral_value=0.7, max_tokens=50)
             assert result["accepted"] is True
             assert "Rejected" not in result["response"]
 
@@ -300,11 +292,7 @@ def test_secure_mode_neuro_enhancement_shows_disabled():
             neurolang_mode="eager_train",
         )
 
-        result = wrapper.generate(
-            prompt="Test prompt",
-            moral_value=0.8,
-            max_tokens=50
-        )
+        result = wrapper.generate(prompt="Test prompt", moral_value=0.8, max_tokens=50)
 
         # neuro_enhancement should indicate disabled state
         assert result["neuro_enhancement"] == "NeuroLang disabled"
@@ -333,15 +321,9 @@ def test_secure_mode_scrubber_handles_nested_sensitive_data():
         nested_data = {
             "request": {
                 "user_id": "user123",
-                "input": {
-                    "prompt": "Secret prompt",
-                    "raw_input": "Raw sensitive data"
-                }
+                "input": {"prompt": "Secret prompt", "raw_input": "Raw sensitive data"},
             },
-            "network": {
-                "ip_address": "192.168.1.1",
-                "session_id": "sess_abc123"
-            }
+            "network": {"ip_address": "192.168.1.1", "session_id": "sess_abc123"},
         }
 
         scrubbed = scrub_request_payload(nested_data)
@@ -358,10 +340,7 @@ def test_secure_mode_scrubber_handles_nested_sensitive_data():
 def test_secure_mode_scrubs_metadata_at_top_level():
     """Test that metadata field itself is scrubbed (it's in forbidden fields)."""
     with patch.dict(os.environ, {"MLSDM_SECURE_MODE": "1"}):
-        data = {
-            "event": "request",
-            "metadata": {"user_info": "sensitive"}
-        }
+        data = {"event": "request", "metadata": {"user_info": "sensitive"}}
 
         scrubbed = scrub_request_payload(data)
 

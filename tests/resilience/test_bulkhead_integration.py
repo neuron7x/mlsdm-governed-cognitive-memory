@@ -23,21 +23,26 @@ from mlsdm.utils.bulkhead import BulkheadCompartment
 
 def create_slow_llm(delay_seconds: float = 0.1):
     """Create an LLM that simulates slow responses."""
+
     def slow_llm(prompt: str, max_tokens: int = 100) -> str:
         time.sleep(delay_seconds)
         return f"Response to: {prompt[:20]}..."
+
     return slow_llm
 
 
 def create_fast_llm():
     """Create a fast LLM for testing."""
+
     def fast_llm(prompt: str, max_tokens: int = 100) -> str:
         return f"Fast response to: {prompt[:20]}..."
+
     return fast_llm
 
 
 def create_fake_embedder(dim: int = 384):
     """Create a thread-safe fake embedding function."""
+
     def fake_embedder(text: str) -> np.ndarray:
         text_hash = abs(hash(text))
         local_rng = np.random.RandomState(text_hash % (2**31))
@@ -46,6 +51,7 @@ def create_fake_embedder(dim: int = 384):
         if norm > 1e-9:
             vec = vec / norm
         return vec
+
     return fake_embedder
 
 
@@ -162,8 +168,7 @@ class TestBulkheadConcurrencyLimits:
 
         # Count bulkhead rejections
         bulkhead_rejections = [
-            r for r in results
-            if r.get("error") and r["error"].get("type") == "bulkhead_full"
+            r for r in results if r.get("error") and r["error"].get("type") == "bulkhead_full"
         ]
 
         # Some requests should have been rejected due to bulkhead limit
@@ -218,7 +223,9 @@ class TestBulkheadConcurrencyLimits:
         assert len(successes) >= 1
 
         # If there's a bulkhead rejection, verify error format
-        rejections = [r for r in results if r.get("error") and r["error"].get("type") == "bulkhead_full"]
+        rejections = [
+            r for r in results if r.get("error") and r["error"].get("type") == "bulkhead_full"
+        ]
         for rejection in rejections:
             assert rejection["error"]["type"] == "bulkhead_full"
             assert "bulkhead full" in rejection["error"]["message"]

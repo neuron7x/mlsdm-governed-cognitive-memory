@@ -126,6 +126,7 @@ class TestMemoryManagerReference:
     def setup_method(self):
         """Reset memory manager before each test."""
         import mlsdm.api.health as health_module
+
         health_module._memory_manager = None
 
     def test_set_memory_manager(self):

@@ -1,4 +1,5 @@
 """Comprehensive unit tests for QILM_v2."""
+
 from threading import Thread
 
 import numpy as np
@@ -266,9 +267,9 @@ class TestQILM_v2:
         assert len(results) == 1
         result = results[0]
         assert isinstance(result, MemoryRetrieval)
-        assert hasattr(result, 'vector')
-        assert hasattr(result, 'phase')
-        assert hasattr(result, 'resonance')
+        assert hasattr(result, "vector")
+        assert hasattr(result, "phase")
+        assert hasattr(result, "resonance")
         assert isinstance(result.vector, np.ndarray)
         assert isinstance(float(result.phase), float)
         assert isinstance(float(result.resonance), float)

@@ -270,6 +270,7 @@ class TestHealthManagerSetGet:
 
     def test_set_and_get_manager(self):
         """Test setting and getting memory manager."""
+
         class DummyManager:
             pass
 

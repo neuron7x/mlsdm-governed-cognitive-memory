@@ -31,8 +31,7 @@ DECAY_RATE_TOLERANCE = 0.15
 
 @settings(max_examples=30, deadline=None)
 @given(
-    dim=st.integers(min_value=5, max_value=50),
-    num_updates=st.integers(min_value=1, max_value=20)
+    dim=st.integers(min_value=5, max_value=50), num_updates=st.integers(min_value=1, max_value=20)
 )
 def test_multilevel_decay_monotonicity(dim, num_updates):
     """
@@ -64,12 +63,15 @@ def test_multilevel_decay_monotonicity(dim, num_updates):
     norm_L3_after = np.linalg.norm(L3_after)
 
     # Decay should reduce or maintain norms (within floating point tolerance)
-    assert norm_L1_after <= norm_L1_before + 1e-6, \
+    assert norm_L1_after <= norm_L1_before + 1e-6, (
         f"L1 norm increased: {norm_L1_before} -> {norm_L1_after}"
-    assert norm_L2_after <= norm_L2_before + 1e-6, \
+    )
+    assert norm_L2_after <= norm_L2_before + 1e-6, (
         f"L2 norm increased: {norm_L2_before} -> {norm_L2_after}"
-    assert norm_L3_after <= norm_L3_before + 1e-6, \
+    )
+    assert norm_L3_after <= norm_L3_before + 1e-6, (
         f"L3 norm increased: {norm_L3_before} -> {norm_L3_after}"
+    )
 
 
 @settings(max_examples=30, deadline=None)
@@ -77,7 +79,7 @@ def test_multilevel_decay_monotonicity(dim, num_updates):
     dim=st.integers(min_value=5, max_value=50),
     lambda_l1=st.floats(min_value=0.1, max_value=0.9, allow_nan=False),
     lambda_l2=st.floats(min_value=0.01, max_value=0.5, allow_nan=False),
-    lambda_l3=st.floats(min_value=0.001, max_value=0.1, allow_nan=False)
+    lambda_l3=st.floats(min_value=0.001, max_value=0.1, allow_nan=False),
 )
 def test_multilevel_lambda_decay_rates(dim, lambda_l1, lambda_l2, lambda_l3):
     """
@@ -91,10 +93,7 @@ def test_multilevel_lambda_decay_rates(dim, lambda_l1, lambda_l2, lambda_l3):
         return  # Skip this example
 
     memory = MultiLevelSynapticMemory(
-        dimension=dim,
-        lambda_l1=lambda_l1,
-        lambda_l2=lambda_l2,
-        lambda_l3=lambda_l3
+        dimension=dim, lambda_l1=lambda_l1, lambda_l2=lambda_l2, lambda_l3=lambda_l3
     )
 
     # Add a large event to all levels (via threshold transfers)
@@ -118,16 +117,13 @@ def test_multilevel_lambda_decay_rates(dim, lambda_l1, lambda_l2, lambda_l3):
 
     # L1 should decay fastest (smallest ratio), L3 slowest (largest ratio)
     # Allow some tolerance for floating point and transfer effects
-    assert decay_L1 <= decay_L2 + 0.1, \
-        f"L1 should decay faster than L2: {decay_L1} > {decay_L2}"
-    assert decay_L2 <= decay_L3 + 0.1, \
-        f"L2 should decay faster than L3: {decay_L2} > {decay_L3}"
+    assert decay_L1 <= decay_L2 + 0.1, f"L1 should decay faster than L2: {decay_L1} > {decay_L2}"
+    assert decay_L2 <= decay_L3 + 0.1, f"L2 should decay faster than L3: {decay_L2} > {decay_L3}"
 
 
 @settings(max_examples=30, deadline=None)
 @given(
-    dim=st.integers(min_value=5, max_value=50),
-    num_updates=st.integers(min_value=5, max_value=30)
+    dim=st.integers(min_value=5, max_value=50), num_updates=st.integers(min_value=5, max_value=30)
 )
 def test_multilevel_no_unbounded_growth(dim, num_updates):
     """
@@ -152,12 +148,9 @@ def test_multilevel_no_unbounded_growth(dim, num_updates):
         max_L3_norm = max(max_L3_norm, np.linalg.norm(L3))
 
     # Norms should be bounded (not infinite or extremely large)
-    assert max_L1_norm < 1000 * np.sqrt(dim), \
-        f"L1 norm unbounded: {max_L1_norm}"
-    assert max_L2_norm < 1000 * np.sqrt(dim), \
-        f"L2 norm unbounded: {max_L2_norm}"
-    assert max_L3_norm < 1000 * np.sqrt(dim), \
-        f"L3 norm unbounded: {max_L3_norm}"
+    assert max_L1_norm < 1000 * np.sqrt(dim), f"L1 norm unbounded: {max_L1_norm}"
+    assert max_L2_norm < 1000 * np.sqrt(dim), f"L2 norm unbounded: {max_L2_norm}"
+    assert max_L3_norm < 1000 * np.sqrt(dim), f"L3 norm unbounded: {max_L3_norm}"
 
 
 def test_multilevel_gating_bounds():
@@ -168,17 +161,11 @@ def test_multilevel_gating_bounds():
     dim = 10
 
     # Test various gating values
-    memory = MultiLevelSynapticMemory(
-        dimension=dim,
-        gating12=0.45,
-        gating23=0.30
-    )
+    memory = MultiLevelSynapticMemory(dimension=dim, gating12=0.45, gating23=0.30)
 
     # Gating values should be within bounds
-    assert 0.0 <= memory.gating12 <= 1.0, \
-        f"gating12 out of bounds: {memory.gating12}"
-    assert 0.0 <= memory.gating23 <= 1.0, \
-        f"gating23 out of bounds: {memory.gating23}"
+    assert 0.0 <= memory.gating12 <= 1.0, f"gating12 out of bounds: {memory.gating12}"
+    assert 0.0 <= memory.gating23 <= 1.0, f"gating23 out of bounds: {memory.gating23}"
 
     # Test edge cases
     memory_min = MultiLevelSynapticMemory(dimension=dim, gating12=0.0, gating23=0.0)
@@ -253,12 +240,7 @@ def test_multilevel_invalid_inputs():
 
 def test_multilevel_to_dict_serialization():
     """Test that to_dict returns correct structure."""
-    memory = MultiLevelSynapticMemory(
-        dimension=10,
-        lambda_l1=0.5,
-        lambda_l2=0.1,
-        lambda_l3=0.01
-    )
+    memory = MultiLevelSynapticMemory(dimension=10, lambda_l1=0.5, lambda_l2=0.1, lambda_l3=0.01)
 
     # Add an event
     vec = np.ones(10, dtype=np.float32)
@@ -289,10 +271,10 @@ def test_multilevel_to_dict_serialization():
 # Additional Property Tests for Phase 3 Tech-Debt
 # ============================================================================
 
+
 @settings(max_examples=50, deadline=None)
 @given(
-    dim=st.integers(min_value=5, max_value=50),
-    num_updates=st.integers(min_value=20, max_value=100)
+    dim=st.integers(min_value=5, max_value=50), num_updates=st.integers(min_value=20, max_value=100)
 )
 def test_multilevel_l1_decays_faster_than_l2_l3(dim, num_updates):
     """
@@ -308,7 +290,7 @@ def test_multilevel_l1_decays_faster_than_l2_l3(dim, num_updates):
         dimension=dim,
         lambda_l1=DEFAULT_LAMBDA_L1,
         lambda_l2=DEFAULT_LAMBDA_L2,
-        lambda_l3=DEFAULT_LAMBDA_L3
+        lambda_l3=DEFAULT_LAMBDA_L3,
     )
 
     # Build up state with updates
@@ -347,18 +329,19 @@ def test_multilevel_l1_decays_faster_than_l2_l3(dim, num_updates):
     # L1 should have lower retention (decayed more) than L2 and L3
     # Only assert if we had meaningful initial content
     if norm_L1_before > 1e-3:
-        assert retention_L1 <= retention_L2 + DECAY_RATE_TOLERANCE, \
+        assert retention_L1 <= retention_L2 + DECAY_RATE_TOLERANCE, (
             f"L1 retention ({retention_L1:.4f}) should be <= L2 retention ({retention_L2:.4f})"
+        )
 
     if norm_L2_before > 1e-3:
-        assert retention_L2 <= retention_L3 + DECAY_RATE_TOLERANCE, \
+        assert retention_L2 <= retention_L3 + DECAY_RATE_TOLERANCE, (
             f"L2 retention ({retention_L2:.4f}) should be <= L3 retention ({retention_L3:.4f})"
+        )
 
 
 @settings(max_examples=30, deadline=None)
 @given(
-    dim=st.integers(min_value=5, max_value=50),
-    num_updates=st.integers(min_value=50, max_value=200)
+    dim=st.integers(min_value=5, max_value=50), num_updates=st.integers(min_value=50, max_value=200)
 )
 def test_multilevel_memory_no_leak_under_load(dim, num_updates):
     """
@@ -387,8 +370,9 @@ def test_multilevel_memory_no_leak_under_load(dim, num_updates):
     # With decay parameters, memory should reach steady state
     theoretical_max = 1000 * np.sqrt(dim)  # Conservative upper bound
 
-    assert max_total_norm < theoretical_max, \
+    assert max_total_norm < theoretical_max, (
         f"Memory norm grew unboundedly: max={max_total_norm}, bound={theoretical_max}"
+    )
 
     # Verify stabilization: recent norms should be similar (steady state)
     if len(norms_history) >= 20:
@@ -399,8 +383,9 @@ def test_multilevel_memory_no_leak_under_load(dim, num_updates):
         # Coefficient of variation should be reasonable (not wildly oscillating)
         if mean_recent > 1e-3:
             cv = std_recent / mean_recent
-            assert cv < 1.0, \
+            assert cv < 1.0, (
                 f"Memory norms not stable: CV={cv:.3f} (std={std_recent:.3f}, mean={mean_recent:.3f})"
+            )
 
 
 @settings(max_examples=30, deadline=None)
@@ -420,7 +405,7 @@ def test_multilevel_level_isolation_under_threshold(dim):
         theta_l1=100.0,  # Very high - L1 won't exceed this
         theta_l2=100.0,  # Very high - L2 won't exceed this
         gating12=0.5,
-        gating23=0.3
+        gating23=0.3,
     )
 
     # Add small vectors that won't exceed thresholds
@@ -458,7 +443,7 @@ def test_multilevel_full_transfer_cascade(dim):
         theta_l1=0.1,  # Low - easy to exceed
         theta_l2=0.1,  # Low - easy to exceed
         gating12=0.9,  # High transfer rate
-        gating23=0.9   # High transfer rate
+        gating23=0.9,  # High transfer rate
     )
 
     # Add large vectors to trigger transfers

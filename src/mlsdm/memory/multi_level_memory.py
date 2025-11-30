@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 _SYNAPTIC_MEMORY_DEFAULTS: Optional["SynapticMemoryCalibration"] = None
 try:
     from config.calibration import SYNAPTIC_MEMORY_DEFAULTS as _IMPORTED_DEFAULTS
+
     _SYNAPTIC_MEMORY_DEFAULTS = _IMPORTED_DEFAULTS
 except ImportError:
     # Fallback if calibration module is not available - already None
@@ -104,9 +105,9 @@ class MultiLevelSynapticMemory:
             raise ValueError(f"Event vector must be a NumPy array of dimension {self.dim}.")
 
         # Optimize: perform decay in-place to avoid temporary arrays
-        self.l1 *= (1 - self.lambda_l1)
-        self.l2 *= (1 - self.lambda_l2)
-        self.l3 *= (1 - self.lambda_l3)
+        self.l1 *= 1 - self.lambda_l1
+        self.l2 *= 1 - self.lambda_l2
+        self.l3 *= 1 - self.lambda_l3
 
         # Optimize: avoid unnecessary astype if already float32
         if event.dtype != np.float32:

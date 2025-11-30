@@ -64,7 +64,7 @@ class TestPELMPerformance:
             # Verify results are sorted by resonance (descending)
             if len(results) > 1:
                 for i in range(len(results) - 1):
-                    assert results[i].resonance >= results[i+1].resonance
+                    assert results[i].resonance >= results[i + 1].resonance
 
     def test_entangle_performance_batch(self) -> None:
         """Test entangle performance with batch operations.
@@ -97,7 +97,7 @@ class TestMultiLevelMemoryPerformance:
         synaptic = MultiLevelSynapticMemory(
             dimension=384,
             theta_l1=0.5,  # Lower threshold for frequent transfers
-            theta_l2=1.0
+            theta_l2=1.0,
         )
 
         # Perform many updates to trigger transfers
@@ -306,7 +306,7 @@ class TestMemoryEfficiency:
 
         # Should be approximately:
         # (20000 * 384 * 4 bytes) + (20000 * 4 bytes) ≈ 29.3 MB
-        expected_mb = (20000 * 384 * 4 + 20000 * 4 + 20000 * 4) / (1024 ** 2)
+        expected_mb = (20000 * 384 * 4 + 20000 * 4 + 20000 * 4) / (1024**2)
 
         assert memory_mb <= expected_mb * 1.1  # Allow 10% overhead
         assert memory_mb >= expected_mb * 0.9
@@ -319,8 +319,6 @@ class TestMemoryEfficiency:
         expected_bytes = 3 * 384 * 4
 
         # Get actual memory usage
-        actual_bytes = (synaptic.l1.nbytes +
-                       synaptic.l2.nbytes +
-                       synaptic.l3.nbytes)
+        actual_bytes = synaptic.l1.nbytes + synaptic.l2.nbytes + synaptic.l3.nbytes
 
         assert actual_bytes == expected_bytes

@@ -57,8 +57,9 @@ class TestMoralFilterBounds:
                 filter.adapt(accepted)
 
             state = filter.get_state()
-            assert 0.30 <= state["threshold"] <= 0.90, \
+            assert 0.30 <= state["threshold"] <= 0.90, (
                 f"Threshold out of bounds: {state['threshold']}"
+            )
 
 
 class TestMoralFilterAdaptation:
@@ -97,8 +98,9 @@ class TestMoralFilterAdaptation:
 
         # Threshold should stay relatively close to initial
         final_threshold = filter.threshold
-        assert abs(final_threshold - initial_threshold) < 0.1, \
+        assert abs(final_threshold - initial_threshold) < 0.1, (
             f"Threshold changed too much: {initial_threshold} -> {final_threshold}"
+        )
 
     def test_convergence_under_consistent_input(self):
         """Threshold converges under consistent input patterns."""
@@ -110,8 +112,7 @@ class TestMoralFilterAdaptation:
             filter.adapt(True)
 
         # Should converge toward maximum
-        assert filter.threshold > 0.70, \
-            f"Threshold didn't converge up: {filter.threshold}"
+        assert filter.threshold > 0.70, f"Threshold didn't converge up: {filter.threshold}"
 
         # Reset and test low-value inputs
         filter = MoralFilterV2(initial_threshold=0.50)
@@ -121,8 +122,7 @@ class TestMoralFilterAdaptation:
             filter.adapt(False)
 
         # Should converge toward minimum
-        assert filter.threshold < 0.40, \
-            f"Threshold didn't converge down: {filter.threshold}"
+        assert filter.threshold < 0.40, f"Threshold didn't converge down: {filter.threshold}"
 
 
 class TestMoralFilterEvaluation:
@@ -202,8 +202,7 @@ class TestContentSafetyMetrics:
         )
 
         # Should reject most toxic content
-        assert toxic_rejection > 0.7, \
-            f"Toxic rejection rate too low: {toxic_rejection:.2%}"
+        assert toxic_rejection > 0.7, f"Toxic rejection rate too low: {toxic_rejection:.2%}"
 
     def test_false_positive_rate_bounded(self):
         """Validate false positive rate is bounded."""
@@ -228,9 +227,7 @@ class TestContentSafetyMetrics:
             rejections.append(rejected)
 
         # Measure false positive rate
-        fp_rate = analyzer.measure_false_positive_rate(
-            moral_values, rejections, safe_threshold=0.6
-        )
+        fp_rate = analyzer.measure_false_positive_rate(moral_values, rejections, safe_threshold=0.6)
 
         # Should have low false positive rate for safe content
         assert fp_rate < 0.5, f"False positive rate too high: {fp_rate:.2%}"
@@ -330,8 +327,7 @@ class TestSafetyInvariantsIntegration:
 
         # Memory size should not increase
         final_memory_size = controller.qilm.size
-        assert final_memory_size == initial_memory_size, \
-            "Rejected event was stored in memory"
+        assert final_memory_size == initial_memory_size, "Rejected event was stored in memory"
 
     def test_threshold_history_traceable(self):
         """
@@ -403,7 +399,7 @@ class TestEmergencyBehaviors:
 
         # At minimum threshold
         assert filter.evaluate(0.29) is False  # Below min always rejects
-        assert filter.evaluate(0.30) is True   # At threshold accepts
+        assert filter.evaluate(0.30) is True  # At threshold accepts
         assert filter.evaluate(0.25) is False  # Well below rejects
 
     def test_sustained_rejection_pattern(self):

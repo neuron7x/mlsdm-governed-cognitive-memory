@@ -70,11 +70,13 @@ class TestCosineMatching:
 
     def test_cosine_exact_match(self):
         """Test cosine matching with exact match."""
-        vectors = np.array([
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 1.0],
-        ])
+        vectors = np.array(
+            [
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 1.0],
+            ]
+        )
         matcher = OntologyMatcher(vectors, labels=["x", "y", "z"])
 
         label, score = matcher.match(np.array([1.0, 0.0, 0.0]), metric="cosine")
@@ -83,10 +85,12 @@ class TestCosineMatching:
 
     def test_cosine_partial_match(self):
         """Test cosine matching with partial similarity."""
-        vectors = np.array([
-            [1.0, 0.0],
-            [0.0, 1.0],
-        ])
+        vectors = np.array(
+            [
+                [1.0, 0.0],
+                [0.0, 1.0],
+            ]
+        )
         matcher = OntologyMatcher(vectors, labels=["a", "b"])
 
         # Vector [0.7, 0.7] is more similar to both equally
@@ -96,10 +100,12 @@ class TestCosineMatching:
 
     def test_cosine_negative_similarity(self):
         """Test cosine matching with negative similarity."""
-        vectors = np.array([
-            [1.0, 0.0],
-            [-1.0, 0.0],
-        ])
+        vectors = np.array(
+            [
+                [1.0, 0.0],
+                [-1.0, 0.0],
+            ]
+        )
         matcher = OntologyMatcher(vectors, labels=["pos", "neg"])
 
         label, score = matcher.match(np.array([-1.0, 0.0]), metric="cosine")
@@ -122,11 +128,13 @@ class TestEuclideanMatching:
 
     def test_euclidean_exact_match(self):
         """Test euclidean matching with exact match."""
-        vectors = np.array([
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 1.0],
-        ])
+        vectors = np.array(
+            [
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 1.0],
+            ]
+        )
         matcher = OntologyMatcher(vectors, labels=["x", "y", "z"])
 
         label, score = matcher.match(np.array([1.0, 0.0, 0.0]), metric="euclidean")
@@ -136,10 +144,12 @@ class TestEuclideanMatching:
 
     def test_euclidean_closest_match(self):
         """Test euclidean finds closest vector."""
-        vectors = np.array([
-            [0.0, 0.0],
-            [10.0, 10.0],
-        ])
+        vectors = np.array(
+            [
+                [0.0, 0.0],
+                [10.0, 10.0],
+            ]
+        )
         matcher = OntologyMatcher(vectors, labels=["origin", "far"])
 
         label, score = matcher.match(np.array([1.0, 1.0]), metric="euclidean")
@@ -266,11 +276,13 @@ class TestMatchingAccuracy:
     def test_match_normalized_vectors(self):
         """Test matching with normalized vectors."""
         # Create unit vectors
-        vectors = np.array([
-            [1.0, 0.0],
-            [0.707107, 0.707107],  # 45 degrees
-            [0.0, 1.0],
-        ])
+        vectors = np.array(
+            [
+                [1.0, 0.0],
+                [0.707107, 0.707107],  # 45 degrees
+                [0.0, 1.0],
+            ]
+        )
         matcher = OntologyMatcher(vectors, labels=["0deg", "45deg", "90deg"])
 
         # Query close to 45 degrees

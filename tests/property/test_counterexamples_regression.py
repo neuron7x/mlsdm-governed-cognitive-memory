@@ -24,14 +24,11 @@ REGRESSION_TOLERANCE = 0.40  # Tolerance for known failure variance in heuristic
 # Helper Functions
 # ============================================================================
 
+
 def load_counterexamples(filename):
     """Load counterexamples from JSON file."""
-    filepath = os.path.join(
-        os.path.dirname(__file__),
-        "counterexamples",
-        filename
-    )
-    with open(filepath, encoding='utf-8') as f:
+    filepath = os.path.join(os.path.dirname(__file__), "counterexamples", filename)
+    with open(filepath, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -100,6 +97,7 @@ def estimate_coherence(prompt, response_fragment):
 # Moral Filter Counterexamples Tests
 # ============================================================================
 
+
 class TestMoralFilterCounterexamples:
     """Test known moral filter counterexamples."""
 
@@ -119,17 +117,18 @@ class TestMoralFilterCounterexamples:
 
             # Allow 0.20 tolerance for estimation error (heuristic is approximate)
             if abs(actual_score - expected_score) > 0.20:
-                failures.append({
-                    "prompt": case["prompt"],
-                    "expected": expected_score,
-                    "actual": actual_score,
-                    "notes": case["notes"]
-                })
+                failures.append(
+                    {
+                        "prompt": case["prompt"],
+                        "expected": expected_score,
+                        "actual": actual_score,
+                        "notes": case["notes"],
+                    }
+                )
 
-        assert len(failures) == 0, \
-            "Previously passing cases now failing:\n" + \
-            "\n".join([f"  - {f['prompt']}: expected {f['expected']}, got {f['actual']}"
-                      for f in failures])
+        assert len(failures) == 0, "Previously passing cases now failing:\n" + "\n".join(
+            [f"  - {f['prompt']}: expected {f['expected']}, got {f['actual']}" for f in failures]
+        )
 
     def test_known_failures_tracked(self, counterexamples):
         """Track known failures to ensure they don't worsen significantly."""
@@ -151,11 +150,13 @@ class TestMoralFilterCounterexamples:
             if current_error < original_error - 0.10:
                 improvements.append(case["prompt"])
             elif current_error > original_error + REGRESSION_TOLERANCE:
-                regressions.append({
-                    "prompt": case["prompt"],
-                    "original_error": original_error,
-                    "current_error": current_error
-                })
+                regressions.append(
+                    {
+                        "prompt": case["prompt"],
+                        "original_error": original_error,
+                        "current_error": current_error,
+                    }
+                )
 
         # Report improvements (good news!)
         if improvements:
@@ -164,16 +165,19 @@ class TestMoralFilterCounterexamples:
                 print(f"  - {prompt}")
 
         # Fail if known failures got significantly worse
-        assert len(regressions) == 0, \
-            "Known failures significantly worsened:\n" + \
-            "\n".join([f"  - {r['prompt']}: error increased from {r['original_error']:.2f} to {r['current_error']:.2f}"
-                      for r in regressions])
+        assert len(regressions) == 0, "Known failures significantly worsened:\n" + "\n".join(
+            [
+                f"  - {r['prompt']}: error increased from {r['original_error']:.2f} to {r['current_error']:.2f}"
+                for r in regressions
+            ]
+        )
 
     def test_false_positive_rate_acceptable(self, counterexamples):
         """Verify false positive rate remains acceptable."""
         # Count false positives (expected high score, got low score)
         false_positives = [
-            ce for ce in counterexamples
+            ce
+            for ce in counterexamples
             if ce["expected_moral_score"] >= 0.6 and ce["actual_moral_score"] < 0.5
         ]
 
@@ -185,13 +189,13 @@ class TestMoralFilterCounterexamples:
 
         # Acceptable FP rate is <=60% for initial heuristic version
         # (in production, actual ML model would do better)
-        assert fp_rate <= 0.60, \
-            f"False positive rate {fp_rate:.1%} exceeds 60% threshold"
+        assert fp_rate <= 0.60, f"False positive rate {fp_rate:.1%} exceeds 60% threshold"
 
 
 # ============================================================================
 # Coherence Counterexamples Tests
 # ============================================================================
+
 
 class TestCoherenceCounterexamples:
     """Test known coherence counterexamples."""
@@ -203,65 +207,57 @@ class TestCoherenceCounterexamples:
 
     def test_high_coherence_cases_remain_high(self, counterexamples):
         """Verify cases with expected high coherence still produce high coherence."""
-        high_coherence_cases = [
-            ce for ce in counterexamples
-            if ce["expected_coherence"] >= 0.8
-        ]
+        high_coherence_cases = [ce for ce in counterexamples if ce["expected_coherence"] >= 0.8]
 
         failures = []
         for case in high_coherence_cases:
-            actual_coherence = estimate_coherence(
-                case["prompt"],
-                case["response_fragment"]
-            )
+            actual_coherence = estimate_coherence(case["prompt"], case["response_fragment"])
 
             if actual_coherence < 0.70:  # Significant drop
-                failures.append({
-                    "prompt": case["prompt"],
-                    "expected": case["expected_coherence"],
-                    "actual": actual_coherence
-                })
+                failures.append(
+                    {
+                        "prompt": case["prompt"],
+                        "expected": case["expected_coherence"],
+                        "actual": actual_coherence,
+                    }
+                )
 
-        assert len(failures) == 0, \
-            "High coherence cases degraded:\n" + \
-            "\n".join([f"  - {f['prompt'][:50]}...: expected {f['expected']}, got {f['actual']}"
-                      for f in failures])
+        assert len(failures) == 0, "High coherence cases degraded:\n" + "\n".join(
+            [
+                f"  - {f['prompt'][:50]}...: expected {f['expected']}, got {f['actual']}"
+                for f in failures
+            ]
+        )
 
     def test_low_coherence_detection(self, counterexamples):
         """Verify system correctly identifies low coherence cases."""
         low_coherence_cases = [
-            ce for ce in counterexamples
-            if ce.get("expected_coherence", 1.0) <= 0.3
+            ce for ce in counterexamples if ce.get("expected_coherence", 1.0) <= 0.3
         ]
 
         correct_detections = 0
         for case in low_coherence_cases:
-            actual_coherence = estimate_coherence(
-                case["prompt"],
-                case.get("response_fragment", "")
-            )
+            actual_coherence = estimate_coherence(case["prompt"], case.get("response_fragment", ""))
 
             if actual_coherence <= 0.4:  # Correctly identified as low
                 correct_detections += 1
 
-        detection_rate = correct_detections / len(low_coherence_cases) if low_coherence_cases else 1.0
+        detection_rate = (
+            correct_detections / len(low_coherence_cases) if low_coherence_cases else 1.0
+        )
 
         # Should detect at least 50% of low coherence cases (heuristic baseline)
-        assert detection_rate >= 0.50, \
+        assert detection_rate >= 0.50, (
             f"Low coherence detection rate {detection_rate:.1%} below 50% threshold"
+        )
 
     def test_schizophasia_patterns_tracked(self, counterexamples):
         """Track Sapolsky-style schizophasia patterns (stress-induced incoherence)."""
-        schizophasia_markers = [
-            "word salad",
-            "random",
-            "switch",
-            "jump",
-            "every 3 words"
-        ]
+        schizophasia_markers = ["word salad", "random", "switch", "jump", "every 3 words"]
 
         schizophasia_cases = [
-            ce for ce in counterexamples
+            ce
+            for ce in counterexamples
             if any(marker in ce["prompt"].lower() for marker in schizophasia_markers)
         ]
 
@@ -271,12 +267,15 @@ class TestCoherenceCounterexamples:
         for case in schizophasia_cases:
             if "Sapolsky" in case["notes"]:
                 print(f"  - {case['prompt'][:60]}...")
-                print(f"    Expected: {case['expected_coherence']}, Actual: {case['actual_coherence']}")
+                print(
+                    f"    Expected: {case['expected_coherence']}, Actual: {case['actual_coherence']}"
+                )
 
 
 # ============================================================================
 # Memory Counterexamples Tests
 # ============================================================================
+
 
 class TestMemoryCounterexamples:
     """Test known memory system counterexamples."""
@@ -288,18 +287,12 @@ class TestMemoryCounterexamples:
 
     def test_capacity_enforcement_cases(self, counterexamples):
         """Verify capacity enforcement cases remain correct."""
-        capacity_cases = [
-            ce for ce in counterexamples
-            if "capacity" in ce["test_case"]
-        ]
+        capacity_cases = [ce for ce in counterexamples if "capacity" in ce["test_case"]]
 
         for case in capacity_cases:
             if case["passed"]:
                 # Verify capacity limits with real memory system
-                pelm = PhaseEntangledLatticeMemory(
-                    dimension=384,
-                    capacity=case["capacity"]
-                )
+                pelm = PhaseEntangledLatticeMemory(dimension=384, capacity=case["capacity"])
 
                 # Insert vectors
                 phase = 0.5
@@ -309,21 +302,17 @@ class TestMemoryCounterexamples:
 
                 actual_size = pelm.size
 
-                assert actual_size <= case["capacity"], \
+                assert actual_size <= case["capacity"], (
                     f"Capacity enforcement failed: {actual_size} > {case['capacity']}"
+                )
 
     def test_dimension_consistency_cases(self, counterexamples):
         """Verify dimension consistency cases."""
-        dim_cases = [
-            ce for ce in counterexamples
-            if "dimension" in ce["test_case"]
-        ]
+        dim_cases = [ce for ce in counterexamples if "dimension" in ce["test_case"]]
 
         for case in dim_cases:
             if case["passed"]:
-                memory = MultiLevelSynapticMemory(
-                    dimension=case["dimension"]
-                )
+                memory = MultiLevelSynapticMemory(dimension=case["dimension"])
 
                 # Add vectors
                 for _ in range(5):
@@ -353,7 +342,8 @@ class TestMemoryCounterexamples:
         critical_keywords = ["bloat", "overflow", "corruption", "loss"]
 
         critical_failures = [
-            ce for ce in counterexamples
+            ce
+            for ce in counterexamples
             if not ce["passed"] and any(kw in ce["test_case"] for kw in critical_keywords)
         ]
 
@@ -368,20 +358,17 @@ class TestMemoryCounterexamples:
 # Integration Test: All Counterexamples
 # ============================================================================
 
+
 def test_counterexamples_files_exist():
     """Verify all counterexample files exist and are valid JSON."""
     files = [
         "moral_filter_counterexamples.json",
         "coherence_counterexamples.json",
-        "memory_counterexamples.json"
+        "memory_counterexamples.json",
     ]
 
     for filename in files:
-        filepath = os.path.join(
-            os.path.dirname(__file__),
-            "counterexamples",
-            filename
-        )
+        filepath = os.path.join(os.path.dirname(__file__), "counterexamples", filename)
 
         assert os.path.exists(filepath), f"Missing counterexamples file: {filename}"
 
@@ -398,9 +385,9 @@ def test_counterexamples_statistics():
     coherence_cases = load_counterexamples("coherence_counterexamples.json")
     memory_cases = load_counterexamples("memory_counterexamples.json")
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("COUNTEREXAMPLES STATISTICS")
-    print("="*70)
+    print("=" * 70)
 
     print(f"\nMoral Filter Cases: {len(moral_cases)}")
     print(f"  - Passing: {sum(1 for c in moral_cases if c['passed'])}")
@@ -416,13 +403,13 @@ def test_counterexamples_statistics():
 
     total = len(moral_cases) + len(coherence_cases) + len(memory_cases)
     total_passing = (
-        sum(1 for c in moral_cases if c['passed']) +
-        sum(1 for c in coherence_cases if c['passed']) +
-        sum(1 for c in memory_cases if c['passed'])
+        sum(1 for c in moral_cases if c["passed"])
+        + sum(1 for c in coherence_cases if c["passed"])
+        + sum(1 for c in memory_cases if c["passed"])
     )
 
-    print(f"\nOverall: {total_passing}/{total} passing ({total_passing/total*100:.1f}%)")
-    print("="*70)
+    print(f"\nOverall: {total_passing}/{total} passing ({total_passing / total * 100:.1f}%)")
+    print("=" * 70)
 
 
 if __name__ == "__main__":

@@ -88,17 +88,26 @@ def test_aphasia_events_total_with_different_labels(metrics_exporter):
     )
 
     # Check counters
-    assert metrics_exporter.aphasia_events_total.labels(
-        mode="full", is_aphasic="True", repair_applied="True"
-    )._value.get() == 1.0
+    assert (
+        metrics_exporter.aphasia_events_total.labels(
+            mode="full", is_aphasic="True", repair_applied="True"
+        )._value.get()
+        == 1.0
+    )
 
-    assert metrics_exporter.aphasia_events_total.labels(
-        mode="monitor", is_aphasic="True", repair_applied="False"
-    )._value.get() == 1.0
+    assert (
+        metrics_exporter.aphasia_events_total.labels(
+            mode="monitor", is_aphasic="True", repair_applied="False"
+        )._value.get()
+        == 1.0
+    )
 
-    assert metrics_exporter.aphasia_events_total.labels(
-        mode="full", is_aphasic="False", repair_applied="False"
-    )._value.get() == 1.0
+    assert (
+        metrics_exporter.aphasia_events_total.labels(
+            mode="full", is_aphasic="False", repair_applied="False"
+        )._value.get()
+        == 1.0
+    )
 
 
 def test_aphasia_severity_histogram_observes_values(metrics_exporter):
@@ -145,17 +154,15 @@ def test_aphasia_flags_total_increments_for_each_flag(metrics_exporter):
     )
 
     # Check each flag counter
-    assert metrics_exporter.aphasia_flags_total.labels(
-        flag="short_sentences"
-    )._value.get() == 1.0
+    assert metrics_exporter.aphasia_flags_total.labels(flag="short_sentences")._value.get() == 1.0
 
-    assert metrics_exporter.aphasia_flags_total.labels(
-        flag="low_function_words"
-    )._value.get() == 1.0
+    assert (
+        metrics_exporter.aphasia_flags_total.labels(flag="low_function_words")._value.get() == 1.0
+    )
 
-    assert metrics_exporter.aphasia_flags_total.labels(
-        flag="high_fragment_ratio"
-    )._value.get() == 1.0
+    assert (
+        metrics_exporter.aphasia_flags_total.labels(flag="high_fragment_ratio")._value.get() == 1.0
+    )
 
 
 def test_aphasia_flags_accumulate_across_events(metrics_exporter):
@@ -177,17 +184,17 @@ def test_aphasia_flags_accumulate_across_events(metrics_exporter):
     )
 
     # Check accumulated counts
-    assert metrics_exporter.aphasia_flags_total.labels(
-        flag="short_sentences"
-    )._value.get() == 2.0  # Appears in both events
+    assert (
+        metrics_exporter.aphasia_flags_total.labels(flag="short_sentences")._value.get() == 2.0
+    )  # Appears in both events
 
-    assert metrics_exporter.aphasia_flags_total.labels(
-        flag="low_function_words"
-    )._value.get() == 1.0  # Only in first event
+    assert (
+        metrics_exporter.aphasia_flags_total.labels(flag="low_function_words")._value.get() == 1.0
+    )  # Only in first event
 
-    assert metrics_exporter.aphasia_flags_total.labels(
-        flag="high_fragment_ratio"
-    )._value.get() == 1.0  # Only in second event
+    assert (
+        metrics_exporter.aphasia_flags_total.labels(flag="high_fragment_ratio")._value.get() == 1.0
+    )  # Only in second event
 
 
 def test_empty_flags_list_does_not_create_counters(metrics_exporter):
@@ -201,9 +208,12 @@ def test_empty_flags_list_does_not_create_counters(metrics_exporter):
     )
 
     # The event should be recorded
-    assert metrics_exporter.aphasia_events_total.labels(
-        mode="full", is_aphasic="False", repair_applied="False"
-    )._value.get() == 1.0
+    assert (
+        metrics_exporter.aphasia_events_total.labels(
+            mode="full", is_aphasic="False", repair_applied="False"
+        )._value.get()
+        == 1.0
+    )
 
     # But no flag counters should be created for this event
     # (testing by ensuring no exception is raised and count is as expected)
@@ -278,6 +288,4 @@ def test_metrics_do_not_contain_content(metrics_exporter):
     assert counter_value == 1.0
 
     # Verify flags are the expected predefined ones
-    assert metrics_exporter.aphasia_flags_total.labels(
-        flag="short_sentences"
-    )._value.get() == 1.0
+    assert metrics_exporter.aphasia_flags_total.labels(flag="short_sentences")._value.get() == 1.0

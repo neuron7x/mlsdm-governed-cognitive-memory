@@ -262,7 +262,7 @@ class TestDefaultConfigFiles:
             validated = validate_config_dict(config_dict)
             assert validated.dimension > 0
             # Check aphasia config is present and valid
-            assert hasattr(validated, 'aphasia')
+            assert hasattr(validated, "aphasia")
             assert validated.aphasia.detect_enabled in [True, False]
             assert validated.aphasia.repair_enabled in [True, False]
             assert 0.0 <= validated.aphasia.severity_threshold <= 1.0
@@ -302,11 +302,7 @@ class TestErrorMessages:
         """Unknown config keys should provide helpful error message."""
         from mlsdm.utils.config_schema import validate_config_dict
 
-        config_dict = {
-            "dimension": 384,
-            "unknown_field": "value",
-            "another_bad_key": 123
-        }
+        config_dict = {"dimension": 384, "unknown_field": "value", "another_bad_key": 123}
 
         with pytest.raises(ValueError) as exc_info:
             validate_config_dict(config_dict)
@@ -332,7 +328,7 @@ class TestAphasiaConfigExtraction:
                 "detect_enabled": True,
                 "repair_enabled": False,
                 "severity_threshold": 0.5,
-            }
+            },
         }
 
         aphasia_params = ConfigLoader.get_aphasia_config_from_dict(config_dict)
@@ -365,7 +361,7 @@ class TestAphasiaConfigExtraction:
             "aphasia": {
                 "detect_enabled": False,
                 # repair_enabled and severity_threshold missing
-            }
+            },
         }
 
         aphasia_params = ConfigLoader.get_aphasia_config_from_dict(config_dict)

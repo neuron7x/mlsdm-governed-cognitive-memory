@@ -263,7 +263,7 @@ class TestCanaryManagerMetrics:
         assert v2_metrics["total_requests"] == 7
         assert v2_metrics["successful_requests"] == 5
         assert v2_metrics["failed_requests"] == 2
-        assert abs(v2_metrics["error_rate"] - 2/7) < 0.01
+        assert abs(v2_metrics["error_rate"] - 2 / 7) < 0.01
 
     def test_get_all_metrics(self) -> None:
         """Test getting all metrics."""

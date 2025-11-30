@@ -24,9 +24,7 @@ class InputValidator:
 
     @staticmethod
     def validate_vector(
-        vector: list[float],
-        expected_dim: int,
-        normalize: bool = False
+        vector: list[float], expected_dim: int, normalize: bool = False
     ) -> np.ndarray:
         """Validate and optionally normalize a vector input.
 
@@ -88,9 +86,7 @@ class InputValidator:
         # Optimization: Check dimension before expensive array conversion
         vec_len = len(vector)
         if vec_len != expected_dim:
-            raise ValueError(
-                f"Vector dimension {vec_len} does not match expected {expected_dim}"
-            )
+            raise ValueError(f"Vector dimension {vec_len} does not match expected {expected_dim}")
 
         # Check size limits
         if vec_len > InputValidator.MAX_VECTOR_SIZE:
@@ -155,11 +151,7 @@ class InputValidator:
         return val
 
     @staticmethod
-    def sanitize_string(
-        text: str,
-        max_length: int = 10000,
-        allow_newlines: bool = True
-    ) -> str:
+    def sanitize_string(text: str, max_length: int = 10000, allow_newlines: bool = True) -> str:
         """Sanitize string input to prevent injection attacks.
 
         Optimizations:
@@ -188,34 +180,26 @@ class InputValidator:
         # Optimization: Check length first before expensive processing
         text_len = len(text)
         if text_len > max_length:
-            raise ValueError(
-                f"String length {text_len} exceeds maximum {max_length}"
-            )
+            raise ValueError(f"String length {text_len} exceeds maximum {max_length}")
 
         # Optimization: Only process if null bytes are likely present
         # (most strings won't have them)
-        if '\x00' in text:
-            text = text.replace('\x00', '')
+        if "\x00" in text:
+            text = text.replace("\x00", "")
 
         # Remove or validate newlines
-        if not allow_newlines and ('\n' in text or '\r' in text):
-            text = text.replace('\n', ' ').replace('\r', ' ')
+        if not allow_newlines and ("\n" in text or "\r" in text):
+            text = text.replace("\n", " ").replace("\r", " ")
 
         # Optimization: Use regex for faster control character removal
         # Compile pattern only once (class-level would be better, but keeping it simple)
         # Allow tab (9), newline (10), carriage return (13)
         if allow_newlines:
             # Remove control chars except \t, \n, \r
-            text = ''.join(
-                char for char in text
-                if ord(char) >= 32 or char in '\t\n\r'
-            )
+            text = "".join(char for char in text if ord(char) >= 32 or char in "\t\n\r")
         else:
             # Remove all control chars except \t
-            text = ''.join(
-                char for char in text
-                if ord(char) >= 32 or char == '\t'
-            )
+            text = "".join(char for char in text if ord(char) >= 32 or char == "\t")
 
         return text.strip()
 
@@ -244,7 +228,7 @@ class InputValidator:
             raise ValueError("Client ID too long")
 
         # Allow alphanumeric, dots, colons, and hyphens (for IPs and UUIDs)
-        if not re.match(r'^[a-zA-Z0-9\.\:\-_]+$', client_id):
+        if not re.match(r"^[a-zA-Z0-9\.\:\-_]+$", client_id):
             raise ValueError("Client ID contains invalid characters")
 
         return client_id
@@ -254,7 +238,7 @@ class InputValidator:
         value: float,
         min_val: float | None = None,
         max_val: float | None = None,
-        name: str = "value"
+        name: str = "value",
     ) -> float:
         """Validate numeric value is within specified range.
 
@@ -287,11 +271,7 @@ class InputValidator:
         return val
 
     @staticmethod
-    def validate_array_size(
-        array: Any,
-        max_size: int | None = None,
-        name: str = "array"
-    ) -> int:
+    def validate_array_size(array: Any, max_size: int | None = None, name: str = "array") -> int:
         """Validate array size is within limits.
 
         Args:
@@ -314,17 +294,13 @@ class InputValidator:
             raise ValueError(f"{name} must have a length") from e
 
         if size > max_size:
-            raise ValueError(
-                f"{name} size {size} exceeds maximum {max_size}"
-            )
+            raise ValueError(f"{name} size {size} exceeds maximum {max_size}")
 
         return size
 
     @staticmethod
     def validate_prompt_length(
-        prompt: str,
-        max_tokens: int | None = None,
-        sanitize: bool = True
+        prompt: str, max_tokens: int | None = None, sanitize: bool = True
     ) -> str:
         """Validate prompt length and optionally sanitize it.
 
@@ -350,7 +326,7 @@ class InputValidator:
             prompt = InputValidator.sanitize_string(
                 prompt,
                 max_length=InputValidator.MAX_PROMPT_TOKENS * InputValidator.CHARS_PER_TOKEN,
-                allow_newlines=True
+                allow_newlines=True,
             )
 
         if max_tokens is None:

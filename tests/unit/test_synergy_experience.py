@@ -184,8 +184,7 @@ class TestSynergyExperienceMemory:
 
         # combo_A should be selected more often (weighted selection)
         selections = [
-            memory.select_combo("state_1", ["combo_A", "combo_B"], seed=i)
-            for i in range(10)
+            memory.select_combo("state_1", ["combo_A", "combo_B"], seed=i) for i in range(10)
         ]
 
         combo_a_count = selections.count("combo_A")
@@ -285,8 +284,7 @@ class TestNeutralComboLearning:
 
         # Select 100 times and count
         selections = [
-            memory.select_combo("state_1", ["combo_A", "combo_B"], seed=i)
-            for i in range(100)
+            memory.select_combo("state_1", ["combo_A", "combo_B"], seed=i) for i in range(100)
         ]
 
         combo_a_count = selections.count("combo_A")
@@ -327,8 +325,7 @@ class TestPositiveComboLearning:
 
         # combo_A should be selected more often
         selections = [
-            memory.select_combo("state_1", ["combo_A", "combo_B"], seed=i)
-            for i in range(100)
+            memory.select_combo("state_1", ["combo_A", "combo_B"], seed=i) for i in range(100)
         ]
 
         combo_a_count = selections.count("combo_A")
@@ -364,8 +361,7 @@ class TestNegativeComboLearning:
 
         # combo_B should be selected more often
         selections = [
-            memory.select_combo("state_1", ["combo_A", "combo_B"], seed=i)
-            for i in range(100)
+            memory.select_combo("state_1", ["combo_A", "combo_B"], seed=i) for i in range(100)
         ]
 
         combo_a_count = selections.count("combo_A")
@@ -477,10 +473,7 @@ class TestThreadSafety:
             except Exception as e:
                 error_queue.put(e)
 
-        threads = [
-            threading.Thread(target=update_thread, args=(i,))
-            for i in range(num_threads)
-        ]
+        threads = [threading.Thread(target=update_thread, args=(i,)) for i in range(num_threads)]
 
         for t in threads:
             t.start()
@@ -498,8 +491,9 @@ class TestEdgeCases:
     def test_nan_delta_eoi_treated_as_zero(self) -> None:
         """Test NaN delta_eoi is treated as 0.0."""
         import math
+
         memory = SynergyExperienceMemory()
-        stats = memory.update_experience("state_1", "combo_A", float('nan'))
+        stats = memory.update_experience("state_1", "combo_A", float("nan"))
 
         assert stats.trial_count == 1
         assert stats.last_delta_eoi == 0.0
@@ -508,8 +502,9 @@ class TestEdgeCases:
     def test_inf_delta_eoi_treated_as_zero(self) -> None:
         """Test infinity delta_eoi is treated as 0.0."""
         import math
+
         memory = SynergyExperienceMemory()
-        stats = memory.update_experience("state_1", "combo_A", float('inf'))
+        stats = memory.update_experience("state_1", "combo_A", float("inf"))
 
         assert stats.trial_count == 1
         assert stats.last_delta_eoi == 0.0
@@ -518,7 +513,7 @@ class TestEdgeCases:
     def test_negative_inf_delta_eoi_treated_as_zero(self) -> None:
         """Test negative infinity delta_eoi is treated as 0.0."""
         memory = SynergyExperienceMemory()
-        stats = memory.update_experience("state_1", "combo_A", float('-inf'))
+        stats = memory.update_experience("state_1", "combo_A", float("-inf"))
 
         assert stats.trial_count == 1
         assert stats.last_delta_eoi == 0.0
@@ -526,8 +521,9 @@ class TestEdgeCases:
     def test_combo_stats_update_handles_nan(self) -> None:
         """Test ComboStats.update handles NaN gracefully."""
         import math
+
         stats = ComboStats()
-        stats.update(float('nan'))
+        stats.update(float("nan"))
 
         assert stats.trial_count == 1
         assert stats.last_delta_eoi == 0.0
@@ -544,7 +540,7 @@ class TestEdgeCases:
     def test_record_combo_result_with_nan_before(self) -> None:
         """Test record_combo_result handles NaN in eoi_before."""
         memory = SynergyExperienceMemory()
-        stats = memory.record_combo_result("state_1", "combo_A", float('nan'), 0.5)
+        stats = memory.record_combo_result("state_1", "combo_A", float("nan"), 0.5)
 
         assert stats.trial_count == 1
         assert stats.last_delta_eoi == 0.0
@@ -552,7 +548,7 @@ class TestEdgeCases:
     def test_record_combo_result_with_nan_after(self) -> None:
         """Test record_combo_result handles NaN in eoi_after."""
         memory = SynergyExperienceMemory()
-        stats = memory.record_combo_result("state_1", "combo_A", 0.3, float('nan'))
+        stats = memory.record_combo_result("state_1", "combo_A", 0.3, float("nan"))
 
         assert stats.trial_count == 1
         assert stats.last_delta_eoi == 0.0

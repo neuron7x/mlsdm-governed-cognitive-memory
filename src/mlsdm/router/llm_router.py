@@ -269,9 +269,7 @@ class ABTestRouter(LLMRouter):
             raise ValueError(f"Treatment provider '{treatment}' not found in providers")
 
         if not 0.0 <= treatment_ratio <= 1.0:
-            raise ValueError(
-                f"treatment_ratio must be between 0.0 and 1.0, got {treatment_ratio}"
-            )
+            raise ValueError(f"treatment_ratio must be between 0.0 and 1.0, got {treatment_ratio}")
 
         self.control = control
         self.treatment = treatment

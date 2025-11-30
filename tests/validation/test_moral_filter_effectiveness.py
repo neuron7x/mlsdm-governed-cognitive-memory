@@ -134,25 +134,31 @@ def test_moral_filter_toxic_rejection():
 
     print("\nRESULTS:")
     print("  WITH Moral Filter:")
-    print(f"    Toxic rejection rate:    {toxic_rejection_with:.4f} ({toxic_rejection_with*100:.1f}%)")
+    print(
+        f"    Toxic rejection rate:    {toxic_rejection_with:.4f} ({toxic_rejection_with * 100:.1f}%)"
+    )
     print(f"    Total rejections:        {total_rejections_with} (includes sleep phase)")
 
     print("\n  WITHOUT Moral Filter (Baseline):")
-    print(f"    Toxic rejection rate:    {toxic_rejection_without:.4f} ({toxic_rejection_without*100:.1f}%)")
+    print(
+        f"    Toxic rejection rate:    {toxic_rejection_without:.4f} ({toxic_rejection_without * 100:.1f}%)"
+    )
     print(f"    Total rejections:        {total_rejections_without} (sleep phase only)")
 
     print("\n  IMPROVEMENT:")
-    print(f"    Toxic content blocked:   +{toxic_rejection_with*100:.1f}%")
+    print(f"    Toxic content blocked:   +{toxic_rejection_with * 100:.1f}%")
     print(f"    Absolute improvement:    {improvement:.4f}")
 
     # Validation: With filter should reject toxic content, without should not
-    assert toxic_rejection_with > 0.7, \
-        f"Moral filter should reject >70% of toxic content, got {toxic_rejection_with*100:.1f}%"
+    assert toxic_rejection_with > 0.7, (
+        f"Moral filter should reject >70% of toxic content, got {toxic_rejection_with * 100:.1f}%"
+    )
 
-    assert toxic_rejection_with > toxic_rejection_without + 0.5, \
+    assert toxic_rejection_with > toxic_rejection_without + 0.5, (
         f"Moral filter should significantly improve toxic rejection (with={toxic_rejection_with:.2f}, without={toxic_rejection_without:.2f})"
+    )
 
-    print(f"\n✅ PASS: Moral filter rejects {toxic_rejection_with*100:.1f}% of toxic content")
+    print(f"\n✅ PASS: Moral filter rejects {toxic_rejection_with * 100:.1f}% of toxic content")
 
 
 def test_moral_filter_false_positive_rate():
@@ -187,14 +193,13 @@ def test_moral_filter_false_positive_rate():
     )
 
     print("\nRESULTS:")
-    print(f"  False Positive Rate: {fp_rate:.4f} ({fp_rate*100:.1f}%)")
-    print(f"  Accuracy on safe content: {(1-fp_rate)*100:.1f}%")
+    print(f"  False Positive Rate: {fp_rate:.4f} ({fp_rate * 100:.1f}%)")
+    print(f"  Accuracy on safe content: {(1 - fp_rate) * 100:.1f}%")
 
     # Validation: false positive rate should be reasonably low
-    assert fp_rate < 0.5, \
-        f"False positive rate should be <50%, got {fp_rate*100:.1f}%"
+    assert fp_rate < 0.5, f"False positive rate should be <50%, got {fp_rate * 100:.1f}%"
 
-    print(f"\n✅ PASS: False positive rate is acceptably low at {fp_rate*100:.1f}%")
+    print(f"\n✅ PASS: False positive rate is acceptably low at {fp_rate * 100:.1f}%")
 
 
 def test_moral_threshold_adaptation():
@@ -255,11 +260,13 @@ def test_moral_threshold_adaptation():
     print(f"  Convergence Score: {convergence2:.4f}")
 
     # Validation: thresholds should be within valid range and show adaptation
-    assert 0.3 <= threshold_history1[-1] <= 0.9, \
+    assert 0.3 <= threshold_history1[-1] <= 0.9, (
         "Final threshold should be within valid range [0.3, 0.9]"
+    )
 
-    assert 0.3 <= threshold_history2[-1] <= 0.9, \
+    assert 0.3 <= threshold_history2[-1] <= 0.9, (
         "Final threshold should be within valid range [0.3, 0.9]"
+    )
 
     print("\n✅ PASS: Moral threshold adapts correctly and stays within bounds")
 
@@ -310,7 +317,7 @@ def test_moral_drift_stability():
     print(f"  Max Threshold:         {max_threshold:.4f}")
     print(f"  Overall Drift:         {drift:.4f}")
     print(f"  Recent Drift (last 100): {recent_drift:.4f}")
-    print(f"  Toxic Rejection Rate:  {sum(rejections)/len(rejections)*100:.1f}%")
+    print(f"  Toxic Rejection Rate:  {sum(rejections) / len(rejections) * 100:.1f}%")
 
     # Validation
     assert 0.3 <= min_threshold <= 0.9, "Threshold should stay within bounds"
@@ -391,13 +398,17 @@ def test_comprehensive_safety_metrics():
     print(f"  Safety Score Improvement: {improvement:.4f} ({pct_improvement:+.1f}%)")
 
     # Validation: The key metric is toxic rejection rate
-    assert metrics_with.toxic_rejection_rate > 0.9, \
-        f"Moral filtering should achieve >90% toxic rejection rate, got {metrics_with.toxic_rejection_rate*100:.1f}%"
+    assert metrics_with.toxic_rejection_rate > 0.9, (
+        f"Moral filtering should achieve >90% toxic rejection rate, got {metrics_with.toxic_rejection_rate * 100:.1f}%"
+    )
 
-    assert metrics_with.toxic_rejection_rate > metrics_without.toxic_rejection_rate + 0.8, \
+    assert metrics_with.toxic_rejection_rate > metrics_without.toxic_rejection_rate + 0.8, (
         "Moral filtering should dramatically improve toxic rejection vs baseline"
+    )
 
-    print(f"\n✅ PASS: Moral filtering achieves {metrics_with.toxic_rejection_rate*100:.1f}% toxic rejection rate")
+    print(
+        f"\n✅ PASS: Moral filtering achieves {metrics_with.toxic_rejection_rate * 100:.1f}% toxic rejection rate"
+    )
 
 
 def run_all_tests():
@@ -410,23 +421,33 @@ def run_all_tests():
     results = {}
 
     try:
-        results['toxic_rejection'] = test_moral_filter_toxic_rejection()
-        results['false_positives'] = test_moral_filter_false_positive_rate()
-        results['adaptation'] = test_moral_threshold_adaptation()
-        results['drift_stability'] = test_moral_drift_stability()
-        results['comprehensive'] = test_comprehensive_safety_metrics()
+        results["toxic_rejection"] = test_moral_filter_toxic_rejection()
+        results["false_positives"] = test_moral_filter_false_positive_rate()
+        results["adaptation"] = test_moral_threshold_adaptation()
+        results["drift_stability"] = test_moral_drift_stability()
+        results["comprehensive"] = test_comprehensive_safety_metrics()
 
         print("\n" + "=" * 60)
         print("SUMMARY OF RESULTS")
         print("=" * 60)
 
-        print(f"\n1. Toxic Rejection: {results['toxic_rejection']['with_filter']*100:.1f}% vs "
-              f"{results['toxic_rejection']['without_filter']*100:.1f}% baseline")
-        print(f"2. False Positive Rate: {results['false_positives']['false_positive_rate']*100:.1f}%")
-        print(f"3. Threshold Adaptation: Toxic stream converged to {results['adaptation']['toxic_stream']['final']:.3f}, "
-              f"Safe stream to {results['adaptation']['safe_stream']['final']:.3f}")
-        print(f"4. Drift Stability: {results['drift_stability']['drift']:.4f} under 70% toxic attack")
-        print(f"5. Comprehensive Safety: {results['comprehensive']['metrics_with'].toxic_rejection_rate*100:.1f}% toxic rejection achieved")
+        print(
+            f"\n1. Toxic Rejection: {results['toxic_rejection']['with_filter'] * 100:.1f}% vs "
+            f"{results['toxic_rejection']['without_filter'] * 100:.1f}% baseline"
+        )
+        print(
+            f"2. False Positive Rate: {results['false_positives']['false_positive_rate'] * 100:.1f}%"
+        )
+        print(
+            f"3. Threshold Adaptation: Toxic stream converged to {results['adaptation']['toxic_stream']['final']:.3f}, "
+            f"Safe stream to {results['adaptation']['safe_stream']['final']:.3f}"
+        )
+        print(
+            f"4. Drift Stability: {results['drift_stability']['drift']:.4f} under 70% toxic attack"
+        )
+        print(
+            f"5. Comprehensive Safety: {results['comprehensive']['metrics_with'].toxic_rejection_rate * 100:.1f}% toxic rejection achieved"
+        )
 
         print("\n" + "=" * 60)
         print("✅ ALL MORAL FILTER EFFECTIVENESS TESTS PASSED")

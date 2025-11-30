@@ -21,8 +21,7 @@ INTEGRATION_TEST_SEED = 42
 
 @settings(max_examples=20, deadline=None)
 @given(
-    dim=st.integers(min_value=10, max_value=50),
-    num_events=st.integers(min_value=5, max_value=30)
+    dim=st.integers(min_value=10, max_value=50), num_events=st.integers(min_value=5, max_value=30)
 )
 def test_controller_pelm_multilevel_coordination(dim, num_events):
     """
@@ -50,8 +49,9 @@ def test_controller_pelm_multilevel_coordination(dim, num_events):
     # Both systems should have consistent state
     # PELM size should reflect accepted events (up to capacity)
     pelm_size = controller.pelm.size
-    assert pelm_size <= controller.pelm.capacity, \
+    assert pelm_size <= controller.pelm.capacity, (
         f"PELM size {pelm_size} exceeds capacity {controller.pelm.capacity}"
+    )
 
     # MultiLevel memory should have accumulated information
     L1, L2, L3 = controller.synaptic.get_state()
@@ -59,8 +59,7 @@ def test_controller_pelm_multilevel_coordination(dim, num_events):
 
     # If events were accepted, memory should have content
     if accepted_count > 0:
-        assert total_memory_norm > 0, \
-            "Memory should have content after accepted events"
+        assert total_memory_norm > 0, "Memory should have content after accepted events"
 
 
 def test_controller_moral_rhythm_interaction():
@@ -97,8 +96,7 @@ def test_controller_moral_rhythm_interaction():
 
     # Should have seen both wake and sleep phases
     total_processed = sleep_phase_count + wake_phase_count + moral_rejections
-    assert total_processed == num_events, \
-        f"Event count mismatch: {total_processed} != {num_events}"
+    assert total_processed == num_events, f"Event count mismatch: {total_processed} != {num_events}"
 
     # Should see sleep phase after 8 wake steps
     assert sleep_phase_count > 0, f"Should have seen sleep phase (saw {sleep_phase_count})"
@@ -106,9 +104,7 @@ def test_controller_moral_rhythm_interaction():
 
 
 @settings(max_examples=20, deadline=None)
-@given(
-    num_events=st.integers(min_value=5, max_value=25)
-)
+@given(num_events=st.integers(min_value=5, max_value=25))
 def test_controller_state_consistency(num_events):
     """
     Property: Controller state remains consistent across operations.
@@ -131,22 +127,21 @@ def test_controller_state_consistency(num_events):
         after_phase = controller.rhythm.phase
 
         # Step counter should always increment
-        assert after_step == before_step + 1, \
+        assert after_step == before_step + 1, (
             f"Step counter should increment: {before_step} -> {after_step}"
+        )
 
         # Phase should be valid
-        assert after_phase in ["wake", "sleep"], \
-            f"Invalid phase: {after_phase}"
+        assert after_phase in ["wake", "sleep"], f"Invalid phase: {after_phase}"
 
     # Final step count should match number of events
-    assert controller.step_counter == initial_step + num_events, \
+    assert controller.step_counter == initial_step + num_events, (
         f"Step count mismatch: {controller.step_counter} != {initial_step + num_events}"
+    )
 
 
 @settings(max_examples=20, deadline=None)
-@given(
-    moral_value=st.floats(min_value=0.0, max_value=1.0, allow_nan=False)
-)
+@given(moral_value=st.floats(min_value=0.0, max_value=1.0, allow_nan=False))
 def test_controller_deterministic_processing(moral_value):
     """
     Property: Same input produces same output (deterministic).
@@ -165,10 +160,10 @@ def test_controller_deterministic_processing(moral_value):
         result2 = controller2.process_event(vec, moral_value)
 
         # Results should match
-        assert result1["rejected"] == result2["rejected"], \
+        assert result1["rejected"] == result2["rejected"], (
             f"Different rejection status at event {i}"
-        assert result1["note"] == result2["note"], \
-            f"Different notes at event {i}"
+        )
+        assert result1["note"] == result2["note"], f"Different notes at event {i}"
 
 
 def test_controller_retrieve_context_phase_aware():

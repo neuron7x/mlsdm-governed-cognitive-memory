@@ -241,11 +241,7 @@ class TestNeuroCognitiveClientBackendConfiguration:
             mock_engine = MagicMock()
             mock_factory.return_value = mock_engine
 
-            client = NeuroCognitiveClient(
-                backend="openai",
-                api_key="sk-test-12345",
-                model="gpt-4"
-            )
+            client = NeuroCognitiveClient(backend="openai", api_key="sk-test-12345", model="gpt-4")
 
             assert client.backend == "openai"
             assert os.environ.get("OPENAI_API_KEY") == "sk-test-12345"

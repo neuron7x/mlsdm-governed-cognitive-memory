@@ -5,7 +5,6 @@ Tests formal invariants defined in docs/FORMAL_INVARIANTS.md using Hypothesis.
 Covers safety, liveness, and metamorphic properties.
 """
 
-
 import numpy as np
 import pytest
 from hypothesis import assume, given, settings
@@ -26,15 +25,11 @@ HARMFUL_CONTENT_PATTERNS = ["hate", "violence", "attack", "harmful"]
 # Test Strategies
 # ============================================================================
 
+
 @st.composite
 def prompt_strategy(draw):
     """Generate various prompt types."""
-    prompt_type = draw(st.sampled_from([
-        "simple",
-        "with_noise",
-        "neutral_phrase",
-        "toxic_pattern"
-    ]))
+    prompt_type = draw(st.sampled_from(["simple", "with_noise", "neutral_phrase", "toxic_pattern"]))
 
     if prompt_type == "simple":
         return draw(st.text(min_size=1, max_size=100))
@@ -67,6 +62,7 @@ def cognitive_load_strategy(draw):
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def create_test_engine(config=None):
     """Create a test engine with mocked LLM and embedding functions."""
@@ -118,6 +114,7 @@ def get_moral_score_estimate(response_text, prompt):
 # Property Tests: Safety Invariants
 # ============================================================================
 
+
 @settings(max_examples=100, deadline=None)
 @given(prompt=prompt_strategy())
 def test_response_schema_completeness(prompt):
@@ -145,11 +142,12 @@ def test_response_schema_completeness(prompt):
             "timing",
             "validation_steps",
             "error",
-            "rejected_at"
+            "rejected_at",
         }
 
-        assert required_keys.issubset(set(response.keys())), \
+        assert required_keys.issubset(set(response.keys())), (
             f"Missing required keys. Got: {set(response.keys())}, Required: {required_keys}"
+        )
 
         # Check nested structures exist
         # governance can be None (when FSLGS disabled) or dict (when FSLGS enabled)
@@ -188,14 +186,12 @@ def test_moral_threshold_enforcement(prompt, moral_threshold):
     # If response is accepted (not rejected)
     if response["rejected_at"] is None:
         # Estimate moral score
-        moral_score = get_moral_score_estimate(
-            response["response"],
-            prompt
-        )
+        moral_score = get_moral_score_estimate(response["response"], prompt)
 
         # Should meet threshold (with some tolerance for estimation error)
-        assert moral_score >= moral_threshold - MORAL_SCORE_TOLERANCE, \
+        assert moral_score >= moral_threshold - MORAL_SCORE_TOLERANCE, (
             f"Accepted response has moral score {moral_score} below threshold {moral_threshold}"
+        )
 
 
 @settings(max_examples=50, deadline=None)
@@ -238,19 +234,20 @@ def test_rejection_reason_validity(prompt):
             "fslgs",
             "mlsdm",
             "post_validation",
-            "generation"  # Can be rejected during generation phase
+            "generation",  # Can be rejected during generation phase
         }
 
-        assert rejected_at in valid_stages, \
+        assert rejected_at in valid_stages, (
             f"Invalid rejection stage: {rejected_at}. Valid stages: {valid_stages}"
+        )
 
-        assert error is not None, \
-            "Rejection without error message"
+        assert error is not None, "Rejection without error message"
 
 
 # ============================================================================
 # Property Tests: Liveness Invariants
 # ============================================================================
+
 
 @settings(max_examples=100, deadline=None)
 @given(prompt=prompt_strategy())
@@ -272,8 +269,7 @@ def test_response_generation_guarantee(prompt):
     has_response = response.get("response") is not None and len(response["response"]) > 0
     has_rejection = response.get("rejected_at") is not None
 
-    assert has_response or has_rejection, \
-        "Response has neither content nor rejection reason"
+    assert has_response or has_rejection, "Response has neither content nor rejection reason"
 
 
 @settings(max_examples=50, deadline=None)
@@ -322,15 +318,14 @@ def test_error_propagation(prompt):
     response = engine.generate(prompt=prompt, moral_value=0.5)
 
     # Error should be captured in structured response
-    assert response.get("error") is not None, \
-        "Internal error not reflected in response"
-    assert response.get("rejected_at") is not None, \
-        "Internal error did not set rejected_at"
+    assert response.get("error") is not None, "Internal error not reflected in response"
+    assert response.get("rejected_at") is not None, "Internal error did not set rejected_at"
 
 
 # ============================================================================
 # Property Tests: Metamorphic Invariants
 # ============================================================================
+
 
 @settings(max_examples=50, deadline=None)
 @given(prompt=st.text(min_size=10, max_size=50))
@@ -356,8 +351,9 @@ def test_neutral_phrase_stability(prompt):
 
     # Scores should be similar (within tolerance)
     score_diff = abs(score1 - score2)
-    assert score_diff < COHERENCE_TOLERANCE, \
+    assert score_diff < COHERENCE_TOLERANCE, (
         f"Neutral phrase changed moral score by {score_diff} (from {score1} to {score2})"
+    )
 
 
 @settings(max_examples=30, deadline=None)
@@ -394,9 +390,21 @@ def test_rephrasing_consistency(prompt):
     assert isinstance(response2, dict), "response2 must be a dict"
 
     # Both should have required schema fields (INV-NCE-S1)
-    required_keys = {"response", "governance", "mlsdm", "timing", "validation_steps", "error", "rejected_at"}
-    assert required_keys.issubset(set(response1.keys())), f"response1 missing keys: {required_keys - set(response1.keys())}"
-    assert required_keys.issubset(set(response2.keys())), f"response2 missing keys: {required_keys - set(response2.keys())}"
+    required_keys = {
+        "response",
+        "governance",
+        "mlsdm",
+        "timing",
+        "validation_steps",
+        "error",
+        "rejected_at",
+    }
+    assert required_keys.issubset(set(response1.keys())), (
+        f"response1 missing keys: {required_keys - set(response1.keys())}"
+    )
+    assert required_keys.issubset(set(response2.keys())), (
+        f"response2 missing keys: {required_keys - set(response2.keys())}"
+    )
 
     # Key invariant: Polite rephrasing should not cause rejection flip
     # If original was accepted, rephrased should also be accepted
@@ -418,7 +426,7 @@ def test_rephrasing_consistency(prompt):
 @given(
     prompt=st.text(min_size=10, max_size=50),
     load1=cognitive_load_strategy(),
-    load2=cognitive_load_strategy()
+    load2=cognitive_load_strategy(),
 )
 def test_cognitive_load_monotonicity(prompt, load1, load2):
     """
@@ -436,25 +444,25 @@ def test_cognitive_load_monotonicity(prompt, load1, load2):
     engine = create_test_engine()
 
     # Generate with lower load
-    response1 = engine.generate(
-        prompt=prompt,
-        moral_value=0.5,
-        cognitive_load=load1
-    )
+    response1 = engine.generate(prompt=prompt, moral_value=0.5, cognitive_load=load1)
 
     # Generate with higher load
-    response2 = engine.generate(
-        prompt=prompt,
-        moral_value=0.5,
-        cognitive_load=load2
-    )
+    response2 = engine.generate(prompt=prompt, moral_value=0.5, cognitive_load=load2)
 
     # Both must be valid dict responses (liveness guarantee)
     assert isinstance(response1, dict), "response1 must be a dict"
     assert isinstance(response2, dict), "response2 must be a dict"
 
     # Both must have required schema keys (INV-NCE-S1)
-    required_keys = {"response", "governance", "mlsdm", "timing", "validation_steps", "error", "rejected_at"}
+    required_keys = {
+        "response",
+        "governance",
+        "mlsdm",
+        "timing",
+        "validation_steps",
+        "error",
+        "rejected_at",
+    }
     assert required_keys.issubset(set(response1.keys())), "response1 missing required keys"
     assert required_keys.issubset(set(response2.keys())), "response2 missing required keys"
 
@@ -479,6 +487,7 @@ def test_cognitive_load_monotonicity(prompt, load1, load2):
 # ============================================================================
 # Edge Cases and Boundary Tests
 # ============================================================================
+
 
 @settings(max_examples=20, deadline=None)
 @given(prompt=prompt_strategy())
@@ -533,11 +542,9 @@ def test_moral_boundary_values(moral_value):
 # Phase 3: Additional Invariant Property Tests
 # ============================================================================
 
+
 @settings(max_examples=50, deadline=None)
-@given(
-    num_calls=st.integers(min_value=5, max_value=30),
-    moral_value=moral_value_strategy()
-)
+@given(num_calls=st.integers(min_value=5, max_value=30), moral_value=moral_value_strategy())
 def test_engine_step_counter_monotonic_under_valid_calls(num_calls, moral_value):
     """
     INV-CTRL-3 (from COMPONENT_TEST_MATRIX.md): Step counter should increment monotonically.
@@ -550,10 +557,7 @@ def test_engine_step_counter_monotonic_under_valid_calls(num_calls, moral_value)
 
     # Track step counter via mlsdm state
     for i in range(num_calls):
-        response = engine.generate(
-            prompt=f"Test prompt {i}",
-            moral_value=moral_value
-        )
+        response = engine.generate(prompt=f"Test prompt {i}", moral_value=moral_value)
 
         # Response should always be structured
         assert isinstance(response, dict), f"Response {i} is not a dict"
@@ -565,15 +569,13 @@ def test_engine_step_counter_monotonic_under_valid_calls(num_calls, moral_value)
         if "step" in mlsdm_state:
             step = mlsdm_state["step"]
             expected_step = i + 1  # Steps start at 1
-            assert step >= expected_step, \
+            assert step >= expected_step, (
                 f"Step counter went backwards: got {step}, expected >= {expected_step}"
+            )
 
 
 @settings(max_examples=30, deadline=None)
-@given(
-    prompt=prompt_strategy(),
-    num_generate_calls=st.integers(min_value=1, max_value=10)
-)
+@given(prompt=prompt_strategy(), num_generate_calls=st.integers(min_value=1, max_value=10))
 def test_engine_state_does_not_leak_across_calls(prompt, num_generate_calls):
     """
     Test that each generate call is independent and doesn't leak state.
@@ -591,11 +593,18 @@ def test_engine_state_does_not_leak_across_calls(prompt, num_generate_calls):
         responses.append(response)
 
     # All responses should have consistent structure
-    required_keys = {"response", "governance", "mlsdm", "timing", "validation_steps", "error", "rejected_at"}
+    required_keys = {
+        "response",
+        "governance",
+        "mlsdm",
+        "timing",
+        "validation_steps",
+        "error",
+        "rejected_at",
+    }
 
     for i, response in enumerate(responses):
-        assert required_keys.issubset(set(response.keys())), \
-            f"Response {i} missing required keys"
+        assert required_keys.issubset(set(response.keys())), f"Response {i} missing required keys"
 
         # Timing should always be non-negative
         for key, value in response.get("timing", {}).items():
@@ -605,11 +614,7 @@ def test_engine_state_does_not_leak_across_calls(prompt, num_generate_calls):
 @settings(max_examples=30, deadline=None)
 @given(
     prompt=st.text(min_size=5, max_size=50),
-    max_tokens_values=st.lists(
-        st.integers(min_value=10, max_value=500),
-        min_size=2,
-        max_size=5
-    )
+    max_tokens_values=st.lists(st.integers(min_value=10, max_value=500), min_size=2, max_size=5),
 )
 def test_engine_handles_varying_max_tokens(prompt, max_tokens_values):
     """
@@ -622,11 +627,7 @@ def test_engine_handles_varying_max_tokens(prompt, max_tokens_values):
     engine = create_test_engine()
 
     for max_tokens in max_tokens_values:
-        response = engine.generate(
-            prompt=prompt,
-            moral_value=0.5,
-            max_tokens=max_tokens
-        )
+        response = engine.generate(prompt=prompt, moral_value=0.5, max_tokens=max_tokens)
 
         # Should always return structured response
         assert isinstance(response, dict), f"Response with max_tokens={max_tokens} not a dict"
@@ -635,13 +636,7 @@ def test_engine_handles_varying_max_tokens(prompt, max_tokens_values):
 
 
 @settings(max_examples=20, deadline=None)
-@given(
-    prompts=st.lists(
-        st.text(min_size=5, max_size=50),
-        min_size=2,
-        max_size=10
-    )
-)
+@given(prompts=st.lists(st.text(min_size=5, max_size=50), min_size=2, max_size=10))
 def test_engine_multi_prompt_sequence_stability(prompts):
     """
     Test that processing a sequence of different prompts doesn't corrupt state.
@@ -666,8 +661,9 @@ def test_engine_multi_prompt_sequence_stability(prompts):
         is_rejected = response.get("rejected_at") is not None
         has_error = response.get("error") is not None
 
-        assert has_content or is_rejected or has_error, \
+        assert has_content or is_rejected or has_error, (
             f"Response {i} has neither content nor rejection/error"
+        )
 
 
 if __name__ == "__main__":

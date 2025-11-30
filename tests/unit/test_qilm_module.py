@@ -54,11 +54,7 @@ class TestQILMEntanglePhase:
         """Test entangling multiple vectors."""
         qilm = QILM()
 
-        vectors = [
-            np.array([1.0, 2.0]),
-            np.array([3.0, 4.0]),
-            np.array([5.0, 6.0])
-        ]
+        vectors = [np.array([1.0, 2.0]), np.array([3.0, 4.0]), np.array([5.0, 6.0])]
         phases = [0.1, 0.5, 0.9]
 
         for vec, phase in zip(vectors, phases, strict=False):
@@ -187,10 +183,10 @@ class TestQILMToDict:
         data = qilm.to_dict()
 
         assert isinstance(data, dict)
-        assert 'memory' in data
-        assert 'phases' in data
-        assert data['memory'] == []
-        assert data['phases'] == []
+        assert "memory" in data
+        assert "phases" in data
+        assert data["memory"] == []
+        assert data["phases"] == []
 
     def test_to_dict_with_data(self):
         """Test serialization with data."""
@@ -204,11 +200,11 @@ class TestQILMToDict:
 
         data = qilm.to_dict()
 
-        assert len(data['memory']) == 2
-        assert len(data['phases']) == 2
-        assert data['phases'] == [0.1, 0.9]
-        assert data['memory'][0] == [1.0, 2.0]
-        assert data['memory'][1] == [3.0, 4.0]
+        assert len(data["memory"]) == 2
+        assert len(data["phases"]) == 2
+        assert data["phases"] == [0.1, 0.9]
+        assert data["memory"][0] == [1.0, 2.0]
+        assert data["memory"][1] == [3.0, 4.0]
 
     def test_to_dict_preserves_phase_types(self):
         """Test serialization preserves different phase types."""
@@ -222,7 +218,7 @@ class TestQILMToDict:
 
         data = qilm.to_dict()
 
-        assert data['phases'] == [0.5, "custom_phase"]
+        assert data["phases"] == [0.5, "custom_phase"]
 
 
 class TestQILMIntegration:
@@ -233,8 +229,8 @@ class TestQILMIntegration:
         qilm = QILM()
 
         # Store multiple vectors with different phases
-        wake_vectors = [np.array([i, i+1]) for i in range(5)]
-        sleep_vectors = [np.array([i+10, i+11]) for i in range(5)]
+        wake_vectors = [np.array([i, i + 1]) for i in range(5)]
+        sleep_vectors = [np.array([i + 10, i + 11]) for i in range(5)]
 
         for vec in wake_vectors:
             qilm.entangle_phase(vec, 0.1)
@@ -256,7 +252,7 @@ class TestQILMIntegration:
 
         # Store 100 vectors
         for i in range(100):
-            vec = np.array([i, i+1, i+2])
+            vec = np.array([i, i + 1, i + 2])
             phase = i / 100.0
             qilm.entangle_phase(vec, phase)
 

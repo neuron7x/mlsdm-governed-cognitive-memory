@@ -24,6 +24,7 @@ from locust.runners import MasterRunner
 # Global State for Metrics Collection
 # ============================================================================
 
+
 class MetricsCollector:
     """Collects metrics during load test."""
 
@@ -65,11 +66,9 @@ class MetricsCollector:
 
     def record_error(self, error: str, context: dict[str, Any]) -> None:
         """Record an error."""
-        self.errors.append({
-            "timestamp": time.time() - self.start_time,
-            "error": error,
-            "context": context
-        })
+        self.errors.append(
+            {"timestamp": time.time() - self.start_time, "error": error, "context": context}
+        )
 
     def calculate_percentiles(self) -> dict[str, float]:
         """Calculate latency percentiles."""
@@ -83,7 +82,7 @@ class MetricsCollector:
             "p99": float(np.percentile(latencies_arr, 99)),
             "mean": float(np.mean(latencies_arr)),
             "min": float(np.min(latencies_arr)),
-            "max": float(np.max(latencies_arr))
+            "max": float(np.max(latencies_arr)),
         }
 
     def determine_saturation_point(self) -> dict[str, Any]:
@@ -92,7 +91,7 @@ class MetricsCollector:
             return {
                 "saturation_rps": 0,
                 "saturation_detected": False,
-                "reason": "Insufficient data"
+                "reason": "Insufficient data",
             }
 
         # Group latencies by time windows and correlate with RPS
@@ -116,7 +115,10 @@ class MetricsCollector:
                 # Zip up to minimum length to ensure alignment
                 min_len = min(len(self.latencies), len(self.timestamps))
                 window_latencies = [
-                    lat for lat, ts in zip(self.latencies[:min_len], self.timestamps[:min_len], strict=False)
+                    lat
+                    for lat, ts in zip(
+                        self.latencies[:min_len], self.timestamps[:min_len], strict=False
+                    )
                     if window_start <= ts < window_end
                 ]
                 if window_latencies:
@@ -129,7 +131,7 @@ class MetricsCollector:
             return {
                 "saturation_rps": 0,
                 "saturation_detected": False,
-                "reason": "Insufficient windows"
+                "reason": "Insufficient windows",
             }
 
         # Look for inflection point where latency starts increasing significantly
@@ -141,13 +143,13 @@ class MetricsCollector:
             if i >= len(latency_by_window):
                 break
 
-            rps_increase = rps_by_window[i] - rps_by_window[i-1]
-            latency_increase = latency_by_window[i] - latency_by_window[i-1]
+            rps_increase = rps_by_window[i] - rps_by_window[i - 1]
+            latency_increase = latency_by_window[i] - latency_by_window[i - 1]
 
             # Saturation: RPS increases but latency increases disproportionately
             if rps_increase > 0 and latency_increase / (rps_increase + 1e-6) > 10:
                 saturation_detected = True
-                saturation_rps = int(rps_by_window[i-1])
+                saturation_rps = int(rps_by_window[i - 1])
                 break
 
         if not saturation_detected:
@@ -157,17 +159,13 @@ class MetricsCollector:
         return {
             "saturation_rps": saturation_rps,
             "saturation_detected": saturation_detected,
-            "reason": "Latency spike detected" if saturation_detected else "No saturation in test"
+            "reason": "Latency spike detected" if saturation_detected else "No saturation in test",
         }
 
     def check_memory_stability(self) -> dict[str, Any]:
         """Check for memory leaks."""
         if len(self.memory_samples) < 10:
-            return {
-                "stable": True,
-                "leak_detected": False,
-                "reason": "Insufficient samples"
-            }
+            return {"stable": True, "leak_detected": False, "reason": "Insufficient samples"}
 
         # Check if memory is continuously increasing
         samples = np.array(self.memory_samples)
@@ -193,7 +191,7 @@ class MetricsCollector:
         # 2. Positive slope indicating continuous growth
         if growth_rate > 0.20 and slope > 0.5:
             leak_detected = True
-            reason = f"Memory increased {growth_rate*100:.1f}% with positive trend"
+            reason = f"Memory increased {growth_rate * 100:.1f}% with positive trend"
 
         return {
             "stable": not leak_detected,
@@ -202,7 +200,7 @@ class MetricsCollector:
             "initial_memory_mb": float(samples[0]),
             "final_memory_mb": float(samples[-1]),
             "mean_memory_mb": float(np.mean(samples)),
-            "reason": reason
+            "reason": reason,
         }
 
     def generate_report(self, output_path: str = "load_test_report.json") -> None:
@@ -217,25 +215,25 @@ class MetricsCollector:
                 "total_requests": self.request_count,
                 "successful_requests": len(self.latencies),
                 "failed_requests": len(self.errors),
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             },
             "latency_metrics": percentiles,
             "saturation_analysis": saturation,
             "memory_stability": memory_check,
             "errors": self.errors[:100],  # Limit error list
-            "rps_samples": self.rps_samples[-100:]  # Last 100 samples
+            "rps_samples": self.rps_samples[-100:],  # Last 100 samples
         }
 
         # Write report
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(report, f, indent=2)
 
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("LOAD TEST REPORT")
-        print("="*80)
+        print("=" * 80)
         print(f"\nTest Duration: {report['test_info']['duration_seconds']:.1f}s")
         print(f"Total Requests: {report['test_info']['total_requests']}")
-        print(f"Success Rate: {len(self.latencies)/self.request_count*100:.1f}%")
+        print(f"Success Rate: {len(self.latencies) / self.request_count * 100:.1f}%")
         print("\nLatency Metrics:")
         print(f"  P50: {percentiles['p50']:.2f}ms")
         print(f"  P95: {percentiles['p95']:.2f}ms")
@@ -251,9 +249,9 @@ class MetricsCollector:
         print(f"  Initial Memory: {memory_check.get('initial_memory_mb', 0):.1f} MB")
         print(f"  Final Memory: {memory_check.get('final_memory_mb', 0):.1f} MB")
         print(f"  Reason: {memory_check['reason']}")
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print(f"Report saved to: {output_path}")
-        print("="*80 + "\n")
+        print("=" * 80 + "\n")
 
 
 # Global metrics collector
@@ -263,6 +261,7 @@ metrics = MetricsCollector()
 # ============================================================================
 # Locust Task Sets
 # ============================================================================
+
 
 class MLSDMTaskSet(TaskSet):
     """Task set for MLSDM load testing."""
@@ -274,11 +273,11 @@ class MLSDMTaskSet(TaskSet):
 
         start_time = time.time()
         try:
-            response = self.client.post("/generate", json={
-                "prompt": prompt,
-                "moral_value": 0.9,
-                "max_tokens": 100
-            }, timeout=10)
+            response = self.client.post(
+                "/generate",
+                json={"prompt": prompt, "moral_value": 0.9, "max_tokens": 100},
+                timeout=10,
+            )
 
             response_time = (time.time() - start_time) * 1000  # Convert to ms
 
@@ -318,11 +317,11 @@ class MLSDMTaskSet(TaskSet):
 
         start_time = time.time()
         try:
-            response = self.client.post("/generate", json={
-                "prompt": prompt,
-                "moral_value": moral_value,
-                "max_tokens": 50
-            }, timeout=10)
+            response = self.client.post(
+                "/generate",
+                json={"prompt": prompt, "moral_value": moral_value, "max_tokens": 50},
+                timeout=10,
+            )
 
             response_time = (time.time() - start_time) * 1000
 
@@ -353,16 +352,17 @@ class MLSDMUser(HttpUser):
 # Event Handlers
 # ============================================================================
 
+
 @events.init.add_listener
 def on_locust_init(environment: Any, **kwargs: Any) -> None:
     """Initialize load test."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("MLSDM LOAD TEST - INITIALIZATION")
-    print("="*80)
+    print("=" * 80)
     print(f"Target: {os.environ.get('MLSDM_HOST', 'http://localhost:8000')}")
     print("Users: 100 concurrent")
     print("Duration: 10 minutes")
-    print("="*80 + "\n")
+    print("=" * 80 + "\n")
 
 
 @events.test_start.add_listener
@@ -398,6 +398,7 @@ def start_memory_monitor(environment: Any, **kwargs: Any) -> None:
     # Only run on master or standalone (not on workers)
     if environment.runner is None or isinstance(environment.runner, MasterRunner):
         import threading
+
         monitor_thread = threading.Thread(target=sample_memory, daemon=True)
         monitor_thread.start()
 
@@ -406,29 +407,37 @@ def start_memory_monitor(environment: Any, **kwargs: Any) -> None:
 # Standalone Test Mode
 # ============================================================================
 
+
 def run_standalone_test() -> None:
     """Run a standalone load test without Locust web UI."""
     import subprocess
     import sys
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("RUNNING STANDALONE LOAD TEST")
-    print("="*80)
+    print("=" * 80)
     print("Configuration:")
     print("  Users: 100")
     print("  Spawn Rate: 10 users/second")
     print("  Duration: 600 seconds (10 minutes)")
-    print("="*80 + "\n")
+    print("=" * 80 + "\n")
 
     # Run locust in headless mode
     cmd = [
-        sys.executable, "-m", "locust",
-        "-f", __file__,
+        sys.executable,
+        "-m",
+        "locust",
+        "-f",
+        __file__,
         "--headless",
-        "--users", "100",
-        "--spawn-rate", "10",
-        "--run-time", "600s",
-        "--host", os.environ.get("MLSDM_HOST", "http://localhost:8000")
+        "--users",
+        "100",
+        "--spawn-rate",
+        "10",
+        "--run-time",
+        "600s",
+        "--host",
+        os.environ.get("MLSDM_HOST", "http://localhost:8000"),
     ]
 
     try:
@@ -449,15 +458,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="MLSDM Load Test")
     parser.add_argument(
-        "--standalone",
-        action="store_true",
-        help="Run standalone test without web UI"
+        "--standalone", action="store_true", help="Run standalone test without web UI"
     )
-    parser.add_argument(
-        "--host",
-        default="http://localhost:8000",
-        help="Target host URL"
-    )
+    parser.add_argument("--host", default="http://localhost:8000", help="Target host URL")
 
     args = parser.parse_args()
 
@@ -471,8 +474,10 @@ if __name__ == "__main__":
         print("\n1. With Locust web UI:")
         print("   locust -f tests/load/locust_load_test.py --host http://localhost:8000")
         print("\n2. Headless mode (10 min, 100 users):")
-        print("   locust -f tests/load/locust_load_test.py --headless --users 100 "
-              "--spawn-rate 10 --run-time 600s --host http://localhost:8000")
+        print(
+            "   locust -f tests/load/locust_load_test.py --headless --users 100 "
+            "--spawn-rate 10 --run-time 600s --host http://localhost:8000"
+        )
         print("\n3. Standalone mode:")
         print("   python tests/load/locust_load_test.py --standalone --host http://localhost:8000")
         print()

@@ -42,7 +42,9 @@ def test_aphasia_governor_healthy_text_passes_through():
         llm_generate_fn=mock_llm_repair,
     )
 
-    healthy_text = "The cognitive architecture provides a comprehensive framework for LLM governance."
+    healthy_text = (
+        "The cognitive architecture provides a comprehensive framework for LLM governance."
+    )
     result = governor(prompt="test", draft=healthy_text, max_tokens=50)
 
     assert isinstance(result, SpeechGovernanceResult)

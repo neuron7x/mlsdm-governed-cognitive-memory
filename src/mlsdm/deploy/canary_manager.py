@@ -88,20 +88,16 @@ class CanaryManager:
             ValueError: If parameters are invalid
         """
         if not 0.0 <= candidate_ratio <= 1.0:
-            raise ValueError(
-                f"candidate_ratio must be between 0.0 and 1.0, got {candidate_ratio}"
-            )
+            raise ValueError(f"candidate_ratio must be between 0.0 and 1.0, got {candidate_ratio}")
 
         if not 0.0 <= error_budget_threshold <= 1.0:
             raise ValueError(
-                f"error_budget_threshold must be between 0.0 and 1.0, "
-                f"got {error_budget_threshold}"
+                f"error_budget_threshold must be between 0.0 and 1.0, got {error_budget_threshold}"
             )
 
         if min_requests_before_decision < 1:
             raise ValueError(
-                f"min_requests_before_decision must be >= 1, "
-                f"got {min_requests_before_decision}"
+                f"min_requests_before_decision must be >= 1, got {min_requests_before_decision}"
             )
 
         self.current_version = current_version

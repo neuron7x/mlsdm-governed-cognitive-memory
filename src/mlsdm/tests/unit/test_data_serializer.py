@@ -1,4 +1,5 @@
 """Comprehensive unit tests for DataSerializer."""
+
 import os
 import tempfile
 
@@ -15,7 +16,7 @@ class TestDataSerializer:
         """Test saving and loading JSON data."""
         data = {"key1": "value1", "key2": 123, "key3": [1, 2, 3]}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json_path = f.name
 
         try:
@@ -31,12 +32,9 @@ class TestDataSerializer:
 
     def test_save_and_load_npz(self):
         """Test saving and loading NPZ data."""
-        data = {
-            "array1": np.array([1, 2, 3]),
-            "array2": np.array([[1, 2], [3, 4]])
-        }
+        data = {"array1": np.array([1, 2, 3]), "array2": np.array([[1, 2], [3, 4]])}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.npz', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".npz", delete=False) as f:
             npz_path = f.name
 
         try:
@@ -54,7 +52,7 @@ class TestDataSerializer:
         """Test that unsupported formats raise ValueError."""
         data = {"key": "value"}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             txt_path = f.name
 
         try:
@@ -66,7 +64,7 @@ class TestDataSerializer:
 
     def test_load_invalid_format(self):
         """Test that loading unsupported formats raises ValueError."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("test")
             txt_path = f.name
 
@@ -90,17 +88,9 @@ class TestDataSerializer:
 
     def test_save_nested_data_json(self):
         """Test saving nested data structures to JSON."""
-        data = {
-            "level1": {
-                "level2": {
-                    "key": "value",
-                    "number": 42
-                }
-            },
-            "list": [1, 2, 3]
-        }
+        data = {"level1": {"level2": {"key": "value", "number": 42}}, "list": [1, 2, 3]}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json_path = f.name
 
         try:
@@ -115,11 +105,9 @@ class TestDataSerializer:
 
     def test_save_numpy_arrays_converted_for_npz(self):
         """Test that lists are converted to numpy arrays for NPZ."""
-        data = {
-            "list_data": [1, 2, 3, 4, 5]
-        }
+        data = {"list_data": [1, 2, 3, 4, 5]}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.npz', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".npz", delete=False) as f:
             npz_path = f.name
 
         try:
@@ -136,7 +124,7 @@ class TestDataSerializer:
         """Test saving and loading empty dictionary."""
         data = {}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json_path = f.name
 
         try:
@@ -150,13 +138,9 @@ class TestDataSerializer:
 
     def test_json_unicode_data(self):
         """Test saving and loading Unicode data."""
-        data = {
-            "ukrainian": "Привіт",
-            "emoji": "🚀",
-            "chinese": "你好"
-        }
+        data = {"ukrainian": "Привіт", "emoji": "🚀", "chinese": "你好"}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json_path = f.name
 
         try:
@@ -174,10 +158,10 @@ class TestDataSerializer:
         """Test saving and loading multidimensional arrays."""
         data = {
             "matrix": np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]),
-            "tensor": np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
+            "tensor": np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]),
         }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.npz', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".npz", delete=False) as f:
             npz_path = f.name
 
         try:
@@ -194,7 +178,7 @@ class TestDataSerializer:
         """Test that retry mechanism works on success."""
         data = {"test": "data"}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json_path = f.name
 
         try:
@@ -207,13 +191,9 @@ class TestDataSerializer:
 
     def test_json_with_floats(self):
         """Test JSON serialization with floating point numbers."""
-        data = {
-            "float1": 3.14159,
-            "float2": 2.71828,
-            "float3": 1.41421
-        }
+        data = {"float1": 3.14159, "float2": 2.71828, "float3": 1.41421}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json_path = f.name
 
         try:
@@ -231,10 +211,10 @@ class TestDataSerializer:
         data = {
             "int_array": np.array([1, 2, 3], dtype=np.int32),
             "float_array": np.array([1.0, 2.0, 3.0], dtype=np.float32),
-            "complex_array": np.array([1+2j, 3+4j], dtype=np.complex64)
+            "complex_array": np.array([1 + 2j, 3 + 4j], dtype=np.complex64),
         }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.npz', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".npz", delete=False) as f:
             npz_path = f.name
 
         try:
@@ -253,7 +233,7 @@ class TestDataSerializer:
         data1 = {"version": 1}
         data2 = {"version": 2}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json_path = f.name
 
         try:

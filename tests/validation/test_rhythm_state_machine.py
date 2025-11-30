@@ -149,7 +149,7 @@ def test_rhythm_invalid_durations():
 @given(
     wake_duration=st.integers(min_value=1, max_value=20),
     sleep_duration=st.integers(min_value=1, max_value=20),
-    num_cycles=st.integers(min_value=1, max_value=10)
+    num_cycles=st.integers(min_value=1, max_value=10),
 )
 def test_rhythm_property_cycle_consistency(wake_duration, sleep_duration, num_cycles):
     """
@@ -169,17 +169,19 @@ def test_rhythm_property_cycle_consistency(wake_duration, sleep_duration, num_cy
         rhythm.step()
 
     # Should return to initial state
-    assert rhythm.phase == initial_phase, \
+    assert rhythm.phase == initial_phase, (
         f"Phase mismatch after {num_cycles} cycles: {rhythm.phase} != {initial_phase}"
-    assert rhythm.counter == initial_counter, \
+    )
+    assert rhythm.counter == initial_counter, (
         f"Counter mismatch after {num_cycles} cycles: {rhythm.counter} != {initial_counter}"
+    )
 
 
 @settings(max_examples=50, deadline=None)
 @given(
     wake_duration=st.integers(min_value=1, max_value=20),
     sleep_duration=st.integers(min_value=1, max_value=20),
-    steps=st.integers(min_value=0, max_value=100)
+    steps=st.integers(min_value=0, max_value=100),
 )
 def test_rhythm_property_counter_bounds(wake_duration, sleep_duration, steps):
     """
@@ -192,11 +194,13 @@ def test_rhythm_property_counter_bounds(wake_duration, sleep_duration, steps):
         assert rhythm.counter > 0, f"Counter should be positive, got {rhythm.counter}"
 
         if rhythm.phase == "wake":
-            assert rhythm.counter <= wake_duration, \
+            assert rhythm.counter <= wake_duration, (
                 f"Wake counter {rhythm.counter} exceeds duration {wake_duration}"
+            )
         else:
-            assert rhythm.counter <= sleep_duration, \
+            assert rhythm.counter <= sleep_duration, (
                 f"Sleep counter {rhythm.counter} exceeds duration {sleep_duration}"
+            )
 
         rhythm.step()
 

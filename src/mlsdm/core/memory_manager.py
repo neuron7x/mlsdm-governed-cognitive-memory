@@ -41,7 +41,9 @@ class MemoryManager:
         )
 
         onto_cfg = config.get("ontology_matcher", {})
-        ontology_vectors = np.array(onto_cfg.get("ontology_vectors", np.eye(self.dimension).tolist()))
+        ontology_vectors = np.array(
+            onto_cfg.get("ontology_vectors", np.eye(self.dimension).tolist())
+        )
         ontology_labels = onto_cfg.get("ontology_labels")
         self.matcher = OntologyMatcher(ontology_vectors, labels=ontology_labels)
 
@@ -69,9 +71,7 @@ class MemoryManager:
 
         total = self.metrics_collector.metrics["total_events_processed"]
         if total > 0:
-            accept_rate = (
-                self.metrics_collector.metrics["accepted_events_count"] / float(total)
-            )
+            accept_rate = self.metrics_collector.metrics["accepted_events_count"] / float(total)
             self.filter.adapt(accept_rate)
 
         if not self.filter.evaluate(moral_value):
@@ -91,7 +91,9 @@ class MemoryManager:
             if ev.shape[0] != self.dimension:
                 raise ValueError("Event dimension mismatch.")
             L1, L2, L3 = self.memory.get_state()
-            self.metrics_collector.record_memory_state(step, L1, L2, L3, self.rhythm.get_current_phase())
+            self.metrics_collector.record_memory_state(
+                step, L1, L2, L3, self.rhythm.get_current_phase()
+            )
             self.metrics_collector.record_moral_threshold(self.filter.threshold)
 
             if self.rhythm.is_wake():
@@ -100,8 +102,11 @@ class MemoryManager:
             self.rhythm.step()
             await asyncio.sleep(0)
 
-    def run_simulation(self, num_steps: int, event_gen: Iterator[tuple[np.ndarray, float]] | None = None) -> None:
+    def run_simulation(
+        self, num_steps: int, event_gen: Iterator[tuple[np.ndarray, float]] | None = None
+    ) -> None:
         if event_gen is None:
+
             def default_gen() -> Iterator[tuple[np.ndarray, float]]:
                 for _ in range(num_steps):
                     ev = np.random.randn(self.dimension)

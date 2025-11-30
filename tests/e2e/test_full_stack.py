@@ -55,6 +55,7 @@ def deterministic_seeds() -> None:
     # Set torch seed if available
     try:
         import torch
+
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
@@ -166,8 +167,9 @@ class TestFullStackNormalRequest:
 
         # Validate response
         response = result.get("response", "")
-        assert response != "" or rejected_at is not None, \
+        assert response != "" or rejected_at is not None, (
             "Expected non-empty response or explicit rejection (error field or rejected_at set)"
+        )
 
         # If we got a response, validate it's well-formed
         if response:
@@ -287,16 +289,14 @@ class TestFullStackToxicRejection:
 
         # Should be rejected OR have rejection indicators
         _is_rejected = (
-            accepted is False or
-            rejected_at is not None or
-            (error is not None and error.get("type") in ("moral_precheck", "mlsdm_rejection"))
+            accepted is False
+            or rejected_at is not None
+            or (error is not None and error.get("type") in ("moral_precheck", "mlsdm_rejection"))
         )
 
         # Validate rejection occurred through governance pipeline
         validation_steps = result.get("validation_steps", [])
-        moral_check_found = any(
-            step.get("step") == "moral_precheck" for step in validation_steps
-        )
+        moral_check_found = any(step.get("step") == "moral_precheck" for step in validation_steps)
 
         # At minimum, moral precheck should be recorded
         assert moral_check_found, "Moral precheck should be in validation steps"
@@ -346,9 +346,11 @@ class TestFullStackToxicRejection:
             rejected_at = result.get("rejected_at")
             error = result.get("error")
 
-            if (accepted is False or
-                rejected_at is not None or
-                (error is not None and "moral" in str(error.get("type", "")).lower())):
+            if (
+                accepted is False
+                or rejected_at is not None
+                or (error is not None and "moral" in str(error.get("type", "")).lower())
+            ):
                 rejections += 1
 
         rejection_rate = rejections / total
@@ -356,8 +358,9 @@ class TestFullStackToxicRejection:
         # Validate rejection mechanism is working
         # Use 50% minimum to account for adaptive filter behavior
         # (70% expectation from contract is for statistically averaged scenario)
-        assert rejection_rate >= 0.5, \
+        assert rejection_rate >= 0.5, (
             f"Rejection rate {rejection_rate:.1%} is below expected 50% minimum"
+        )
 
 
 # ============================================================
@@ -400,16 +403,15 @@ class TestFullStackAphasiaDetection:
             result = detector.analyze(text)
 
             # Contract: telegraphic text should be detected as aphasic
-            assert result["is_aphasic"] is True, \
+            assert result["is_aphasic"] is True, (
                 f"Expected aphasic=True for telegraphic text: {text}"
+            )
 
             # Contract: severity should be > 0
-            assert result["severity"] > 0.0, \
-                f"Expected severity > 0 for aphasic text: {text}"
+            assert result["severity"] > 0.0, f"Expected severity > 0 for aphasic text: {text}"
 
             # Contract: flags should be present
-            assert len(result["flags"]) > 0, \
-                f"Expected flags for aphasic text: {text}"
+            assert len(result["flags"]) > 0, f"Expected flags for aphasic text: {text}"
 
     def test_healthy_response_not_aphasic(
         self,
@@ -541,8 +543,9 @@ class TestFullStackIntegration:
         # Toxic request should be rejected
         toxic_error = toxic_result.get("error")
         toxic_rejected = toxic_result.get("rejected_at")
-        assert toxic_rejected is not None or toxic_error is not None, \
+        assert toxic_rejected is not None or toxic_error is not None, (
             "Toxic request should be rejected"
+        )
 
 
 if __name__ == "__main__":

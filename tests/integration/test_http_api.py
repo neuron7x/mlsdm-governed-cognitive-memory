@@ -24,10 +24,7 @@ class TestInferEndpoint:
 
     def test_infer_basic(self, client):
         """Test basic infer request."""
-        response = client.post(
-            "/infer",
-            json={"prompt": "Hello, world!"}
-        )
+        response = client.post("/infer", json={"prompt": "Hello, world!"})
         assert response.status_code == 200
         data = response.json()
         assert "response" in data
@@ -36,10 +33,7 @@ class TestInferEndpoint:
 
     def test_infer_response_structure(self, client):
         """Test that infer response has all required fields."""
-        response = client.post(
-            "/infer",
-            json={"prompt": "Test prompt"}
-        )
+        response = client.post("/infer", json={"prompt": "Test prompt"})
         data = response.json()
 
         assert "response" in data
@@ -52,12 +46,7 @@ class TestInferEndpoint:
     def test_infer_with_secure_mode(self, client):
         """Test infer with secure_mode enabled."""
         response = client.post(
-            "/infer",
-            json={
-                "prompt": "Test secure mode",
-                "secure_mode": True,
-                "moral_value": 0.5
-            }
+            "/infer", json={"prompt": "Test secure mode", "secure_mode": True, "moral_value": 0.5}
         )
         assert response.status_code == 200
         data = response.json()
@@ -70,13 +59,7 @@ class TestInferEndpoint:
 
     def test_infer_with_rag_disabled(self, client):
         """Test infer with RAG disabled."""
-        response = client.post(
-            "/infer",
-            json={
-                "prompt": "Test RAG disabled",
-                "rag_enabled": False
-            }
-        )
+        response = client.post("/infer", json={"prompt": "Test RAG disabled", "rag_enabled": False})
         assert response.status_code == 200
         data = response.json()
 
@@ -87,12 +70,7 @@ class TestInferEndpoint:
     def test_infer_with_rag_enabled(self, client):
         """Test infer with RAG enabled (default)."""
         response = client.post(
-            "/infer",
-            json={
-                "prompt": "Test RAG enabled",
-                "rag_enabled": True,
-                "context_top_k": 3
-            }
+            "/infer", json={"prompt": "Test RAG enabled", "rag_enabled": True, "context_top_k": 3}
         )
         assert response.status_code == 200
         data = response.json()
@@ -103,13 +81,7 @@ class TestInferEndpoint:
 
     def test_infer_with_aphasia_mode(self, client):
         """Test infer with aphasia_mode enabled."""
-        response = client.post(
-            "/infer",
-            json={
-                "prompt": "Test aphasia mode",
-                "aphasia_mode": True
-            }
-        )
+        response = client.post("/infer", json={"prompt": "Test aphasia mode", "aphasia_mode": True})
         assert response.status_code == 200
         data = response.json()
 
@@ -130,8 +102,8 @@ class TestInferEndpoint:
                 "aphasia_mode": True,
                 "rag_enabled": True,
                 "context_top_k": 5,
-                "user_intent": "analytical"
-            }
+                "user_intent": "analytical",
+            },
         )
         assert response.status_code == 200
         data = response.json()
@@ -143,29 +115,20 @@ class TestInferEndpoint:
 
     def test_infer_empty_prompt_rejected(self, client):
         """Test that empty prompt is rejected."""
-        response = client.post(
-            "/infer",
-            json={"prompt": ""}
-        )
+        response = client.post("/infer", json={"prompt": ""})
         # Empty string should fail validation (min_length=1)
         assert response.status_code == 422
 
     def test_infer_whitespace_prompt_rejected(self, client):
         """Test that whitespace-only prompt is rejected."""
-        response = client.post(
-            "/infer",
-            json={"prompt": "   "}
-        )
+        response = client.post("/infer", json={"prompt": "   "})
         assert response.status_code == 400
         data = response.json()
         assert data["error"]["error_type"] == "validation_error"
 
     def test_infer_invalid_moral_value(self, client):
         """Test that invalid moral_value is rejected."""
-        response = client.post(
-            "/infer",
-            json={"prompt": "Test", "moral_value": 1.5}
-        )
+        response = client.post("/infer", json={"prompt": "Test", "moral_value": 1.5})
         assert response.status_code == 422
 
 
@@ -222,10 +185,7 @@ class TestEndToEndInfer:
         prompts = ["Hello", "How are you?", "What is AI?"]
 
         for prompt in prompts:
-            response = client.post(
-                "/infer",
-                json={"prompt": prompt}
-            )
+            response = client.post("/infer", json={"prompt": prompt})
             # All requests should return 200 (even if rejected due to sleep phase)
             assert response.status_code == 200
             data = response.json()
@@ -238,29 +198,22 @@ class TestEndToEndInfer:
         """Test that secure mode increases moral filtering."""
         # With normal mode and low moral value
         response1 = client.post(
-            "/infer",
-            json={
-                "prompt": "Test",
-                "moral_value": 0.5,
-                "secure_mode": False
-            }
+            "/infer", json={"prompt": "Test", "moral_value": 0.5, "secure_mode": False}
         )
 
         # With secure mode - should have higher effective threshold
         response2 = client.post(
-            "/infer",
-            json={
-                "prompt": "Test",
-                "moral_value": 0.5,
-                "secure_mode": True
-            }
+            "/infer", json={"prompt": "Test", "moral_value": 0.5, "secure_mode": True}
         )
 
         data1 = response1.json()
         data2 = response2.json()
 
         # Secure mode should have higher applied moral value
-        assert data2["moral_metadata"]["applied_moral_value"] > data1["moral_metadata"]["applied_moral_value"]
+        assert (
+            data2["moral_metadata"]["applied_moral_value"]
+            > data1["moral_metadata"]["applied_moral_value"]
+        )
 
 
 if __name__ == "__main__":

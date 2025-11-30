@@ -21,78 +21,170 @@ _logger = logging.getLogger(__name__)
 # Patterns for common secrets
 SECRET_PATTERNS = [
     # API keys (common patterns)
-    (re.compile(r'(api[_-]?key["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_\-]{20,})(["\']?)', re.IGNORECASE), r'\1***REDACTED***\3'),
-    (re.compile(r'(sk-[a-zA-Z0-9]{20,})'), r'sk-***REDACTED***'),
-    (re.compile(r'(Bearer\s+)([a-zA-Z0-9_\-\.]{20,})', re.IGNORECASE), r'\1***REDACTED***'),
-
+    (
+        re.compile(
+            r'(api[_-]?key["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_\-]{20,})(["\']?)', re.IGNORECASE
+        ),
+        r"\1***REDACTED***\3",
+    ),
+    (re.compile(r"(sk-[a-zA-Z0-9]{20,})"), r"sk-***REDACTED***"),
+    (re.compile(r"(Bearer\s+)([a-zA-Z0-9_\-\.]{20,})", re.IGNORECASE), r"\1***REDACTED***"),
     # Passwords
-    (re.compile(r'(password["\']?\s*[:=]\s*["\']?)([^\s"\']{8,})(["\']?)', re.IGNORECASE), r'\1***REDACTED***\3'),
-    (re.compile(r'(passwd["\']?\s*[:=]\s*["\']?)([^\s"\']{8,})(["\']?)', re.IGNORECASE), r'\1***REDACTED***\3'),
-    (re.compile(r'(pwd["\']?\s*[:=]\s*["\']?)([^\s"\']{8,})(["\']?)', re.IGNORECASE), r'\1***REDACTED***\3'),
-
+    (
+        re.compile(r'(password["\']?\s*[:=]\s*["\']?)([^\s"\']{8,})(["\']?)', re.IGNORECASE),
+        r"\1***REDACTED***\3",
+    ),
+    (
+        re.compile(r'(passwd["\']?\s*[:=]\s*["\']?)([^\s"\']{8,})(["\']?)', re.IGNORECASE),
+        r"\1***REDACTED***\3",
+    ),
+    (
+        re.compile(r'(pwd["\']?\s*[:=]\s*["\']?)([^\s"\']{8,})(["\']?)', re.IGNORECASE),
+        r"\1***REDACTED***\3",
+    ),
     # Tokens
-    (re.compile(r'(token["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_\-\.]{20,})(["\']?)', re.IGNORECASE), r'\1***REDACTED***\3'),
-    (re.compile(r'(access[_-]?token["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_\-\.]{20,})(["\']?)', re.IGNORECASE), r'\1***REDACTED***\3'),
-    (re.compile(r'(refresh[_-]?token["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_\-\.]{20,})(["\']?)', re.IGNORECASE), r'\1***REDACTED***\3'),
-
+    (
+        re.compile(r'(token["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_\-\.]{20,})(["\']?)', re.IGNORECASE),
+        r"\1***REDACTED***\3",
+    ),
+    (
+        re.compile(
+            r'(access[_-]?token["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_\-\.]{20,})(["\']?)',
+            re.IGNORECASE,
+        ),
+        r"\1***REDACTED***\3",
+    ),
+    (
+        re.compile(
+            r'(refresh[_-]?token["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_\-\.]{20,})(["\']?)',
+            re.IGNORECASE,
+        ),
+        r"\1***REDACTED***\3",
+    ),
     # AWS keys
-    (re.compile(r'(AKIA[0-9A-Z]{16})'), r'AKIA***REDACTED***'),
-    (re.compile(r'(aws[_-]?secret[_-]?access[_-]?key["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9/+=]{40})(["\']?)', re.IGNORECASE), r'\1***REDACTED***\3'),
-
+    (re.compile(r"(AKIA[0-9A-Z]{16})"), r"AKIA***REDACTED***"),
+    (
+        re.compile(
+            r'(aws[_-]?secret[_-]?access[_-]?key["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9/+=]{40})(["\']?)',
+            re.IGNORECASE,
+        ),
+        r"\1***REDACTED***\3",
+    ),
     # Private keys
-    (re.compile(r'(-----BEGIN.*PRIVATE KEY-----).*?(-----END.*PRIVATE KEY-----)', re.DOTALL), r'\1\n***REDACTED***\n\2'),
-
+    (
+        re.compile(r"(-----BEGIN.*PRIVATE KEY-----).*?(-----END.*PRIVATE KEY-----)", re.DOTALL),
+        r"\1\n***REDACTED***\n\2",
+    ),
     # Credit card numbers (simple pattern)
-    (re.compile(r'\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b'), r'****-****-****-****'),
+    (re.compile(r"\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b"), r"****-****-****-****"),
 ]
 
 # PII field names that should be scrubbed (lowercase for case-insensitive matching)
-PII_FIELDS = frozenset({
-    'email', 'e-mail', 'email_address',
-    'ssn', 'social_security', 'social_security_number',
-    'phone', 'phone_number', 'telephone',
-    'address', 'home_address', 'street_address',
-    'date_of_birth', 'dob', 'birth_date',
-    'credit_card', 'card_number', 'cc_number',
-})
+PII_FIELDS = frozenset(
+    {
+        "email",
+        "e-mail",
+        "email_address",
+        "ssn",
+        "social_security",
+        "social_security_number",
+        "phone",
+        "phone_number",
+        "telephone",
+        "address",
+        "home_address",
+        "street_address",
+        "date_of_birth",
+        "dob",
+        "birth_date",
+        "credit_card",
+        "card_number",
+        "cc_number",
+    }
+)
 
 # Default keys to scrub (secrets) - lowercase for case-insensitive matching
-DEFAULT_SECRET_KEYS = frozenset({
-    'api_key', 'apikey', 'api-key',
-    'password', 'passwd', 'pwd',
-    'token', 'access_token', 'refresh_token',
-    'secret', 'secret_key', 'private_key',
-    'openai_api_key', 'openai_key',
-    'authorization', 'auth',
-})
+DEFAULT_SECRET_KEYS = frozenset(
+    {
+        "api_key",
+        "apikey",
+        "api-key",
+        "password",
+        "passwd",
+        "pwd",
+        "token",
+        "access_token",
+        "refresh_token",
+        "secret",
+        "secret_key",
+        "private_key",
+        "openai_api_key",
+        "openai_key",
+        "authorization",
+        "auth",
+    }
+)
 
 # Forbidden fields for secure mode - fields that should NEVER appear in logs/telemetry
 # These are scrubbed when using scrub_request_payload() or scrub_log_record()
-FORBIDDEN_FIELDS = frozenset({
-    # User identifiers
-    'user_id', 'userid', 'user-id',
-    'username', 'user_name', 'user-name',
-    'account_id', 'accountid', 'account-id',
-    'session_id', 'sessionid', 'session-id',
-
-    # Network identifiers
-    'ip', 'ip_address', 'ipaddress', 'ip-address',
-    'client_ip', 'clientip', 'client-ip',
-    'remote_addr', 'remoteaddr', 'remote-addr',
-
-    # Raw content fields (should never be logged in secure mode)
-    'raw_input', 'rawinput', 'raw-input',
-    'raw_text', 'rawtext', 'raw-text',
-    'raw_prompt', 'rawprompt', 'raw-prompt',
-    'full_prompt', 'fullprompt', 'full-prompt',
-    'prompt', 'input_text', 'inputtext', 'input-text',
-    'full_response', 'fullresponse', 'full-response',
-    'response_text', 'responsetext', 'response-text',
-
-    # Metadata that may contain PII
-    'metadata', 'user_metadata', 'usermetadata',
-    'context', 'user_context', 'usercontext',
-})
+FORBIDDEN_FIELDS = frozenset(
+    {
+        # User identifiers
+        "user_id",
+        "userid",
+        "user-id",
+        "username",
+        "user_name",
+        "user-name",
+        "account_id",
+        "accountid",
+        "account-id",
+        "session_id",
+        "sessionid",
+        "session-id",
+        # Network identifiers
+        "ip",
+        "ip_address",
+        "ipaddress",
+        "ip-address",
+        "client_ip",
+        "clientip",
+        "client-ip",
+        "remote_addr",
+        "remoteaddr",
+        "remote-addr",
+        # Raw content fields (should never be logged in secure mode)
+        "raw_input",
+        "rawinput",
+        "raw-input",
+        "raw_text",
+        "rawtext",
+        "raw-text",
+        "raw_prompt",
+        "rawprompt",
+        "raw-prompt",
+        "full_prompt",
+        "fullprompt",
+        "full-prompt",
+        "prompt",
+        "input_text",
+        "inputtext",
+        "input-text",
+        "full_response",
+        "fullresponse",
+        "full-response",
+        "response_text",
+        "responsetext",
+        "response-text",
+        # Metadata that may contain PII
+        "metadata",
+        "user_metadata",
+        "usermetadata",
+        "context",
+        "user_context",
+        "usercontext",
+    }
+)
 
 # Pre-computed combined set for scrub_pii=True
 _SECRET_AND_PII_KEYS = DEFAULT_SECRET_KEYS | PII_FIELDS
@@ -101,7 +193,7 @@ _SECRET_AND_PII_KEYS = DEFAULT_SECRET_KEYS | PII_FIELDS
 _ALL_SENSITIVE_KEYS = DEFAULT_SECRET_KEYS | PII_FIELDS | FORBIDDEN_FIELDS
 
 # Email pattern for scrubbing PII in text
-EMAIL_PATTERN = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
+EMAIL_PATTERN = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
 
 
 def scrub_text(text: str, scrub_emails: bool = False) -> str:
@@ -138,7 +230,7 @@ def scrub_text(text: str, scrub_emails: bool = False) -> str:
         # Optionally scrub email addresses
         if scrub_emails:
             try:
-                scrubbed = EMAIL_PATTERN.sub(r'***@***.***', scrubbed)
+                scrubbed = EMAIL_PATTERN.sub(r"***@***.***", scrubbed)
             except Exception:
                 pass
 
@@ -194,7 +286,7 @@ def scrub_dict(
             try:
                 # Check if key should always be scrubbed (case-insensitive)
                 if key.lower() in effective_keys:
-                    return '***REDACTED***'
+                    return "***REDACTED***"
 
                 # Recursively scrub nested structures
                 if isinstance(value, dict):
@@ -303,13 +395,14 @@ def _scrub_with_forbidden_fields(
     Returns:
         Dictionary with scrubbed values.
     """
+
     def _scrub_value(key: str, value: Any) -> Any:
         try:
             key_lower = key.lower() if isinstance(key, str) else str(key).lower()
 
             # Check if key should be scrubbed (case-insensitive)
             if key_lower in _ALL_SENSITIVE_KEYS:
-                return '***REDACTED***'
+                return "***REDACTED***"
 
             # Recursively scrub nested structures
             if isinstance(value, dict):
@@ -333,6 +426,7 @@ def should_log_payload() -> bool:
         True if LOG_PAYLOADS=true, False otherwise (default: False).
     """
     import os
+
     return os.environ.get("LOG_PAYLOADS", "false").lower() == "true"
 
 
@@ -346,4 +440,5 @@ def is_secure_mode() -> bool:
         True if MLSDM_SECURE_MODE=1 or true, False otherwise (default: False).
     """
     import os
+
     return os.environ.get("MLSDM_SECURE_MODE", "0") in ("1", "true", "TRUE")

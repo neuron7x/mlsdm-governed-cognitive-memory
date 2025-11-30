@@ -54,27 +54,31 @@ class TestRequestMetrics:
         fresh_metrics.increment_requests("/generate", "2xx")
 
         # Check counter value
-        assert fresh_metrics.requests_total.labels(
-            endpoint="/generate", status="2xx"
-        )._value.get() == 1.0
+        assert (
+            fresh_metrics.requests_total.labels(endpoint="/generate", status="2xx")._value.get()
+            == 1.0
+        )
 
         # Record another request
         fresh_metrics.increment_requests("/generate", "2xx")
-        assert fresh_metrics.requests_total.labels(
-            endpoint="/generate", status="2xx"
-        )._value.get() == 2.0
+        assert (
+            fresh_metrics.requests_total.labels(endpoint="/generate", status="2xx")._value.get()
+            == 2.0
+        )
 
     def test_requests_error_status(self, fresh_metrics):
         """Test error status recording."""
         fresh_metrics.increment_requests("/generate", "5xx")
         fresh_metrics.increment_requests("/generate", "4xx")
 
-        assert fresh_metrics.requests_total.labels(
-            endpoint="/generate", status="5xx"
-        )._value.get() == 1.0
-        assert fresh_metrics.requests_total.labels(
-            endpoint="/generate", status="4xx"
-        )._value.get() == 1.0
+        assert (
+            fresh_metrics.requests_total.labels(endpoint="/generate", status="5xx")._value.get()
+            == 1.0
+        )
+        assert (
+            fresh_metrics.requests_total.labels(endpoint="/generate", status="4xx")._value.get()
+            == 1.0
+        )
 
     def test_requests_by_endpoint(self, fresh_metrics):
         """Test different endpoints tracked separately."""
@@ -82,15 +86,17 @@ class TestRequestMetrics:
         fresh_metrics.increment_requests("/infer", "2xx")
         fresh_metrics.increment_requests("/health", "2xx")
 
-        assert fresh_metrics.requests_total.labels(
-            endpoint="/generate", status="2xx"
-        )._value.get() == 1.0
-        assert fresh_metrics.requests_total.labels(
-            endpoint="/infer", status="2xx"
-        )._value.get() == 1.0
-        assert fresh_metrics.requests_total.labels(
-            endpoint="/health", status="2xx"
-        )._value.get() == 1.0
+        assert (
+            fresh_metrics.requests_total.labels(endpoint="/generate", status="2xx")._value.get()
+            == 1.0
+        )
+        assert (
+            fresh_metrics.requests_total.labels(endpoint="/infer", status="2xx")._value.get() == 1.0
+        )
+        assert (
+            fresh_metrics.requests_total.labels(endpoint="/health", status="2xx")._value.get()
+            == 1.0
+        )
 
     def test_emergency_shutdown_counter(self, fresh_metrics):
         """Test emergency shutdown counter tracking."""
@@ -98,12 +104,13 @@ class TestRequestMetrics:
         fresh_metrics.increment_emergency_shutdown("processing_timeout")
         fresh_metrics.increment_emergency_shutdown("memory_exceeded")
 
-        assert fresh_metrics.emergency_shutdowns.labels(
-            reason="memory_exceeded"
-        )._value.get() == 2.0
-        assert fresh_metrics.emergency_shutdowns.labels(
-            reason="processing_timeout"
-        )._value.get() == 1.0
+        assert (
+            fresh_metrics.emergency_shutdowns.labels(reason="memory_exceeded")._value.get() == 2.0
+        )
+        assert (
+            fresh_metrics.emergency_shutdowns.labels(reason="processing_timeout")._value.get()
+            == 1.0
+        )
 
 
 class TestLatencyHistogram:
@@ -150,18 +157,20 @@ class TestAphasiaMetrics:
         fresh_metrics.increment_aphasia_detected("high")
         fresh_metrics.increment_aphasia_detected("critical")
 
-        assert fresh_metrics.aphasia_detected_total.labels(
-            severity_bucket="low"
-        )._value.get() == 1.0
-        assert fresh_metrics.aphasia_detected_total.labels(
-            severity_bucket="medium"
-        )._value.get() == 1.0
-        assert fresh_metrics.aphasia_detected_total.labels(
-            severity_bucket="high"
-        )._value.get() == 1.0
-        assert fresh_metrics.aphasia_detected_total.labels(
-            severity_bucket="critical"
-        )._value.get() == 1.0
+        assert (
+            fresh_metrics.aphasia_detected_total.labels(severity_bucket="low")._value.get() == 1.0
+        )
+        assert (
+            fresh_metrics.aphasia_detected_total.labels(severity_bucket="medium")._value.get()
+            == 1.0
+        )
+        assert (
+            fresh_metrics.aphasia_detected_total.labels(severity_bucket="high")._value.get() == 1.0
+        )
+        assert (
+            fresh_metrics.aphasia_detected_total.labels(severity_bucket="critical")._value.get()
+            == 1.0
+        )
 
     def test_aphasia_repaired_counter(self, fresh_metrics):
         """Test mlsdm_aphasia_repaired_total counter."""
@@ -231,13 +240,9 @@ class TestMetricsRegistry:
 
     def test_request_tracking(self, fresh_metrics_registry):
         """Test request tracking with provider and variant labels."""
+        fresh_metrics_registry.increment_requests_total(provider_id="openai", variant="control")
         fresh_metrics_registry.increment_requests_total(
-            provider_id="openai",
-            variant="control"
-        )
-        fresh_metrics_registry.increment_requests_total(
-            provider_id="anthropic",
-            variant="treatment"
+            provider_id="anthropic", variant="treatment"
         )
 
         snapshot = fresh_metrics_registry.get_snapshot()
@@ -400,9 +405,7 @@ class TestEndToEndMetricsScenarios:
         fresh_metrics.increment_events_rejected()
 
         assert fresh_metrics.events_rejected._value.get() == 1.0
-        assert fresh_metrics.moral_rejections.labels(
-            reason="below_threshold"
-        )._value.get() == 1.0
+        assert fresh_metrics.moral_rejections.labels(reason="below_threshold")._value.get() == 1.0
 
     def test_aphasia_detection_and_repair_metrics(self, fresh_metrics):
         """Test metrics recorded for aphasia detection and repair."""
@@ -412,9 +415,9 @@ class TestEndToEndMetricsScenarios:
         # Repair
         fresh_metrics.increment_aphasia_repaired()
 
-        assert fresh_metrics.aphasia_detected_total.labels(
-            severity_bucket="high"
-        )._value.get() == 1.0
+        assert (
+            fresh_metrics.aphasia_detected_total.labels(severity_bucket="high")._value.get() == 1.0
+        )
         assert fresh_metrics.aphasia_repaired_total._value.get() == 1.0
 
     def test_emergency_shutdown_metrics(self, fresh_metrics):
@@ -422,9 +425,9 @@ class TestEndToEndMetricsScenarios:
         fresh_metrics.increment_emergency_shutdown("memory_exceeded")
         fresh_metrics.set_emergency_shutdown_active(True)
 
-        assert fresh_metrics.emergency_shutdowns.labels(
-            reason="memory_exceeded"
-        )._value.get() == 1.0
+        assert (
+            fresh_metrics.emergency_shutdowns.labels(reason="memory_exceeded")._value.get() == 1.0
+        )
         assert fresh_metrics.emergency_shutdown_active._value.get() == 1.0
 
 

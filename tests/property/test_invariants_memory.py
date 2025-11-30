@@ -21,19 +21,17 @@ RESONANCE_ORDERING_TOLERANCE = 1e-6  # Tolerance for floating point comparison i
 # Test Strategies
 # ============================================================================
 
+
 @st.composite
 def vector_strategy(draw, dim=10):
     """Generate random vectors of specified dimension."""
-    vector = draw(st.lists(
-        st.floats(
-            min_value=-10.0,
-            max_value=10.0,
-            allow_nan=False,
-            allow_infinity=False
-        ),
-        min_size=dim,
-        max_size=dim
-    ))
+    vector = draw(
+        st.lists(
+            st.floats(min_value=-10.0, max_value=10.0, allow_nan=False, allow_infinity=False),
+            min_size=dim,
+            max_size=dim,
+        )
+    )
     return np.array(vector, dtype=np.float32)
 
 
@@ -66,10 +64,10 @@ def lambda_strategy(draw):
 # Property Tests: MultiLevelSynapticMemory - Safety Invariants
 # ============================================================================
 
+
 @settings(max_examples=50, deadline=None)
 @given(
-    dim=st.integers(min_value=5, max_value=20),
-    num_vectors=st.integers(min_value=1, max_value=10)
+    dim=st.integers(min_value=5, max_value=20), num_vectors=st.integers(min_value=1, max_value=10)
 )
 def test_memory_vector_dimensionality_consistency(dim, num_vectors):
     """
@@ -93,44 +91,28 @@ def test_memory_vector_dimensionality_consistency(dim, num_vectors):
 
 
 @settings(max_examples=50, deadline=None)
-@given(
-    gating12=gating_value_strategy(),
-    gating23=gating_value_strategy()
-)
+@given(gating12=gating_value_strategy(), gating23=gating_value_strategy())
 def test_gating_value_bounds(gating12, gating23):
     """
     INV-MEM-S3: Gating Value Bounds
     Gating values MUST be in [0, 1] range.
     """
-    memory = MultiLevelSynapticMemory(
-        dimension=10,
-        gating12=gating12,
-        gating23=gating23
-    )
+    memory = MultiLevelSynapticMemory(dimension=10, gating12=gating12, gating23=gating23)
 
     # Gating values should be stored correctly
-    assert 0.0 <= memory.gating12 <= 1.0, \
-        f"gating12 out of bounds: {memory.gating12}"
-    assert 0.0 <= memory.gating23 <= 1.0, \
-        f"gating23 out of bounds: {memory.gating23}"
+    assert 0.0 <= memory.gating12 <= 1.0, f"gating12 out of bounds: {memory.gating12}"
+    assert 0.0 <= memory.gating23 <= 1.0, f"gating23 out of bounds: {memory.gating23}"
 
 
 @settings(max_examples=50, deadline=None)
-@given(
-    lambda_l1=lambda_strategy(),
-    lambda_l2=lambda_strategy(),
-    lambda_l3=lambda_strategy()
-)
+@given(lambda_l1=lambda_strategy(), lambda_l2=lambda_strategy(), lambda_l3=lambda_strategy())
 def test_lambda_decay_non_negativity(lambda_l1, lambda_l2, lambda_l3):
     """
     INV-MEM-S4: Lambda Decay Non-Negativity
     Decay lambdas MUST be non-negative.
     """
     memory = MultiLevelSynapticMemory(
-        dimension=10,
-        lambda_l1=lambda_l1,
-        lambda_l2=lambda_l2,
-        lambda_l3=lambda_l3
+        dimension=10, lambda_l1=lambda_l1, lambda_l2=lambda_l2, lambda_l3=lambda_l3
     )
 
     assert memory.lambda_l1 >= 0, f"lambda_l1 is negative: {memory.lambda_l1}"
@@ -142,10 +124,10 @@ def test_lambda_decay_non_negativity(lambda_l1, lambda_l2, lambda_l3):
 # Property Tests: MultiLevelSynapticMemory - Liveness Invariants
 # ============================================================================
 
+
 @settings(max_examples=50, deadline=None)
 @given(
-    dim=st.integers(min_value=5, max_value=20),
-    num_inserts=st.integers(min_value=1, max_value=10)
+    dim=st.integers(min_value=5, max_value=20), num_inserts=st.integers(min_value=1, max_value=10)
 )
 def test_insertion_progress(dim, num_inserts):
     """
@@ -201,6 +183,7 @@ def test_consolidation_completion(dim):
 # Property Tests: MultiLevelSynapticMemory - Metamorphic Invariants
 # ============================================================================
 
+
 @settings(max_examples=30, deadline=None)
 @given(dim=st.integers(min_value=5, max_value=20))
 def test_distance_non_increase_after_insertion(dim):
@@ -226,8 +209,9 @@ def test_distance_non_increase_after_insertion(dim):
     final_norm = np.linalg.norm(L1_after) + np.linalg.norm(L2_after) + np.linalg.norm(L3_after)
 
     # After insertions, memory should have accumulated information
-    assert final_norm >= initial_norm, \
+    assert final_norm >= initial_norm, (
         f"Memory norm decreased unexpectedly: {initial_norm} -> {final_norm}"
+    )
 
 
 @settings(max_examples=30, deadline=None)
@@ -242,7 +226,7 @@ def test_level_transfer_monotonicity(dim):
         theta_l1=0.5,  # Low threshold to trigger transitions
         theta_l2=1.0,
         gating12=0.5,
-        gating23=0.3
+        gating23=0.3,
     )
 
     # Add multiple vectors to trigger transfers
@@ -259,19 +243,18 @@ def test_level_transfer_monotonicity(dim):
     norm_L3 = np.linalg.norm(L3)
 
     # At least one deeper level should have accumulated information
-    assert norm_L2 > 0 or norm_L3 > 0, \
+    assert norm_L2 > 0 or norm_L3 > 0, (
         f"No information transferred to L2/L3: L2={norm_L2}, L3={norm_L3}"
+    )
 
 
 # ============================================================================
 # Property Tests: PhaseEntangledLatticeMemory - Safety Invariants
 # ============================================================================
 
+
 @settings(max_examples=50, deadline=None)
-@given(
-    dim=st.integers(min_value=5, max_value=20),
-    capacity=st.integers(min_value=5, max_value=50)
-)
+@given(dim=st.integers(min_value=5, max_value=20), capacity=st.integers(min_value=5, max_value=50))
 def test_pelm_capacity_enforcement(dim, capacity):
     """
     INV-MEM-S1: Capacity Enforcement
@@ -289,14 +272,12 @@ def test_pelm_capacity_enforcement(dim, capacity):
 
     # Check size doesn't exceed capacity
     size = pelm.size
-    assert size <= capacity, \
-        f"Memory size {size} exceeds capacity {capacity}"
+    assert size <= capacity, f"Memory size {size} exceeds capacity {capacity}"
 
 
 @settings(max_examples=50, deadline=None)
 @given(
-    dim=st.integers(min_value=5, max_value=20),
-    num_vectors=st.integers(min_value=1, max_value=10)
+    dim=st.integers(min_value=5, max_value=20), num_vectors=st.integers(min_value=1, max_value=10)
 )
 def test_pelm_vector_dimensionality(dim, num_vectors):
     """
@@ -314,22 +295,26 @@ def test_pelm_vector_dimensionality(dim, num_vectors):
     # Query and check dimensions
     query = np.random.randn(dim).astype(np.float32)
     current_phase = 0.5
-    neighbors = pelm.retrieve(query.tolist(), current_phase=current_phase, phase_tolerance=1.0, top_k=min(3, num_vectors))
+    neighbors = pelm.retrieve(
+        query.tolist(), current_phase=current_phase, phase_tolerance=1.0, top_k=min(3, num_vectors)
+    )
 
     for retrieval in neighbors:
-        assert retrieval.vector.shape[0] == dim, \
+        assert retrieval.vector.shape[0] == dim, (
             f"Retrieved vector has wrong dimension: {retrieval.vector.shape[0]} != {dim}"
+        )
 
 
 # ============================================================================
 # Property Tests: PhaseEntangledLatticeMemory - Liveness Invariants
 # ============================================================================
 
+
 @settings(max_examples=50, deadline=None)
 @given(
     dim=st.integers(min_value=5, max_value=20),
     num_vectors=st.integers(min_value=1, max_value=20),
-    k=st.integers(min_value=1, max_value=5)
+    k=st.integers(min_value=1, max_value=5),
 )
 def test_pelm_nearest_neighbor_availability(dim, num_vectors, k):
     """
@@ -350,19 +335,18 @@ def test_pelm_nearest_neighbor_availability(dim, num_vectors, k):
 
     # Should find at least one neighbor (up to k or num_vectors)
     expected_count = min(k, num_vectors)
-    assert len(neighbors) >= min(1, expected_count), \
+    assert len(neighbors) >= min(1, expected_count), (
         f"No neighbors found despite having {num_vectors} vectors"
+    )
 
 
 # ============================================================================
 # Property Tests: PhaseEntangledLatticeMemory - Metamorphic Invariants
 # ============================================================================
 
+
 @settings(max_examples=30, deadline=None)
-@given(
-    dim=st.integers(min_value=5, max_value=20),
-    k=st.integers(min_value=2, max_value=5)
-)
+@given(dim=st.integers(min_value=5, max_value=20), k=st.integers(min_value=2, max_value=5))
 def test_pelm_retrieval_relevance_ordering(dim, k):
     """
     INV-MEM-M3: Retrieval Relevance Ordering
@@ -384,8 +368,9 @@ def test_pelm_retrieval_relevance_ordering(dim, k):
     resonances = [retrieval.resonance for retrieval in neighbors]
 
     for i in range(len(resonances) - 1):
-        assert resonances[i] >= resonances[i + 1] - RESONANCE_ORDERING_TOLERANCE, \
-            f"Neighbors not ordered by resonance: {resonances[i]} < {resonances[i+1]}"
+        assert resonances[i] >= resonances[i + 1] - RESONANCE_ORDERING_TOLERANCE, (
+            f"Neighbors not ordered by resonance: {resonances[i]} < {resonances[i + 1]}"
+        )
 
 
 @settings(max_examples=30, deadline=None)
@@ -413,13 +398,13 @@ def test_pelm_overflow_eviction_policy(dim):
         pelm.entangle(vec.tolist(), phase=phase)
 
     # Should still be at capacity (wraparound maintains capacity)
-    assert pelm.size == capacity, \
-        f"Size {pelm.size} != capacity {capacity} after overflow"
+    assert pelm.size == capacity, f"Size {pelm.size} != capacity {capacity} after overflow"
 
 
 # ============================================================================
 # Edge Cases
 # ============================================================================
+
 
 @pytest.mark.parametrize("dim", [1, 5, 10, 100, 384])
 def test_various_dimensions(dim):
@@ -475,11 +460,12 @@ def test_single_vector_retrieval():
 # Phase 3: Additional Invariant Property Tests
 # ============================================================================
 
+
 @settings(max_examples=30, deadline=None)
 @given(
     dim=st.integers(min_value=5, max_value=50),
     capacity=st.integers(min_value=10, max_value=100),
-    num_inserts=st.integers(min_value=50, max_value=200)
+    num_inserts=st.integers(min_value=50, max_value=200),
 )
 def test_memory_never_exceeds_capacity_under_random_load(dim, capacity, num_inserts):
     """
@@ -505,22 +491,22 @@ def test_memory_never_exceeds_capacity_under_random_load(dim, capacity, num_inse
         current_size = pelm.size
         max_size_seen = max(max_size_seen, current_size)
 
-        assert current_size <= capacity, \
-            f"PELM size {current_size} exceeds capacity {capacity} after insert {i+1}"
+        assert current_size <= capacity, (
+            f"PELM size {current_size} exceeds capacity {capacity} after insert {i + 1}"
+        )
 
     # Final size should be exactly capacity (since inserts > capacity)
-    assert pelm.size == capacity, \
+    assert pelm.size == capacity, (
         f"After {num_inserts} inserts (> capacity {capacity}), size should be {capacity}, got {pelm.size}"
+    )
 
     # Max size seen should never exceed capacity
-    assert max_size_seen <= capacity, \
-        f"Max size {max_size_seen} exceeded capacity {capacity}"
+    assert max_size_seen <= capacity, f"Max size {max_size_seen} exceeded capacity {capacity}"
 
 
 @settings(max_examples=30, deadline=None)
 @given(
-    dim=st.integers(min_value=5, max_value=50),
-    capacity=st.integers(min_value=10, max_value=100)
+    dim=st.integers(min_value=5, max_value=50), capacity=st.integers(min_value=10, max_value=100)
 )
 def test_pelm_mixed_phase_capacity_enforcement(dim, capacity):
     """
@@ -541,8 +527,7 @@ def test_pelm_mixed_phase_capacity_enforcement(dim, capacity):
         pelm.entangle(vec.tolist(), phase=phase)
 
         # Capacity invariant must hold
-        assert pelm.size <= capacity, \
-            f"Size {pelm.size} > capacity {capacity} at insert {i+1}"
+        assert pelm.size <= capacity, f"Size {pelm.size} > capacity {capacity} at insert {i + 1}"
 
     # Final state checks
     assert pelm.size == capacity
@@ -550,10 +535,7 @@ def test_pelm_mixed_phase_capacity_enforcement(dim, capacity):
 
 
 @settings(max_examples=30, deadline=None)
-@given(
-    dim=st.integers(min_value=5, max_value=30),
-    capacity=st.integers(min_value=5, max_value=50)
-)
+@given(dim=st.integers(min_value=5, max_value=30), capacity=st.integers(min_value=5, max_value=50))
 def test_pelm_retrieval_after_overflow(dim, capacity):
     """
     Test that retrieval still works correctly after capacity overflow.
@@ -572,10 +554,7 @@ def test_pelm_retrieval_after_overflow(dim, capacity):
     # Retrieval should work
     query = np.random.randn(dim).astype(np.float32)
     results = pelm.retrieve(
-        query.tolist(),
-        current_phase=common_phase,
-        phase_tolerance=0.3,
-        top_k=min(5, capacity)
+        query.tolist(), current_phase=common_phase, phase_tolerance=0.3, top_k=min(5, capacity)
     )
 
     # Should return results (memory is not empty)
@@ -585,8 +564,9 @@ def test_pelm_retrieval_after_overflow(dim, capacity):
     # Results should be ordered by resonance (INV-MEM-M3)
     resonances = [r.resonance for r in results]
     for i in range(len(resonances) - 1):
-        assert resonances[i] >= resonances[i + 1] - 1e-6, \
+        assert resonances[i] >= resonances[i + 1] - 1e-6, (
             f"Results not ordered: {resonances[i]} < {resonances[i + 1]}"
+        )
 
 
 @settings(max_examples=20, deadline=None)

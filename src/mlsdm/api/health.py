@@ -62,16 +62,12 @@ class ReadinessStatus(BaseModel):
     ready: bool = Field(description="Overall readiness status")
     status: str = Field(description="Status string: 'ready' or 'not_ready'")
     timestamp: float = Field(description="Unix timestamp of response")
-    components: dict[str, ComponentStatus] = Field(
-        description="Per-component health status"
-    )
+    components: dict[str, ComponentStatus] = Field(description="Per-component health status")
     details: dict[str, Any] | None = Field(
         default=None, description="Additional details for debugging"
     )
     # Legacy field for backward compatibility
-    checks: dict[str, bool] = Field(
-        description="Legacy check results (deprecated, use components)"
-    )
+    checks: dict[str, bool] = Field(description="Legacy check results (deprecated, use components)")
 
 
 class DetailedHealthStatus(BaseModel):
@@ -349,8 +345,7 @@ async def ready(response: Response) -> ReadinessStatus:
     manager = get_memory_manager()
     manager_healthy = manager is not None
     components["memory_manager"] = ComponentStatus(
-        healthy=manager_healthy,
-        details="initialized" if manager_healthy else "not_initialized"
+        healthy=manager_healthy, details="initialized" if manager_healthy else "not_initialized"
     )
     checks["memory_manager"] = manager_healthy
     # Don't require memory_manager for readiness - it's optional
@@ -360,8 +355,7 @@ async def ready(response: Response) -> ReadinessStatus:
         memory = psutil.virtual_memory()
         mem_available = memory.percent < 95.0
         components["system_memory"] = ComponentStatus(
-            healthy=mem_available,
-            details=f"usage: {memory.percent:.1f}%"
+            healthy=mem_available, details=f"usage: {memory.percent:.1f}%"
         )
         checks["memory_available"] = mem_available
         if not mem_available:
@@ -377,8 +371,7 @@ async def ready(response: Response) -> ReadinessStatus:
         cpu_percent = psutil.cpu_percent(interval=0.1)
         cpu_available = cpu_percent < 98.0
         components["system_cpu"] = ComponentStatus(
-            healthy=cpu_available,
-            details=f"usage: {cpu_percent:.1f}%"
+            healthy=cpu_available, details=f"usage: {cpu_percent:.1f}%"
         )
         checks["cpu_available"] = cpu_available
         if not cpu_available:

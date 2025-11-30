@@ -37,16 +37,17 @@ class TestMoralFilterThresholdStability:
             moral.adapt(result)
 
         # Threshold must remain within bounds
-        assert moral.threshold >= MoralFilterV2.MIN_THRESHOLD, \
+        assert moral.threshold >= MoralFilterV2.MIN_THRESHOLD, (
             f"Threshold drifted below minimum: {moral.threshold}"
-        assert moral.threshold <= MoralFilterV2.MAX_THRESHOLD, \
+        )
+        assert moral.threshold <= MoralFilterV2.MAX_THRESHOLD, (
             f"Threshold drifted above maximum: {moral.threshold}"
+        )
 
         # Drift should be bounded
         drift = abs(moral.threshold - initial_threshold)
         max_drift = MoralFilterV2.MAX_THRESHOLD - MoralFilterV2.MIN_THRESHOLD
-        assert drift <= max_drift, \
-            f"Drift {drift} exceeds maximum possible {max_drift}"
+        assert drift <= max_drift, f"Drift {drift} exceeds maximum possible {max_drift}"
 
     @pytest.mark.security
     def test_threshold_recovers_after_attack(self):
@@ -75,8 +76,10 @@ class TestMoralFilterThresholdStability:
 
         # After safe content, threshold should increase from attack level
         # (threshold drops during attack, rises during safe content)
-        assert threshold_after_recovery >= threshold_after_attack or \
-               abs(threshold_after_recovery - threshold_after_attack) < 0.1
+        assert (
+            threshold_after_recovery >= threshold_after_attack
+            or abs(threshold_after_recovery - threshold_after_attack) < 0.1
+        )
 
     @pytest.mark.security
     def test_threshold_oscillation_damping(self):
@@ -119,7 +122,7 @@ class TestMoralFilterThresholdStability:
 
         # NaN handling (should raise)
         with pytest.raises(ValueError):
-            moral.evaluate(float('nan'))
+            moral.evaluate(float("nan"))
 
 
 class TestConfigurationFailures:
@@ -144,7 +147,7 @@ class TestConfigurationFailures:
         from mlsdm.utils.config_loader import ConfigLoader
 
         # Create temporary corrupt YAML file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write("invalid: yaml: content: [}")
             temp_path = f.name
 
@@ -162,7 +165,7 @@ class TestConfigurationFailures:
         from mlsdm.utils.config_loader import ConfigLoader
 
         # Create temporary file with unsupported extension
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write('{"key": "value"}')
             temp_path = f.name
 
@@ -246,11 +249,11 @@ class TestStatelessFallback:
 
         # NaN in vector should be rejected
         with pytest.raises(ValueError, match="invalid"):
-            pelm.entangle([1.0, float('nan'), 3.0], 0.5)
+            pelm.entangle([1.0, float("nan"), 3.0], 0.5)
 
         # Inf in vector should be rejected
         with pytest.raises(ValueError, match="invalid"):
-            pelm.entangle([float('inf'), 2.0, 3.0], 0.5)
+            pelm.entangle([float("inf"), 2.0, 3.0], 0.5)
 
     @pytest.mark.security
     def test_pelm_handles_extreme_dimensions(self):
@@ -297,10 +300,7 @@ class TestConcurrencyRobustness:
                 errors.put((thread_id, str(e)))
 
         # Run concurrent entangles
-        threads = [
-            threading.Thread(target=entangle_batch, args=(i, 50))
-            for i in range(5)
-        ]
+        threads = [threading.Thread(target=entangle_batch, args=(i, 50)) for i in range(5)]
 
         for t in threads:
             t.start()
@@ -357,7 +357,7 @@ class TestErrorRecovery:
 
         # First 5 requests should be allowed
         for i in range(5):
-            assert limiter.is_allowed("client1") is True, f"Request {i+1} should be allowed"
+            assert limiter.is_allowed("client1") is True, f"Request {i + 1} should be allowed"
 
         # 6th request should be blocked
         assert limiter.is_allowed("client1") is False, "6th request should be blocked"

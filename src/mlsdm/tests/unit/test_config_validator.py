@@ -185,64 +185,65 @@ class TestConfigValidator:
 
     def test_validate_llm_wrapper_config_minimal(self):
         """Test LLMWrapper config validation with minimal params."""
+
         def mock_llm(prompt, max_tokens):
             return "response"
 
         def mock_embed(text):
             import numpy as np
+
             return np.random.randn(384).astype(np.float32)
 
-        config = {
-            'llm_generate_fn': mock_llm,
-            'embedding_fn': mock_embed
-        }
+        config = {"llm_generate_fn": mock_llm, "embedding_fn": mock_embed}
 
         validated = ConfigValidator.validate_llm_wrapper_config(config)
 
-        assert validated['llm_generate_fn'] == mock_llm
-        assert validated['embedding_fn'] == mock_embed
-        assert validated['dim'] == 384
-        assert validated['capacity'] == 20000
-        assert validated['wake_duration'] == 8
-        assert validated['sleep_duration'] == 3
-        assert validated['initial_moral_threshold'] == 0.50
+        assert validated["llm_generate_fn"] == mock_llm
+        assert validated["embedding_fn"] == mock_embed
+        assert validated["dim"] == 384
+        assert validated["capacity"] == 20000
+        assert validated["wake_duration"] == 8
+        assert validated["sleep_duration"] == 3
+        assert validated["initial_moral_threshold"] == 0.50
 
     def test_validate_llm_wrapper_config_custom(self):
         """Test LLMWrapper config validation with custom params."""
+
         def mock_llm(prompt, max_tokens):
             return "response"
 
         def mock_embed(text):
             import numpy as np
+
             return np.random.randn(768).astype(np.float32)
 
         config = {
-            'llm_generate_fn': mock_llm,
-            'embedding_fn': mock_embed,
-            'dim': 768,
-            'capacity': 10000,
-            'wake_duration': 10,
-            'sleep_duration': 5,
-            'initial_moral_threshold': 0.60
+            "llm_generate_fn": mock_llm,
+            "embedding_fn": mock_embed,
+            "dim": 768,
+            "capacity": 10000,
+            "wake_duration": 10,
+            "sleep_duration": 5,
+            "initial_moral_threshold": 0.60,
         }
 
         validated = ConfigValidator.validate_llm_wrapper_config(config)
 
-        assert validated['dim'] == 768
-        assert validated['capacity'] == 10000
-        assert validated['wake_duration'] == 10
-        assert validated['sleep_duration'] == 5
-        assert validated['initial_moral_threshold'] == 0.60
+        assert validated["dim"] == 768
+        assert validated["capacity"] == 10000
+        assert validated["wake_duration"] == 10
+        assert validated["sleep_duration"] == 5
+        assert validated["initial_moral_threshold"] == 0.60
 
     def test_validate_llm_wrapper_config_missing_llm(self):
         """Test LLMWrapper config validation with missing LLM function."""
+
         def mock_embed(text):
             import numpy as np
+
             return np.random.randn(384).astype(np.float32)
 
-        config = {
-            'embedding_fn': mock_embed
-        }
+        config = {"embedding_fn": mock_embed}
 
         with pytest.raises(ValidationError) as exc_info:
             ConfigValidator.validate_llm_wrapper_config(config)
@@ -251,12 +252,11 @@ class TestConfigValidator:
 
     def test_validate_llm_wrapper_config_missing_embedder(self):
         """Test LLMWrapper config validation with missing embedder."""
+
         def mock_llm(prompt, max_tokens):
             return "response"
 
-        config = {
-            'llm_generate_fn': mock_llm
-        }
+        config = {"llm_generate_fn": mock_llm}
 
         with pytest.raises(ValidationError) as exc_info:
             ConfigValidator.validate_llm_wrapper_config(config)
@@ -265,14 +265,13 @@ class TestConfigValidator:
 
     def test_validate_llm_wrapper_config_non_callable_llm(self):
         """Test LLMWrapper config validation with non-callable LLM."""
+
         def mock_embed(text):
             import numpy as np
+
             return np.random.randn(384).astype(np.float32)
 
-        config = {
-            'llm_generate_fn': "not a function",
-            'embedding_fn': mock_embed
-        }
+        config = {"llm_generate_fn": "not a function", "embedding_fn": mock_embed}
 
         with pytest.raises(ValidationError) as exc_info:
             ConfigValidator.validate_llm_wrapper_config(config)
@@ -285,29 +284,23 @@ class TestConfigValidator:
         config = {}
         validated = ConfigValidator.validate_moral_filter_config(config)
 
-        assert validated['initial_threshold'] == 0.50
-        assert validated['adapt_rate'] == 0.05
-        assert validated['ema_alpha'] == 0.1
+        assert validated["initial_threshold"] == 0.50
+        assert validated["adapt_rate"] == 0.05
+        assert validated["ema_alpha"] == 0.1
 
     def test_validate_moral_filter_config_custom(self):
         """Test MoralFilter config validation with custom values."""
-        config = {
-            'initial_threshold': 0.70,
-            'adapt_rate': 0.10,
-            'ema_alpha': 0.2
-        }
+        config = {"initial_threshold": 0.70, "adapt_rate": 0.10, "ema_alpha": 0.2}
 
         validated = ConfigValidator.validate_moral_filter_config(config)
 
-        assert validated['initial_threshold'] == 0.70
-        assert validated['adapt_rate'] == 0.10
-        assert validated['ema_alpha'] == 0.2
+        assert validated["initial_threshold"] == 0.70
+        assert validated["adapt_rate"] == 0.10
+        assert validated["ema_alpha"] == 0.2
 
     def test_validate_moral_filter_config_invalid_threshold(self):
         """Test MoralFilter config validation with invalid threshold."""
-        config = {
-            'initial_threshold': 1.5
-        }
+        config = {"initial_threshold": 1.5}
 
         with pytest.raises(ValidationError):
             ConfigValidator.validate_moral_filter_config(config)
@@ -317,53 +310,46 @@ class TestConfigValidator:
         config = {}
         validated = ConfigValidator.validate_qilm_config(config)
 
-        assert validated['dim'] == 384
-        assert validated['capacity'] == 20000
+        assert validated["dim"] == 384
+        assert validated["capacity"] == 20000
 
     def test_validate_qilm_config_custom(self):
         """Test QILM config validation with custom values."""
-        config = {
-            'dim': 512,
-            'capacity': 50000
-        }
+        config = {"dim": 512, "capacity": 50000}
 
         validated = ConfigValidator.validate_qilm_config(config)
 
-        assert validated['dim'] == 512
-        assert validated['capacity'] == 50000
+        assert validated["dim"] == 512
+        assert validated["capacity"] == 50000
 
     def test_validate_config_wrapper(self):
         """Test validate_config wrapper function."""
+
         def mock_llm(prompt, max_tokens):
             return "response"
 
         def mock_embed(text):
             import numpy as np
+
             return np.random.randn(384).astype(np.float32)
 
-        config = {
-            'llm_generate_fn': mock_llm,
-            'embedding_fn': mock_embed
-        }
+        config = {"llm_generate_fn": mock_llm, "embedding_fn": mock_embed}
 
-        validated = validate_config(config, 'llm_wrapper')
-        assert 'llm_generate_fn' in validated
-        assert 'embedding_fn' in validated
+        validated = validate_config(config, "llm_wrapper")
+        assert "llm_generate_fn" in validated
+        assert "embedding_fn" in validated
 
     def test_validate_config_unknown_type(self):
         """Test validate_config with unknown component type."""
         with pytest.raises(ValueError) as exc_info:
-            validate_config({}, 'unknown_component')
+            validate_config({}, "unknown_component")
 
         assert "Unknown component type" in str(exc_info.value)
 
     def test_validation_error_message(self):
         """Test ValidationError message format."""
         error = ValidationError(
-            parameter="test_param",
-            value=42,
-            expected="string",
-            component="TestComponent"
+            parameter="test_param", value=42, expected="string", component="TestComponent"
         )
 
         msg = str(error)

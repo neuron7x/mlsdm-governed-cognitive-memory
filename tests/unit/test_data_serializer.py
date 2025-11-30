@@ -19,7 +19,7 @@ class TestDataSerializerJSON:
 
     def test_save_json(self):
         """Test saving data to JSON file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             filepath = f.name
 
         try:
@@ -39,7 +39,7 @@ class TestDataSerializerJSON:
 
     def test_load_json(self):
         """Test loading data from JSON file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             filepath = f.name
             data = {"test": "data", "value": 123}
             json.dump(data, f)
@@ -53,7 +53,7 @@ class TestDataSerializerJSON:
 
     def test_save_load_roundtrip_json(self):
         """Test save and load roundtrip for JSON."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             filepath = f.name
 
         try:
@@ -62,7 +62,7 @@ class TestDataSerializerJSON:
                 "integer": 42,
                 "float": 3.14,
                 "list": [1, 2, 3],
-                "nested": {"a": 1, "b": 2}
+                "nested": {"a": 1, "b": 2},
             }
 
             DataSerializer.save(data, filepath)
@@ -79,14 +79,11 @@ class TestDataSerializerNPZ:
 
     def test_save_npz(self):
         """Test saving data to NPZ file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.npz', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".npz", delete=False) as f:
             filepath = f.name
 
         try:
-            data = {
-                "array1": [1, 2, 3],
-                "array2": [[4, 5], [6, 7]]
-            }
+            data = {"array1": [1, 2, 3], "array2": [[4, 5], [6, 7]]}
 
             DataSerializer.save(data, filepath)
 
@@ -97,7 +94,7 @@ class TestDataSerializerNPZ:
 
     def test_load_npz(self):
         """Test loading data from NPZ file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.npz', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".npz", delete=False) as f:
             filepath = f.name
 
         try:
@@ -116,14 +113,11 @@ class TestDataSerializerNPZ:
 
     def test_save_load_roundtrip_npz(self):
         """Test save and load roundtrip for NPZ."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.npz', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".npz", delete=False) as f:
             filepath = f.name
 
         try:
-            data = {
-                "vector": [1.0, 2.0, 3.0],
-                "matrix": [[1, 2], [3, 4]]
-            }
+            data = {"vector": [1.0, 2.0, 3.0], "matrix": [[1, 2], [3, 4]]}
 
             DataSerializer.save(data, filepath)
             loaded = DataSerializer.load(filepath)
@@ -145,7 +139,7 @@ class TestDataSerializerErrors:
         """Test saving to unsupported format raises error."""
         from tenacity import RetryError
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             filepath = f.name
 
         try:
@@ -162,7 +156,7 @@ class TestDataSerializerErrors:
         """Test loading from unsupported format raises error."""
         from tenacity import RetryError
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             filepath = f.name
             f.write("test content")
 
@@ -202,7 +196,7 @@ class TestDataSerializerEdgeCases:
 
     def test_save_empty_dict(self):
         """Test saving empty dictionary."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             filepath = f.name
 
         try:
@@ -217,19 +211,11 @@ class TestDataSerializerEdgeCases:
 
     def test_save_nested_structure(self):
         """Test saving deeply nested structure."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             filepath = f.name
 
         try:
-            data = {
-                "level1": {
-                    "level2": {
-                        "level3": {
-                            "value": 42
-                        }
-                    }
-                }
-            }
+            data = {"level1": {"level2": {"level3": {"value": 42}}}}
 
             DataSerializer.save(data, filepath)
             loaded = DataSerializer.load(filepath)
@@ -241,7 +227,7 @@ class TestDataSerializerEdgeCases:
 
     def test_save_large_array_npz(self):
         """Test saving large array to NPZ."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.npz', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".npz", delete=False) as f:
             filepath = f.name
 
         try:

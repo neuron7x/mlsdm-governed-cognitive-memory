@@ -122,10 +122,11 @@ def build_multiple_providers_from_env() -> dict[str, LLMProvider]:
         except Exception as e:
             # Log warning but continue with other providers
             import warnings
+
             warnings.warn(
                 f"Failed to build provider '{name}' with backend '{backend}': {e}",
                 RuntimeWarning,
-                stacklevel=2
+                stacklevel=2,
             )
 
     if not providers:

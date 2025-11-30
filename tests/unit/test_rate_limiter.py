@@ -123,8 +123,8 @@ class TestRateLimiterStatistics:
         stats = limiter.get_stats(client_id)
 
         assert stats is not None
-        assert 'tokens' in stats
-        assert 'last_update' in stats
+        assert "tokens" in stats
+        assert "last_update" in stats
 
     def test_stats_show_remaining_tokens(self):
         """Test stats show remaining tokens."""
@@ -136,7 +136,7 @@ class TestRateLimiterStatistics:
 
         stats = limiter.get_stats(client_id)
         # Should have less than capacity tokens remaining
-        assert stats['tokens'] < 10
+        assert stats["tokens"] < 10
 
     def test_stats_after_blocking(self):
         """Test stats after requests are blocked."""
@@ -152,7 +152,7 @@ class TestRateLimiterStatistics:
 
         stats = limiter.get_stats(client_id)
         # Tokens should be at or near 0
-        assert stats['tokens'] < 1.0
+        assert stats["tokens"] < 1.0
 
     def test_stats_for_nonexistent_client(self):
         """Test getting stats for non-existent client."""
@@ -161,7 +161,7 @@ class TestRateLimiterStatistics:
         stats = limiter.get_stats("nonexistent_client")
 
         # Should return None or empty stats
-        assert stats is None or stats.get('total_requests', 0) == 0
+        assert stats is None or stats.get("total_requests", 0) == 0
 
 
 class TestRateLimiterCleanup:
@@ -230,10 +230,7 @@ class TestThreadSafety:
                 with lock:
                     results.append(result)
 
-        threads = [
-            threading.Thread(target=make_requests, args=(f"client_{i}",))
-            for i in range(10)
-        ]
+        threads = [threading.Thread(target=make_requests, args=(f"client_{i}",)) for i in range(10)]
 
         for thread in threads:
             thread.start()

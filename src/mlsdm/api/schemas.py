@@ -63,9 +63,7 @@ class CognitiveStateResponse(BaseModel):
     phase: str = Field(description="Current cognitive phase (wake/sleep)")
     stateless_mode: bool = Field(description="Whether running in stateless/degraded mode")
     emergency_shutdown: bool = Field(description="Whether emergency shutdown is active")
-    memory_used_mb: float | None = Field(
-        None, description="Aggregated memory usage in MB"
-    )
+    memory_used_mb: float | None = Field(None, description="Aggregated memory usage in MB")
     moral_threshold: float | None = Field(
         None, description="Current moral filter threshold (0.0-1.0)"
     )
@@ -93,9 +91,7 @@ class GenerateResponse(BaseModel):
     response: str = Field(description="Generated response text")
     accepted: bool = Field(description="Whether the request was morally accepted")
     phase: str = Field(description="Current cognitive phase (wake/sleep)")
-    moral_score: float | None = Field(
-        None, description="Moral score used for this request"
-    )
+    moral_score: float | None = Field(None, description="Moral score used for this request")
     aphasia_flags: dict[str, Any] | None = Field(
         None, description="Aphasia detection flags (if available)"
     )
@@ -107,15 +103,9 @@ class GenerateResponse(BaseModel):
     )
 
     # Optional diagnostic fields
-    metrics: dict[str, Any] | None = Field(
-        None, description="Performance timing metrics"
-    )
-    safety_flags: dict[str, Any] | None = Field(
-        None, description="Safety validation results"
-    )
-    memory_stats: dict[str, Any] | None = Field(
-        None, description="Memory state statistics"
-    )
+    metrics: dict[str, Any] | None = Field(None, description="Performance timing metrics")
+    safety_flags: dict[str, Any] | None = Field(None, description="Safety validation results")
+    memory_stats: dict[str, Any] | None = Field(None, description="Memory state statistics")
 
 
 # ============================================================
@@ -169,6 +159,4 @@ class ErrorResponse(BaseModel):
 
     error_code: str = Field(description="Machine-readable error code")
     message: str = Field(description="Human-readable error message")
-    debug_id: str | None = Field(
-        None, description="Debug/trace ID for error correlation"
-    )
+    debug_id: str | None = Field(None, description="Debug/trace ID for error correlation")

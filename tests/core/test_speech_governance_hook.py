@@ -161,9 +161,7 @@ def test_speech_governance_receives_correct_parameters():
     received_params = {}
 
     class ParameterCapturingGovernor:
-        def __call__(
-            self, *, prompt: str, draft: str, max_tokens: int
-        ) -> SpeechGovernanceResult:
+        def __call__(self, *, prompt: str, draft: str, max_tokens: int) -> SpeechGovernanceResult:
             received_params["prompt"] = prompt
             received_params["draft"] = draft
             received_params["max_tokens"] = max_tokens

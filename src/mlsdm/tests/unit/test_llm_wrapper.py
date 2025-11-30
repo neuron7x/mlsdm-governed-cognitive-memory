@@ -29,9 +29,7 @@ class TestLLMWrapper:
     def test_initialization(self) -> None:
         """Test wrapper initialization."""
         wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=self.mock_embedding,
-            dim=384
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=self.mock_embedding, dim=384
         )
 
         assert wrapper.dim == 384
@@ -49,7 +47,7 @@ class TestLLMWrapper:
             capacity=10_000,
             wake_duration=10,
             sleep_duration=5,
-            initial_moral_threshold=0.70
+            initial_moral_threshold=0.70,
         )
 
         assert wrapper.dim == 512
@@ -61,14 +59,10 @@ class TestLLMWrapper:
     def test_generate_accepted_wake_phase(self) -> None:
         """Test successful generation during wake phase."""
         wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=self.mock_embedding
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=self.mock_embedding
         )
 
-        result = wrapper.generate(
-            prompt="Hello, how are you?",
-            moral_value=0.8
-        )
+        result = wrapper.generate(prompt="Hello, how are you?", moral_value=0.8)
 
         assert result["accepted"] is True
         assert result["phase"] == "wake"
@@ -84,12 +78,12 @@ class TestLLMWrapper:
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
             embedding_fn=self.mock_embedding,
-            initial_moral_threshold=0.80
+            initial_moral_threshold=0.80,
         )
 
         result = wrapper.generate(
             prompt="Say something toxic",
-            moral_value=0.1  # Low moral value
+            moral_value=0.1,  # Low moral value
         )
 
         assert result["accepted"] is False
@@ -104,22 +98,16 @@ class TestLLMWrapper:
             llm_generate_fn=self.mock_llm_generate,
             embedding_fn=self.mock_embedding,
             wake_duration=2,
-            sleep_duration=2
+            sleep_duration=2,
         )
 
         # Process during wake phase
         for i in range(2):
-            result = wrapper.generate(
-                prompt=f"Message {i}",
-                moral_value=0.8
-            )
+            result = wrapper.generate(prompt=f"Message {i}", moral_value=0.8)
             assert result["accepted"] is True
 
         # Now in sleep phase
-        result = wrapper.generate(
-            prompt="This should be rejected",
-            moral_value=0.8
-        )
+        result = wrapper.generate(prompt="This should be rejected", moral_value=0.8)
 
         assert result["accepted"] is False
         assert result["phase"] == "sleep"
@@ -131,14 +119,11 @@ class TestLLMWrapper:
             llm_generate_fn=self.mock_llm_generate,
             embedding_fn=self.mock_embedding,
             wake_duration=1,
-            sleep_duration=1
+            sleep_duration=1,
         )
 
         # First request in wake - should use MAX_WAKE_TOKENS
-        result = wrapper.generate(
-            prompt="First message",
-            moral_value=0.8
-        )
+        result = wrapper.generate(prompt="First message", moral_value=0.8)
         assert result["max_tokens_used"] == wrapper.MAX_WAKE_TOKENS
 
         # Transition to sleep happens after wake duration
@@ -147,8 +132,7 @@ class TestLLMWrapper:
     def test_context_retrieval(self) -> None:
         """Test that context is retrieved from memory."""
         wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=self.mock_embedding
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=self.mock_embedding
         )
 
         # Add some memories
@@ -168,7 +152,7 @@ class TestLLMWrapper:
             llm_generate_fn=self.mock_llm_generate,
             embedding_fn=self.mock_embedding,
             wake_duration=2,
-            sleep_duration=1
+            sleep_duration=1,
         )
 
         # Process messages during wake
@@ -186,8 +170,7 @@ class TestLLMWrapper:
     def test_get_state(self) -> None:
         """Test state retrieval."""
         wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=self.mock_embedding
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=self.mock_embedding
         )
 
         wrapper.generate("Test message", moral_value=0.8)
@@ -211,8 +194,7 @@ class TestLLMWrapper:
     def test_reset(self) -> None:
         """Test wrapper reset functionality."""
         wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=self.mock_embedding
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=self.mock_embedding
         )
 
         # Process some messages
@@ -236,8 +218,7 @@ class TestLLMWrapper:
         import threading
 
         wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=self.mock_embedding
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=self.mock_embedding
         )
 
         results = []
@@ -263,7 +244,7 @@ class TestLLMWrapper:
         """Test that embeddings are normalized."""
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=lambda text: np.ones(384, dtype=np.float32) * 10  # Non-normalized
+            embedding_fn=lambda text: np.ones(384, dtype=np.float32) * 10,  # Non-normalized
         )
 
         result = wrapper.generate("Test", moral_value=0.8)
@@ -276,7 +257,7 @@ class TestLLMWrapper:
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
             embedding_fn=self.mock_embedding,
-            initial_moral_threshold=0.50
+            initial_moral_threshold=0.50,
         )
 
         initial_threshold = wrapper.moral.threshold
@@ -298,7 +279,7 @@ class TestLLMWrapper:
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
             embedding_fn=self.mock_embedding,
-            capacity=capacity
+            capacity=capacity,
         )
 
         # Add more than capacity
@@ -315,15 +296,10 @@ class TestLLMWrapper:
     def test_custom_max_tokens(self) -> None:
         """Test custom max tokens parameter."""
         wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=self.mock_embedding
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=self.mock_embedding
         )
 
-        result = wrapper.generate(
-            prompt="Test message",
-            moral_value=0.8,
-            max_tokens=512
-        )
+        result = wrapper.generate(prompt="Test message", moral_value=0.8, max_tokens=512)
 
         assert result["accepted"] is True
         # During wake phase, custom max_tokens should be respected
@@ -332,8 +308,7 @@ class TestLLMWrapper:
     def test_synaptic_memory_updates(self) -> None:
         """Test that synaptic memory is updated."""
         wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=self.mock_embedding
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=self.mock_embedding
         )
 
         initial_state = wrapper.get_state()
@@ -367,13 +342,11 @@ class TestLLMWrapperEdgeCases:
 
     def test_embedding_error_handling(self) -> None:
         """Test handling of embedding errors."""
+
         def failing_embed(text: str) -> np.ndarray:
             raise ValueError("Embedding failed")
 
-        wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=failing_embed
-        )
+        wrapper = LLMWrapper(llm_generate_fn=self.mock_llm_generate, embedding_fn=failing_embed)
 
         result = wrapper.generate("Test", moral_value=0.8)
 
@@ -382,13 +355,11 @@ class TestLLMWrapperEdgeCases:
 
     def test_generation_error_handling(self) -> None:
         """Test handling of generation errors."""
+
         def failing_generate(prompt: str, max_tokens: int) -> str:
             raise RuntimeError("Generation failed")
 
-        wrapper = LLMWrapper(
-            llm_generate_fn=failing_generate,
-            embedding_fn=self.mock_embedding
-        )
+        wrapper = LLMWrapper(llm_generate_fn=failing_generate, embedding_fn=self.mock_embedding)
 
         result = wrapper.generate("Test", moral_value=0.8)
 
@@ -397,13 +368,11 @@ class TestLLMWrapperEdgeCases:
 
     def test_zero_norm_embedding(self) -> None:
         """Test handling of zero-norm embeddings."""
+
         def zero_embed(text: str) -> np.ndarray:
             return np.zeros(384, dtype=np.float32)
 
-        wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=zero_embed
-        )
+        wrapper = LLMWrapper(llm_generate_fn=self.mock_llm_generate, embedding_fn=zero_embed)
 
         # Should handle gracefully (norm check prevents division by zero)
         result = wrapper.generate("Test", moral_value=0.8)
@@ -433,8 +402,7 @@ class TestLLMWrapperIntegration:
     def test_realistic_conversation_flow(self) -> None:
         """Test a realistic conversation with multiple turns."""
         wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=self.mock_embedding
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=self.mock_embedding
         )
 
         # Simulate conversation
@@ -462,7 +430,7 @@ class TestLLMWrapperIntegration:
         wrapper = LLMWrapper(
             llm_generate_fn=self.mock_llm_generate,
             embedding_fn=self.mock_embedding,
-            wake_duration=10  # Longer wake to test many interactions
+            wake_duration=10,  # Longer wake to test many interactions
         )
 
         # Send related messages

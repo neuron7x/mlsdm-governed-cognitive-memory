@@ -198,12 +198,8 @@ class BulkheadMiddleware(BaseHTTPMiddleware):
             queue_timeout: Queue timeout in seconds (default: 5.0, env: MLSDM_QUEUE_TIMEOUT)
         """
         super().__init__(app)
-        self._max_concurrent = max_concurrent or int(
-            os.getenv("MLSDM_MAX_CONCURRENT", "100")
-        )
-        self._queue_timeout = queue_timeout or float(
-            os.getenv("MLSDM_QUEUE_TIMEOUT", "5.0")
-        )
+        self._max_concurrent = max_concurrent or int(os.getenv("MLSDM_MAX_CONCURRENT", "100"))
+        self._queue_timeout = queue_timeout or float(os.getenv("MLSDM_QUEUE_TIMEOUT", "5.0"))
         self._bulkhead = BulkheadSemaphore(
             max_concurrent=self._max_concurrent,
             queue_timeout=self._queue_timeout,
@@ -270,9 +266,7 @@ class TimeoutMiddleware(BaseHTTPMiddleware):
             exclude_paths: Paths to exclude from timeout (e.g., health checks)
         """
         super().__init__(app)
-        self._timeout = timeout or float(
-            os.getenv("MLSDM_REQUEST_TIMEOUT", "30.0")
-        )
+        self._timeout = timeout or float(os.getenv("MLSDM_REQUEST_TIMEOUT", "30.0"))
         self._exclude_paths = set(exclude_paths or ["/health", "/health/live", "/health/ready"])
 
     async def dispatch(
@@ -410,9 +404,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # Only add HSTS if using HTTPS
         if request.url.scheme == "https":
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=31536000; includeSubDomains"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
         # CSP header - restrictive default
         response.headers["Content-Security-Policy"] = "default-src 'self'"

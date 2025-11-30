@@ -130,10 +130,7 @@ class TestGenerateEndpointContracts:
 
     def test_generate_success_response_schema(self, client):
         """POST /generate returns 200 with GenerateResponse schema."""
-        response = client.post(
-            "/generate",
-            json={"prompt": "Hello, world!"}
-        )
+        response = client.post("/generate", json={"prompt": "Hello, world!"})
         assert response.status_code == 200
 
         data = response.json()
@@ -154,12 +151,7 @@ class TestGenerateEndpointContracts:
     def test_generate_with_all_parameters(self, client):
         """POST /generate with all parameters returns valid response."""
         response = client.post(
-            "/generate",
-            json={
-                "prompt": "Test prompt",
-                "max_tokens": 256,
-                "moral_value": 0.7
-            }
+            "/generate", json={"prompt": "Test prompt", "max_tokens": 256, "moral_value": 0.7}
         )
         assert response.status_code == 200
 
@@ -170,10 +162,7 @@ class TestGenerateEndpointContracts:
 
     def test_generate_empty_prompt_validation_error(self, client):
         """POST /generate with empty prompt returns 422 validation error."""
-        response = client.post(
-            "/generate",
-            json={"prompt": ""}
-        )
+        response = client.post("/generate", json={"prompt": ""})
         # Pydantic validation should catch min_length=1 constraint
         assert response.status_code == 422
 
@@ -190,10 +179,7 @@ class TestGenerateEndpointContracts:
 
     def test_generate_whitespace_prompt_returns_400(self, client):
         """POST /generate with whitespace-only prompt returns 400."""
-        response = client.post(
-            "/generate",
-            json={"prompt": "   "}
-        )
+        response = client.post("/generate", json={"prompt": "   "})
         assert response.status_code == 400
 
         data = response.json()
@@ -202,13 +188,16 @@ class TestGenerateEndpointContracts:
         assert "error_type" in data["error"]
         assert "message" in data["error"]
         assert data["error"]["error_type"] == "validation_error"
-        assert "prompt" in data["error"]["message"].lower() or "empty" in data["error"]["message"].lower()
+        assert (
+            "prompt" in data["error"]["message"].lower()
+            or "empty" in data["error"]["message"].lower()
+        )
 
     def test_generate_invalid_moral_value_returns_422(self, client):
         """POST /generate with invalid moral_value returns 422."""
         response = client.post(
             "/generate",
-            json={"prompt": "Test", "moral_value": 1.5}  # Out of range [0.0, 1.0]
+            json={"prompt": "Test", "moral_value": 1.5},  # Out of range [0.0, 1.0]
         )
         assert response.status_code == 422
 
@@ -219,7 +208,7 @@ class TestGenerateEndpointContracts:
         """POST /generate with invalid max_tokens returns 422."""
         response = client.post(
             "/generate",
-            json={"prompt": "Test", "max_tokens": 5000}  # Out of range [1, 4096]
+            json={"prompt": "Test", "max_tokens": 5000},  # Out of range [1, 4096]
         )
         assert response.status_code == 422
 
@@ -228,10 +217,7 @@ class TestGenerateEndpointContracts:
 
     def test_generate_response_is_string(self, client):
         """POST /generate returns a string response."""
-        response = client.post(
-            "/generate",
-            json={"prompt": "Test prompt"}
-        )
+        response = client.post("/generate", json={"prompt": "Test prompt"})
         assert response.status_code == 200
 
         data = response.json()
@@ -244,10 +230,7 @@ class TestInferEndpointContracts:
 
     def test_infer_success_response_schema(self, client):
         """POST /infer returns 200 with InferResponse schema."""
-        response = client.post(
-            "/infer",
-            json={"prompt": "Hello, world!"}
-        )
+        response = client.post("/infer", json={"prompt": "Hello, world!"})
         assert response.status_code == 200
 
         data = response.json()
@@ -270,12 +253,7 @@ class TestInferEndpointContracts:
     def test_infer_secure_mode_increases_moral_threshold(self, client):
         """POST /infer with secure_mode applies moral threshold boost."""
         response = client.post(
-            "/infer",
-            json={
-                "prompt": "Test secure mode",
-                "secure_mode": True,
-                "moral_value": 0.5
-            }
+            "/infer", json={"prompt": "Test secure mode", "secure_mode": True, "moral_value": 0.5}
         )
         assert response.status_code == 200
 
@@ -292,8 +270,8 @@ class TestInferEndpointContracts:
             json={
                 "prompt": "Test secure mode cap",
                 "secure_mode": True,
-                "moral_value": 0.9  # 0.9 + 0.2 = 1.1, should cap at 1.0
-            }
+                "moral_value": 0.9,  # 0.9 + 0.2 = 1.1, should cap at 1.0
+            },
         )
         assert response.status_code == 200
 
@@ -304,12 +282,7 @@ class TestInferEndpointContracts:
     def test_infer_rag_metadata_when_enabled(self, client):
         """POST /infer with rag_enabled includes RAG metadata."""
         response = client.post(
-            "/infer",
-            json={
-                "prompt": "Test RAG enabled",
-                "rag_enabled": True,
-                "context_top_k": 5
-            }
+            "/infer", json={"prompt": "Test RAG enabled", "rag_enabled": True, "context_top_k": 5}
         )
         assert response.status_code == 200
 
@@ -321,13 +294,7 @@ class TestInferEndpointContracts:
 
     def test_infer_rag_metadata_when_disabled(self, client):
         """POST /infer with rag_enabled=false has disabled RAG metadata."""
-        response = client.post(
-            "/infer",
-            json={
-                "prompt": "Test RAG disabled",
-                "rag_enabled": False
-            }
-        )
+        response = client.post("/infer", json={"prompt": "Test RAG disabled", "rag_enabled": False})
         assert response.status_code == 200
 
         data = response.json()
@@ -337,13 +304,7 @@ class TestInferEndpointContracts:
 
     def test_infer_aphasia_mode_metadata(self, client):
         """POST /infer with aphasia_mode includes aphasia metadata."""
-        response = client.post(
-            "/infer",
-            json={
-                "prompt": "Test aphasia mode",
-                "aphasia_mode": True
-            }
-        )
+        response = client.post("/infer", json={"prompt": "Test aphasia mode", "aphasia_mode": True})
         assert response.status_code == 200
 
         data = response.json()
@@ -353,18 +314,12 @@ class TestInferEndpointContracts:
 
     def test_infer_empty_prompt_validation_error(self, client):
         """POST /infer with empty prompt returns 422."""
-        response = client.post(
-            "/infer",
-            json={"prompt": ""}
-        )
+        response = client.post("/infer", json={"prompt": ""})
         assert response.status_code == 422
 
     def test_infer_whitespace_prompt_returns_400(self, client):
         """POST /infer with whitespace-only prompt returns 400."""
-        response = client.post(
-            "/infer",
-            json={"prompt": "   "}
-        )
+        response = client.post("/infer", json={"prompt": "   "})
         assert response.status_code == 400
 
         data = response.json()
@@ -405,7 +360,7 @@ class TestErrorResponseFormat:
         """400 errors follow ErrorResponse schema."""
         response = client.post(
             "/generate",
-            json={"prompt": "   "}  # Whitespace only triggers 400
+            json={"prompt": "   "},  # Whitespace only triggers 400
         )
         assert response.status_code == 400
 
@@ -418,10 +373,7 @@ class TestErrorResponseFormat:
 
     def test_422_error_format(self, client):
         """422 errors follow FastAPI validation format."""
-        response = client.post(
-            "/generate",
-            json={"prompt": ""}
-        )
+        response = client.post("/generate", json={"prompt": ""})
         assert response.status_code == 422
 
         data = response.json()
@@ -447,11 +399,7 @@ class TestSecureModeWithoutTraining:
     def test_secure_mode_generation_works(self, client):
         """secure_mode generates response without prior training."""
         response = client.post(
-            "/infer",
-            json={
-                "prompt": "Test generation in secure mode",
-                "secure_mode": True
-            }
+            "/infer", json={"prompt": "Test generation in secure mode", "secure_mode": True}
         )
         assert response.status_code == 200
 
@@ -476,8 +424,8 @@ class TestSecureModeWithoutTraining:
             json={
                 "prompt": "Test secure mode without RAG",
                 "secure_mode": True,
-                "rag_enabled": False
-            }
+                "rag_enabled": False,
+            },
         )
         assert response.status_code == 200
 

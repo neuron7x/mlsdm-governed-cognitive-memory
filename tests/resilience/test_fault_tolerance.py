@@ -32,13 +32,16 @@ from mlsdm.memory import PhaseEntangledLatticeMemory
 
 def create_stub_llm():
     """Create a deterministic stub LLM function."""
+
     def stub_llm(prompt: str, max_tokens: int) -> str:
         return f"Response to: {prompt[:30]}"
+
     return stub_llm
 
 
 def create_stub_embedder(dim: int = 384):
     """Create a deterministic stub embedding function."""
+
     def stub_embed(text: str) -> np.ndarray:
         np.random.seed(hash(text) % (2**32))
         vec = np.random.randn(dim).astype(np.float32)
@@ -49,6 +52,7 @@ def create_stub_embedder(dim: int = 384):
         else:
             vec = vec / norm
         return vec
+
     return stub_embed
 
 
@@ -97,6 +101,7 @@ class TestNetworkFailureResilience:
 
         When network is down, system should return structured error response.
         """
+
         def always_failing_llm(prompt: str, max_tokens: int) -> str:
             raise ConnectionError("Network permanently unavailable")
 
@@ -118,6 +123,7 @@ class TestNetworkFailureResilience:
         """
         Test handling of embedding service timeout.
         """
+
         def slow_embedding(text: str) -> np.ndarray:
             time.sleep(0.5)  # Simulate slow response
             return np.random.randn(384).astype(np.float32)
@@ -247,13 +253,16 @@ class TestUnusualInputResilience:
     """Tests for resilience against unusual input data."""
 
     @pytest.mark.security
-    @pytest.mark.parametrize("edge_value", [
-        0.0,  # Minimum moral value
-        1.0,  # Maximum moral value
-        0.5,  # Middle value
-        0.001,  # Near-zero
-        0.999,  # Near-one
-    ])
+    @pytest.mark.parametrize(
+        "edge_value",
+        [
+            0.0,  # Minimum moral value
+            1.0,  # Maximum moral value
+            0.5,  # Middle value
+            0.001,  # Near-zero
+            0.999,  # Near-one
+        ],
+    )
     def test_edge_case_moral_values(self, edge_value: float):
         """
         Test handling of edge-case moral values.

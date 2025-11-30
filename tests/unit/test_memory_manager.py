@@ -308,6 +308,7 @@ class TestStatePersistence:
 
         # File should exist
         import os
+
         assert os.path.exists(filepath)
 
     def test_load_system_state(self, tmp_path):

@@ -192,15 +192,11 @@ class TestEmergencyShutdownBehavior:
 
     def test_emergency_shutdown_metric_incremented(self, metrics):
         """INVARIANT: Emergency shutdown metric is always incremented."""
-        initial_count = metrics.emergency_shutdowns.labels(
-            reason="memory_exceeded"
-        )._value.get()
+        initial_count = metrics.emergency_shutdowns.labels(reason="memory_exceeded")._value.get()
 
         metrics.increment_emergency_shutdown(reason="memory_exceeded")
 
-        new_count = metrics.emergency_shutdowns.labels(
-            reason="memory_exceeded"
-        )._value.get()
+        new_count = metrics.emergency_shutdowns.labels(reason="memory_exceeded")._value.get()
 
         assert new_count == initial_count + 1
 

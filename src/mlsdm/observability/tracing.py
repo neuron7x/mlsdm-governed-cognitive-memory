@@ -107,9 +107,7 @@ class TracingConfig:
         else:
             self.enabled = os.getenv("OTEL_SDK_DISABLED", "false").lower() != "true"
 
-        self.exporter_type = exporter_type or os.getenv(
-            "OTEL_EXPORTER_TYPE", "console"
-        )
+        self.exporter_type = exporter_type or os.getenv("OTEL_EXPORTER_TYPE", "console")
 
         # Check for MLSDM-specific endpoint first, then fall back to OTEL standard
         mlsdm_endpoint = os.getenv("MLSDM_OTEL_ENDPOINT")
@@ -126,9 +124,7 @@ class TracingConfig:
         # Parse sample rate
         sample_rate_str = os.getenv("OTEL_TRACES_SAMPLER_ARG", "1.0")
         try:
-            self.sample_rate = (
-                sample_rate if sample_rate is not None else float(sample_rate_str)
-            )
+            self.sample_rate = sample_rate if sample_rate is not None else float(sample_rate_str)
         except ValueError:
             self.sample_rate = 1.0
 
@@ -284,9 +280,7 @@ class TracerManager:
 
                     return OTLPSpanExporter(endpoint=self._config.otlp_endpoint)
             except ImportError:
-                logger.warning(
-                    "OTLP exporter not available, falling back to console exporter"
-                )
+                logger.warning("OTLP exporter not available, falling back to console exporter")
                 return ConsoleSpanExporter()
 
         if self._config.exporter_type == "jaeger":
@@ -295,9 +289,7 @@ class TracerManager:
 
                 return JaegerExporter()
             except ImportError:
-                logger.warning(
-                    "Jaeger exporter not available, falling back to console exporter"
-                )
+                logger.warning("Jaeger exporter not available, falling back to console exporter")
                 return ConsoleSpanExporter()
 
         return ConsoleSpanExporter()

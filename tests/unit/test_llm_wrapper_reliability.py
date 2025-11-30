@@ -63,11 +63,7 @@ class TestCircuitBreaker:
 
     def test_circuit_breaker_half_open_recovery(self):
         """Circuit breaker transitions to HALF_OPEN and recovers."""
-        cb = CircuitBreaker(
-            failure_threshold=2,
-            recovery_timeout=0.1,
-            success_threshold=2
-        )
+        cb = CircuitBreaker(failure_threshold=2, recovery_timeout=0.1, success_threshold=2)
 
         mock_func = Mock(side_effect=RuntimeError("Service error"))
 
@@ -132,9 +128,7 @@ class TestLLMWrapperReliability:
             return "Success after retry"
 
         wrapper = LLMWrapper(
-            llm_generate_fn=failing_llm,
-            embedding_fn=self.mock_embedding,
-            llm_retry_attempts=3
+            llm_generate_fn=failing_llm, embedding_fn=self.mock_embedding, llm_retry_attempts=3
         )
 
         result = wrapper.generate(prompt="Test", moral_value=0.9)
@@ -145,13 +139,14 @@ class TestLLMWrapperReliability:
 
     def test_llm_retry_exhaustion(self):
         """LLM generation fails after retry exhaustion."""
+
         def always_failing_llm(prompt: str, max_tokens: int) -> str:
             raise ConnectionError("Persistent error")
 
         wrapper = LLMWrapper(
             llm_generate_fn=always_failing_llm,
             embedding_fn=self.mock_embedding,
-            llm_retry_attempts=2
+            llm_retry_attempts=2,
         )
 
         result = wrapper.generate(prompt="Test", moral_value=0.9)
@@ -161,6 +156,7 @@ class TestLLMWrapperReliability:
 
     def test_llm_timeout_handling(self):
         """LLM generation detects timeouts."""
+
         def slow_llm(prompt: str, max_tokens: int) -> str:
             time.sleep(0.2)  # Simulate slow response
             return "Slow response"
@@ -168,7 +164,7 @@ class TestLLMWrapperReliability:
         wrapper = LLMWrapper(
             llm_generate_fn=slow_llm,
             embedding_fn=self.mock_embedding,
-            llm_timeout=0.1  # Very short timeout
+            llm_timeout=0.1,  # Very short timeout
         )
 
         result = wrapper.generate(prompt="Test", moral_value=0.9)
@@ -186,10 +182,7 @@ class TestLLMWrapperReliability:
             failure_count += 1
             raise RuntimeError("Embedding service down")
 
-        wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=failing_embedding
-        )
+        wrapper = LLMWrapper(llm_generate_fn=self.mock_llm_generate, embedding_fn=failing_embedding)
 
         # Trigger multiple failures to open circuit
         for _ in range(6):
@@ -203,6 +196,7 @@ class TestLLMWrapperReliability:
 
     def test_corrupted_vector_handling(self):
         """System handles corrupted embedding vectors."""
+
         def corrupted_embedding(text: str) -> np.ndarray:
             # Return vector with NaN values
             vec = np.random.randn(384).astype(np.float32)
@@ -210,8 +204,7 @@ class TestLLMWrapperReliability:
             return vec
 
         wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=corrupted_embedding
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=corrupted_embedding
         )
 
         result = wrapper.generate(prompt="Test", moral_value=0.9)
@@ -222,12 +215,12 @@ class TestLLMWrapperReliability:
 
     def test_zero_norm_vector_handling(self):
         """System handles zero-norm embedding vectors."""
+
         def zero_norm_embedding(text: str) -> np.ndarray:
             return np.zeros(384, dtype=np.float32)
 
         wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=zero_norm_embedding
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=zero_norm_embedding
         )
 
         result = wrapper.generate(prompt="Test", moral_value=0.9)
@@ -239,9 +232,7 @@ class TestLLMWrapperReliability:
     def test_graceful_degradation_to_stateless_mode(self):
         """System degrades to stateless mode on QILM failures."""
         wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=self.mock_embedding,
-            capacity=10
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=self.mock_embedding, capacity=10
         )
 
         # Simulate QILM failures by corrupting the QILM
@@ -257,14 +248,13 @@ class TestLLMWrapperReliability:
 
     def test_memory_error_triggers_stateless_mode(self):
         """MemoryError during QILM operations triggers stateless mode."""
+
         def memory_error_embedding(text: str) -> np.ndarray:
             # This won't directly trigger MemoryError, but we can simulate it
             return np.random.randn(384).astype(np.float32)
 
         wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=memory_error_embedding,
-            capacity=10
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=memory_error_embedding, capacity=10
         )
 
         # Manually trigger stateless mode to simulate OOM scenario
@@ -278,8 +268,7 @@ class TestLLMWrapperReliability:
     def test_consolidated_reliability_metrics(self):
         """State includes comprehensive reliability metrics."""
         wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=self.mock_embedding
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=self.mock_embedding
         )
 
         # Generate some activity
@@ -297,8 +286,7 @@ class TestLLMWrapperReliability:
     def test_reset_clears_reliability_state(self):
         """Reset clears all reliability counters and states."""
         wrapper = LLMWrapper(
-            llm_generate_fn=self.mock_llm_generate,
-            embedding_fn=self.mock_embedding
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=self.mock_embedding
         )
 
         # Set some failure states
@@ -331,7 +319,7 @@ class TestLLMWrapperReliability:
         wrapper = LLMWrapper(
             llm_generate_fn=intermittent_network_llm,
             embedding_fn=self.mock_embedding,
-            llm_retry_attempts=3
+            llm_retry_attempts=3,
         )
 
         result = wrapper.generate(prompt="Test network", moral_value=0.9)

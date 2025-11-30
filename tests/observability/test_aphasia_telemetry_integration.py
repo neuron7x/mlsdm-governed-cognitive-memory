@@ -176,11 +176,14 @@ class TestAphasiaTelemetryMetrics:
         )
 
         # Check counter incremented
-        assert fresh_aphasia_metrics.aphasia_events_total.labels(
-            mode="full",
-            is_aphasic="True",
-            repair_applied="True",
-        )._value.get() == 1.0
+        assert (
+            fresh_aphasia_metrics.aphasia_events_total.labels(
+                mode="full",
+                is_aphasic="True",
+                repair_applied="True",
+            )._value.get()
+            == 1.0
+        )
 
     def test_aphasia_metrics_flags_counted(self, fresh_aphasia_metrics):
         """Test that individual aphasia flags are counted."""
@@ -196,9 +199,7 @@ class TestAphasiaTelemetryMetrics:
 
         # Each flag should be counted
         for flag in flags:
-            assert fresh_aphasia_metrics.aphasia_flags_total.labels(
-                flag=flag
-            )._value.get() == 1.0
+            assert fresh_aphasia_metrics.aphasia_flags_total.labels(flag=flag)._value.get() == 1.0
 
     def test_core_metrics_aphasia_detected(self, fresh_metrics):
         """Test core MetricsExporter aphasia detection counter."""
@@ -363,9 +364,7 @@ class TestAphasiaTelemetryIntegrationScenarios:
         assert "decision=skip" in records[0].getMessage()
         assert "is_aphasic=False" in records[0].getMessage()
 
-    def test_no_pii_in_telemetry(
-        self, fresh_metrics, fresh_aphasia_metrics, fresh_tracer, caplog
-    ):
+    def test_no_pii_in_telemetry(self, fresh_metrics, fresh_aphasia_metrics, fresh_tracer, caplog):
         """Test that no PII or raw content appears in any telemetry."""
         caplog.set_level(logging.INFO, logger=LOGGER_NAME)
 

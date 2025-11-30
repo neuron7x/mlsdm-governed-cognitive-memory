@@ -1,4 +1,5 @@
 """Comprehensive unit tests for CognitiveController."""
+
 from threading import Thread
 
 import numpy as np
@@ -216,8 +217,16 @@ class TestCognitiveController:
         state = controller.process_event(vec, moral_value=0.9)
 
         # Check all required fields
-        required_fields = ["step", "phase", "moral_threshold", "moral_ema",
-                          "synaptic_norms", "qilm_used", "rejected", "note"]
+        required_fields = [
+            "step",
+            "phase",
+            "moral_threshold",
+            "moral_ema",
+            "synaptic_norms",
+            "qilm_used",
+            "rejected",
+            "note",
+        ]
         for field in required_fields:
             assert field in state
 

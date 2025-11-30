@@ -33,10 +33,13 @@ def dummy_embedder(text: str):
     return vec / np.linalg.norm(vec)
 
 
-@pytest.mark.parametrize("llm_fn, expected_decision_contains", [
-    (telegraphic_llm, "repaired"),
-    (normal_llm, "skip"),
-])
+@pytest.mark.parametrize(
+    "llm_fn, expected_decision_contains",
+    [
+        (telegraphic_llm, "repaired"),
+        (normal_llm, "skip"),
+    ],
+)
 def test_aphasia_logging_decision_emitted(caplog, llm_fn, expected_decision_contains):
     """Test that aphasia logging emits the correct decision for different LLM outputs."""
     caplog.set_level(logging.INFO, logger=LOGGER_NAME)

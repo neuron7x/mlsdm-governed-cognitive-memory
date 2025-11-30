@@ -123,15 +123,17 @@ class TestMetricsRegistration:
         fresh_metrics.increment_requests("/generate", "4xx")
         fresh_metrics.increment_requests("/infer", "2xx")
 
-        assert fresh_metrics.requests_total.labels(
-            endpoint="/generate", status="2xx"
-        )._value.get() == 1.0
-        assert fresh_metrics.requests_total.labels(
-            endpoint="/generate", status="4xx"
-        )._value.get() == 1.0
-        assert fresh_metrics.requests_total.labels(
-            endpoint="/infer", status="2xx"
-        )._value.get() == 1.0
+        assert (
+            fresh_metrics.requests_total.labels(endpoint="/generate", status="2xx")._value.get()
+            == 1.0
+        )
+        assert (
+            fresh_metrics.requests_total.labels(endpoint="/generate", status="4xx")._value.get()
+            == 1.0
+        )
+        assert (
+            fresh_metrics.requests_total.labels(endpoint="/infer", status="2xx")._value.get() == 1.0
+        )
 
     def test_generation_latency_histogram(self, fresh_metrics):
         """Test generation latency histogram observation."""
@@ -149,13 +151,9 @@ class TestMetricsRegistryIntegration:
 
     def test_request_tracking(self, fresh_metrics_registry):
         """Test request tracking with provider and variant labels."""
+        fresh_metrics_registry.increment_requests_total(provider_id="openai", variant="control")
         fresh_metrics_registry.increment_requests_total(
-            provider_id="openai",
-            variant="control"
-        )
-        fresh_metrics_registry.increment_requests_total(
-            provider_id="anthropic",
-            variant="treatment"
+            provider_id="anthropic", variant="treatment"
         )
 
         snapshot = fresh_metrics_registry.get_snapshot()
@@ -205,19 +203,24 @@ class TestAphasiaTelemetry:
         )
 
         # Check counter
-        assert fresh_aphasia_metrics.aphasia_events_total.labels(
-            mode="full",
-            is_aphasic="True",
-            repair_applied="True",
-        )._value.get() == 1.0
+        assert (
+            fresh_aphasia_metrics.aphasia_events_total.labels(
+                mode="full",
+                is_aphasic="True",
+                repair_applied="True",
+            )._value.get()
+            == 1.0
+        )
 
         # Check flags
-        assert fresh_aphasia_metrics.aphasia_flags_total.labels(
-            flag="short_sentences"
-        )._value.get() == 1.0
-        assert fresh_aphasia_metrics.aphasia_flags_total.labels(
-            flag="missing_articles"
-        )._value.get() == 1.0
+        assert (
+            fresh_aphasia_metrics.aphasia_flags_total.labels(flag="short_sentences")._value.get()
+            == 1.0
+        )
+        assert (
+            fresh_aphasia_metrics.aphasia_flags_total.labels(flag="missing_articles")._value.get()
+            == 1.0
+        )
 
     def test_aphasia_severity_distribution(self, fresh_aphasia_metrics):
         """Test severity histogram captures distribution."""
@@ -344,9 +347,7 @@ class TestE2EObservability:
 
         # Verify error metrics
         assert fresh_metrics.errors.labels(error_type="test_error")._value.get() == 1.0
-        assert fresh_metrics.moral_rejections.labels(
-            reason="below_threshold"
-        )._value.get() == 1.0
+        assert fresh_metrics.moral_rejections.labels(reason="below_threshold")._value.get() == 1.0
 
 
 class TestObservabilityConfiguration:

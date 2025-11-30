@@ -219,7 +219,11 @@ class TestMain:
         assert result == 0
         captured = capsys.readouterr()
         # Help should mention available commands
-        assert "demo" in captured.out or "Available commands" in captured.out or "help" in captured.out.lower()
+        assert (
+            "demo" in captured.out
+            or "Available commands" in captured.out
+            or "help" in captured.out.lower()
+        )
 
     def test_main_check_command(self, capsys):
         """Main should handle check command."""
@@ -308,6 +312,7 @@ class TestCmdServe:
         import inspect
 
         from mlsdm.cli import cmd_serve
+
         sig = inspect.signature(cmd_serve)
         assert "args" in sig.parameters
 

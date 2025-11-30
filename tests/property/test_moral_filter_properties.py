@@ -24,10 +24,12 @@ def test_moral_filter_threshold_bounds(initial_threshold):
     moral = MoralFilterV2(initial_threshold=initial_threshold)
 
     # Verify initial threshold is clamped
-    assert moral.threshold >= MoralFilterV2.MIN_THRESHOLD, \
+    assert moral.threshold >= MoralFilterV2.MIN_THRESHOLD, (
         f"Initial threshold below MIN: {moral.threshold}"
-    assert moral.threshold <= MoralFilterV2.MAX_THRESHOLD, \
+    )
+    assert moral.threshold <= MoralFilterV2.MAX_THRESHOLD, (
         f"Initial threshold above MAX: {moral.threshold}"
+    )
 
     # Apply many adaptations with random inputs
     for _ in range(100):
@@ -35,16 +37,18 @@ def test_moral_filter_threshold_bounds(initial_threshold):
         moral.adapt(accepted)
 
         # Threshold must remain bounded
-        assert moral.threshold >= MoralFilterV2.MIN_THRESHOLD, \
+        assert moral.threshold >= MoralFilterV2.MIN_THRESHOLD, (
             f"Threshold drifted below MIN: {moral.threshold}"
-        assert moral.threshold <= MoralFilterV2.MAX_THRESHOLD, \
+        )
+        assert moral.threshold <= MoralFilterV2.MAX_THRESHOLD, (
             f"Threshold drifted above MAX: {moral.threshold}"
+        )
 
 
 @settings(max_examples=30, deadline=None)
 @given(
     num_toxic=st.integers(min_value=10, max_value=50),
-    num_safe=st.integers(min_value=10, max_value=50)
+    num_safe=st.integers(min_value=10, max_value=50),
 )
 def test_moral_filter_drift_bounded(num_toxic, num_safe):
     """
@@ -62,8 +66,7 @@ def test_moral_filter_drift_bounded(num_toxic, num_safe):
     drift_from_toxic = abs(toxic_threshold - initial_threshold)
 
     # Drift should be bounded (not infinite)
-    assert drift_from_toxic < 1.0, \
-        f"Unbounded drift under toxic load: {drift_from_toxic}"
+    assert drift_from_toxic < 1.0, f"Unbounded drift under toxic load: {drift_from_toxic}"
 
     # Threshold should remain within bounds
     assert moral.threshold >= MoralFilterV2.MIN_THRESHOLD
@@ -91,8 +94,9 @@ def test_moral_filter_deterministic_evaluation(moral_value):
     # Evaluation should not modify state
     result2 = moral.evaluate(moral_value)
 
-    assert result1 == result2, \
+    assert result1 == result2, (
         f"Evaluation not deterministic: {result1} != {result2} for value {moral_value}"
+    )
 
 
 def test_moral_filter_clear_accept_reject():
@@ -119,8 +123,9 @@ def test_moral_filter_ema_convergence():
         moral.adapt(True)
 
     # EMA should converge close to 1.0
-    assert moral.ema_accept_rate > 0.9, \
+    assert moral.ema_accept_rate > 0.9, (
         f"EMA should converge to 1.0 with all accepts, got {moral.ema_accept_rate}"
+    )
 
     # Reset and feed 0% accept rate
     moral = MoralFilterV2(initial_threshold=0.50)
@@ -128,8 +133,9 @@ def test_moral_filter_ema_convergence():
         moral.adapt(False)
 
     # EMA should converge close to 0.0
-    assert moral.ema_accept_rate < 0.1, \
+    assert moral.ema_accept_rate < 0.1, (
         f"EMA should converge to 0.0 with all rejects, got {moral.ema_accept_rate}"
+    )
 
 
 def test_moral_filter_dead_band():
@@ -160,8 +166,9 @@ def test_moral_filter_adaptation_direction():
         moral.adapt(True)
 
     # Threshold should increase (accept rate too high, raise bar)
-    assert moral.threshold > 0.50, \
+    assert moral.threshold > 0.50, (
         f"Threshold should increase with high accept rate, got {moral.threshold}"
+    )
 
     # When accept rate is low (<0.5 - dead_band), threshold should decrease
     moral = MoralFilterV2(initial_threshold=0.50)
@@ -171,8 +178,9 @@ def test_moral_filter_adaptation_direction():
         moral.adapt(False)
 
     # Threshold should decrease (accept rate too low, lower bar)
-    assert moral.threshold < 0.50, \
+    assert moral.threshold < 0.50, (
         f"Threshold should decrease with low accept rate, got {moral.threshold}"
+    )
 
 
 def test_moral_filter_state_serialization():
@@ -212,22 +220,24 @@ def test_moral_filter_extreme_bombardment():
     max_expected_drift = MoralFilterV2.MAX_THRESHOLD - MoralFilterV2.MIN_THRESHOLD
     actual_drift = abs(final_threshold - initial_threshold)
 
-    assert actual_drift <= max_expected_drift, \
+    assert actual_drift <= max_expected_drift, (
         f"Drift {actual_drift} exceeds maximum possible {max_expected_drift}"
+    )
 
     # Should still be within bounds
     assert moral.threshold >= MoralFilterV2.MIN_THRESHOLD
     assert moral.threshold <= MoralFilterV2.MAX_THRESHOLD
 
     # Under rejection, threshold should decrease (be more permissive)
-    assert moral.threshold <= initial_threshold, \
+    assert moral.threshold <= initial_threshold, (
         "Under rejection, threshold should decrease or stay same"
+    )
 
 
 @settings(max_examples=30, deadline=None)
 @given(
     sequence_length=st.integers(min_value=10, max_value=100),
-    accept_ratio=st.floats(min_value=0.0, max_value=1.0, allow_nan=False)
+    accept_ratio=st.floats(min_value=0.0, max_value=1.0, allow_nan=False),
 )
 def test_moral_filter_property_convergence(sequence_length, accept_ratio):
     """
@@ -243,8 +253,9 @@ def test_moral_filter_property_convergence(sequence_length, accept_ratio):
     # After many iterations, EMA should be close to accept_ratio
     if sequence_length >= 50:
         # Allow some tolerance for convergence
-        assert abs(moral.ema_accept_rate - accept_ratio) < 0.3, \
+        assert abs(moral.ema_accept_rate - accept_ratio) < 0.3, (
             f"EMA {moral.ema_accept_rate} did not converge to ratio {accept_ratio}"
+        )
 
 
 def test_moral_filter_invalid_initial_threshold():

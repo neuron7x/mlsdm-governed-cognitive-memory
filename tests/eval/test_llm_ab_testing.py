@@ -39,8 +39,7 @@ class TestABTestRouter:
 
         for i in range(num_requests):
             provider_name = router.select_provider(
-                prompt=f"test prompt {i}",
-                metadata={"request_id": i}
+                prompt=f"test prompt {i}", metadata={"request_id": i}
             )
             assignments[provider_name] += 1
 
@@ -69,16 +68,12 @@ class TestABTestRouter:
 
         # Same user_id should always get same provider
         user_id = "test_user_123"
-        first_assignment = router.select_provider(
-            prompt="test",
-            metadata={"user_id": user_id}
-        )
+        first_assignment = router.select_provider(prompt="test", metadata={"user_id": user_id})
 
         # Repeat 10 times
         for _ in range(10):
             assignment = router.select_provider(
-                prompt="different prompt",
-                metadata={"user_id": user_id}
+                prompt="different prompt", metadata={"user_id": user_id}
             )
             assert assignment == first_assignment, "Consistent hashing failed"
 
@@ -101,10 +96,7 @@ class TestABTestRouter:
         assignments = set()
         for i in range(100):
             user_id = f"user_{i}"
-            assignment = router.select_provider(
-                prompt="test",
-                metadata={"user_id": user_id}
-            )
+            assignment = router.select_provider(prompt="test", metadata={"user_id": user_id})
             assignments.add(assignment)
 
         # Should have both control and treatment

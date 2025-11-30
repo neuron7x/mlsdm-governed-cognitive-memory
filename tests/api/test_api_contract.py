@@ -127,9 +127,7 @@ class TestGenerateContractFields:
 
     def test_generate_with_moral_value(self, client):
         """POST /generate with moral_value reflects in response."""
-        response = client.post(
-            "/generate", json={"prompt": "Test moral", "moral_value": 0.8}
-        )
+        response = client.post("/generate", json={"prompt": "Test moral", "moral_value": 0.8})
         assert response.status_code == 200
 
         data = response.json()

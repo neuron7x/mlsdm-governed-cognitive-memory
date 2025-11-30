@@ -89,9 +89,7 @@ def engine_with_metrics() -> NeuroCognitiveEngine:
 class TestE2EObservabilityPipeline:
     """E2E tests for observability across the full pipeline."""
 
-    def test_generate_creates_spans_and_metrics(
-        self, engine_with_metrics, fresh_tracing
-    ):
+    def test_generate_creates_spans_and_metrics(self, engine_with_metrics, fresh_tracing):
         """
         Test that generating a response creates tracing spans and metrics.
 
@@ -118,9 +116,7 @@ class TestE2EObservabilityPipeline:
             snapshot = metrics.get_snapshot()
             assert snapshot["requests_total"] >= 1
 
-    def test_observability_captures_rejection(
-        self, engine_with_metrics, fresh_tracing
-    ):
+    def test_observability_captures_rejection(self, engine_with_metrics, fresh_tracing):
         """
         Test that rejections are captured in observability.
 
@@ -144,9 +140,7 @@ class TestE2EObservabilityPipeline:
                 total_errors = sum(snapshot.get("errors_total", {}).values())
                 assert total_rejections >= 1 or total_errors >= 1
 
-    def test_observability_captures_timing(
-        self, engine_with_metrics, fresh_tracing
-    ):
+    def test_observability_captures_timing(self, engine_with_metrics, fresh_tracing):
         """
         Test that timing metrics are captured.
         """
@@ -167,9 +161,7 @@ class TestE2EObservabilityPipeline:
             # Should have at least one latency recorded
             assert len(snapshot.get("latency_total_ms", [])) > 0
 
-    def test_spans_created_for_pipeline_stages(
-        self, engine_with_metrics, fresh_tracing
-    ):
+    def test_spans_created_for_pipeline_stages(self, engine_with_metrics, fresh_tracing):
         """
         Test that spans are created for each pipeline stage.
 

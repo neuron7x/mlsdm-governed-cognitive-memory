@@ -66,9 +66,11 @@ class TestMemoryUsageBytesGauge:
 
         metrics_text = fresh_metrics.get_metrics_text()
         # Prometheus exports scientific notation without decimal for large numbers
-        assert "mlsdm_memory_usage_bytes 5e+08" in metrics_text or \
-               "mlsdm_memory_usage_bytes 5.0e+08" in metrics_text or \
-               "mlsdm_memory_usage_bytes 500000000" in metrics_text
+        assert (
+            "mlsdm_memory_usage_bytes 5e+08" in metrics_text
+            or "mlsdm_memory_usage_bytes 5.0e+08" in metrics_text
+            or "mlsdm_memory_usage_bytes 500000000" in metrics_text
+        )
 
 
 class TestRequestsInflightGauge:

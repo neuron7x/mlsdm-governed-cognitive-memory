@@ -31,6 +31,7 @@ try:
     import torch.nn as nn
     import torch.optim as optim
     from torch.utils.data import DataLoader, Dataset, Sampler
+
     TORCH_AVAILABLE = True
 except ImportError:
     # PyTorch not installed - NeuroLang features will be disabled
@@ -60,15 +61,9 @@ def is_secure_mode_enabled() -> bool:
     Returns:
         bool: True if secure mode is enabled, False otherwise
     """
-    env_var = (
-        SECURE_MODE_DEFAULTS.env_var_name
-        if SECURE_MODE_DEFAULTS
-        else "MLSDM_SECURE_MODE"
-    )
+    env_var = SECURE_MODE_DEFAULTS.env_var_name if SECURE_MODE_DEFAULTS else "MLSDM_SECURE_MODE"
     enabled_values = (
-        SECURE_MODE_DEFAULTS.enabled_values
-        if SECURE_MODE_DEFAULTS
-        else ("1", "true", "TRUE")
+        SECURE_MODE_DEFAULTS.enabled_values if SECURE_MODE_DEFAULTS else ("1", "true", "TRUE")
     )
     return os.getenv(env_var, "0") in enabled_values
 
@@ -114,7 +109,9 @@ def safe_load_neurolang_checkpoint(path: str | None, device: Any) -> dict[str, A
     except AttributeError:
         # Fallback for Python < 3.9: use string comparison on resolved paths
         if not str(p).startswith(str(ALLOWED_CHECKPOINT_DIR)):
-            raise ValueError(f"Refusing to load checkpoint outside {ALLOWED_CHECKPOINT_DIR}") from None
+            raise ValueError(
+                f"Refusing to load checkpoint outside {ALLOWED_CHECKPOINT_DIR}"
+            ) from None
 
     if not p.is_file():
         raise FileNotFoundError(f"Checkpoint not found: {p}")
@@ -138,12 +135,13 @@ def safe_load_neurolang_checkpoint(path: str | None, device: Any) -> dict[str, A
 
     return obj
 
+
 simple_sentences = [
     "The cat ran.",
     "The dog barked.",
     "Alice said it.",
     "The book was interesting.",
-    "The idea persists."
+    "The idea persists.",
 ]
 
 complex_sentences = [
@@ -156,7 +154,7 @@ complex_sentences = [
     "The bird that flew over the house that Jack built sang.",
     "The problem that the solution that we found fixes is complex.",
     "She whispered that he shouted that they laughed.",
-    "The river that flows through the city that never sleeps is polluted."
+    "The river that flows through the city that never sleeps is polluted.",
 ]
 
 all_sentences = simple_sentences + complex_sentences
@@ -164,6 +162,7 @@ all_sentences = simple_sentences + complex_sentences
 
 # Define torch-dependent classes only when torch is available
 if TORCH_AVAILABLE:
+
     class LanguageDataset(Dataset):  # type: ignore
         def __init__(self, sentences):
             self.sentences = sentences
@@ -179,7 +178,6 @@ if TORCH_AVAILABLE:
             sentence = ["<BOS>"] + self.sentences[idx].split() + ["<EOS>"]
             padded = sentence + ["<PAD>"] * (self.max_len - len(sentence))
             return torch.tensor([self.word_to_idx[w] for w in padded], dtype=torch.long)
-
 
     class CurriculumSampler(Sampler):  # type: ignore
         def __init__(self, dataset, simple_count=None):
@@ -197,7 +195,6 @@ if TORCH_AVAILABLE:
         def __len__(self):
             return len(self.indices)
 
-
     class TransformerBlock(nn.Module):
         def __init__(self, embed_size, heads=4):
             super().__init__()
@@ -206,18 +203,19 @@ if TORCH_AVAILABLE:
             self.feed_forward = nn.Sequential(
                 nn.Linear(embed_size, 4 * embed_size),
                 nn.ReLU(),
-                nn.Linear(4 * embed_size, embed_size)
+                nn.Linear(4 * embed_size, embed_size),
             )
             self.norm2 = nn.LayerNorm(embed_size)
 
         def forward(self, x):
             seq_len = x.size(1)
-            mask = torch.triu(torch.ones(seq_len, seq_len, device=x.device) * float("-inf"), diagonal=1)
+            mask = torch.triu(
+                torch.ones(seq_len, seq_len, device=x.device) * float("-inf"), diagonal=1
+            )
             attn_out, _ = self.attention(x, x, x, attn_mask=mask)
             x = self.norm1(x + attn_out)
             ff_out = self.feed_forward(x)
             return self.norm2(x + ff_out)
-
 
     class InnateGrammarModule(nn.Module):
         def __init__(self, vocab_size, embed_size=64, layers=2):
@@ -239,7 +237,9 @@ if TORCH_AVAILABLE:
                 return ""
             device = next(self.parameters()).device
             words = [start_word]
-            input_idx = torch.tensor([[dataset.word_to_idx[start_word]]], dtype=torch.long, device=device)
+            input_idx = torch.tensor(
+                [[dataset.word_to_idx[start_word]]], dtype=torch.long, device=device
+            )
             for _ in range(max_len):
                 logit = self.forward(input_idx)[:, -1, :]
                 next_idx = torch.argmax(logit, dim=1).item()
@@ -250,7 +250,6 @@ if TORCH_AVAILABLE:
                 next_token = torch.tensor([[next_idx]], dtype=torch.long, device=device)
                 input_idx = torch.cat([input_idx, next_token], dim=1)
             return " ".join(words)
-
 
     class CriticalPeriodTrainer:
         def __init__(self, actor, critic, dataset, epochs=5):
@@ -275,8 +274,7 @@ if TORCH_AVAILABLE:
                     self.optimizer_critic.zero_grad()
                     critic_out = self.critic(inputs)
                     critic_loss = self.criterion(
-                        critic_out.reshape(-1, len(self.dataset.vocab)),
-                        targets.reshape(-1)
+                        critic_out.reshape(-1, len(self.dataset.vocab)), targets.reshape(-1)
                     )
                     critic_loss.backward()
                     self.optimizer_critic.step()
@@ -284,15 +282,13 @@ if TORCH_AVAILABLE:
                     self.optimizer_actor.zero_grad()
                     outputs = self.actor(inputs)
                     gen_loss = self.criterion(
-                        outputs.reshape(-1, len(self.dataset.vocab)),
-                        targets.reshape(-1)
+                        outputs.reshape(-1, len(self.dataset.vocab)), targets.reshape(-1)
                     )
 
                     with torch.no_grad():
                         critic_eval = self.critic(inputs)
                         critic_eval_loss = self.criterion(
-                            critic_eval.reshape(-1, len(self.dataset.vocab)),
-                            targets.reshape(-1)
+                            critic_eval.reshape(-1, len(self.dataset.vocab)), targets.reshape(-1)
                         )
                         reward = torch.exp(-critic_eval_loss)
 
@@ -300,7 +296,6 @@ if TORCH_AVAILABLE:
                     actor_loss.backward()
                     self.optimizer_actor.step()
                     total_loss += float(actor_loss.item())
-
 
     class ModularLanguageProcessor:
         def __init__(self, actor, critic, dataset):
@@ -328,12 +323,11 @@ if TORCH_AVAILABLE:
                 crit_input = torch.tensor(
                     [[self.dataset.word_to_idx[w] for w in valid_crit_words]],
                     dtype=torch.long,
-                    device=device
+                    device=device,
                 )
                 crit_logits = self.critic(crit_input)
                 crit_score = torch.softmax(crit_logits[:, -1, :], dim=1).max().item()
             return f"Processed (Critic score: {crit_score:.2f}): {input_sentence} -> {generated}"
-
 
     class SocialIntegrator:
         def __init__(self, processor1, processor2):
@@ -352,15 +346,11 @@ if TORCH_AVAILABLE:
 # AphasiaBrocaDetector does NOT depend on torch - keep it outside the conditional block
 class AphasiaBrocaDetector:
     # Default values from calibration
-    DEFAULT_MIN_SENTENCE_LEN = (
-        APHASIA_DEFAULTS.min_sentence_len if APHASIA_DEFAULTS else 6.0
-    )
+    DEFAULT_MIN_SENTENCE_LEN = APHASIA_DEFAULTS.min_sentence_len if APHASIA_DEFAULTS else 6.0
     DEFAULT_MIN_FUNCTION_WORD_RATIO = (
         APHASIA_DEFAULTS.min_function_word_ratio if APHASIA_DEFAULTS else 0.15
     )
-    DEFAULT_MAX_FRAGMENT_RATIO = (
-        APHASIA_DEFAULTS.max_fragment_ratio if APHASIA_DEFAULTS else 0.5
-    )
+    DEFAULT_MAX_FRAGMENT_RATIO = APHASIA_DEFAULTS.max_fragment_ratio if APHASIA_DEFAULTS else 0.5
     DEFAULT_FRAGMENT_LENGTH_THRESHOLD = (
         APHASIA_DEFAULTS.fragment_length_threshold if APHASIA_DEFAULTS else 4
     )
@@ -470,12 +460,10 @@ class AphasiaBrocaDetector:
                 1.0,
                 (
                     max(0.0, self.min_sentence_len - avg_sentence_len) / self.min_sentence_len
-                    + max(0.0, self.min_function_word_ratio - function_word_ratio) / max(
-                        self.min_function_word_ratio, 1e-6
-                    )
-                    + max(0.0, fragment_ratio - self.max_fragment_ratio) / max(
-                        self.max_fragment_ratio, 1e-6
-                    )
+                    + max(0.0, self.min_function_word_ratio - function_word_ratio)
+                    / max(self.min_function_word_ratio, 1e-6)
+                    + max(0.0, fragment_ratio - self.max_fragment_ratio)
+                    / max(self.max_fragment_ratio, 1e-6)
                 )
                 / 3.0,
             )
@@ -499,12 +487,8 @@ class AphasiaSpeechGovernor:
     """
 
     # Default values from calibration
-    DEFAULT_SEVERITY_THRESHOLD = (
-        APHASIA_DEFAULTS.severity_threshold if APHASIA_DEFAULTS else 0.3
-    )
-    DEFAULT_REPAIR_ENABLED = (
-        APHASIA_DEFAULTS.repair_enabled if APHASIA_DEFAULTS else True
-    )
+    DEFAULT_SEVERITY_THRESHOLD = APHASIA_DEFAULTS.severity_threshold if APHASIA_DEFAULTS else 0.3
+    DEFAULT_REPAIR_ENABLED = APHASIA_DEFAULTS.repair_enabled if APHASIA_DEFAULTS else True
 
     def __init__(
         self,
@@ -527,7 +511,9 @@ class AphasiaSpeechGovernor:
             repair_enabled if repair_enabled is not None else self.DEFAULT_REPAIR_ENABLED
         )
         self._severity_threshold = (
-            severity_threshold if severity_threshold is not None else self.DEFAULT_SEVERITY_THRESHOLD
+            severity_threshold
+            if severity_threshold is not None
+            else self.DEFAULT_SEVERITY_THRESHOLD
         )
         self._llm_generate_fn = llm_generate_fn
 

@@ -74,7 +74,7 @@ class SapolskyValidationSuite:
             List of text segments
         """
         # Split by sentences (simple approach using periods)
-        sentences = [s.strip() for s in text.split('.') if s.strip()]
+        sentences = [s.strip() for s in text.split(".") if s.strip()]
 
         # Group sentences into segments
         segments = []
@@ -87,13 +87,13 @@ class SapolskyValidationSuite:
             current_word_count += len(words)
 
             if current_word_count >= min_words:
-                segments.append('. '.join(current_segment) + '.')
+                segments.append(". ".join(current_segment) + ".")
                 current_segment = []
                 current_word_count = 0
 
         # Add remaining segment
         if current_segment:
-            segments.append('. '.join(current_segment) + '.')
+            segments.append(". ".join(current_segment) + ".")
 
         return segments if segments else [text]
 
@@ -308,7 +308,9 @@ class SapolskyValidationSuite:
             results["baseline"] = {
                 "coherence_score": float(np.mean(baseline_scores)) if baseline_scores else 0.0,
                 "topic_drift_rate": float(np.mean(baseline_drift)) if baseline_drift else 0.0,
-                "word_salad_score": float(np.mean(baseline_word_salad)) if baseline_word_salad else 0.0,
+                "word_salad_score": float(np.mean(baseline_word_salad))
+                if baseline_word_salad
+                else 0.0,
                 "num_samples": len(baseline_scores),
             }
 
@@ -458,9 +460,7 @@ class SapolskyValidationSuite:
 
             # Get moral filter from baseline engine
             moral_filter = getattr(self.baseline_engine, "moral", None)
-            violation_rate = self._compute_moral_violation_rate(
-                baseline_responses, moral_filter
-            )
+            violation_rate = self._compute_moral_violation_rate(baseline_responses, moral_filter)
 
             results["baseline"] = {
                 "moral_violation_rate": violation_rate,
@@ -488,9 +488,7 @@ class SapolskyValidationSuite:
             if hasattr(self.neuro_engine, "_mlsdm"):
                 moral_filter = getattr(self.neuro_engine._mlsdm, "moral", None)
 
-            violation_rate = self._compute_moral_violation_rate(
-                neuro_responses, moral_filter
-            )
+            violation_rate = self._compute_moral_violation_rate(neuro_responses, moral_filter)
 
             results["neuro"] = {
                 "moral_violation_rate": violation_rate,
@@ -533,7 +531,9 @@ class SapolskyValidationSuite:
                     pass
 
             results["baseline"] = {
-                "coherence_score": float(np.mean(baseline_coherence)) if baseline_coherence else 0.0,
+                "coherence_score": float(np.mean(baseline_coherence))
+                if baseline_coherence
+                else 0.0,
                 "num_samples": len(baseline_coherence),
             }
 

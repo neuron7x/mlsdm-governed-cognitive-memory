@@ -56,7 +56,7 @@ class TestLLMWrapperBasic:
             capacity=1000,
             wake_duration=8,
             sleep_duration=3,
-            initial_moral_threshold=0.50
+            initial_moral_threshold=0.50,
         )
 
         assert wrapper.dim == 384
@@ -71,14 +71,12 @@ class TestLLMWrapperBasic:
         mock_embedder = MockEmbedder(dim=384)
 
         wrapper = LLMWrapper(
-            llm_generate_fn=mock_llm.generate,
-            embedding_fn=mock_embedder.embed,
-            dim=384
+            llm_generate_fn=mock_llm.generate, embedding_fn=mock_embedder.embed, dim=384
         )
 
         result = wrapper.generate(
             prompt="Hello, how are you?",
-            moral_value=0.8  # High moral value
+            moral_value=0.8,  # High moral value
         )
 
         assert result["accepted"] is True
@@ -97,12 +95,12 @@ class TestLLMWrapperBasic:
             llm_generate_fn=mock_llm.generate,
             embedding_fn=mock_embedder.embed,
             dim=384,
-            initial_moral_threshold=0.70
+            initial_moral_threshold=0.70,
         )
 
         result = wrapper.generate(
             prompt="Bad request",
-            moral_value=0.2  # Low moral value
+            moral_value=0.2,  # Low moral value
         )
 
         assert result["accepted"] is False
@@ -120,7 +118,7 @@ class TestLLMWrapperBasic:
             embedding_fn=mock_embedder.embed,
             dim=384,
             wake_duration=2,
-            sleep_duration=2
+            sleep_duration=2,
         )
 
         # Process 2 events to enter sleep
@@ -147,7 +145,7 @@ class TestLLMWrapperCognitiveRhythm:
             embedding_fn=mock_embedder.embed,
             dim=384,
             wake_duration=2,
-            sleep_duration=2
+            sleep_duration=2,
         )
 
         phases_seen = []
@@ -181,7 +179,7 @@ class TestLLMWrapperCognitiveRhythm:
             embedding_fn=mock_embedder.embed,
             dim=384,
             wake_duration=1,
-            sleep_duration=1
+            sleep_duration=1,
         )
 
         # During wake, should use MAX_WAKE_TOKENS
@@ -206,7 +204,7 @@ class TestLLMWrapperMemoryIntegration:
             llm_generate_fn=mock_llm.generate,
             embedding_fn=mock_embedder.embed,
             dim=384,
-            wake_duration=10
+            wake_duration=10,
         )
 
         # Add some memories
@@ -230,7 +228,7 @@ class TestLLMWrapperMemoryIntegration:
             embedding_fn=mock_embedder.embed,
             dim=384,
             wake_duration=2,
-            sleep_duration=1
+            sleep_duration=1,
         )
 
         # Process first event during wake
@@ -259,7 +257,7 @@ class TestLLMWrapperMemoryIntegration:
             embedding_fn=mock_embedder.embed,
             dim=384,
             capacity=capacity,
-            wake_duration=200
+            wake_duration=200,
         )
 
         # Add more than capacity
@@ -286,7 +284,7 @@ class TestLLMWrapperMoralAdaptation:
             embedding_fn=mock_embedder.embed,
             dim=384,
             initial_moral_threshold=0.50,
-            wake_duration=100
+            wake_duration=100,
         )
 
         initial_threshold = wrapper.moral.threshold
@@ -316,9 +314,7 @@ class TestLLMWrapperStateManagement:
         mock_embedder = MockEmbedder(dim=384)
 
         wrapper = LLMWrapper(
-            llm_generate_fn=mock_llm.generate,
-            embedding_fn=mock_embedder.embed,
-            dim=384
+            llm_generate_fn=mock_llm.generate, embedding_fn=mock_embedder.embed, dim=384
         )
 
         # Process some events
@@ -345,9 +341,7 @@ class TestLLMWrapperStateManagement:
         mock_embedder = MockEmbedder(dim=384)
 
         wrapper = LLMWrapper(
-            llm_generate_fn=mock_llm.generate,
-            embedding_fn=mock_embedder.embed,
-            dim=384
+            llm_generate_fn=mock_llm.generate, embedding_fn=mock_embedder.embed, dim=384
         )
 
         # Process events
@@ -379,9 +373,7 @@ class TestLLMWrapperErrorHandling:
             raise RuntimeError("Embedding failed")
 
         wrapper = LLMWrapper(
-            llm_generate_fn=mock_llm.generate,
-            embedding_fn=failing_embedder,
-            dim=384
+            llm_generate_fn=mock_llm.generate, embedding_fn=failing_embedder, dim=384
         )
 
         result = wrapper.generate("test", moral_value=0.8)
@@ -397,11 +389,7 @@ class TestLLMWrapperErrorHandling:
         def failing_llm(prompt: str, max_tokens: int) -> str:
             raise RuntimeError("Generation failed")
 
-        wrapper = LLMWrapper(
-            llm_generate_fn=failing_llm,
-            embedding_fn=mock_embedder.embed,
-            dim=384
-        )
+        wrapper = LLMWrapper(llm_generate_fn=failing_llm, embedding_fn=mock_embedder.embed, dim=384)
 
         result = wrapper.generate("test", moral_value=0.8)
 

@@ -98,14 +98,8 @@ class RateLimiter:
         with self.lock:
             if client_id in self.buckets:
                 tokens, last_update = self.buckets[client_id]
-                return {
-                    "tokens": float(tokens),
-                    "last_update": float(last_update)
-                }
-            return {
-                "tokens": float(self.capacity),
-                "last_update": float(time.time())
-            }
+                return {"tokens": float(tokens), "last_update": float(last_update)}
+            return {"tokens": float(self.capacity), "last_update": float(time.time())}
 
     def cleanup_old_entries(self, max_age_seconds: float = 3600.0) -> int:
         """Remove entries that haven't been accessed recently.

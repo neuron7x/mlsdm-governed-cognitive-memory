@@ -36,15 +36,18 @@ from mlsdm.utils.input_validator import InputValidator
 # Test Strategies for Property-Based Testing
 # ============================================================================
 
+
 @st.composite
 def bounded_float_strategy(draw, min_val=0.0, max_val=1.0):
     """Generate bounded floats for safety-critical values."""
-    return draw(st.floats(
-        min_value=min_val,
-        max_value=max_val,
-        allow_nan=False,
-        allow_infinity=False,
-    ))
+    return draw(
+        st.floats(
+            min_value=min_val,
+            max_value=max_val,
+            allow_nan=False,
+            allow_infinity=False,
+        )
+    )
 
 
 @st.composite
@@ -64,27 +67,38 @@ def rejection_sequence_strategy(draw, length):
 def threshold_history_strategy(draw, min_length=10, max_length=100):
     """Generate sequences of threshold values within valid range."""
     length = draw(st.integers(min_value=min_length, max_value=max_length))
-    return [draw(bounded_float_strategy(
-        MoralFilterV2.MIN_THRESHOLD,
-        MoralFilterV2.MAX_THRESHOLD,
-    )) for _ in range(length)]
+    return [
+        draw(
+            bounded_float_strategy(
+                MoralFilterV2.MIN_THRESHOLD,
+                MoralFilterV2.MAX_THRESHOLD,
+            )
+        )
+        for _ in range(length)
+    ]
 
 
 @st.composite
 def random_vector_strategy(draw, dim=10):
     """Generate random vectors for memory testing."""
-    values = [draw(st.floats(
-        min_value=-10.0,
-        max_value=10.0,
-        allow_nan=False,
-        allow_infinity=False,
-    )) for _ in range(dim)]
+    values = [
+        draw(
+            st.floats(
+                min_value=-10.0,
+                max_value=10.0,
+                allow_nan=False,
+                allow_infinity=False,
+            )
+        )
+        for _ in range(dim)
+    ]
     return np.array(values, dtype=np.float32)
 
 
 # ============================================================================
 # Safety Metrics Bounds Tests
 # ============================================================================
+
 
 class TestSafetyMetricsBounds:
     """Verify all safety metrics remain bounded within [0, 1]."""
@@ -112,8 +126,7 @@ class TestSafetyMetricsBounds:
             toxic_threshold=0.4,
         )
 
-        assert 0.0 <= rate <= 1.0, \
-            f"Toxic rejection rate {rate} out of bounds [0, 1]"
+        assert 0.0 <= rate <= 1.0, f"Toxic rejection rate {rate} out of bounds [0, 1]"
 
     @settings(max_examples=100, deadline=None)
     @given(threshold_history=threshold_history_strategy())
@@ -127,8 +140,7 @@ class TestSafetyMetricsBounds:
 
         drift = analyzer.measure_moral_drift(threshold_history)
 
-        assert 0.0 <= drift <= 1.0, \
-            f"Moral drift {drift} out of bounds [0, 1]"
+        assert 0.0 <= drift <= 1.0, f"Moral drift {drift} out of bounds [0, 1]"
 
     @settings(max_examples=100, deadline=None)
     @given(threshold_history=threshold_history_strategy(min_length=60, max_length=200))
@@ -146,8 +158,7 @@ class TestSafetyMetricsBounds:
             window_size=50,
         )
 
-        assert 0.0 <= convergence <= 1.0, \
-            f"Convergence {convergence} out of bounds [0, 1]"
+        assert 0.0 <= convergence <= 1.0, f"Convergence {convergence} out of bounds [0, 1]"
 
     @settings(max_examples=100, deadline=None)
     @given(moral_values=moral_value_sequence_strategy())
@@ -168,8 +179,7 @@ class TestSafetyMetricsBounds:
             safe_threshold=0.6,
         )
 
-        assert 0.0 <= rate <= 1.0, \
-            f"False positive rate {rate} out of bounds [0, 1]"
+        assert 0.0 <= rate <= 1.0, f"False positive rate {rate} out of bounds [0, 1]"
 
     def test_safety_metrics_overall_score_bounded(self):
         """
@@ -187,13 +197,13 @@ class TestSafetyMetricsBounds:
 
         for metrics in test_cases:
             score = metrics.overall_score()
-            assert 0.0 <= score <= 1.0, \
-                f"Overall score {score} out of bounds for {metrics}"
+            assert 0.0 <= score <= 1.0, f"Overall score {score} out of bounds for {metrics}"
 
 
 # ============================================================================
 # Coherence Metrics Bounds Tests
 # ============================================================================
+
 
 class TestCoherenceMetricsBounds:
     """Verify all coherence metrics remain bounded within [0, 1]."""
@@ -213,8 +223,7 @@ class TestCoherenceMetricsBounds:
 
         for metrics in test_cases:
             score = metrics.overall_score()
-            assert 0.0 <= score <= 1.0, \
-                f"Overall score {score} out of bounds for {metrics}"
+            assert 0.0 <= score <= 1.0, f"Overall score {score} out of bounds for {metrics}"
 
     @settings(max_examples=50, deadline=None)
     @given(
@@ -235,8 +244,7 @@ class TestCoherenceMetricsBounds:
 
         separation = analyzer.measure_phase_separation(wake_vectors, sleep_vectors)
 
-        assert 0.0 <= separation <= 1.0, \
-            f"Phase separation {separation} out of bounds [0, 1]"
+        assert 0.0 <= separation <= 1.0, f"Phase separation {separation} out of bounds [0, 1]"
 
     @settings(max_examples=50, deadline=None)
     @given(
@@ -254,19 +262,22 @@ class TestCoherenceMetricsBounds:
         analyzer = CoherenceSafetyAnalyzer()
 
         query_vectors = [np.random.randn(dim).astype(np.float32) for _ in range(num_queries)]
-        retrieved_vectors = [[np.random.randn(dim).astype(np.float32) for _ in range(3)]
-                             for _ in range(num_queries)]
+        retrieved_vectors = [
+            [np.random.randn(dim).astype(np.float32) for _ in range(3)] for _ in range(num_queries)
+        ]
 
         coherence = analyzer.measure_semantic_coherence(query_vectors, retrieved_vectors)
 
         # Cosine similarity can be [-1, 1], so we validate that range
-        assert -1.0 <= coherence <= 1.0, \
+        assert -1.0 <= coherence <= 1.0, (
             f"Semantic coherence {coherence} out of expected bounds [-1, 1]"
+        )
 
 
 # ============================================================================
 # Threshold Stability Tests (Adversarial Resistance)
 # ============================================================================
+
 
 class TestThresholdStability:
     """Verify moral filter threshold resists adversarial manipulation."""
@@ -286,10 +297,12 @@ class TestThresholdStability:
         for _ in range(attack_duration):
             moral_filter.adapt(False)  # All rejections
 
-        assert moral_filter.threshold >= MoralFilterV2.MIN_THRESHOLD, \
+        assert moral_filter.threshold >= MoralFilterV2.MIN_THRESHOLD, (
             f"Threshold {moral_filter.threshold} fell below MIN during attack"
-        assert moral_filter.threshold <= MoralFilterV2.MAX_THRESHOLD, \
+        )
+        assert moral_filter.threshold <= MoralFilterV2.MAX_THRESHOLD, (
             f"Threshold {moral_filter.threshold} exceeded MAX during attack"
+        )
 
     @settings(max_examples=50, deadline=None)
     @given(oscillation_cycles=st.integers(min_value=10, max_value=50))
@@ -312,8 +325,9 @@ class TestThresholdStability:
         drift = abs(moral_filter.threshold - initial)
         max_expected_drift = MoralFilterV2.MAX_THRESHOLD - MoralFilterV2.MIN_THRESHOLD
 
-        assert drift <= max_expected_drift, \
+        assert drift <= max_expected_drift, (
             f"Oscillation attack caused drift {drift} > max {max_expected_drift}"
+        )
 
     def test_threshold_maintains_minimum_safety_margin(self):
         """
@@ -328,13 +342,15 @@ class TestThresholdStability:
             moral_filter.adapt(False)
 
         # MIN_THRESHOLD should still be respected
-        assert moral_filter.threshold >= MoralFilterV2.MIN_THRESHOLD, \
+        assert moral_filter.threshold >= MoralFilterV2.MIN_THRESHOLD, (
             "Safety margin violated after extreme adaptation"
+        )
 
 
 # ============================================================================
 # Input Validation Safety Tests
 # ============================================================================
+
 
 class TestInputValidationSafety:
     """Verify input validation protects against adversarial inputs."""
@@ -425,6 +441,7 @@ class TestInputValidationSafety:
 # Edge Case Safety Tests
 # ============================================================================
 
+
 class TestEdgeCaseSafety:
     """Verify safety is maintained at edge cases and boundaries."""
 
@@ -488,6 +505,7 @@ class TestEdgeCaseSafety:
 # Combined Safety Guarantees Tests
 # ============================================================================
 
+
 class TestCombinedSafetyGuarantees:
     """Verify combined safety properties of the system."""
 
@@ -496,9 +514,7 @@ class TestCombinedSafetyGuarantees:
         num_events=st.integers(min_value=50, max_value=200),
         toxic_ratio=bounded_float_strategy(0.0, 1.0),
     )
-    def test_safety_and_coherence_remain_bounded_under_load(
-        self, num_events, toxic_ratio
-    ):
+    def test_safety_and_coherence_remain_bounded_under_load(self, num_events, toxic_ratio):
         """
         INVARIANT: Under arbitrary load, all metrics remain bounded
 
@@ -558,6 +574,7 @@ class TestCombinedSafetyGuarantees:
 # ============================================================================
 # Secure Mode Invariants
 # ============================================================================
+
 
 class TestSecureModeInvariantsExtended:
     """Extended tests for secure mode behavior."""

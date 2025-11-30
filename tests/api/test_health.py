@@ -29,6 +29,7 @@ def setup_environment():
 def client():
     """Create a test client."""
     from mlsdm.api.app import app
+
     return TestClient(app)
 
 

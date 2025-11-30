@@ -1,4 +1,5 @@
 """Tests for the FastAPI application."""
+
 import os
 import tempfile
 from unittest.mock import patch
@@ -10,7 +11,7 @@ from fastapi.testclient import TestClient
 @pytest.fixture
 def test_config_file():
     """Create a temporary config file for testing."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
         f.write("dimension: 10\n")
         f.write("moral_filter:\n")
         f.write("  threshold: 0.5\n")
@@ -35,6 +36,7 @@ def client(test_config_file):
     with patch.dict(os.environ, {"CONFIG_PATH": test_config_file, "DISABLE_RATE_LIMIT": "1"}):
         # Import app after setting env variable
         from mlsdm.api.app import app
+
         with TestClient(app) as client:
             yield client
 
@@ -56,19 +58,13 @@ class TestAPIEndpoints:
     def test_get_state_with_invalid_auth(self, client):
         """Test state endpoint with invalid token."""
         with patch.dict(os.environ, {"API_KEY": "test_key"}):
-            response = client.get(
-                "/v1/state/",
-                headers={"Authorization": "Bearer wrong_key"}
-            )
+            response = client.get("/v1/state/", headers={"Authorization": "Bearer wrong_key"})
             assert response.status_code == 401
 
     def test_get_state_with_valid_auth(self, client):
         """Test state endpoint with valid authentication."""
         with patch.dict(os.environ, {"API_KEY": "test_key"}):
-            response = client.get(
-                "/v1/state/",
-                headers={"Authorization": "Bearer test_key"}
-            )
+            response = client.get("/v1/state/", headers={"Authorization": "Bearer test_key"})
             assert response.status_code == 200
             data = response.json()
             assert "L1_norm" in data
@@ -79,24 +75,16 @@ class TestAPIEndpoints:
 
     def test_process_event_without_auth(self, client):
         """Test that process_event requires authentication."""
-        event_data = {
-            "event_vector": [1.0] * 10,
-            "moral_value": 0.8
-        }
+        event_data = {"event_vector": [1.0] * 10, "moral_value": 0.8}
         response = client.post("/v1/process_event/", json=event_data)
         assert response.status_code == 401
 
     def test_process_event_with_valid_auth(self, client):
         """Test processing an event with valid authentication."""
         with patch.dict(os.environ, {"API_KEY": "test_key"}):
-            event_data = {
-                "event_vector": [1.0] * 10,
-                "moral_value": 0.8
-            }
+            event_data = {"event_vector": [1.0] * 10, "moral_value": 0.8}
             response = client.post(
-                "/v1/process_event/",
-                json=event_data,
-                headers={"Authorization": "Bearer test_key"}
+                "/v1/process_event/", json=event_data, headers={"Authorization": "Bearer test_key"}
             )
             assert response.status_code == 200
             data = response.json()
@@ -108,12 +96,10 @@ class TestAPIEndpoints:
         with patch.dict(os.environ, {"API_KEY": "test_key"}):
             event_data = {
                 "event_vector": [1.0] * 5,  # Wrong dimension
-                "moral_value": 0.8
+                "moral_value": 0.8,
             }
             response = client.post(
-                "/v1/process_event/",
-                json=event_data,
-                headers={"Authorization": "Bearer test_key"}
+                "/v1/process_event/", json=event_data, headers={"Authorization": "Bearer test_key"}
             )
             assert response.status_code == 400
             # Updated to match new validator error message
@@ -123,14 +109,9 @@ class TestAPIEndpoints:
         """Test processing event with various moral values."""
         with patch.dict(os.environ, {"API_KEY": "test_key"}):
             # Test with low moral value
-            event_data = {
-                "event_vector": [1.0] * 10,
-                "moral_value": 0.1
-            }
+            event_data = {"event_vector": [1.0] * 10, "moral_value": 0.1}
             response = client.post(
-                "/v1/process_event/",
-                json=event_data,
-                headers={"Authorization": "Bearer test_key"}
+                "/v1/process_event/", json=event_data, headers={"Authorization": "Bearer test_key"}
             )
             assert response.status_code == 200
 
@@ -138,14 +119,11 @@ class TestAPIEndpoints:
         """Test processing multiple events in sequence."""
         with patch.dict(os.environ, {"API_KEY": "test_key"}):
             for i in range(5):
-                event_data = {
-                    "event_vector": [float(i)] * 10,
-                    "moral_value": 0.6 + i * 0.05
-                }
+                event_data = {"event_vector": [float(i)] * 10, "moral_value": 0.6 + i * 0.05}
                 response = client.post(
                     "/v1/process_event/",
                     json=event_data,
-                    headers={"Authorization": "Bearer test_key"}
+                    headers={"Authorization": "Bearer test_key"},
                 )
                 assert response.status_code == 200
 
@@ -153,38 +131,24 @@ class TestAPIEndpoints:
         """Test that state is updated after processing events."""
         with patch.dict(os.environ, {"API_KEY": "test_key"}):
             # Get initial state
-            response1 = client.get(
-                "/v1/state/",
-                headers={"Authorization": "Bearer test_key"}
-            )
+            response1 = client.get("/v1/state/", headers={"Authorization": "Bearer test_key"})
             initial_count = response1.json()["total_events_processed"]
 
             # Process an event
-            event_data = {
-                "event_vector": [1.0] * 10,
-                "moral_value": 0.8
-            }
+            event_data = {"event_vector": [1.0] * 10, "moral_value": 0.8}
             client.post(
-                "/v1/process_event/",
-                json=event_data,
-                headers={"Authorization": "Bearer test_key"}
+                "/v1/process_event/", json=event_data, headers={"Authorization": "Bearer test_key"}
             )
 
             # Check state updated
-            response2 = client.get(
-                "/v1/state/",
-                headers={"Authorization": "Bearer test_key"}
-            )
+            response2 = client.get("/v1/state/", headers={"Authorization": "Bearer test_key"})
             final_count = response2.json()["total_events_processed"]
             assert final_count > initial_count
 
     def test_api_without_env_api_key(self, client):
         """Test API behavior when API_KEY is not set."""
         # Without API_KEY in environment, any token should work
-        response = client.get(
-            "/v1/state/",
-            headers={"Authorization": "Bearer any_token"}
-        )
+        response = client.get("/v1/state/", headers={"Authorization": "Bearer any_token"})
         assert response.status_code == 200
 
     def test_event_input_validation(self, client):
@@ -198,24 +162,25 @@ class TestAPIEndpoints:
             response = client.post(
                 "/v1/process_event/",
                 json=invalid_data,
-                headers={"Authorization": "Bearer test_key"}
+                headers={"Authorization": "Bearer test_key"},
             )
             assert response.status_code == 422
 
     def test_state_response_fields(self, client):
         """Test that state response has all required fields."""
         with patch.dict(os.environ, {"API_KEY": "test_key"}):
-            response = client.get(
-                "/v1/state/",
-                headers={"Authorization": "Bearer test_key"}
-            )
+            response = client.get("/v1/state/", headers={"Authorization": "Bearer test_key"})
             data = response.json()
 
             required_fields = [
-                "L1_norm", "L2_norm", "L3_norm",
-                "current_phase", "latent_events_count",
-                "accepted_events_count", "total_events_processed",
-                "moral_filter_threshold"
+                "L1_norm",
+                "L2_norm",
+                "L3_norm",
+                "current_phase",
+                "latent_events_count",
+                "accepted_events_count",
+                "total_events_processed",
+                "moral_filter_threshold",
             ]
 
             for field in required_fields:
@@ -227,14 +192,11 @@ class TestAPIEndpoints:
             import concurrent.futures
 
             def make_request():
-                event_data = {
-                    "event_vector": [1.0] * 10,
-                    "moral_value": 0.7
-                }
+                event_data = {"event_vector": [1.0] * 10, "moral_value": 0.7}
                 return client.post(
                     "/v1/process_event/",
                     json=event_data,
-                    headers={"Authorization": "Bearer test_key"}
+                    headers={"Authorization": "Bearer test_key"},
                 )
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
@@ -247,10 +209,7 @@ class TestAPIEndpoints:
     def test_numeric_values_in_response(self, client):
         """Test that numeric values in response are valid."""
         with patch.dict(os.environ, {"API_KEY": "test_key"}):
-            response = client.get(
-                "/v1/state/",
-                headers={"Authorization": "Bearer test_key"}
-            )
+            response = client.get("/v1/state/", headers={"Authorization": "Bearer test_key"})
             data = response.json()
 
             # Check numeric fields are valid
@@ -269,9 +228,7 @@ class TestGenerateEndpoint:
 
     def test_generate_valid_request(self, client):
         """Test generate with valid request returns expected fields."""
-        request_data = {
-            "prompt": "Hello, how are you?"
-        }
+        request_data = {"prompt": "Hello, how are you?"}
         response = client.post("/generate", json=request_data)
         assert response.status_code == 200
         data = response.json()
@@ -291,7 +248,7 @@ class TestGenerateEndpoint:
         request_data = {
             "prompt": "Explain quantum computing",
             "max_tokens": 100,
-            "moral_value": 0.8
+            "moral_value": 0.8,
         }
         response = client.post("/generate", json=request_data)
         assert response.status_code == 200
@@ -311,18 +268,14 @@ class TestGenerateEndpoint:
 
     def test_generate_empty_prompt(self, client):
         """Test generate with empty prompt returns 422 (Pydantic validation)."""
-        request_data = {
-            "prompt": ""
-        }
+        request_data = {"prompt": ""}
         response = client.post("/generate", json=request_data)
         # Pydantic validation for min_length=1 returns 422
         assert response.status_code == 422
 
     def test_generate_whitespace_only_prompt(self, client):
         """Test generate with whitespace-only prompt returns 400."""
-        request_data = {
-            "prompt": "   "
-        }
+        request_data = {"prompt": "   "}
         response = client.post("/generate", json=request_data)
         assert response.status_code == 400
         data = response.json()
@@ -336,7 +289,7 @@ class TestGenerateEndpoint:
         """Test generate with invalid moral_value returns 422."""
         request_data = {
             "prompt": "Hello",
-            "moral_value": 1.5  # Out of range
+            "moral_value": 1.5,  # Out of range
         }
         response = client.post("/generate", json=request_data)
         assert response.status_code == 422
@@ -345,16 +298,14 @@ class TestGenerateEndpoint:
         """Test generate with invalid max_tokens returns 422."""
         request_data = {
             "prompt": "Hello",
-            "max_tokens": 0  # Below minimum
+            "max_tokens": 0,  # Below minimum
         }
         response = client.post("/generate", json=request_data)
         assert response.status_code == 422
 
     def test_generate_response_has_optional_metrics(self, client):
         """Test generate response may include optional metrics."""
-        request_data = {
-            "prompt": "Tell me about AI"
-        }
+        request_data = {"prompt": "Tell me about AI"}
         response = client.post("/generate", json=request_data)
         assert response.status_code == 200
         data = response.json()
@@ -367,9 +318,7 @@ class TestGenerateEndpoint:
 
     def test_generate_does_not_require_auth(self, client):
         """Test that generate endpoint does not require authentication."""
-        request_data = {
-            "prompt": "Hello"
-        }
+        request_data = {"prompt": "Hello"}
         # No auth header provided
         response = client.post("/generate", json=request_data)
         # Should not return 401
@@ -379,9 +328,7 @@ class TestGenerateEndpoint:
         """Test error responses have structured format."""
         # Send invalid JSON
         response = client.post(
-            "/generate",
-            content="not valid json",
-            headers={"Content-Type": "application/json"}
+            "/generate", content="not valid json", headers={"Content-Type": "application/json"}
         )
         assert response.status_code == 422
 

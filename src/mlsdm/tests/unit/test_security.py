@@ -139,7 +139,7 @@ class TestInputValidator:
     def test_validate_vector_nan(self):
         """Test validation rejects NaN values."""
         validator = InputValidator()
-        vector = [1.0, float('nan'), 3.0]
+        vector = [1.0, float("nan"), 3.0]
 
         with pytest.raises(ValueError, match="NaN"):
             validator.validate_vector(vector, expected_dim=3)
@@ -147,7 +147,7 @@ class TestInputValidator:
     def test_validate_vector_inf(self):
         """Test validation rejects Inf values."""
         validator = InputValidator()
-        vector = [1.0, float('inf'), 3.0]
+        vector = [1.0, float("inf"), 3.0]
 
         with pytest.raises(ValueError, match="Inf"):
             validator.validate_vector(vector, expected_dim=3)
@@ -201,7 +201,7 @@ class TestInputValidator:
         validator = InputValidator()
 
         with pytest.raises(ValueError, match="NaN"):
-            validator.validate_moral_value(float('nan'))
+            validator.validate_moral_value(float("nan"))
 
     def test_validate_moral_value_invalid_type(self):
         """Test validation rejects invalid types."""
@@ -338,18 +338,14 @@ class TestSecurityLogger:
     def test_log_invalid_input(self):
         """Test logging invalid input."""
         logger = SecurityLogger("test_invalid_input")
-        correlation_id = logger.log_invalid_input(
-            "client_123",
-            "Vector dimension mismatch"
-        )
+        correlation_id = logger.log_invalid_input("client_123", "Vector dimension mismatch")
         assert correlation_id is not None
 
     def test_log_state_change(self):
         """Test logging state change."""
         logger = SecurityLogger("test_state_change")
         correlation_id = logger.log_state_change(
-            "phase_transition",
-            {"from": "wake", "to": "sleep"}
+            "phase_transition", {"from": "wake", "to": "sleep"}
         )
         assert correlation_id is not None
 
@@ -357,19 +353,14 @@ class TestSecurityLogger:
         """Test logging anomaly."""
         logger = SecurityLogger("test_anomaly")
         correlation_id = logger.log_anomaly(
-            "threshold_breach",
-            "Moral filter threshold exceeded bounds",
-            severity="high"
+            "threshold_breach", "Moral filter threshold exceeded bounds", severity="high"
         )
         assert correlation_id is not None
 
     def test_log_system_event(self):
         """Test logging system event."""
         logger = SecurityLogger("test_system_event")
-        correlation_id = logger.log_system_event(
-            SecurityEventType.STARTUP,
-            "System started"
-        )
+        correlation_id = logger.log_system_event(SecurityEventType.STARTUP, "System started")
         assert correlation_id is not None
 
     def test_correlation_id_consistency(self):
@@ -391,8 +382,8 @@ class TestSecurityLogger:
                 "action": "login",
                 "email": "test@example.com",  # Should be filtered
                 "username": "testuser",  # Should be filtered
-                "timestamp": 1234567890
-            }
+                "timestamp": 1234567890,
+            },
         )
         assert correlation_id is not None
 
@@ -432,7 +423,7 @@ class TestSecurityIntegration:
 
         # Invalid input
         try:
-            vector = [1.0, float('nan'), 3.0]
+            vector = [1.0, float("nan"), 3.0]
             validator.validate_vector(vector, expected_dim=3)
             pytest.fail("Should raise exception for invalid input")
         except ValueError as e:

@@ -97,11 +97,7 @@ class ComboStats:
                        NaN/inf values are treated as 0.0 with a warning.
         """
         # Check for invalid values before sanitizing (NaN != NaN, so direct compare fails)
-        is_invalid = (
-            delta_eoi is None or
-            math.isnan(delta_eoi) or
-            math.isinf(delta_eoi)
-        )
+        is_invalid = delta_eoi is None or math.isnan(delta_eoi) or math.isinf(delta_eoi)
         if is_invalid:
             logger.warning(
                 "ComboStats.update received invalid delta_eoi=%s, treating as 0.0",
@@ -118,8 +114,7 @@ class ComboStats:
             self.ema_effectiveness = delta_eoi
         else:
             self.ema_effectiveness = (
-                self._ema_alpha * delta_eoi +
-                (1 - self._ema_alpha) * self.ema_effectiveness
+                self._ema_alpha * delta_eoi + (1 - self._ema_alpha) * self.ema_effectiveness
             )
 
     def to_dict(self) -> dict[str, Any]:
@@ -206,14 +201,14 @@ class SynergyExperienceMemory:
             The updated ComboStats for this state-combo pair
         """
         # Check for invalid values (NaN != NaN, so use math.isnan)
-        is_invalid = (
-            delta_eoi is None or
-            (isinstance(delta_eoi, float) and (math.isnan(delta_eoi) or math.isinf(delta_eoi)))
+        is_invalid = delta_eoi is None or (
+            isinstance(delta_eoi, float) and (math.isnan(delta_eoi) or math.isinf(delta_eoi))
         )
         if is_invalid:
             logger.warning(
                 "update_experience received invalid delta_eoi=%s for combo=%s, treating as 0.0",
-                delta_eoi, combo_id,
+                delta_eoi,
+                combo_id,
             )
             delta_eoi = 0.0
 
@@ -274,6 +269,7 @@ class SynergyExperienceMemory:
             Invalid values (NaN, inf, None) in eoi_before or eoi_after
             result in delta_eoi being treated as 0.0 with a warning logged.
         """
+
         # Check for invalid values (NaN != NaN, so use math.isnan)
         def _is_invalid(value: float | None) -> bool:
             return value is None or math.isnan(value) or math.isinf(value)
@@ -285,7 +281,9 @@ class SynergyExperienceMemory:
             logger.warning(
                 "record_combo_result received invalid eOI values: before=%s, after=%s "
                 "for combo=%s. Treating delta as 0.0.",
-                eoi_before, eoi_after, combo_id,
+                eoi_before,
+                eoi_after,
+                combo_id,
             )
             delta_eoi = 0.0
         else:
@@ -464,7 +462,8 @@ class SynergyExperienceMemory:
                 "exploitation_count": self._exploitation_count,
                 "exploration_rate": (
                     self._exploration_count / self._total_selections
-                    if self._total_selections > 0 else 0.0
+                    if self._total_selections > 0
+                    else 0.0
                 ),
             }
 
@@ -523,11 +522,7 @@ def compute_eoi(
     acceptance_balance = max(0.0, acceptance_balance)
 
     # Combine components with weights
-    eoi = (
-        0.3 * memory_balance +
-        0.3 * moral_stability +
-        0.4 * acceptance_balance
-    )
+    eoi = 0.3 * memory_balance + 0.3 * moral_stability + 0.4 * acceptance_balance
 
     return eoi
 

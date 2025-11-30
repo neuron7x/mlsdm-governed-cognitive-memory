@@ -49,9 +49,7 @@ class SpeechGovernor(Protocol):
     implementation while maintaining a clean contract.
     """
 
-    def __call__(
-        self, *, prompt: str, draft: str, max_tokens: int
-    ) -> SpeechGovernanceResult:
+    def __call__(self, *, prompt: str, draft: str, max_tokens: int) -> SpeechGovernanceResult:
         """
         Apply speech governance to a draft LLM response.
 

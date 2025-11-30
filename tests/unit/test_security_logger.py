@@ -16,11 +16,11 @@ class TestSecurityEventType:
 
     def test_event_types_defined(self):
         """Test all required event types are defined."""
-        assert hasattr(SecurityEventType, 'AUTH_SUCCESS')
-        assert hasattr(SecurityEventType, 'AUTH_FAILURE')
-        assert hasattr(SecurityEventType, 'RATE_LIMIT_EXCEEDED')
-        assert hasattr(SecurityEventType, 'INVALID_INPUT')
-        assert hasattr(SecurityEventType, 'SYSTEM_ERROR')
+        assert hasattr(SecurityEventType, "AUTH_SUCCESS")
+        assert hasattr(SecurityEventType, "AUTH_FAILURE")
+        assert hasattr(SecurityEventType, "RATE_LIMIT_EXCEEDED")
+        assert hasattr(SecurityEventType, "INVALID_INPUT")
+        assert hasattr(SecurityEventType, "SYSTEM_ERROR")
 
     def test_event_type_values(self):
         """Test event type values are strings."""
@@ -35,15 +35,13 @@ class TestSecurityLogger:
         """Test logger can be initialized."""
         logger = SecurityLogger()
         assert logger is not None
-        assert hasattr(logger, 'logger')
+        assert hasattr(logger, "logger")
 
     def test_log_auth_success(self, caplog):
         """Test logging authentication success."""
         logger = SecurityLogger()
 
-        correlation_id = logger.log_auth_success(
-            client_id="test_client"
-        )
+        correlation_id = logger.log_auth_success(client_id="test_client")
 
         assert correlation_id is not None
         assert len(caplog.records) > 0
@@ -53,8 +51,7 @@ class TestSecurityLogger:
         logger = SecurityLogger()
 
         correlation_id = logger.log_auth_failure(
-            client_id="test_client",
-            reason="invalid_credentials"
+            client_id="test_client", reason="invalid_credentials"
         )
 
         assert correlation_id is not None
@@ -66,9 +63,7 @@ class TestSecurityLogger:
         """Test logging rate limit exceeded."""
         logger = SecurityLogger()
 
-        correlation_id = logger.log_rate_limit_exceeded(
-            client_id="test_client"
-        )
+        correlation_id = logger.log_rate_limit_exceeded(client_id="test_client")
 
         assert correlation_id is not None
         assert len(caplog.records) > 0
@@ -80,8 +75,7 @@ class TestSecurityLogger:
         logger = SecurityLogger()
 
         correlation_id = logger.log_invalid_input(
-            client_id="test_client",
-            error_message="Dimension mismatch"
+            client_id="test_client", error_message="Dimension mismatch"
         )
 
         assert correlation_id is not None
@@ -92,8 +86,7 @@ class TestSecurityLogger:
         logger = SecurityLogger()
 
         correlation_id = logger.log_state_change(
-            change_type="config_update",
-            details={"key": "value"}
+            change_type="config_update", details={"key": "value"}
         )
 
         assert correlation_id is not None
@@ -104,9 +97,7 @@ class TestSecurityLogger:
         logger = SecurityLogger()
 
         correlation_id = logger.log_anomaly(
-            anomaly_type="unusual_pattern",
-            description="Threshold exceeded",
-            severity="medium"
+            anomaly_type="unusual_pattern", description="Threshold exceeded", severity="medium"
         )
 
         assert correlation_id is not None
@@ -117,8 +108,7 @@ class TestSecurityLogger:
         logger = SecurityLogger()
 
         correlation_id = logger.log_system_event(
-            event_type=SecurityEventType.STARTUP,
-            message="System starting"
+            event_type=SecurityEventType.STARTUP, message="System starting"
         )
 
         assert correlation_id is not None
@@ -142,8 +132,8 @@ class TestPIIFiltering:
                 "password": "secret",
                 "token": "bearer_xyz",
                 "username": "testuser",
-                "safe_field": "safe_value"
-            }
+                "safe_field": "safe_value",
+            },
         )
 
         record = caplog.records[-1]
@@ -175,10 +165,7 @@ class TestCorrelationID:
         logger = SecurityLogger()
         provided_id = "custom-correlation-123"
 
-        returned_id = logger.log_auth_success(
-            client_id="test",
-            correlation_id=provided_id
-        )
+        returned_id = logger.log_auth_success(client_id="test", correlation_id=provided_id)
 
         assert returned_id == provided_id
 
@@ -209,9 +196,9 @@ class TestStructuredLogging:
         try:
             data = json.loads(record_msg)
             assert isinstance(data, dict)
-            assert 'timestamp' in data
-            assert 'correlation_id' in data
-            assert 'event_type' in data
+            assert "timestamp" in data
+            assert "correlation_id" in data
+            assert "event_type" in data
         except json.JSONDecodeError:
             pytest.fail("Log message is not valid JSON")
 
@@ -225,11 +212,11 @@ class TestStructuredLogging:
         data = json.loads(str(record.msg))
 
         # Check required fields
-        assert 'timestamp' in data
-        assert 'correlation_id' in data
-        assert 'event_type' in data
-        assert 'message' in data
-        assert 'client_id' in data
+        assert "timestamp" in data
+        assert "correlation_id" in data
+        assert "event_type" in data
+        assert "message" in data
+        assert "client_id" in data
 
     def test_log_event_type_correct(self, caplog):
         """Test that event type is correctly logged."""
@@ -240,7 +227,7 @@ class TestStructuredLogging:
         record = caplog.records[-1]
         data = json.loads(str(record.msg))
 
-        assert data['event_type'] == SecurityEventType.RATE_LIMIT_EXCEEDED.value
+        assert data["event_type"] == SecurityEventType.RATE_LIMIT_EXCEEDED.value
 
 
 class TestGetSecurityLogger:
@@ -267,10 +254,7 @@ class TestEdgeCases:
         """Test logging with None correlation ID."""
         logger = SecurityLogger()
 
-        correlation_id = logger.log_auth_success(
-            client_id="test",
-            correlation_id=None
-        )
+        correlation_id = logger.log_auth_success(client_id="test", correlation_id=None)
 
         # Should generate a correlation ID
         assert correlation_id is not None
@@ -289,10 +273,7 @@ class TestEdgeCases:
         """Test logging with special characters."""
         logger = SecurityLogger()
 
-        logger.log_invalid_input(
-            client_id="test",
-            error_message="Error with special chars: <>&\"'"
-        )
+        logger.log_invalid_input(client_id="test", error_message="Error with special chars: <>&\"'")
 
         assert len(caplog.records) > 0
 
@@ -303,6 +284,7 @@ class TestThreadSafety:
     def test_concurrent_logging(self, caplog):
         """Test concurrent logging from multiple threads."""
         import threading
+
         logger = SecurityLogger()
 
         def log_events():

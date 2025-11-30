@@ -19,7 +19,9 @@ if TYPE_CHECKING:
 # Import recovery calibration parameters and synaptic memory defaults
 # Type annotations use X | None since module may not be available
 _SYNAPTIC_MEMORY_DEFAULTS: "SynapticMemoryCalibration | None" = None
-_get_synaptic_memory_config: Callable[[dict[str, Any] | None], "SynapticMemoryCalibration"] | None = None
+_get_synaptic_memory_config: (
+    Callable[[dict[str, Any] | None], "SynapticMemoryCalibration"] | None
+) = None
 
 # Default max memory bytes: 1.4 GB
 _DEFAULT_MAX_MEMORY_BYTES = int(1.4 * 1024**3)
@@ -34,6 +36,7 @@ try:
     from config.calibration import (
         get_synaptic_memory_config as _imported_get_config,
     )
+
     _CC_RECOVERY_COOLDOWN_STEPS = COGNITIVE_CONTROLLER_DEFAULTS.recovery_cooldown_steps
     _CC_RECOVERY_MEMORY_SAFETY_RATIO = COGNITIVE_CONTROLLER_DEFAULTS.recovery_memory_safety_ratio
     _CC_RECOVERY_MAX_ATTEMPTS = COGNITIVE_CONTROLLER_DEFAULTS.recovery_max_attempts
@@ -102,7 +105,9 @@ class CognitiveController:
         self.memory_threshold_mb = memory_threshold_mb
         self.max_processing_time_ms = max_processing_time_ms
         # Global memory bound (CORE-04): PELM + Synaptic + controller buffers
-        self.max_memory_bytes = max_memory_bytes if max_memory_bytes is not None else _CC_MAX_MEMORY_BYTES
+        self.max_memory_bytes = (
+            max_memory_bytes if max_memory_bytes is not None else _CC_MAX_MEMORY_BYTES
+        )
         self.emergency_shutdown = False
         self._emergency_reason: str | None = None
         self._process = psutil.Process()
@@ -224,7 +229,9 @@ class CognitiveController:
                     event_span.set_attribute("mlsdm.rejected", True)
                     event_span.set_attribute("mlsdm.rejected_reason", "memory_exceeded")
                     event_span.set_attribute("mlsdm.emergency_shutdown", True)
-                    return self._build_state(rejected=True, note="emergency shutdown: memory exceeded")
+                    return self._build_state(
+                        rejected=True, note="emergency shutdown: memory exceeded"
+                    )
 
                 # Moral evaluation with tracing
                 with tracer_manager.start_span(
@@ -263,7 +270,9 @@ class CognitiveController:
                     # Optimization: use cached phase value
                     phase_val = self._phase_cache[self.rhythm.phase]
                     self.pelm.entangle(vector.tolist(), phase=phase_val)
-                    memory_span.set_attribute("mlsdm.pelm_used", self.pelm.get_state_stats()["used"])
+                    memory_span.set_attribute(
+                        "mlsdm.pelm_used", self.pelm.get_state_stats()["used"]
+                    )
 
                 self.rhythm.step()
 
@@ -278,7 +287,9 @@ class CognitiveController:
                     event_span.set_attribute("mlsdm.rejected", True)
                     event_span.set_attribute("mlsdm.rejected_reason", "memory_limit_exceeded")
                     event_span.set_attribute("mlsdm.emergency_shutdown", True)
-                    return self._build_state(rejected=True, note="emergency shutdown: global memory limit exceeded")
+                    return self._build_state(
+                        rejected=True, note="emergency shutdown: global memory limit exceeded"
+                    )
 
                 # Check processing time
                 elapsed_ms = (time.perf_counter() - start_time) * 1000
@@ -287,7 +298,9 @@ class CognitiveController:
                 if elapsed_ms > self.max_processing_time_ms:
                     event_span.set_attribute("mlsdm.rejected", True)
                     event_span.set_attribute("mlsdm.rejected_reason", "processing_timeout")
-                    return self._build_state(rejected=True, note=f"processing time exceeded: {elapsed_ms:.2f}ms")
+                    return self._build_state(
+                        rejected=True, note=f"processing time exceeded: {elapsed_ms:.2f}ms"
+                    )
 
                 # Success
                 event_span.set_attribute("mlsdm.accepted", True)
@@ -319,7 +332,7 @@ class CognitiveController:
                     query_vector.tolist(),
                     current_phase=phase_val,
                     phase_tolerance=0.15,
-                    top_k=top_k
+                    top_k=top_k,
                 )
                 span.set_attribute("mlsdm.results_count", len(results))
                 return results
@@ -411,14 +424,14 @@ class CognitiveController:
             "synaptic_norms": {
                 "L1": float(np.linalg.norm(l1)),
                 "L2": float(np.linalg.norm(l2)),
-                "L3": float(np.linalg.norm(l3))
+                "L3": float(np.linalg.norm(l3)),
             },
             "pelm_used": self.pelm.get_state_stats()["used"],
             # Backward compatibility (deprecated)
             "qilm_used": self.pelm.get_state_stats()["used"],
             "rejected": rejected,
             "accepted": not rejected,
-            "note": note
+            "note": note,
         }
 
         # Cache result for accepted events

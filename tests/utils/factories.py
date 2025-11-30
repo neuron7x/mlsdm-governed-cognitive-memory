@@ -88,6 +88,7 @@ def create_mock_embedder(dim: int = 384) -> Callable[[str], np.ndarray]:
     Returns:
         A function that generates embeddings for text.
     """
+
     def _embed(text: str) -> np.ndarray:
         # Use text hash for deterministic output
         np.random.seed(hash(text) % (2**32))
@@ -143,6 +144,7 @@ def create_pelm_memory(
         A PELM instance.
     """
     from mlsdm.memory import PhaseEntangledLatticeMemory
+
     return PhaseEntangledLatticeMemory(dimension=dim, capacity=capacity)
 
 
@@ -161,6 +163,7 @@ def create_moral_filter(
         A MoralFilter instance.
     """
     from mlsdm.cognition.moral_filter import MoralFilter
+
     return MoralFilter(threshold=threshold, adapt_rate=adapt_rate)
 
 
@@ -179,4 +182,5 @@ def create_cognitive_rhythm(
         A CognitiveRhythm instance.
     """
     from mlsdm.rhythm.cognitive_rhythm import CognitiveRhythm
+
     return CognitiveRhythm(wake_duration=wake_duration, sleep_duration=sleep_duration)

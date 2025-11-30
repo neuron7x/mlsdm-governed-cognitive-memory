@@ -250,9 +250,7 @@ class TestObservabilityLogger:
             )
 
             provided_id = "custom-correlation-123"
-            returned_id = logger.info(
-                EventType.SYSTEM_STARTUP, "Test", correlation_id=provided_id
-            )
+            returned_id = logger.info(EventType.SYSTEM_STARTUP, "Test", correlation_id=provided_id)
 
             assert returned_id == provided_id
 
@@ -359,9 +357,7 @@ class TestConvenienceMethods:
                 console_output=False,
             )
 
-            correlation_id = logger.log_moral_rejected(
-                moral_value=0.3, threshold=0.5
-            )
+            correlation_id = logger.log_moral_rejected(moral_value=0.3, threshold=0.5)
 
             assert correlation_id is not None
 
@@ -383,9 +379,7 @@ class TestConvenienceMethods:
                 console_output=False,
             )
 
-            correlation_id = logger.log_moral_accepted(
-                moral_value=0.8, threshold=0.5
-            )
+            correlation_id = logger.log_moral_accepted(moral_value=0.8, threshold=0.5)
 
             assert correlation_id is not None
 
@@ -474,9 +468,7 @@ class TestConvenienceMethods:
                 min_level=logging.DEBUG,
             )
 
-            correlation_id = logger.log_memory_store(
-                vector_dim=384, memory_size=100
-            )
+            correlation_id = logger.log_memory_store(vector_dim=384, memory_size=100)
 
             assert correlation_id is not None
 
@@ -519,9 +511,7 @@ class TestConvenienceMethods:
                 console_output=False,
             )
 
-            correlation_id = logger.log_system_startup(
-                version="1.0.0", config={"dim": 384}
-            )
+            correlation_id = logger.log_system_startup(version="1.0.0", config={"dim": 384})
 
             assert correlation_id is not None
 
@@ -621,9 +611,7 @@ class TestGetObservabilityLogger:
         results = []
 
         def get_logger():
-            logger = get_observability_logger(
-                logger_name="thread_safe_test", console_output=False
-            )
+            logger = get_observability_logger(logger_name="thread_safe_test", console_output=False)
             results.append(logger)
 
         # Create multiple threads that try to get the logger simultaneously
@@ -725,9 +713,7 @@ class TestEdgeCases:
                 console_output=False,
             )
 
-            correlation_id = logger.info(
-                EventType.SYSTEM_STARTUP, "Test", metrics=None
-            )
+            correlation_id = logger.info(EventType.SYSTEM_STARTUP, "Test", metrics=None)
 
             assert correlation_id is not None
 
@@ -749,9 +735,7 @@ class TestEdgeCases:
             )
 
             # Should not raise ZeroDivisionError
-            correlation_id = logger.log_memory_full(
-                current_size=0, capacity=0, memory_mb=0.0
-            )
+            correlation_id = logger.log_memory_full(current_size=0, capacity=0, memory_mb=0.0)
 
             assert correlation_id is not None
 

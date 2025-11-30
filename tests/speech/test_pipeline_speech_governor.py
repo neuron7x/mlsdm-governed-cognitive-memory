@@ -117,9 +117,7 @@ def test_pipeline_preserves_governor_metadata():
 
 def test_pipeline_error_includes_exception_details():
     """Test that error entries include exception type and message."""
-    pipeline = PipelineSpeechGovernor(
-        governors=[("failer", FailingGovernor())]
-    )
+    pipeline = PipelineSpeechGovernor(governors=[("failer", FailingGovernor())])
     result = pipeline(prompt="test", draft="text", max_tokens=32)
 
     history = result.metadata["pipeline"]

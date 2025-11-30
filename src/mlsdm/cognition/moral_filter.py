@@ -1,5 +1,3 @@
-
-
 class MoralFilter:
     def __init__(
         self,

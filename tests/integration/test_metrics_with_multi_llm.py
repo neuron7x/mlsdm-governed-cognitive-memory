@@ -5,7 +5,6 @@ This module tests that metrics are correctly collected and labeled
 when using multiple LLM providers and A/B testing.
 """
 
-
 from mlsdm.adapters.llm_provider import LocalStubProvider
 from mlsdm.engine.factory import build_stub_embedding_fn
 from mlsdm.engine.neuro_cognitive_engine import (
@@ -272,19 +271,25 @@ class TestMetricsWithMultiLLM:
         # Make requests with different intents
         successful_a = 0
         for _ in range(5):
-            result = engine.generate("Test A", max_tokens=100, user_intent="intent_a", moral_value=0.9)
+            result = engine.generate(
+                "Test A", max_tokens=100, user_intent="intent_a", moral_value=0.9
+            )
             if result["error"] is None:
                 successful_a += 1
 
         successful_b = 0
         for _ in range(3):
-            result = engine.generate("Test B", max_tokens=100, user_intent="intent_b", moral_value=0.9)
+            result = engine.generate(
+                "Test B", max_tokens=100, user_intent="intent_b", moral_value=0.9
+            )
             if result["error"] is None:
                 successful_b += 1
 
         successful_c = 0
         for _ in range(7):
-            result = engine.generate("Test C", max_tokens=100, user_intent="intent_c", moral_value=0.9)
+            result = engine.generate(
+                "Test C", max_tokens=100, user_intent="intent_c", moral_value=0.9
+            )
             if result["error"] is None:
                 successful_c += 1
 

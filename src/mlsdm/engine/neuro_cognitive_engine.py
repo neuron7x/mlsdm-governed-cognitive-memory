@@ -60,11 +60,13 @@ except Exception:  # pragma: no cover - optional
 
 class MLSDMRejectionError(Exception):
     """MLSDM відхилив запит (мораль, ритм, резилієнтність)."""
+
     pass
 
 
 class EmptyResponseError(Exception):
     """LLM/MLSDM повернули порожню відповідь."""
+
     pass
 
 
@@ -142,25 +144,29 @@ class NeuroEngineConfig:
 
     # Multi-LLM routing (Phase 8)
     router_mode: Literal["single", "rule_based", "ab_test", "ab_test_canary"] = "single"
-    ab_test_config: dict[str, Any] = field(default_factory=lambda: {
-        "control": "default",
-        "treatment": "default",
-        "treatment_ratio": 0.1
-    })
-    canary_config: dict[str, Any] = field(default_factory=lambda: {
-        "current_version": "default",
-        "candidate_version": "default",
-        "candidate_ratio": 0.1,
-        "error_budget_threshold": 0.05,
-        "min_requests_before_decision": 100
-    })
+    ab_test_config: dict[str, Any] = field(
+        default_factory=lambda: {
+            "control": "default",
+            "treatment": "default",
+            "treatment_ratio": 0.1,
+        }
+    )
+    canary_config: dict[str, Any] = field(
+        default_factory=lambda: {
+            "current_version": "default",
+            "candidate_version": "default",
+            "candidate_ratio": 0.1,
+            "error_budget_threshold": 0.05,
+            "min_requests_before_decision": 100,
+        }
+    )
     rule_based_config: dict[str, str] = field(default_factory=dict)
 
     # Bulkhead / Fault Isolation (Reliability)
     # Controls concurrent operation limits per subsystem to prevent cascading failures.
     enable_bulkhead: bool = True
     bulkhead_timeout: float = 5.0  # Max wait time (seconds) to acquire bulkhead slot
-    bulkhead_llm_limit: int = 10   # Max concurrent LLM generation calls
+    bulkhead_llm_limit: int = 10  # Max concurrent LLM generation calls
     bulkhead_embedding_limit: int = 20  # Max concurrent embedding operations
     bulkhead_memory_limit: int = 50  # Max concurrent memory operations
     bulkhead_cognitive_limit: int = 100  # Max concurrent cognitive operations
@@ -201,6 +207,7 @@ class NeuroCognitiveEngine:
 
         # If router is provided, create a wrapper function
         if router is not None:
+
             def routed_llm_fn(prompt: str, max_tokens: int, **kwargs: Any) -> str:
                 # Metadata for routing (can be extended in generate())
                 metadata = {
@@ -247,9 +254,7 @@ class NeuroCognitiveEngine:
             actual_llm_fn: Callable[[str, int], str] = routed_llm_fn
         else:
             if llm_generate_fn is None:
-                raise ValueError(
-                    "Either llm_generate_fn or router must be provided"
-                )
+                raise ValueError("Either llm_generate_fn or router must be provided")
             actual_llm_fn = llm_generate_fn
 
         if embedding_fn is None:
@@ -352,8 +357,8 @@ class NeuroCognitiveEngine:
             association_threshold=self.config.association_threshold,
             enable_monitoring=self.config.enable_monitoring,
             stress_threshold=self.config.stress_threshold,
-            fractal_levels=None,       # FIX-001: no internal memory/fractals
-            memory_capacity=0,         # FIX-001: single source of truth = MLSDM
+            fractal_levels=None,  # FIX-001: no internal memory/fractals
+            memory_capacity=0,  # FIX-001: single source of truth = MLSDM
             enable_entity_tracking=self.config.enable_entity_tracking,
             enable_temporal_validation=self.config.enable_temporal_validation,
             enable_causal_checking=self.config.enable_causal_checking,
@@ -446,10 +451,8 @@ class NeuroCognitiveEngine:
         7. Record metrics and build response
         """
         # Step 1: Prepare request context
-        user_intent, cognitive_load, moral_value, context_top_k = (
-            self._prepare_request_context(
-                user_intent, cognitive_load, moral_value, context_top_k
-            )
+        user_intent, cognitive_load, moral_value, context_top_k = self._prepare_request_context(
+            user_intent, cognitive_load, moral_value, context_top_k
         )
 
         # Step 2: Pre-select provider for metrics tracking
@@ -498,16 +501,27 @@ class NeuroCognitiveEngine:
                 try:
                     with tracer_manager.start_span("engine.llm_generation") as gen_span:
                         response_text, mlsdm_state, fslgs_result = self._run_llm_generation(
-                            prompt, max_tokens, cognitive_load, user_intent,
-                            moral_value, context_top_k, enable_diagnostics, timing
+                            prompt,
+                            max_tokens,
+                            cognitive_load,
+                            user_intent,
+                            moral_value,
+                            context_top_k,
+                            enable_diagnostics,
+                            timing,
                         )
                         gen_span.set_attribute("mlsdm.response_length", len(response_text))
 
                     # Step 6: POST-generation moral check
                     with tracer_manager.start_span("engine.post_moral_check") as post_span:
                         rejection = self._run_post_moral_check(
-                            response_text, prompt, moral_value,
-                            mlsdm_state, fslgs_result, timing, validation_steps
+                            response_text,
+                            prompt,
+                            moral_value,
+                            mlsdm_state,
+                            fslgs_result,
+                            timing,
+                            validation_steps,
                         )
                         if rejection is not None:
                             post_span.set_attribute("mlsdm.rejected", True)
@@ -587,15 +601,9 @@ class NeuroCognitiveEngine:
         """
         user_intent = user_intent or self.config.default_user_intent
         cognitive_load = (
-            cognitive_load
-            if cognitive_load is not None
-            else self.config.default_cognitive_load
+            cognitive_load if cognitive_load is not None else self.config.default_cognitive_load
         )
-        moral_value = (
-            moral_value
-            if moral_value is not None
-            else self.config.default_moral_value
-        )
+        moral_value = moral_value if moral_value is not None else self.config.default_moral_value
         context_top_k = context_top_k or self.config.default_context_top_k
 
         # Update runtime parameters for router
@@ -603,9 +611,7 @@ class NeuroCognitiveEngine:
 
         return user_intent, cognitive_load, moral_value, context_top_k
 
-    def _preselect_provider_for_metrics(
-        self, prompt: str, user_intent: str
-    ) -> None:
+    def _preselect_provider_for_metrics(self, prompt: str, user_intent: str) -> None:
         """Pre-select provider/variant for metrics tracking.
 
         This ensures we track even rejected requests in metrics.
@@ -645,9 +651,7 @@ class NeuroCognitiveEngine:
         with TimingContext(timing, "moral_precheck"):
             moral_filter = getattr(self._mlsdm, "moral", None)
 
-            if moral_filter is not None and hasattr(
-                moral_filter, "compute_moral_value"
-            ):
+            if moral_filter is not None and hasattr(moral_filter, "compute_moral_value"):
                 prompt_moral = moral_filter.compute_moral_value(prompt)
                 passed = prompt_moral >= moral_value
                 validation_steps.append(
@@ -663,15 +667,12 @@ class NeuroCognitiveEngine:
                     # Record metrics
                     if self._metrics is not None:
                         self._metrics.increment_requests_total(
-                            provider_id=self._selected_provider_id,
-                            variant=self._selected_variant
+                            provider_id=self._selected_provider_id, variant=self._selected_variant
                         )
                         self._metrics.increment_rejections_total("pre_flight")
                         self._metrics.increment_errors_total("moral_precheck")
                         if "moral_precheck" in timing:
-                            self._metrics.record_latency_pre_flight(
-                                timing["moral_precheck"]
-                            )
+                            self._metrics.record_latency_pre_flight(timing["moral_precheck"])
                         if "total" in timing:
                             self._metrics.record_latency_total(timing["total"])
 
@@ -732,9 +733,7 @@ class NeuroCognitiveEngine:
                         self._metrics.increment_rejections_total("pre_flight")
                         self._metrics.increment_errors_total("grammar_precheck")
                         if "grammar_precheck" in timing:
-                            self._metrics.record_latency_pre_flight(
-                                timing["grammar_precheck"]
-                            )
+                            self._metrics.record_latency_pre_flight(timing["grammar_precheck"])
                         if "total" in timing:
                             self._metrics.record_latency_total(timing["total"])
 
@@ -799,13 +798,23 @@ class NeuroCognitiveEngine:
                     timeout=self.config.bulkhead_timeout,
                 ):
                     response_text, mlsdm_state, fslgs_result = self._execute_generation(
-                        prompt, max_tokens, cognitive_load, user_intent,
-                        moral_value, context_top_k, enable_diagnostics
+                        prompt,
+                        max_tokens,
+                        cognitive_load,
+                        user_intent,
+                        moral_value,
+                        context_top_k,
+                        enable_diagnostics,
                     )
             else:
                 response_text, mlsdm_state, fslgs_result = self._execute_generation(
-                    prompt, max_tokens, cognitive_load, user_intent,
-                    moral_value, context_top_k, enable_diagnostics
+                    prompt,
+                    max_tokens,
+                    cognitive_load,
+                    user_intent,
+                    moral_value,
+                    context_top_k,
+                    enable_diagnostics,
                 )
 
         return response_text, mlsdm_state, fslgs_result
@@ -875,21 +884,21 @@ class NeuroCognitiveEngine:
             Rejection response dict if check fails, None if passed.
         """
         with TimingContext(timing, "post_moral_check"):
-            response_moral_score = self._estimate_response_moral_score(
-                response_text, prompt
-            )
+            response_moral_score = self._estimate_response_moral_score(response_text, prompt)
 
             # Tolerance for estimation error (matching test expectations)
             MORAL_SCORE_TOLERANCE = 0.15
 
             if response_moral_score < (moral_value - MORAL_SCORE_TOLERANCE):
                 # Response doesn't meet moral threshold - reject it
-                validation_steps.append({
-                    "step": "post_moral_check",
-                    "passed": False,
-                    "score": response_moral_score,
-                    "threshold": moral_value,
-                })
+                validation_steps.append(
+                    {
+                        "step": "post_moral_check",
+                        "passed": False,
+                        "score": response_moral_score,
+                        "threshold": moral_value,
+                    }
+                )
 
                 if self._metrics is not None:
                     self._metrics.increment_rejections_total("post_moral")
@@ -914,12 +923,14 @@ class NeuroCognitiveEngine:
                     "meta": self._build_meta(),
                 }
 
-            validation_steps.append({
-                "step": "post_moral_check",
-                "passed": True,
-                "score": response_moral_score,
-                "threshold": moral_value,
-            })
+            validation_steps.append(
+                {
+                    "step": "post_moral_check",
+                    "passed": True,
+                    "score": response_moral_score,
+                    "threshold": moral_value,
+                }
+            )
 
         return None
 
@@ -961,8 +972,7 @@ class NeuroCognitiveEngine:
         # Record metrics
         if self._metrics is not None:
             self._metrics.increment_requests_total(
-                provider_id=self._selected_provider_id,
-                variant=self._selected_variant
+                provider_id=self._selected_provider_id, variant=self._selected_variant
             )
             self._metrics.increment_rejections_total(rejected_at)
             self._metrics.increment_errors_total(error_type)
@@ -992,21 +1002,18 @@ class NeuroCognitiveEngine:
 
         # Increment request counter with provider/variant labels
         self._metrics.increment_requests_total(
-            provider_id=self._selected_provider_id,
-            variant=self._selected_variant
+            provider_id=self._selected_provider_id, variant=self._selected_variant
         )
 
         if "moral_precheck" in timing or "grammar_precheck" in timing:
-            pre_flight_time = (
-                timing.get("moral_precheck", 0) + timing.get("grammar_precheck", 0)
-            )
+            pre_flight_time = timing.get("moral_precheck", 0) + timing.get("grammar_precheck", 0)
             if pre_flight_time > 0:
                 self._metrics.record_latency_pre_flight(pre_flight_time)
         if "generation" in timing:
             self._metrics.record_latency_generation(
                 timing["generation"],
                 provider_id=self._selected_provider_id,
-                variant=self._selected_variant
+                variant=self._selected_variant,
             )
         if "total" in timing:
             self._metrics.record_latency_total(timing["total"])

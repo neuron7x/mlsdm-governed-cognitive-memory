@@ -35,17 +35,10 @@ def test_llm_wrapper_basic_flow():
     """Test basic LLM wrapper functionality."""
     print("\n✓ Test 1: Basic LLM wrapper flow")
 
-    wrapper = LLMWrapper(
-        llm_generate_fn=mock_llm_generate,
-        embedding_fn=mock_embedding,
-        dim=384
-    )
+    wrapper = LLMWrapper(llm_generate_fn=mock_llm_generate, embedding_fn=mock_embedding, dim=384)
 
     # Normal conversation
-    result = wrapper.generate(
-        prompt="Hello, how are you?",
-        moral_value=0.9
-    )
+    result = wrapper.generate(prompt="Hello, how are you?", moral_value=0.9)
 
     assert result["accepted"] is True
     assert len(result["response"]) > 0
@@ -59,16 +52,11 @@ def test_llm_wrapper_moral_filtering():
     print("\n✓ Test 2: Moral filtering")
 
     wrapper = LLMWrapper(
-        llm_generate_fn=mock_llm_generate,
-        embedding_fn=mock_embedding,
-        initial_moral_threshold=0.70
+        llm_generate_fn=mock_llm_generate, embedding_fn=mock_embedding, initial_moral_threshold=0.70
     )
 
     # Low moral value should be rejected
-    result = wrapper.generate(
-        prompt="Tell me something toxic",
-        moral_value=0.2
-    )
+    result = wrapper.generate(prompt="Tell me something toxic", moral_value=0.2)
 
     assert result["accepted"] is False
     assert "morally rejected" in result["note"]
@@ -84,16 +72,13 @@ def test_llm_wrapper_sleep_cycle():
         llm_generate_fn=mock_llm_generate,
         embedding_fn=mock_embedding,
         wake_duration=2,
-        sleep_duration=1
+        sleep_duration=1,
     )
 
     # Process during wake
     wake_accepted = 0
     for i in range(2):
-        result = wrapper.generate(
-            prompt=f"Wake message {i}",
-            moral_value=0.9
-        )
+        result = wrapper.generate(prompt=f"Wake message {i}", moral_value=0.9)
         if result["accepted"]:
             wake_accepted += 1
 
@@ -101,10 +86,7 @@ def test_llm_wrapper_sleep_cycle():
     assert wake_accepted > 0
 
     # Now should be in sleep phase
-    result = wrapper.generate(
-        prompt="Sleep message",
-        moral_value=0.9
-    )
+    result = wrapper.generate(prompt="Sleep message", moral_value=0.9)
 
     assert result["accepted"] is False
     assert result["phase"] == "sleep"
@@ -119,23 +101,17 @@ def test_llm_wrapper_context_retrieval():
     wrapper = LLMWrapper(
         llm_generate_fn=mock_llm_generate,
         embedding_fn=mock_embedding,
-        wake_duration=10  # Long wake for multiple messages
+        wake_duration=10,  # Long wake for multiple messages
     )
 
     # Build context
     topics = ["Python programming", "code examples", "best practices"]
     for topic in topics:
-        result = wrapper.generate(
-            prompt=f"Tell me about {topic}",
-            moral_value=0.9
-        )
+        result = wrapper.generate(prompt=f"Tell me about {topic}", moral_value=0.9)
         assert result["accepted"] is True
 
     # Query with related topic
-    result = wrapper.generate(
-        prompt="Can you help with Python code?",
-        moral_value=0.9
-    )
+    result = wrapper.generate(prompt="Can you help with Python code?", moral_value=0.9)
 
     assert result["accepted"] is True
     assert result["context_items"] >= 0
@@ -151,15 +127,12 @@ def test_llm_wrapper_memory_consolidation():
         llm_generate_fn=mock_llm_generate,
         embedding_fn=mock_embedding,
         wake_duration=3,
-        sleep_duration=2
+        sleep_duration=2,
     )
 
     # Process messages during wake
     for i in range(3):
-        result = wrapper.generate(
-            prompt=f"Message {i}",
-            moral_value=0.9
-        )
+        result = wrapper.generate(prompt=f"Message {i}", moral_value=0.9)
         assert result["accepted"] is True
 
     # Check state
@@ -180,7 +153,7 @@ def test_llm_wrapper_long_conversation():
         llm_generate_fn=mock_llm_generate,
         embedding_fn=mock_embedding,
         wake_duration=5,
-        sleep_duration=2
+        sleep_duration=2,
     )
 
     accepted_count = 0
@@ -188,10 +161,7 @@ def test_llm_wrapper_long_conversation():
 
     # Simulate 20 messages across multiple cycles
     for i in range(20):
-        result = wrapper.generate(
-            prompt=f"Message number {i}",
-            moral_value=0.85
-        )
+        result = wrapper.generate(prompt=f"Message number {i}", moral_value=0.85)
         if result["accepted"]:
             accepted_count += 1
         else:
@@ -219,15 +189,12 @@ def test_llm_wrapper_memory_bounded():
         llm_generate_fn=mock_llm_generate,
         embedding_fn=mock_embedding,
         capacity=capacity,
-        wake_duration=50  # Long wake to process many messages
+        wake_duration=50,  # Long wake to process many messages
     )
 
     # Process more than capacity
     for i in range(150):
-        _ = wrapper.generate(
-            prompt=f"Message {i}",
-            moral_value=0.9
-        )
+        _ = wrapper.generate(prompt=f"Message {i}", moral_value=0.9)
 
     state = wrapper.get_state()
     qilm_stats = state["qilm_stats"]
@@ -246,10 +213,7 @@ def test_llm_wrapper_state_consistency():
     """Test state consistency across operations."""
     print("\n✓ Test 8: State consistency")
 
-    wrapper = LLMWrapper(
-        llm_generate_fn=mock_llm_generate,
-        embedding_fn=mock_embedding
-    )
+    wrapper = LLMWrapper(llm_generate_fn=mock_llm_generate, embedding_fn=mock_embedding)
 
     # Get initial state
     state1 = wrapper.get_state()
@@ -266,14 +230,16 @@ def test_llm_wrapper_state_consistency():
     assert state2["synaptic_norms"]["L1"] >= state1["synaptic_norms"]["L1"]
 
     print(f"  Steps: {state1['step']} -> {state2['step']}")
-    print(f"  L1 norm: {state1['synaptic_norms']['L1']:.2f} -> {state2['synaptic_norms']['L1']:.2f}")
+    print(
+        f"  L1 norm: {state1['synaptic_norms']['L1']:.2f} -> {state2['synaptic_norms']['L1']:.2f}"
+    )
     print("  PASS")
 
 
 if __name__ == "__main__":
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("MLSDM LLM Wrapper Integration Tests")
-    print("="*60)
+    print("=" * 60)
 
     test_llm_wrapper_basic_flow()
     test_llm_wrapper_moral_filtering()
@@ -284,6 +250,6 @@ if __name__ == "__main__":
     test_llm_wrapper_memory_bounded()
     test_llm_wrapper_state_consistency()
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("✅ ALL TESTS PASSED")
-    print("="*60 + "\n")
+    print("=" * 60 + "\n")

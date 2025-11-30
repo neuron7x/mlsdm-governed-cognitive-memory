@@ -129,7 +129,7 @@ class TestPELMEntangle:
 
         # Fill to capacity
         for i in range(3):
-            pelm.entangle([float(i), float(i+1)], 0.1 * i)
+            pelm.entangle([float(i), float(i + 1)], 0.1 * i)
 
         assert pelm.pointer == 0  # Should wrap around
         assert pelm.size == 3
@@ -402,7 +402,7 @@ class TestPELMv2BoundaryChecks:
 
         # Fill to capacity
         for i in range(5):
-            idx = pelm.entangle([float(i), float(i+1)], 0.1)
+            idx = pelm.entangle([float(i), float(i + 1)], 0.1)
             assert idx == i
 
         # Pointer should wrap to 0
@@ -419,7 +419,7 @@ class TestPELMv2BoundaryChecks:
 
         # Add more than capacity
         for i in range(10):
-            pelm.entangle([float(i), float(i+1)], 0.1 * i)
+            pelm.entangle([float(i), float(i + 1)], 0.1 * i)
 
         # Size should be capped at capacity
         assert pelm.size == 3
@@ -533,31 +533,31 @@ class TestPELMInputValidation:
         pelm = PhaseEntangledLatticeMemory(dimension=3, capacity=10)
 
         with pytest.raises(ValueError, match="invalid value"):
-            pelm.entangle([1.0, float('nan'), 3.0], 0.5)
+            pelm.entangle([1.0, float("nan"), 3.0], 0.5)
 
     def test_entangle_rejects_inf_in_vector(self):
         """Test that entangle rejects vectors containing infinity."""
         pelm = PhaseEntangledLatticeMemory(dimension=3, capacity=10)
 
         with pytest.raises(ValueError, match="invalid value"):
-            pelm.entangle([1.0, float('inf'), 3.0], 0.5)
+            pelm.entangle([1.0, float("inf"), 3.0], 0.5)
 
         with pytest.raises(ValueError, match="invalid value"):
-            pelm.entangle([float('-inf'), 2.0, 3.0], 0.5)
+            pelm.entangle([float("-inf"), 2.0, 3.0], 0.5)
 
     def test_entangle_rejects_nan_phase(self):
         """Test that entangle rejects NaN phase."""
         pelm = PhaseEntangledLatticeMemory(dimension=3, capacity=10)
 
         with pytest.raises(ValueError, match="finite number"):
-            pelm.entangle([1.0, 2.0, 3.0], float('nan'))
+            pelm.entangle([1.0, 2.0, 3.0], float("nan"))
 
     def test_entangle_rejects_inf_phase(self):
         """Test that entangle rejects infinite phase."""
         pelm = PhaseEntangledLatticeMemory(dimension=3, capacity=10)
 
         with pytest.raises(ValueError, match="finite number"):
-            pelm.entangle([1.0, 2.0, 3.0], float('inf'))
+            pelm.entangle([1.0, 2.0, 3.0], float("inf"))
 
 
 if __name__ == "__main__":

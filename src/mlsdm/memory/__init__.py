@@ -38,7 +38,7 @@ QILM_v2 = PhaseEntangledLatticeMemory
 
 __all__ = [
     "PhaseEntangledLatticeMemory",  # Canonical name
-    "PELM",                          # Convenient alias (recommended)
-    "MemoryRetrieval",               # Dataclass for retrieval results
-    "QILM_v2",                       # Deprecated alias
+    "PELM",  # Convenient alias (recommended)
+    "MemoryRetrieval",  # Dataclass for retrieval results
+    "QILM_v2",  # Deprecated alias
 ]

@@ -21,7 +21,7 @@ def test_config_file():
     """Create a temporary config file for testing."""
     config_path = None
     try:
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write("dimension: 10\n")
             f.write("moral_filter:\n")
             f.write("  threshold: 0.3\n")
@@ -46,13 +46,13 @@ def test_config_file():
 @pytest.fixture
 def client_with_stub_backend(test_config_file):
     """Create a test client with local_stub backend."""
-    with patch.dict(os.environ, {
-        "CONFIG_PATH": test_config_file,
-        "DISABLE_RATE_LIMIT": "1",
-        "LLM_BACKEND": "local_stub"
-    }):
+    with patch.dict(
+        os.environ,
+        {"CONFIG_PATH": test_config_file, "DISABLE_RATE_LIMIT": "1", "LLM_BACKEND": "local_stub"},
+    ):
         # Import app after setting env variables
         from mlsdm.api.app import app
+
         with TestClient(app) as client:
             yield client
 
@@ -62,10 +62,7 @@ class TestGenerateWithLocalStubBackend:
 
     def test_generate_returns_stub_response(self, client_with_stub_backend):
         """Test that generate returns expected stub response format."""
-        response = client_with_stub_backend.post(
-            "/generate",
-            json={"prompt": "Hello, world!"}
-        )
+        response = client_with_stub_backend.post("/generate", json={"prompt": "Hello, world!"})
         assert response.status_code == 200
 
         data = response.json()
@@ -81,8 +78,7 @@ class TestGenerateWithLocalStubBackend:
     def test_generate_with_max_tokens(self, client_with_stub_backend):
         """Test that max_tokens parameter is passed to backend."""
         response = client_with_stub_backend.post(
-            "/generate",
-            json={"prompt": "Test prompt", "max_tokens": 256}
+            "/generate", json={"prompt": "Test prompt", "max_tokens": 256}
         )
         assert response.status_code == 200
 
@@ -98,8 +94,7 @@ class TestGenerateWithLocalStubBackend:
     def test_generate_with_moral_value(self, client_with_stub_backend):
         """Test that moral_value parameter is accepted."""
         response = client_with_stub_backend.post(
-            "/generate",
-            json={"prompt": "Test", "moral_value": 0.8}
+            "/generate", json={"prompt": "Test", "moral_value": 0.8}
         )
         assert response.status_code == 200
 
@@ -117,10 +112,7 @@ class TestGenerateWithLocalStubBackend:
         prompts = ["First request", "Second request", "Third request"]
 
         for prompt in prompts:
-            response = client_with_stub_backend.post(
-                "/generate",
-                json={"prompt": prompt}
-            )
+            response = client_with_stub_backend.post("/generate", json={"prompt": prompt})
             assert response.status_code == 200
             data = response.json()
             # Response structure should always be valid
@@ -137,18 +129,20 @@ class TestBackendSelection:
 
     def test_default_backend_is_stub(self, test_config_file):
         """Test that default backend is local_stub."""
-        with patch.dict(os.environ, {
-            "CONFIG_PATH": test_config_file,
-            "DISABLE_RATE_LIMIT": "1"
-            # No LLM_BACKEND specified
-        }, clear=True):
+        with patch.dict(
+            os.environ,
+            {
+                "CONFIG_PATH": test_config_file,
+                "DISABLE_RATE_LIMIT": "1",
+                # No LLM_BACKEND specified
+            },
+            clear=True,
+        ):
             # Need to clear and reimport to test default
             from mlsdm.api.app import app
+
             with TestClient(app) as client:
-                response = client.post(
-                    "/generate",
-                    json={"prompt": "Test", "moral_value": 0.3}
-                )
+                response = client.post("/generate", json={"prompt": "Test", "moral_value": 0.3})
                 assert response.status_code == 200
                 data = response.json()
                 # If accepted, should have stub backend pattern
@@ -171,8 +165,7 @@ class TestCompleteRequestCycle:
 
         # 2. Generate request
         generate_response = client_with_stub_backend.post(
-            "/generate",
-            json={"prompt": "What is machine learning?", "max_tokens": 100}
+            "/generate", json={"prompt": "What is machine learning?", "max_tokens": 100}
         )
         assert generate_response.status_code == 200
 
@@ -185,10 +178,7 @@ class TestCompleteRequestCycle:
     def test_error_response_structure(self, client_with_stub_backend):
         """Test that error responses have consistent structure."""
         # Invalid request (whitespace-only prompt)
-        response = client_with_stub_backend.post(
-            "/generate",
-            json={"prompt": "   "}
-        )
+        response = client_with_stub_backend.post("/generate", json={"prompt": "   "})
         assert response.status_code == 400
 
         data = response.json()
@@ -198,10 +188,7 @@ class TestCompleteRequestCycle:
 
     def test_response_includes_metrics_when_available(self, client_with_stub_backend):
         """Test that response includes optional metrics."""
-        response = client_with_stub_backend.post(
-            "/generate",
-            json={"prompt": "Test for metrics"}
-        )
+        response = client_with_stub_backend.post("/generate", json={"prompt": "Test for metrics"})
         assert response.status_code == 200
 
         data = response.json()

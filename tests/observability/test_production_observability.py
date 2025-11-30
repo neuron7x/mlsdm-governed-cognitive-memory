@@ -135,18 +135,14 @@ class TestMoralRejectionMetrics:
         """Test that below_threshold moral rejections are counted correctly."""
         fresh_metrics.increment_moral_rejection(reason="below_threshold", count=3)
 
-        count = fresh_metrics.moral_rejections.labels(
-            reason="below_threshold"
-        )._value.get()
+        count = fresh_metrics.moral_rejections.labels(reason="below_threshold")._value.get()
         assert count == 3.0
 
     def test_moral_rejection_counter_sleep_phase(self, fresh_metrics):
         """Test that sleep_phase moral rejections are counted correctly."""
         fresh_metrics.increment_moral_rejection(reason="sleep_phase", count=2)
 
-        count = fresh_metrics.moral_rejections.labels(
-            reason="sleep_phase"
-        )._value.get()
+        count = fresh_metrics.moral_rejections.labels(reason="sleep_phase")._value.get()
         assert count == 2.0
 
     def test_moral_rejection_counter_multiple_reasons(self, fresh_metrics):
@@ -155,19 +151,10 @@ class TestMoralRejectionMetrics:
         fresh_metrics.increment_moral_rejection(reason="sleep_phase", count=3)
         fresh_metrics.increment_moral_rejection(reason="emergency_shutdown", count=1)
 
+        assert fresh_metrics.moral_rejections.labels(reason="below_threshold")._value.get() == 5.0
+        assert fresh_metrics.moral_rejections.labels(reason="sleep_phase")._value.get() == 3.0
         assert (
-            fresh_metrics.moral_rejections.labels(reason="below_threshold")._value.get()
-            == 5.0
-        )
-        assert (
-            fresh_metrics.moral_rejections.labels(reason="sleep_phase")._value.get()
-            == 3.0
-        )
-        assert (
-            fresh_metrics.moral_rejections.labels(
-                reason="emergency_shutdown"
-            )._value.get()
-            == 1.0
+            fresh_metrics.moral_rejections.labels(reason="emergency_shutdown")._value.get() == 1.0
         )
 
 

@@ -477,9 +477,7 @@ class ObservabilityLogger:
         Returns:
             Correlation ID
         """
-        return self._log_event(
-            event_type, logging.INFO, message, correlation_id, metrics, **kwargs
-        )
+        return self._log_event(event_type, logging.INFO, message, correlation_id, metrics, **kwargs)
 
     def warn(
         self,
@@ -839,7 +837,10 @@ class ObservabilityLogger:
                 metrics["aphasia_flags"] = cognitive_state["aphasia_flags"]
             if "step_counter" in cognitive_state and cognitive_state["step_counter"] is not None:
                 metrics["step_counter"] = cognitive_state["step_counter"]
-            if "moral_threshold" in cognitive_state and cognitive_state["moral_threshold"] is not None:
+            if (
+                "moral_threshold" in cognitive_state
+                and cognitive_state["moral_threshold"] is not None
+            ):
                 metrics["moral_threshold"] = cognitive_state["moral_threshold"]
 
         return self.error(
@@ -1086,8 +1087,7 @@ class ObservabilityLogger:
             Correlation ID
         """
         event_type = (
-            EventType.GENERATION_STARTED if event == "started"
-            else EventType.GENERATION_COMPLETED
+            EventType.GENERATION_STARTED if event == "started" else EventType.GENERATION_COMPLETED
         )
         metrics: dict[str, Any] = {
             "request_id": request_id,
@@ -1196,8 +1196,6 @@ def get_observability_logger(
         with _observability_logger_lock:
             # Check again inside the lock
             if _observability_logger is None:
-                _observability_logger = ObservabilityLogger(
-                    logger_name=logger_name, **kwargs
-                )
+                _observability_logger = ObservabilityLogger(logger_name=logger_name, **kwargs)
 
     return _observability_logger

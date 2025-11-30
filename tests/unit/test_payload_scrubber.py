@@ -57,7 +57,7 @@ class TestScrubText:
         """Test scrubbing password patterns."""
         texts = [
             'password="mysecretpassword123"',
-            'passwd: mysecretpassword123',
+            "passwd: mysecretpassword123",
             'pwd="secretvalue123"',
         ]
         for text in texts:

@@ -187,14 +187,14 @@ class TestInputValidatorEdgeCases:
         validator = InputValidator()
 
         with pytest.raises(ValueError, match="cannot be NaN"):
-            validator.validate_numeric_range(float('nan'))
+            validator.validate_numeric_range(float("nan"))
 
     def test_validate_numeric_range_inf(self):
         """Test numeric range validation with Inf."""
         validator = InputValidator()
 
         with pytest.raises(ValueError, match="cannot be NaN or Inf"):
-            validator.validate_numeric_range(float('inf'))
+            validator.validate_numeric_range(float("inf"))
 
     # =================================================================
     # validate_array_size tests (lines 308, 312-313)

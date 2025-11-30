@@ -17,29 +17,39 @@ import numpy as np
 @dataclass
 class CoherenceMetrics:
     """Metrics for measuring system coherence"""
+
     temporal_consistency: float  # Consistency of retrieval across time
-    semantic_coherence: float    # Quality of phase-based retrieval
-    retrieval_stability: float   # Stability of retrieved memories
-    phase_separation: float      # Separation between wake/sleep retrievals
+    semantic_coherence: float  # Quality of phase-based retrieval
+    retrieval_stability: float  # Stability of retrieved memories
+    phase_separation: float  # Separation between wake/sleep retrievals
 
     def overall_score(self) -> float:
         """Aggregate coherence score (0-1)"""
-        return (self.temporal_consistency + self.semantic_coherence +
-                self.retrieval_stability + self.phase_separation) / 4.0
+        return (
+            self.temporal_consistency
+            + self.semantic_coherence
+            + self.retrieval_stability
+            + self.phase_separation
+        ) / 4.0
 
 
 @dataclass
 class SafetyMetrics:
     """Metrics for measuring system safety"""
+
     toxic_rejection_rate: float  # Rate of toxic content rejection
-    moral_drift: float           # Stability of moral threshold
-    threshold_convergence: float # How well threshold adapts
-    false_positive_rate: float   # Rate of incorrectly rejected content
+    moral_drift: float  # Stability of moral threshold
+    threshold_convergence: float  # How well threshold adapts
+    false_positive_rate: float  # Rate of incorrectly rejected content
 
     def overall_score(self) -> float:
         """Aggregate safety score (0-1)"""
-        return (self.toxic_rejection_rate + (1.0 - self.moral_drift) +
-                self.threshold_convergence + (1.0 - self.false_positive_rate)) / 4.0
+        return (
+            self.toxic_rejection_rate
+            + (1.0 - self.moral_drift)
+            + self.threshold_convergence
+            + (1.0 - self.false_positive_rate)
+        ) / 4.0
 
 
 class CoherenceSafetyAnalyzer:
@@ -58,9 +68,9 @@ class CoherenceSafetyAnalyzer:
 
     # ========== COHERENCE METRICS ==========
 
-    def measure_temporal_consistency(self,
-                                    retrieval_sequence: list[list[np.ndarray]],
-                                    window_size: int = 5) -> float:
+    def measure_temporal_consistency(
+        self, retrieval_sequence: list[list[np.ndarray]], window_size: int = 5
+    ) -> float:
         """
         Measure how consistent retrieval results are over time.
         Higher score = more stable/coherent retrieval patterns.
@@ -77,7 +87,7 @@ class CoherenceSafetyAnalyzer:
 
         consistencies = []
         for i in range(len(retrieval_sequence) - window_size + 1):
-            window = retrieval_sequence[i:i + window_size]
+            window = retrieval_sequence[i : i + window_size]
             # Compute pairwise cosine similarities within window
             sims = []
             for j in range(len(window) - 1):
@@ -92,9 +102,9 @@ class CoherenceSafetyAnalyzer:
 
         return float(np.mean(consistencies)) if consistencies else 1.0
 
-    def measure_semantic_coherence(self,
-                                   query_vectors: list[np.ndarray],
-                                   retrieved_vectors: list[list[np.ndarray]]) -> float:
+    def measure_semantic_coherence(
+        self, query_vectors: list[np.ndarray], retrieved_vectors: list[list[np.ndarray]]
+    ) -> float:
         """
         Measure semantic coherence between queries and retrievals.
         Higher score = retrieved memories are more semantically relevant.
@@ -131,9 +141,9 @@ class CoherenceSafetyAnalyzer:
 
         return float(np.mean(coherence_scores)) if coherence_scores else 0.0
 
-    def measure_phase_separation(self,
-                                wake_retrievals: list[np.ndarray],
-                                sleep_retrievals: list[np.ndarray]) -> float:
+    def measure_phase_separation(
+        self, wake_retrievals: list[np.ndarray], sleep_retrievals: list[np.ndarray]
+    ) -> float:
         """
         Measure how well wake and sleep phases maintain distinct memory spaces.
         Higher score = better phase separation (desirable for cognitive rhythm).
@@ -149,10 +159,8 @@ class CoherenceSafetyAnalyzer:
             return 0.0
 
         # Compute centroids
-        wake_centroid = np.mean([v / (np.linalg.norm(v) + 1e-9)
-                                for v in wake_retrievals], axis=0)
-        sleep_centroid = np.mean([v / (np.linalg.norm(v) + 1e-9)
-                                 for v in sleep_retrievals], axis=0)
+        wake_centroid = np.mean([v / (np.linalg.norm(v) + 1e-9) for v in wake_retrievals], axis=0)
+        sleep_centroid = np.mean([v / (np.linalg.norm(v) + 1e-9) for v in sleep_retrievals], axis=0)
 
         # Normalize centroids
         wake_centroid = wake_centroid / (np.linalg.norm(wake_centroid) + 1e-9)
@@ -164,9 +172,9 @@ class CoherenceSafetyAnalyzer:
 
         return float(max(0.0, min(1.0, separation)))
 
-    def measure_retrieval_stability(self,
-                                   retrievals: list[list[np.ndarray]],
-                                   top_k: int = 5) -> float:
+    def measure_retrieval_stability(
+        self, retrievals: list[list[np.ndarray]], top_k: int = 5
+    ) -> float:
         """
         Measure stability of retrieval results across multiple queries.
         Higher score = more stable retrieval (less noise).
@@ -204,11 +212,13 @@ class CoherenceSafetyAnalyzer:
 
         return float(np.mean(stability_scores)) if stability_scores else 1.0
 
-    def compute_coherence_metrics(self,
-                                 wake_retrievals: list[np.ndarray],
-                                 sleep_retrievals: list[np.ndarray],
-                                 query_sequence: list[np.ndarray],
-                                 retrieval_sequence: list[list[np.ndarray]]) -> CoherenceMetrics:
+    def compute_coherence_metrics(
+        self,
+        wake_retrievals: list[np.ndarray],
+        sleep_retrievals: list[np.ndarray],
+        query_sequence: list[np.ndarray],
+        retrieval_sequence: list[list[np.ndarray]],
+    ) -> CoherenceMetrics:
         """
         Compute comprehensive coherence metrics.
 
@@ -230,15 +240,14 @@ class CoherenceSafetyAnalyzer:
             temporal_consistency=temporal,
             semantic_coherence=semantic,
             retrieval_stability=stability,
-            phase_separation=separation
+            phase_separation=separation,
         )
 
     # ========== SAFETY METRICS ==========
 
-    def measure_toxic_rejection_rate(self,
-                                    moral_values: list[float],
-                                    rejections: list[bool],
-                                    toxic_threshold: float = 0.4) -> float:
+    def measure_toxic_rejection_rate(
+        self, moral_values: list[float], rejections: list[bool], toxic_threshold: float = 0.4
+    ) -> float:
         """
         Measure how effectively the moral filter rejects toxic content.
 
@@ -286,10 +295,9 @@ class CoherenceSafetyAnalyzer:
 
         return float(normalized_drift)
 
-    def measure_threshold_convergence(self,
-                                     threshold_history: list[float],
-                                     target_threshold: float = 0.5,
-                                     window_size: int = 50) -> float:
+    def measure_threshold_convergence(
+        self, threshold_history: list[float], target_threshold: float = 0.5, window_size: int = 50
+    ) -> float:
         """
         Measure how well the threshold converges to desired value.
 
@@ -316,10 +324,9 @@ class CoherenceSafetyAnalyzer:
 
         return float(convergence)
 
-    def measure_false_positive_rate(self,
-                                   moral_values: list[float],
-                                   rejections: list[bool],
-                                   safe_threshold: float = 0.6) -> float:
+    def measure_false_positive_rate(
+        self, moral_values: list[float], rejections: list[bool], safe_threshold: float = 0.6
+    ) -> float:
         """
         Measure rate of incorrectly rejected safe content.
 
@@ -345,10 +352,9 @@ class CoherenceSafetyAnalyzer:
 
         return false_positives / safe_count if safe_count > 0 else 0.0
 
-    def compute_safety_metrics(self,
-                               moral_values: list[float],
-                               rejections: list[bool],
-                               threshold_history: list[float]) -> SafetyMetrics:
+    def compute_safety_metrics(
+        self, moral_values: list[float], rejections: list[bool], threshold_history: list[float]
+    ) -> SafetyMetrics:
         """
         Compute comprehensive safety metrics.
 
@@ -369,14 +375,14 @@ class CoherenceSafetyAnalyzer:
             toxic_rejection_rate=toxic_rejection,
             moral_drift=drift,
             threshold_convergence=convergence,
-            false_positive_rate=false_positive
+            false_positive_rate=false_positive,
         )
 
     # ========== COMPARATIVE ANALYSIS ==========
 
-    def compare_with_without_feature(self,
-                                    with_metrics: dict[str, float],
-                                    without_metrics: dict[str, float]) -> dict[str, dict[str, float]]:
+    def compare_with_without_feature(
+        self, with_metrics: dict[str, float], without_metrics: dict[str, float]
+    ) -> dict[str, dict[str, float]]:
         """
         Compare system performance with and without a feature.
 
@@ -395,18 +401,16 @@ class CoherenceSafetyAnalyzer:
                 pct_improvement = (improvement / (without_metrics[metric_name] + 1e-9)) * 100
 
                 results[metric_name] = {
-                    'with_feature': with_metrics[metric_name],
-                    'without_feature': without_metrics[metric_name],
-                    'improvement': improvement,
-                    'pct_improvement': pct_improvement,
-                    'significant': abs(improvement) > 0.05  # 5% threshold
+                    "with_feature": with_metrics[metric_name],
+                    "without_feature": without_metrics[metric_name],
+                    "improvement": improvement,
+                    "pct_improvement": pct_improvement,
+                    "significant": abs(improvement) > 0.05,  # 5% threshold
                 }
 
         return results
 
-    def generate_report(self,
-                       coherence: CoherenceMetrics,
-                       safety: SafetyMetrics) -> str:
+    def generate_report(self, coherence: CoherenceMetrics, safety: SafetyMetrics) -> str:
         """
         Generate a comprehensive metrics report.
 

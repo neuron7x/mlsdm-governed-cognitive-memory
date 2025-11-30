@@ -91,8 +91,7 @@ class LifecycleManager:
                 logger.info("All cleanup tasks completed successfully")
             except asyncio.TimeoutError:
                 logger.warning(
-                    f"Cleanup tasks exceeded timeout of {self._shutdown_timeout}s, "
-                    "forcing shutdown"
+                    f"Cleanup tasks exceeded timeout of {self._shutdown_timeout}s, forcing shutdown"
                 )
             except Exception as e:
                 logger.error(f"Error during cleanup: {e}", exc_info=True)

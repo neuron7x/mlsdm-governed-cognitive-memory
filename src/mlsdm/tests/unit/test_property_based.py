@@ -1,4 +1,5 @@
 """Property-based tests using Hypothesis for invariant verification."""
+
 import numpy as np
 from hypothesis import given, settings
 from hypothesis import strategies as st
@@ -25,10 +26,12 @@ class TestPropertyBasedInvariants:
     @given(
         initial_threshold=st.floats(min_value=0.3, max_value=0.9),
         num_accepts=st.integers(min_value=0, max_value=100),
-        num_rejects=st.integers(min_value=0, max_value=100)
+        num_rejects=st.integers(min_value=0, max_value=100),
     )
     @settings(max_examples=50)
-    def test_moral_filter_v2_threshold_stability_after_adaptation(self, initial_threshold, num_accepts, num_rejects):
+    def test_moral_filter_v2_threshold_stability_after_adaptation(
+        self, initial_threshold, num_accepts, num_rejects
+    ):
         """Property: After many adaptations, threshold stays within bounds."""
         mf = MoralFilterV2(initial_threshold=initial_threshold)
 
@@ -56,7 +59,7 @@ class TestPropertyBasedInvariants:
 
     @given(
         dimension=st.integers(min_value=2, max_value=100),
-        capacity=st.integers(min_value=10, max_value=100)
+        capacity=st.integers(min_value=10, max_value=100),
     )
     @settings(max_examples=20)
     def test_qilm_v2_size_never_exceeds_capacity(self, dimension, capacity):
@@ -74,7 +77,7 @@ class TestPropertyBasedInvariants:
 
     @given(
         dimension=st.integers(min_value=2, max_value=50),
-        num_items=st.integers(min_value=0, max_value=20)
+        num_items=st.integers(min_value=0, max_value=20),
     )
     @settings(max_examples=20)
     def test_qilm_v2_retrieve_returns_valid_results(self, dimension, num_items):
@@ -101,10 +104,12 @@ class TestPropertyBasedInvariants:
     @given(
         wake_duration=st.integers(min_value=1, max_value=50),
         sleep_duration=st.integers(min_value=1, max_value=50),
-        num_steps=st.integers(min_value=0, max_value=100)
+        num_steps=st.integers(min_value=0, max_value=100),
     )
     @settings(max_examples=30)
-    def test_cognitive_rhythm_phase_transitions_are_valid(self, wake_duration, sleep_duration, num_steps):
+    def test_cognitive_rhythm_phase_transitions_are_valid(
+        self, wake_duration, sleep_duration, num_steps
+    ):
         """Property: Cognitive rhythm only transitions between valid phases."""
         cr = CognitiveRhythm(wake_duration=wake_duration, sleep_duration=sleep_duration)
 
@@ -119,7 +124,7 @@ class TestPropertyBasedInvariants:
 
     @given(
         dimension=st.integers(min_value=2, max_value=50),
-        num_updates=st.integers(min_value=0, max_value=20)
+        num_updates=st.integers(min_value=0, max_value=20),
     )
     @settings(max_examples=20)
     def test_multi_level_memory_norms_are_non_negative(self, dimension, num_updates):
@@ -139,7 +144,7 @@ class TestPropertyBasedInvariants:
 
     @given(
         threshold=st.floats(min_value=0.0, max_value=1.0),
-        adapt_rate=st.floats(min_value=0.0, max_value=1.0)
+        adapt_rate=st.floats(min_value=0.0, max_value=1.0),
     )
     @settings(max_examples=30)
     def test_moral_filter_initialization_accepts_valid_params(self, threshold, adapt_rate):
@@ -151,7 +156,7 @@ class TestPropertyBasedInvariants:
 
     @given(
         initial_threshold=st.floats(min_value=0.3, max_value=0.9),
-        accept_sequence=st.lists(st.booleans(), min_size=0, max_size=50)
+        accept_sequence=st.lists(st.booleans(), min_size=0, max_size=50),
     )
     @settings(max_examples=30)
     def test_moral_filter_v2_ema_convergence(self, initial_threshold, accept_sequence):
@@ -168,16 +173,15 @@ class TestPropertyBasedInvariants:
         dimension=st.integers(min_value=2, max_value=30),
         lambda_l1=st.floats(min_value=0.01, max_value=0.99),
         lambda_l2=st.floats(min_value=0.01, max_value=0.99),
-        lambda_l3=st.floats(min_value=0.01, max_value=0.99)
+        lambda_l3=st.floats(min_value=0.01, max_value=0.99),
     )
     @settings(max_examples=20)
-    def test_multi_level_memory_decay_parameters_valid(self, dimension, lambda_l1, lambda_l2, lambda_l3):
+    def test_multi_level_memory_decay_parameters_valid(
+        self, dimension, lambda_l1, lambda_l2, lambda_l3
+    ):
         """Property: Memory accepts valid decay parameters."""
         mlm = MultiLevelSynapticMemory(
-            dimension=dimension,
-            lambda_l1=lambda_l1,
-            lambda_l2=lambda_l2,
-            lambda_l3=lambda_l3
+            dimension=dimension, lambda_l1=lambda_l1, lambda_l2=lambda_l2, lambda_l3=lambda_l3
         )
 
         assert mlm.lambda_l1 == lambda_l1
@@ -197,7 +201,7 @@ class TestPropertyBasedInvariants:
 
     @given(
         dimension=st.integers(min_value=2, max_value=30),
-        event_magnitude=st.floats(min_value=0.1, max_value=10.0)
+        event_magnitude=st.floats(min_value=0.1, max_value=10.0),
     )
     @settings(max_examples=20)
     def test_multi_level_memory_preserves_dimension(self, dimension, event_magnitude):
@@ -216,7 +220,7 @@ class TestPropertyBasedInvariants:
 
     @given(
         wake_duration=st.integers(min_value=1, max_value=20),
-        sleep_duration=st.integers(min_value=1, max_value=20)
+        sleep_duration=st.integers(min_value=1, max_value=20),
     )
     @settings(max_examples=30)
     def test_cognitive_rhythm_cycle_length(self, wake_duration, sleep_duration):
@@ -234,7 +238,7 @@ class TestPropertyBasedInvariants:
 
     @given(
         dimension=st.integers(min_value=2, max_value=50),
-        top_k=st.integers(min_value=1, max_value=20)
+        top_k=st.integers(min_value=1, max_value=20),
     )
     @settings(max_examples=20)
     def test_qilm_v2_top_k_constraint(self, dimension, top_k):

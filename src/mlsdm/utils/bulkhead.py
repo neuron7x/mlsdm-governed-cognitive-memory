@@ -66,12 +66,14 @@ class BulkheadConfig:
         enable_metrics: Whether to track bulkhead metrics.
     """
 
-    max_concurrent: dict[BulkheadCompartment, int] = field(default_factory=lambda: {
-        BulkheadCompartment.LLM_GENERATION: 10,
-        BulkheadCompartment.EMBEDDING: 20,
-        BulkheadCompartment.MEMORY: 50,
-        BulkheadCompartment.COGNITIVE: 100,
-    })
+    max_concurrent: dict[BulkheadCompartment, int] = field(
+        default_factory=lambda: {
+            BulkheadCompartment.LLM_GENERATION: 10,
+            BulkheadCompartment.EMBEDDING: 20,
+            BulkheadCompartment.MEMORY: 50,
+            BulkheadCompartment.COGNITIVE: 100,
+        }
+    )
 
     timeout_seconds: float = 5.0
     enable_metrics: bool = True
@@ -106,10 +108,7 @@ class BulkheadFullError(Exception):
     def __init__(self, compartment: BulkheadCompartment, timeout: float) -> None:
         self.compartment = compartment
         self.timeout = timeout
-        super().__init__(
-            f"Bulkhead compartment '{compartment.value}' is full "
-            f"(timeout={timeout}s)"
-        )
+        super().__init__(f"Bulkhead compartment '{compartment.value}' is full (timeout={timeout}s)")
 
 
 class _CompartmentState:
@@ -337,8 +336,7 @@ class Bulkhead:
             Dictionary mapping compartment names to their stats.
         """
         return {
-            compartment.value: self.get_stats(compartment)
-            for compartment in self._compartments
+            compartment.value: self.get_stats(compartment) for compartment in self._compartments
         }
 
     def is_available(self, compartment: BulkheadCompartment) -> bool:

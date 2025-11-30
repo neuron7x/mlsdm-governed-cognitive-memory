@@ -29,16 +29,20 @@ from mlsdm.core.llm_pipeline import (
 @pytest.fixture
 def mock_llm_fn():
     """Mock LLM generation function."""
+
     def llm_fn(prompt: str, max_tokens: int) -> str:
         return f"RESPONSE: {prompt[:50]}... (tokens={max_tokens})"
+
     return llm_fn
 
 
 @pytest.fixture
 def mock_embedding_fn():
     """Mock embedding function."""
+
     def embed_fn(text: str) -> np.ndarray:
         return np.random.randn(384).astype(np.float32)
+
     return embed_fn
 
 
@@ -318,7 +322,7 @@ class TestAphasiaPostFilter:
         filter = AphasiaPostFilter(repair_enabled=False)
         result = filter.evaluate(
             response="The quick brown fox jumps over the lazy dog. "
-                    "This is a complete and well-formed sentence with proper grammar.",
+            "This is a complete and well-formed sentence with proper grammar.",
             context={},
         )
         assert result.decision == FilterDecision.ALLOW
@@ -387,6 +391,7 @@ class TestPipelineErrorHandling:
 
     def test_pipeline_handles_llm_error(self):
         """Test pipeline handles LLM generation errors."""
+
         def failing_llm(prompt: str, max_tokens: int) -> str:
             raise RuntimeError("LLM service unavailable")
 

@@ -68,14 +68,14 @@ class PrometheusPullExporter:
                 lines.append(f'{metric_name}{{quantile="0.5"}} {stats["p50"]:.2f}')
                 lines.append(f'{metric_name}{{quantile="0.95"}} {stats["p95"]:.2f}')
                 lines.append(f'{metric_name}{{quantile="0.99"}} {stats["p99"]:.2f}')
-                lines.append(f'{metric_name}_sum {stats["mean"] * stats["count"]:.2f}')
-                lines.append(f'{metric_name}_count {stats["count"]}')
+                lines.append(f"{metric_name}_sum {stats['mean'] * stats['count']:.2f}")
+                lines.append(f"{metric_name}_count {stats['count']}")
             else:
                 lines.append(f'{metric_name}{{quantile="0.5"}} 0')
                 lines.append(f'{metric_name}{{quantile="0.95"}} 0')
                 lines.append(f'{metric_name}{{quantile="0.99"}} 0')
-                lines.append(f'{metric_name}_sum 0')
-                lines.append(f'{metric_name}_count 0')
+                lines.append(f"{metric_name}_sum 0")
+                lines.append(f"{metric_name}_count 0")
             lines.append("")
 
         return "\n".join(lines)

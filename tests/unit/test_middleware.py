@@ -141,10 +141,7 @@ class TestBulkheadSemaphore:
         await asyncio.sleep(0.05)
 
         # Create waiters
-        waiter_tasks = [
-            asyncio.create_task(bulkhead.acquire().__aenter__())
-            for _ in range(3)
-        ]
+        waiter_tasks = [asyncio.create_task(bulkhead.acquire().__aenter__()) for _ in range(3)]
         await asyncio.sleep(0.05)
 
         # Queue depth should reflect waiting requests
@@ -193,10 +190,13 @@ class TestBulkheadMiddleware:
 
     def test_middleware_env_config(self) -> None:
         """Test middleware configuration from environment."""
-        with patch.dict("os.environ", {
-            "MLSDM_MAX_CONCURRENT": "50",
-            "MLSDM_QUEUE_TIMEOUT": "10.0",
-        }):
+        with patch.dict(
+            "os.environ",
+            {
+                "MLSDM_MAX_CONCURRENT": "50",
+                "MLSDM_QUEUE_TIMEOUT": "10.0",
+            },
+        ):
             app = FastAPI()
             middleware = BulkheadMiddleware(app)
             assert middleware._max_concurrent == 50

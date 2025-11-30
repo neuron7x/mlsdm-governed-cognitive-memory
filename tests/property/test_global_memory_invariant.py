@@ -36,14 +36,17 @@ DEFAULT_MAX_MEMORY_BYTES = int(1.4 * 1024**3)
 # Strategies for Property-Based Tests
 # ============================================================================
 
+
 @st.composite
 def vector_strategy(draw: st.DrawFn, dim: int = 16) -> np.ndarray:
     """Generate a random vector of specified dimension."""
-    values = draw(st.lists(
-        st.floats(min_value=-10.0, max_value=10.0, allow_nan=False, allow_infinity=False),
-        min_size=dim,
-        max_size=dim
-    ))
+    values = draw(
+        st.lists(
+            st.floats(min_value=-10.0, max_value=10.0, allow_nan=False, allow_infinity=False),
+            min_size=dim,
+            max_size=dim,
+        )
+    )
     return np.array(values, dtype=np.float32)
 
 
@@ -55,10 +58,7 @@ def moral_value_strategy(draw: st.DrawFn) -> float:
 
 @st.composite
 def event_sequence_strategy(
-    draw: st.DrawFn,
-    dim: int = 16,
-    min_events: int = 5,
-    max_events: int = 20
+    draw: st.DrawFn, dim: int = 16, min_events: int = 5, max_events: int = 20
 ) -> list[tuple[np.ndarray, float]]:
     """Generate a sequence of (vector, moral_value) events."""
     num_events = draw(st.integers(min_value=min_events, max_value=max_events))
@@ -73,6 +73,7 @@ def event_sequence_strategy(
 # ============================================================================
 # Unit Tests: Individual Components memory_usage_bytes()
 # ============================================================================
+
 
 class TestPELMMemoryUsage:
     """Tests for PELM.memory_usage_bytes() method."""
@@ -104,22 +105,17 @@ class TestPELMMemoryUsage:
     @settings(max_examples=20, deadline=None)
     @given(
         dim=st.integers(min_value=TEST_DIM_MIN, max_value=TEST_DIM_MAX),
-        capacity=st.integers(min_value=TEST_CAPACITY_MIN, max_value=TEST_CAPACITY_MAX)
+        capacity=st.integers(min_value=TEST_CAPACITY_MIN, max_value=TEST_CAPACITY_MAX),
     )
     def test_memory_usage_conservative_estimate(self, dim: int, capacity: int) -> None:
         """memory_usage_bytes() should be at least as large as raw array bytes."""
         pelm = PhaseEntangledLatticeMemory(dimension=dim, capacity=capacity)
 
         # Minimum memory: just the arrays
-        raw_arrays = (
-            pelm.memory_bank.nbytes +
-            pelm.phase_bank.nbytes +
-            pelm.norms.nbytes
-        )
+        raw_arrays = pelm.memory_bank.nbytes + pelm.phase_bank.nbytes + pelm.norms.nbytes
 
         usage = pelm.memory_usage_bytes()
-        assert usage >= raw_arrays, \
-            f"memory_usage_bytes ({usage}) < raw arrays ({raw_arrays})"
+        assert usage >= raw_arrays, f"memory_usage_bytes ({usage}) < raw arrays ({raw_arrays})"
 
 
 class TestMultiLevelSynapticMemoryUsage:
@@ -153,8 +149,7 @@ class TestMultiLevelSynapticMemoryUsage:
         raw_arrays = synaptic.l1.nbytes + synaptic.l2.nbytes + synaptic.l3.nbytes
 
         usage = synaptic.memory_usage_bytes()
-        assert usage >= raw_arrays, \
-            f"memory_usage_bytes ({usage}) < raw arrays ({raw_arrays})"
+        assert usage >= raw_arrays, f"memory_usage_bytes ({usage}) < raw arrays ({raw_arrays})"
 
 
 class TestCognitiveControllerMemoryUsage:
@@ -200,6 +195,7 @@ class TestCognitiveControllerMemoryUsage:
 # Scenario A: Normal Operation Within Bounds
 # ============================================================================
 
+
 class TestScenarioA_NormalOperation:
     """
     Scenario A: Normal operation should keep memory within bounds.
@@ -212,7 +208,7 @@ class TestScenarioA_NormalOperation:
     @settings(max_examples=30, deadline=None)
     @given(
         dim=st.integers(min_value=TEST_DIM_MIN, max_value=TEST_DIM_MAX),
-        num_events=st.integers(min_value=5, max_value=30)
+        num_events=st.integers(min_value=5, max_value=30),
     )
     def test_memory_within_bounds_normal_load(self, dim: int, num_events: int) -> None:
         """
@@ -231,14 +227,14 @@ class TestScenarioA_NormalOperation:
             current_usage = controller.memory_usage_bytes()
             max_allowed = controller.max_memory_bytes
 
-            assert current_usage <= max_allowed, \
-                f"Memory usage {current_usage} exceeds limit {max_allowed} at event {i+1}"
+            assert current_usage <= max_allowed, (
+                f"Memory usage {current_usage} exceeds limit {max_allowed} at event {i + 1}"
+            )
 
     @settings(max_examples=20, deadline=None)
     @given(events=event_sequence_strategy(dim=16, min_events=10, max_events=30))
     def test_no_emergency_shutdown_normal_operation(
-        self,
-        events: list[tuple[np.ndarray, float]]
+        self, events: list[tuple[np.ndarray, float]]
     ) -> None:
         """
         Under normal operation, emergency_shutdown should not be triggered
@@ -252,8 +248,9 @@ class TestScenarioA_NormalOperation:
             # If emergency shutdown triggered, it should NOT be due to memory
             if result["rejected"] and "emergency shutdown" in result["note"]:
                 # Should not be memory-related with default 1.4 GB limit
-                assert "global memory limit" not in result["note"], \
+                assert "global memory limit" not in result["note"], (
                     "Memory limit triggered under normal operation"
+                )
 
     def test_memory_usage_stable_after_many_events(self) -> None:
         """
@@ -279,13 +276,15 @@ class TestScenarioA_NormalOperation:
         # Memory should not have grown significantly (PELM wraps around)
         # Allow small tolerance for any dynamic structures
         growth_tolerance = 0.1  # 10%
-        assert usage_at_200 <= usage_at_100 * (1 + growth_tolerance), \
+        assert usage_at_200 <= usage_at_100 * (1 + growth_tolerance), (
             f"Memory grew unexpectedly: {usage_at_100} -> {usage_at_200}"
+        )
 
 
 # ============================================================================
 # Scenario B: Forced Emergency Shutdown
 # ============================================================================
+
 
 class TestScenarioB_ForcedEmergencyShutdown:
     """
@@ -307,16 +306,16 @@ class TestScenarioB_ForcedEmergencyShutdown:
 
         # Initial usage exceeds limit (PELM alone is > 1KB)
         initial_usage = controller.memory_usage_bytes()
-        assert initial_usage > tiny_limit, \
+        assert initial_usage > tiny_limit, (
             "Test setup requires initial memory usage to exceed tiny limit"
+        )
 
         # Process an event - should trigger shutdown
         vec = np.random.randn(16).astype(np.float32)
         controller.process_event(vec, moral_value=0.8)
 
         # Should be in emergency shutdown
-        assert controller.emergency_shutdown, \
-            "Controller should be in emergency_shutdown"
+        assert controller.emergency_shutdown, "Controller should be in emergency_shutdown"
 
     def test_memory_usage_no_growth_after_shutdown(self) -> None:
         """
@@ -343,13 +342,13 @@ class TestScenarioB_ForcedEmergencyShutdown:
             result = controller.process_event(vec, moral_value=0.8)
 
             # Should be rejected
-            assert result["rejected"], \
-                "Events after shutdown should be rejected"
+            assert result["rejected"], "Events after shutdown should be rejected"
 
             # Memory should not grow
             current_usage = controller.memory_usage_bytes()
-            assert current_usage <= usage_at_shutdown, \
+            assert current_usage <= usage_at_shutdown, (
                 f"Memory grew after shutdown: {usage_at_shutdown} -> {current_usage}"
+            )
 
     def test_shutdown_reason_is_recorded(self) -> None:
         """
@@ -363,8 +362,9 @@ class TestScenarioB_ForcedEmergencyShutdown:
         controller.process_event(vec, moral_value=0.8)
 
         # Reason should be recorded
-        assert controller._emergency_reason == "memory_limit_exceeded", \
+        assert controller._emergency_reason == "memory_limit_exceeded", (
             f"Wrong shutdown reason: {controller._emergency_reason}"
+        )
 
     @settings(max_examples=20, deadline=None)
     @given(num_events=st.integers(min_value=10, max_value=50))
@@ -384,8 +384,7 @@ class TestScenarioB_ForcedEmergencyShutdown:
             if controller.emergency_shutdown:
                 shutdowns_seen += 1
                 # Should stay in shutdown
-                assert result["rejected"], \
-                    "Events should be rejected in emergency shutdown"
+                assert result["rejected"], "Events should be rejected in emergency shutdown"
 
         # Should have been in shutdown for most events
         assert shutdowns_seen > 0, "Should have entered emergency_shutdown"
@@ -394,6 +393,7 @@ class TestScenarioB_ForcedEmergencyShutdown:
 # ============================================================================
 # Edge Cases
 # ============================================================================
+
 
 class TestEdgeCases:
     """Edge case tests for memory invariant."""
@@ -410,8 +410,7 @@ class TestEdgeCases:
         usage = controller.memory_usage_bytes()
         limit = controller.max_memory_bytes
 
-        assert usage < limit, \
-            f"Default config uses {usage} bytes, exceeds {limit} limit"
+        assert usage < limit, f"Default config uses {usage} bytes, exceeds {limit} limit"
 
     def test_reset_clears_emergency_reason(self) -> None:
         """reset_emergency_shutdown() should clear the reason."""
@@ -435,6 +434,7 @@ class TestEdgeCases:
 # Integration Tests
 # ============================================================================
 
+
 class TestGlobalMemoryIntegration:
     """Integration tests for global memory invariant across components."""
 
@@ -456,8 +456,9 @@ class TestGlobalMemoryIntegration:
 
         # Overhead should be small (a few KB at most)
         assert controller_overhead >= 0, "Overhead cannot be negative"
-        assert controller_overhead < 10 * 1024, \
+        assert controller_overhead < 10 * 1024, (
             f"Unexpectedly high controller overhead: {controller_overhead} bytes"
+        )
 
     def test_memory_reporting_consistent(self) -> None:
         """
@@ -469,8 +470,9 @@ class TestGlobalMemoryIntegration:
         usage2 = controller.memory_usage_bytes()
         usage3 = controller.memory_usage_bytes()
 
-        assert usage1 == usage2 == usage3, \
+        assert usage1 == usage2 == usage3, (
             f"Inconsistent memory reports: {usage1}, {usage2}, {usage3}"
+        )
 
 
 if __name__ == "__main__":

@@ -28,9 +28,7 @@ class TestCognitiveControllerInitialization:
     def test_custom_initialization(self):
         """Test controller can be initialized with custom values."""
         controller = CognitiveController(
-            dim=128,
-            memory_threshold_mb=512.0,
-            max_processing_time_ms=500.0
+            dim=128, memory_threshold_mb=512.0, max_processing_time_ms=500.0
         )
         assert controller.dim == 128
         assert controller.memory_threshold_mb == 512.0
@@ -365,6 +363,7 @@ class TestCognitiveControllerAutoRecovery:
         # Recover by adjusting threshold and passing cooldown
         controller.memory_threshold_mb = 10000.0
         from mlsdm.core.cognitive_controller import _CC_RECOVERY_COOLDOWN_STEPS
+
         controller.step_counter += _CC_RECOVERY_COOLDOWN_STEPS
 
         # Process recovery event
@@ -472,6 +471,7 @@ class TestCognitiveControllerAutoRecovery:
         # Auto-recovery should work again
         controller.memory_threshold_mb = 10000.0
         from mlsdm.core.cognitive_controller import _CC_RECOVERY_COOLDOWN_STEPS
+
         controller.step_counter += _CC_RECOVERY_COOLDOWN_STEPS
         controller.process_event(vector, moral_value=0.8)
 
@@ -496,6 +496,7 @@ class TestCognitiveControllerAutoRecovery:
         # Trigger another emergency (if we can recover first)
         controller.memory_threshold_mb = 10000.0
         from mlsdm.core.cognitive_controller import _CC_RECOVERY_COOLDOWN_STEPS
+
         controller.step_counter += _CC_RECOVERY_COOLDOWN_STEPS
         controller.process_event(vector, moral_value=0.8)  # Should recover
 

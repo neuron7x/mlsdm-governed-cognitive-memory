@@ -130,9 +130,9 @@ class TestBuildMultipleProvidersFromEnv:
 
     def test_multiple_backends(self) -> None:
         """Test multiple backends configuration."""
-        with patch.dict(os.environ, {
-            "MULTI_LLM_BACKENDS": "control:local_stub,treatment:local_stub"
-        }):
+        with patch.dict(
+            os.environ, {"MULTI_LLM_BACKENDS": "control:local_stub,treatment:local_stub"}
+        ):
             providers = build_multiple_providers_from_env()
             assert "control" in providers
             assert "treatment" in providers
@@ -141,20 +141,19 @@ class TestBuildMultipleProvidersFromEnv:
 
     def test_multiple_backends_with_spaces(self) -> None:
         """Test multiple backends with spaces in config."""
-        with patch.dict(os.environ, {
-            "MULTI_LLM_BACKENDS": " control : local_stub , treatment : local_stub "
-        }):
+        with patch.dict(
+            os.environ, {"MULTI_LLM_BACKENDS": " control : local_stub , treatment : local_stub "}
+        ):
             providers = build_multiple_providers_from_env()
             assert "control" in providers
             assert "treatment" in providers
 
     def test_failed_provider_continues(self) -> None:
         """Test that failed provider doesn't break other providers."""
-        with patch.dict(os.environ, {
-            "MULTI_LLM_BACKENDS": "good:local_stub,bad:invalid_provider"
-        }):
+        with patch.dict(os.environ, {"MULTI_LLM_BACKENDS": "good:local_stub,bad:invalid_provider"}):
             # Should emit a warning but continue
             import warnings
+
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter("always")
                 providers = build_multiple_providers_from_env()
@@ -168,10 +167,9 @@ class TestBuildMultipleProvidersFromEnv:
 
     def test_all_providers_fail_fallback_to_stub(self) -> None:
         """Test that if all providers fail, fallback to local_stub."""
-        with patch.dict(os.environ, {
-            "MULTI_LLM_BACKENDS": "bad1:invalid1,bad2:invalid2"
-        }):
+        with patch.dict(os.environ, {"MULTI_LLM_BACKENDS": "bad1:invalid1,bad2:invalid2"}):
             import warnings
+
             with warnings.catch_warnings(record=True):
                 warnings.simplefilter("always")
                 providers = build_multiple_providers_from_env()
@@ -205,11 +203,7 @@ class TestProviderContract:
 
         # Should not raise
         result = provider.generate(
-            "test prompt",
-            100,
-            moral_value=0.5,
-            user_intent="test",
-            custom_param="value"
+            "test prompt", 100, moral_value=0.5, user_intent="test", custom_param="value"
         )
         assert isinstance(result, str)
 
@@ -236,10 +230,7 @@ class TestBuildProviderFromEnvWithOpenAI:
 
     def test_openai_with_custom_model_from_env(self) -> None:
         """Test OpenAI provider with custom model from env."""
-        with patch.dict(os.environ, {
-            "OPENAI_API_KEY": "test-key-123",
-            "OPENAI_MODEL": "gpt-4"
-        }):
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test-key-123", "OPENAI_MODEL": "gpt-4"}):
             try:
                 provider = build_provider_from_env(backend="openai")
                 assert "gpt_4" in provider.provider_id
@@ -252,17 +243,11 @@ class TestProviderErrorHandling:
 
     def test_provider_error_has_provider_id(self) -> None:
         """Test that LLMProviderError includes provider_id."""
-        error = LLMProviderError(
-            "Test error",
-            provider_id="test_provider"
-        )
+        error = LLMProviderError("Test error", provider_id="test_provider")
         assert error.provider_id == "test_provider"
 
     def test_provider_error_chain_preserves_original(self) -> None:
         """Test that error chain preserves original exception."""
         original = ValueError("Original error")
-        error = LLMProviderError(
-            "Wrapped error",
-            original_error=original
-        )
+        error = LLMProviderError("Wrapped error", original_error=original)
         assert error.original_error is original

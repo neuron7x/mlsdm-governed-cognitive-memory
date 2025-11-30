@@ -172,7 +172,9 @@ def cmd_check(args: argparse.Namespace) -> int:
     }
 
     # Check Python version
-    print(f"Python version: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+    print(
+        f"Python version: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    )
     if sys.version_info < (3, 10):  # noqa: UP036 - Runtime check for CLI users
         status["errors"].append("Python 3.10+ required")
         print("  ✗ Python 3.10+ required")
@@ -203,6 +205,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     print("\nMLSDM package:")
     try:
         from mlsdm import __version__
+
         print(f"  ✓ mlsdm v{__version__} installed")
         status["checks"]["mlsdm"] = True
         status["mlsdm_version"] = __version__
@@ -293,6 +296,7 @@ def main() -> int:
     # Import version from main module to avoid duplication
     try:
         from mlsdm import __version__
+
         version_str = f"%(prog)s {__version__}"
     except ImportError:
         version_str = "%(prog)s 1.2.0"
@@ -308,17 +312,20 @@ def main() -> int:
     # Demo command
     demo_parser = subparsers.add_parser("demo", help="Run interactive demo")
     demo_parser.add_argument(
-        "-i", "--interactive",
+        "-i",
+        "--interactive",
         action="store_true",
         help="Run in interactive mode",
     )
     demo_parser.add_argument(
-        "-p", "--prompt",
+        "-p",
+        "--prompt",
         type=str,
         help="Single prompt to process",
     )
     demo_parser.add_argument(
-        "-m", "--moral-value",
+        "-m",
+        "--moral-value",
         type=float,
         default=0.8,
         help="Moral value for prompts (default: 0.8)",
@@ -342,7 +349,8 @@ def main() -> int:
         help="Sleep cycle duration in steps (default: 3)",
     )
     demo_parser.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="store_true",
         help="Show verbose output",
     )
@@ -393,7 +401,8 @@ def main() -> int:
     # Check command
     check_parser = subparsers.add_parser("check", help="Check environment")
     check_parser.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="store_true",
         help="Show verbose output",
     )

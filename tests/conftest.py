@@ -20,14 +20,18 @@ import pytest
 
 def pytest_configure(config: Any) -> None:
     """Configure custom pytest markers."""
-    config.addinivalue_line("markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')")
+    config.addinivalue_line(
+        "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+    )
     config.addinivalue_line("markers", "integration: marks tests as integration tests")
     config.addinivalue_line("markers", "unit: marks tests as unit tests")
     config.addinivalue_line("markers", "property: marks property-based tests")
     config.addinivalue_line("markers", "security: marks security-related tests")
     config.addinivalue_line("markers", "benchmark: marks performance benchmark tests")
     config.addinivalue_line("markers", "safety: marks AI safety tests")
-    config.addinivalue_line("markers", "load: marks tests as load/stress tests (concurrency, stress)")
+    config.addinivalue_line(
+        "markers", "load: marks tests as load/stress tests (concurrency, stress)"
+    )
 
 
 # ============================================================
@@ -50,6 +54,7 @@ def deterministic_seed() -> int:
     # Set torch seed if available
     try:
         import torch
+
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
@@ -67,11 +72,13 @@ def random_seed() -> Callable[[int], None]:
     Returns:
         A function that sets all random seeds to the given value.
     """
+
     def _set_seed(seed: int) -> None:
         random.seed(seed)
         np.random.seed(seed)
         try:
             import torch
+
             torch.manual_seed(seed)
             if torch.cuda.is_available():
                 torch.cuda.manual_seed_all(seed)
@@ -94,6 +101,7 @@ def mock_llm() -> Callable[[str, int], str]:
     Returns:
         A function that generates deterministic responses.
     """
+
     def _generate(prompt: str, max_tokens: int = 100) -> str:
         return f"Mock response for prompt with {len(prompt)} characters."
 
@@ -108,6 +116,7 @@ def mock_embedder() -> Callable[[str], np.ndarray]:
     Returns:
         A function that generates deterministic embeddings.
     """
+
     def _embed(text: str) -> np.ndarray:
         # Generate deterministic embedding based on text hash
         np.random.seed(hash(text) % (2**32))
@@ -125,11 +134,13 @@ def mock_embedder_dim() -> Callable[[int], Callable[[str], np.ndarray]]:
     Returns:
         A function that creates embedders with specified dimension.
     """
+
     def _create_embedder(dim: int) -> Callable[[str], np.ndarray]:
         def _embed(text: str) -> np.ndarray:
             np.random.seed(hash(text) % (2**32))
             vec = np.random.randn(dim).astype(np.float32)
             return vec / np.linalg.norm(vec)
+
         return _embed
 
     return _create_embedder
@@ -177,6 +188,7 @@ def vector_factory() -> Callable[[int, int], list[np.ndarray]]:
     Returns:
         A function that creates n vectors of specified dimension.
     """
+
     def _create_vectors(n: int, dim: int = 384, seed: int = 42) -> list[np.ndarray]:
         np.random.seed(seed)
         vectors = []
@@ -219,6 +231,7 @@ def moral_value_distribution() -> Callable[[int, float], list[float]]:
     Returns:
         A function that generates n moral values with specified toxic ratio.
     """
+
     def _generate(n: int, toxic_ratio: float = 0.3, seed: int = 42) -> list[float]:
         np.random.seed(seed)
         n_toxic = int(n * toxic_ratio)
@@ -243,6 +256,7 @@ def moral_value_distribution() -> Callable[[int, float], list[float]]:
 def pelm_memory():
     """Create a PhaseEntangledLatticeMemory instance for testing."""
     from mlsdm.memory import PhaseEntangledLatticeMemory
+
     return PhaseEntangledLatticeMemory(dimension=384, capacity=1000)
 
 
@@ -250,6 +264,7 @@ def pelm_memory():
 def pelm_small():
     """Create a small PELM instance for fast testing."""
     from mlsdm.memory import PhaseEntangledLatticeMemory
+
     return PhaseEntangledLatticeMemory(dimension=10, capacity=100)
 
 
@@ -257,6 +272,7 @@ def pelm_small():
 def moral_filter():
     """Create a MoralFilter instance for testing."""
     from mlsdm.cognition.moral_filter import MoralFilter
+
     return MoralFilter()
 
 
@@ -264,6 +280,7 @@ def moral_filter():
 def moral_filter_v2():
     """Create a MoralFilterV2 instance for testing."""
     from mlsdm.cognition.moral_filter_v2 import MoralFilterV2
+
     return MoralFilterV2()
 
 
@@ -271,6 +288,7 @@ def moral_filter_v2():
 def cognitive_rhythm():
     """Create a CognitiveRhythm instance for testing."""
     from mlsdm.rhythm.cognitive_rhythm import CognitiveRhythm
+
     return CognitiveRhythm()
 
 
@@ -278,6 +296,7 @@ def cognitive_rhythm():
 def aphasia_detector():
     """Create an AphasiaBrocaDetector instance for testing."""
     from mlsdm.extensions import AphasiaBrocaDetector
+
     return AphasiaBrocaDetector()
 
 

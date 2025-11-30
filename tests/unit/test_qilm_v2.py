@@ -82,7 +82,7 @@ class TestQILMv2Entangle:
 
         # Fill to capacity
         for i in range(3):
-            qilm.entangle([float(i), float(i+1)], 0.1 * i)
+            qilm.entangle([float(i), float(i + 1)], 0.1 * i)
 
         assert qilm.pointer == 0  # Should wrap around
         assert qilm.size == 3
@@ -355,7 +355,7 @@ class TestQILMv2BoundaryChecks:
 
         # Fill to capacity
         for i in range(5):
-            idx = qilm.entangle([float(i), float(i+1)], 0.1)
+            idx = qilm.entangle([float(i), float(i + 1)], 0.1)
             assert idx == i
 
         # Pointer should wrap to 0
@@ -372,7 +372,7 @@ class TestQILMv2BoundaryChecks:
 
         # Add more than capacity
         for i in range(10):
-            qilm.entangle([float(i), float(i+1)], 0.1 * i)
+            qilm.entangle([float(i), float(i + 1)], 0.1 * i)
 
         # Size should be capped at capacity
         assert qilm.size == 3

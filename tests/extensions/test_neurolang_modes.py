@@ -60,11 +60,7 @@ def test_neurolang_disabled_skips_training_and_grammar():
         assert wrapper.aphasia_detector is not None
 
         # Generate should work without NeuroLang
-        result = wrapper.generate(
-            prompt="Test prompt",
-            moral_value=0.8,
-            max_tokens=50
-        )
+        result = wrapper.generate(prompt="Test prompt", moral_value=0.8, max_tokens=50)
 
         assert isinstance(result, dict)
         assert result["accepted"] is True
@@ -98,11 +94,7 @@ def test_neurolang_eager_train_calls_trainer_once():
 
         # Multiple generate calls should not trigger more training
         for _ in range(3):
-            result = wrapper.generate(
-                prompt="Test prompt",
-                moral_value=0.8,
-                max_tokens=50
-            )
+            result = wrapper.generate(prompt="Test prompt", moral_value=0.8, max_tokens=50)
             assert result["accepted"] is True
 
         # Training count should still be 1
@@ -131,21 +123,13 @@ def test_neurolang_lazy_train_trains_on_first_generate_only():
         assert train_call_count == 0
 
         # First generate should trigger training
-        result1 = wrapper.generate(
-            prompt="First prompt",
-            moral_value=0.8,
-            max_tokens=50
-        )
+        result1 = wrapper.generate(prompt="First prompt", moral_value=0.8, max_tokens=50)
         assert result1["accepted"] is True
         assert train_call_count == 1
 
         # Subsequent generates should not trigger more training
         for _ in range(3):
-            result = wrapper.generate(
-                prompt="Test prompt",
-                moral_value=0.8,
-                max_tokens=50
-            )
+            result = wrapper.generate(prompt="Test prompt", moral_value=0.8, max_tokens=50)
             assert result["accepted"] is True
 
         # Training count should still be 1
@@ -158,7 +142,9 @@ def test_neurolang_uses_checkpoint_if_available():
     from mlsdm.extensions.neuro_lang_extension import ALLOWED_CHECKPOINT_DIR
 
     # Create a temporary checkpoint file in the allowed directory
-    with tempfile.NamedTemporaryFile(suffix=".pt", dir=str(ALLOWED_CHECKPOINT_DIR), delete=False) as tmp_file:
+    with tempfile.NamedTemporaryFile(
+        suffix=".pt", dir=str(ALLOWED_CHECKPOINT_DIR), delete=False
+    ) as tmp_file:
         checkpoint_path = tmp_file.name
 
     try:
@@ -187,7 +173,9 @@ def test_neurolang_uses_checkpoint_if_available():
             train_call_count += 1
 
         # Patch the train method to count calls
-        with patch("mlsdm.extensions.neuro_lang_extension.CriticalPeriodTrainer.train", counting_train):
+        with patch(
+            "mlsdm.extensions.neuro_lang_extension.CriticalPeriodTrainer.train", counting_train
+        ):
             # Create wrapper with checkpoint
             wrapper = NeuroLangWrapper(
                 llm_generate_fn=dummy_llm,
@@ -201,11 +189,7 @@ def test_neurolang_uses_checkpoint_if_available():
             assert train_call_count == 0
 
             # Generate should work fine
-            result = wrapper.generate(
-                prompt="Test prompt",
-                moral_value=0.8,
-                max_tokens=50
-            )
+            result = wrapper.generate(prompt="Test prompt", moral_value=0.8, max_tokens=50)
             assert result["accepted"] is True
 
             # Training should still not have been called
@@ -229,6 +213,7 @@ def test_neurolang_invalid_mode_raises_error():
 
 def test_neurolang_disabled_preserves_aphasia_functionality():
     """Test that disabled mode still provides full Aphasia-Broca functionality."""
+
     def aphasic_llm(prompt: str, max_tokens: int) -> str:
         """LLM that produces aphasic output."""
         return "Bad. No. Short."
@@ -242,11 +227,7 @@ def test_neurolang_disabled_preserves_aphasia_functionality():
         aphasia_repair_enabled=True,
     )
 
-    result = wrapper.generate(
-        prompt="Test prompt",
-        moral_value=0.8,
-        max_tokens=50
-    )
+    result = wrapper.generate(prompt="Test prompt", moral_value=0.8, max_tokens=50)
 
     # Aphasia detection should still work
     assert result["accepted"] is True
@@ -261,7 +242,9 @@ def test_neurolang_checkpoint_invalid_format_raises_error():
     from mlsdm.extensions.neuro_lang_extension import ALLOWED_CHECKPOINT_DIR
 
     # Create a checkpoint with wrong format in the allowed directory
-    with tempfile.NamedTemporaryFile(suffix=".pt", dir=str(ALLOWED_CHECKPOINT_DIR), delete=False) as tmp_file:
+    with tempfile.NamedTemporaryFile(
+        suffix=".pt", dir=str(ALLOWED_CHECKPOINT_DIR), delete=False
+    ) as tmp_file:
         checkpoint_path = tmp_file.name
 
     try:
@@ -270,7 +253,9 @@ def test_neurolang_checkpoint_invalid_format_raises_error():
         torch.save(invalid_checkpoint, checkpoint_path)
 
         # Should raise clear error about missing keys
-        with pytest.raises(ValueError, match="Invalid checkpoint structure.*missing 'actor' or 'critic'"):
+        with pytest.raises(
+            ValueError, match="Invalid checkpoint structure.*missing 'actor' or 'critic'"
+        ):
             NeuroLangWrapper(
                 llm_generate_fn=dummy_llm,
                 embedding_fn=dummy_embedder,

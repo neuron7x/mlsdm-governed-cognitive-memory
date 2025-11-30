@@ -331,12 +331,8 @@ class TestErrorUtilities:
 
     def test_get_http_status_auth_errors(self) -> None:
         """Test HTTP status for auth errors."""
-        assert get_http_status_for_error(
-            MLSDMError(ErrorCode.E201_INVALID_TOKEN)
-        ) == 401
-        assert get_http_status_for_error(
-            MLSDMError(ErrorCode.E203_INSUFFICIENT_PERMISSIONS)
-        ) == 403
+        assert get_http_status_for_error(MLSDMError(ErrorCode.E201_INVALID_TOKEN)) == 401
+        assert get_http_status_for_error(MLSDMError(ErrorCode.E203_INSUFFICIENT_PERMISSIONS)) == 403
 
     def test_get_http_status_moral_filter_error(self) -> None:
         """Test HTTP status for moral filter errors."""
@@ -345,12 +341,8 @@ class TestErrorUtilities:
 
     def test_get_http_status_llm_errors(self) -> None:
         """Test HTTP status for LLM errors."""
-        assert get_http_status_for_error(
-            MLSDMError(ErrorCode.E601_LLM_TIMEOUT)
-        ) == 504
-        assert get_http_status_for_error(
-            MLSDMError(ErrorCode.E602_LLM_RATE_LIMITED)
-        ) == 429
+        assert get_http_status_for_error(MLSDMError(ErrorCode.E601_LLM_TIMEOUT)) == 504
+        assert get_http_status_for_error(MLSDMError(ErrorCode.E602_LLM_RATE_LIMITED)) == 429
 
     def test_get_http_status_rate_limit(self) -> None:
         """Test HTTP status for rate limit error."""

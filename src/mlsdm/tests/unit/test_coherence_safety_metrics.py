@@ -22,7 +22,7 @@ class TestCoherenceMetrics:
             temporal_consistency=0.8,
             semantic_coherence=0.9,
             retrieval_stability=0.7,
-            phase_separation=0.6
+            phase_separation=0.6,
         )
         expected = (0.8 + 0.9 + 0.7 + 0.6) / 4.0
         assert abs(metrics.overall_score() - expected) < 1e-6
@@ -37,7 +37,7 @@ class TestSafetyMetrics:
             toxic_rejection_rate=0.95,
             moral_drift=0.1,
             threshold_convergence=0.85,
-            false_positive_rate=0.05
+            false_positive_rate=0.05,
         )
         expected = (0.95 + (1.0 - 0.1) + 0.85 + (1.0 - 0.05)) / 4.0
         assert abs(metrics.overall_score() - expected) < 1e-6
@@ -55,9 +55,7 @@ class TestCoherenceSafetyAnalyzer:
 
     def test_measure_temporal_consistency_single_retrieval(self, analyzer):
         """Test temporal consistency with single retrieval"""
-        retrieval_sequence = [
-            [np.array([1.0, 0.0, 0.0])]
-        ]
+        retrieval_sequence = [[np.array([1.0, 0.0, 0.0])]]
         score = analyzer.measure_temporal_consistency(retrieval_sequence)
         assert score == 1.0
 
@@ -66,7 +64,7 @@ class TestCoherenceSafetyAnalyzer:
         retrieval_sequence = [
             [np.array([1.0, 0.0, 0.0])],
             [],  # Empty retrieval
-            [np.array([1.0, 0.0, 0.0])]
+            [np.array([1.0, 0.0, 0.0])],
         ]
         score = analyzer.measure_temporal_consistency(retrieval_sequence, window_size=2)
         assert 0.0 <= score <= 1.0
@@ -76,7 +74,7 @@ class TestCoherenceSafetyAnalyzer:
         retrieval_sequence = [
             [],  # All empty
             [],
-            []
+            [],
         ]
         score = analyzer.measure_temporal_consistency(retrieval_sequence)
         assert score == 1.0
@@ -88,7 +86,7 @@ class TestCoherenceSafetyAnalyzer:
             [np.array([0.9, 0.1, 0.0])],
             [np.array([0.8, 0.2, 0.0])],
             [np.array([0.85, 0.15, 0.0])],
-            [np.array([0.87, 0.13, 0.0])]
+            [np.array([0.87, 0.13, 0.0])],
         ]
         score = analyzer.measure_temporal_consistency(retrieval_sequence)
         assert 0.0 <= score <= 1.0
@@ -116,13 +114,10 @@ class TestCoherenceSafetyAnalyzer:
 
     def test_measure_semantic_coherence_normal(self, analyzer):
         """Test semantic coherence with normal inputs"""
-        query_vectors = [
-            np.array([1.0, 0.0, 0.0]),
-            np.array([0.0, 1.0, 0.0])
-        ]
+        query_vectors = [np.array([1.0, 0.0, 0.0]), np.array([0.0, 1.0, 0.0])]
         retrieved_vectors = [
             [np.array([0.9, 0.1, 0.0]), np.array([0.95, 0.05, 0.0])],
-            [np.array([0.1, 0.9, 0.0]), np.array([0.05, 0.95, 0.0])]
+            [np.array([0.1, 0.9, 0.0]), np.array([0.05, 0.95, 0.0])],
         ]
         score = analyzer.measure_semantic_coherence(query_vectors, retrieved_vectors)
         assert 0.0 <= score <= 1.0
@@ -136,14 +131,8 @@ class TestCoherenceSafetyAnalyzer:
 
     def test_measure_phase_separation_normal(self, analyzer):
         """Test phase separation with normal inputs"""
-        wake_retrievals = [
-            np.array([1.0, 0.0, 0.0]),
-            np.array([0.9, 0.1, 0.0])
-        ]
-        sleep_retrievals = [
-            np.array([0.0, 0.0, 1.0]),
-            np.array([0.0, 0.1, 0.9])
-        ]
+        wake_retrievals = [np.array([1.0, 0.0, 0.0]), np.array([0.9, 0.1, 0.0])]
+        sleep_retrievals = [np.array([0.0, 0.0, 1.0]), np.array([0.0, 0.1, 0.9])]
         score = analyzer.measure_phase_separation(wake_retrievals, sleep_retrievals)
         assert 0.0 <= score <= 1.0
 
@@ -160,7 +149,7 @@ class TestCoherenceSafetyAnalyzer:
         retrievals = [
             [np.array([1.0, 0.0, 0.0])],
             [],  # Empty
-            [np.array([1.0, 0.0, 0.0])]
+            [np.array([1.0, 0.0, 0.0])],
         ]
         score = analyzer.measure_retrieval_stability(retrievals)
         assert 0.0 <= score <= 1.0
@@ -176,7 +165,7 @@ class TestCoherenceSafetyAnalyzer:
         retrievals = [
             [np.array([1.0, 0.0, 0.0]), np.array([0.9, 0.1, 0.0])],
             [np.array([0.95, 0.05, 0.0]), np.array([0.85, 0.15, 0.0])],
-            [np.array([0.98, 0.02, 0.0]), np.array([0.88, 0.12, 0.0])]
+            [np.array([0.98, 0.02, 0.0]), np.array([0.88, 0.12, 0.0])],
         ]
         score = analyzer.measure_retrieval_stability(retrievals, top_k=2)
         assert 0.0 <= score <= 1.0
@@ -291,37 +280,29 @@ class TestCoherenceSafetyAnalyzer:
 
     def test_compare_with_without_feature(self, analyzer):
         """Test comparative analysis"""
-        with_metrics = {
-            'accuracy': 0.95,
-            'precision': 0.90,
-            'recall': 0.85
-        }
-        without_metrics = {
-            'accuracy': 0.85,
-            'precision': 0.80,
-            'recall': 0.75
-        }
+        with_metrics = {"accuracy": 0.95, "precision": 0.90, "recall": 0.85}
+        without_metrics = {"accuracy": 0.85, "precision": 0.80, "recall": 0.75}
 
         results = analyzer.compare_with_without_feature(with_metrics, without_metrics)
 
-        assert 'accuracy' in results
-        assert 'precision' in results
-        assert 'recall' in results
+        assert "accuracy" in results
+        assert "precision" in results
+        assert "recall" in results
 
         # Check accuracy improvement
-        assert results['accuracy']['improvement'] > 0
-        assert results['accuracy']['significant'] is True
-        assert results['accuracy']['with_feature'] == 0.95
-        assert results['accuracy']['without_feature'] == 0.85
+        assert results["accuracy"]["improvement"] > 0
+        assert results["accuracy"]["significant"] is True
+        assert results["accuracy"]["with_feature"] == 0.95
+        assert results["accuracy"]["without_feature"] == 0.85
 
     def test_compare_with_without_feature_small_improvement(self, analyzer):
         """Test comparative analysis with insignificant improvement"""
-        with_metrics = {'accuracy': 0.851}
-        without_metrics = {'accuracy': 0.850}
+        with_metrics = {"accuracy": 0.851}
+        without_metrics = {"accuracy": 0.850}
 
         results = analyzer.compare_with_without_feature(with_metrics, without_metrics)
 
-        assert results['accuracy']['significant'] is False
+        assert results["accuracy"]["significant"] is False
 
     # ========== Report Generation Tests ==========
 
@@ -331,13 +312,13 @@ class TestCoherenceSafetyAnalyzer:
             temporal_consistency=0.8,
             semantic_coherence=0.9,
             retrieval_stability=0.7,
-            phase_separation=0.6
+            phase_separation=0.6,
         )
         safety = SafetyMetrics(
             toxic_rejection_rate=0.95,
             moral_drift=0.1,
             threshold_convergence=0.85,
-            false_positive_rate=0.05
+            false_positive_rate=0.05,
         )
 
         report = analyzer.generate_report(coherence, safety)
@@ -383,7 +364,7 @@ class TestEdgeCases:
             temporal_consistency=0.0,
             semantic_coherence=0.0,
             retrieval_stability=0.0,
-            phase_separation=0.0
+            phase_separation=0.0,
         )
         assert metrics.overall_score() == 0.0
 
@@ -391,7 +372,7 @@ class TestEdgeCases:
             temporal_consistency=1.0,
             semantic_coherence=1.0,
             retrieval_stability=1.0,
-            phase_separation=1.0
+            phase_separation=1.0,
         )
         assert metrics.overall_score() == 1.0
 
@@ -401,7 +382,7 @@ class TestEdgeCases:
             toxic_rejection_rate=0.0,
             moral_drift=1.0,
             threshold_convergence=0.0,
-            false_positive_rate=1.0
+            false_positive_rate=1.0,
         )
         assert metrics.overall_score() == 0.0
 
@@ -409,7 +390,7 @@ class TestEdgeCases:
             toxic_rejection_rate=1.0,
             moral_drift=0.0,
             threshold_convergence=1.0,
-            false_positive_rate=0.0
+            false_positive_rate=0.0,
         )
         assert metrics.overall_score() == 1.0
 
@@ -418,10 +399,7 @@ class TestEdgeCases:
         analyzer = CoherenceSafetyAnalyzer()
 
         # Large retrieval sequence
-        retrieval_sequence = [
-            [np.random.randn(128) for _ in range(5)]
-            for _ in range(100)
-        ]
+        retrieval_sequence = [[np.random.randn(128) for _ in range(5)] for _ in range(100)]
         score = analyzer.measure_temporal_consistency(retrieval_sequence)
         # Allow small numerical errors
         assert -0.01 <= score <= 1.01

@@ -22,16 +22,20 @@ from mlsdm.core.llm_wrapper import LLMWrapper
 # Test Fixtures - Deterministic Stubs (no network calls)
 # ============================================================================
 
+
 def create_stub_llm():
     """Create a deterministic stub LLM function for testing."""
+
     def stub_llm_generate(prompt: str, max_tokens: int) -> str:
         # Deterministic response based on prompt length
         return f"Response to prompt of length {len(prompt)} with max_tokens={max_tokens}"
+
     return stub_llm_generate
 
 
 def create_stub_embedder(dim: int = 384):
     """Create a deterministic stub embedding function for testing."""
+
     def stub_embed(text: str) -> np.ndarray:
         # Use hash of text to generate deterministic but varied embeddings
         np.random.seed(hash(text) % (2**32))
@@ -43,6 +47,7 @@ def create_stub_embedder(dim: int = 384):
             result[0] = 1.0
             return result
         return vec / norm
+
     return stub_embed
 
 
@@ -72,19 +77,20 @@ def create_wrapper(
 # Test Strategies
 # ============================================================================
 
+
 @st.composite
 def prompt_strategy(draw):
     """Generate prompts for testing. Non-empty text of various sizes."""
     # Generate printable text to avoid encoding issues
-    text = draw(st.text(
-        alphabet=st.characters(
-            categories=('L', 'N', 'P', 'S', 'Z'),
-            min_codepoint=32,
-            max_codepoint=126
-        ),
-        min_size=1,
-        max_size=128
-    ))
+    text = draw(
+        st.text(
+            alphabet=st.characters(
+                categories=("L", "N", "P", "S", "Z"), min_codepoint=32, max_codepoint=126
+            ),
+            min_size=1,
+            max_size=128,
+        )
+    )
     # Ensure non-empty after strip
     assume(len(text.strip()) > 0)
     return text
@@ -118,6 +124,7 @@ def num_calls_strategy(draw):
 # Property 1: MEMORY BOUNDS / CAPACITY CONSTRAINT
 # INV-LLM-S2: Number of vectors in memory MUST NOT exceed configured capacity
 # ============================================================================
+
 
 @settings(max_examples=100, deadline=None)
 @given(
@@ -161,12 +168,12 @@ def test_memory_capacity_never_exceeded(capacity, num_calls, prompt, moral_value
         max_size_seen = max(max_size_seen, current_size)
 
         # Invariant: size never exceeds capacity
-        assert current_size <= capacity, \
-            f"PELM size {current_size} exceeds capacity {capacity} after call {i+1}"
+        assert current_size <= capacity, (
+            f"PELM size {current_size} exceeds capacity {capacity} after call {i + 1}"
+        )
 
     # Final check: max size seen should never exceed capacity
-    assert max_size_seen <= capacity, \
-        f"Max PELM size {max_size_seen} exceeded capacity {capacity}"
+    assert max_size_seen <= capacity, f"Max PELM size {max_size_seen} exceeded capacity {capacity}"
 
 
 @settings(max_examples=50, deadline=None)
@@ -209,19 +216,20 @@ def test_memory_does_not_grow_unbounded(capacity, num_overflow_calls):
         max_size_observed = max(max_size_observed, current_size)
 
         # Key invariant: size never exceeds capacity
-        assert current_size <= capacity, \
-            f"PELM size {current_size} exceeds capacity {capacity} at step {i+1}"
+        assert current_size <= capacity, (
+            f"PELM size {current_size} exceeds capacity {capacity} at step {i + 1}"
+        )
 
     # Final verification
     final_size = wrapper.pelm.size
 
     # Size should be <= capacity always (the key invariant)
-    assert final_size <= capacity, \
-        f"Final PELM size {final_size} exceeds capacity {capacity}"
+    assert final_size <= capacity, f"Final PELM size {final_size} exceeds capacity {capacity}"
 
     # Max observed size should never have exceeded capacity
-    assert max_size_observed <= capacity, \
+    assert max_size_observed <= capacity, (
         f"Max observed size {max_size_observed} exceeded capacity {capacity}"
+    )
 
 
 @settings(max_examples=30, deadline=None)
@@ -249,15 +257,17 @@ def test_capacity_invariant_under_mixed_phases(capacity):
             pass
 
         # Invariant must hold at every step
-        assert wrapper.pelm.size <= capacity, \
-            f"Size {wrapper.pelm.size} > capacity {capacity} at step {i+1}, " \
+        assert wrapper.pelm.size <= capacity, (
+            f"Size {wrapper.pelm.size} > capacity {capacity} at step {i + 1}, "
             f"phase={wrapper.rhythm.phase}"
+        )
 
 
 # ============================================================================
 # Property 2: STATELESS MODE (no memory writes)
 # When stateless_mode=True, wrapper should NOT write to memory.
 # ============================================================================
+
 
 @settings(max_examples=100, deadline=None)
 @given(
@@ -292,27 +302,29 @@ def test_stateless_mode_no_memory_writes(prompt, moral_value, num_calls):
 
             # If successful, result should indicate stateless mode
             if result.get("accepted"):
-                assert result.get("stateless_mode") is True, \
+                assert result.get("stateless_mode") is True, (
                     "Accepted response in stateless mode should indicate stateless_mode=True"
+                )
         except Exception:
             pass  # Some rejections are ok
 
     # Memory size should NOT have increased
     final_size = wrapper.pelm.size
-    assert final_size == initial_size, \
+    assert final_size == initial_size, (
         f"Memory size changed in stateless mode: {initial_size} -> {final_size}"
+    )
 
 
 @settings(max_examples=50, deadline=None)
 @given(
     prompts=st.lists(
-        st.text(min_size=5, max_size=50, alphabet=st.characters(
-            categories=('L', 'N'),
-            min_codepoint=97,
-            max_codepoint=122
-        )),
+        st.text(
+            min_size=5,
+            max_size=50,
+            alphabet=st.characters(categories=("L", "N"), min_codepoint=97, max_codepoint=122),
+        ),
         min_size=3,
-        max_size=15
+        max_size=15,
     ),
 )
 def test_stateless_mode_consistency_across_calls(prompts):
@@ -336,8 +348,9 @@ def test_stateless_mode_consistency_across_calls(prompts):
             result = wrapper.generate(prompt=prompt, moral_value=0.8)
 
             # Stateless mode should persist
-            assert wrapper.stateless_mode is True, \
+            assert wrapper.stateless_mode is True, (
                 "stateless_mode switched from True to False unexpectedly"
+            )
 
             # Result should reflect stateless mode if accepted
             if result.get("accepted"):
@@ -371,8 +384,9 @@ def test_stateless_mode_consolidation_buffer_empty(capacity):
             pass
 
     # Consolidation buffer should still be empty in stateless mode
-    assert len(wrapper.consolidation_buffer) == 0, \
+    assert len(wrapper.consolidation_buffer) == 0, (
         f"Consolidation buffer has {len(wrapper.consolidation_buffer)} items in stateless mode"
+    )
 
 
 # ============================================================================
@@ -382,11 +396,11 @@ def test_stateless_mode_consolidation_buffer_empty(capacity):
 
 # Required keys that must always be present in a response
 REQUIRED_RESPONSE_KEYS = {
-    "response",       # The generated text (can be empty on rejection)
-    "accepted",       # Boolean indicating if morally accepted
-    "phase",          # Current cognitive phase (wake/sleep)
-    "step",           # Current step counter
-    "note",           # Processing note
+    "response",  # The generated text (can be empty on rejection)
+    "accepted",  # Boolean indicating if morally accepted
+    "phase",  # Current cognitive phase (wake/sleep)
+    "step",  # Current step counter
+    "note",  # Processing note
     "moral_threshold",  # Current moral threshold
 }
 
@@ -419,32 +433,32 @@ def test_governance_metadata_always_present(prompt, moral_value):
     )
 
     # Result must be a dict
-    assert isinstance(result, dict), \
-        f"generate() returned {type(result)}, expected dict"
+    assert isinstance(result, dict), f"generate() returned {type(result)}, expected dict"
 
     # All required keys must be present
     for key in REQUIRED_RESPONSE_KEYS:
-        assert key in result, \
+        assert key in result, (
             f"Required key '{key}' missing from response. Keys present: {list(result.keys())}"
+        )
 
     # Check types of governance fields
-    assert isinstance(result["accepted"], bool), \
+    assert isinstance(result["accepted"], bool), (
         f"'accepted' should be bool, got {type(result['accepted'])}"
+    )
 
-    assert isinstance(result["phase"], str), \
-        f"'phase' should be str, got {type(result['phase'])}"
+    assert isinstance(result["phase"], str), f"'phase' should be str, got {type(result['phase'])}"
 
-    assert result["phase"] in ("wake", "sleep"), \
+    assert result["phase"] in ("wake", "sleep"), (
         f"'phase' should be 'wake' or 'sleep', got {result['phase']}"
+    )
 
-    assert isinstance(result["step"], int), \
-        f"'step' should be int, got {type(result['step'])}"
+    assert isinstance(result["step"], int), f"'step' should be int, got {type(result['step'])}"
 
-    assert isinstance(result["moral_threshold"], (int, float)), \
+    assert isinstance(result["moral_threshold"], (int, float)), (
         f"'moral_threshold' should be numeric, got {type(result['moral_threshold'])}"
+    )
 
-    assert isinstance(result["note"], str), \
-        f"'note' should be str, got {type(result['note'])}"
+    assert isinstance(result["note"], str), f"'note' should be str, got {type(result['note'])}"
 
 
 @settings(max_examples=50, deadline=None)
@@ -470,19 +484,22 @@ def test_accepted_responses_have_full_metadata(prompt, moral_value):
     if result.get("accepted") is True:
         # Accepted responses should have extra keys
         for key in ACCEPTED_RESPONSE_EXTRA_KEYS:
-            assert key in result, \
-                f"Accepted response missing key '{key}'"
+            assert key in result, f"Accepted response missing key '{key}'"
 
         # These should be non-negative integers
-        assert isinstance(result["context_items"], int), \
+        assert isinstance(result["context_items"], int), (
             f"'context_items' should be int, got {type(result['context_items'])}"
-        assert result["context_items"] >= 0, \
+        )
+        assert result["context_items"] >= 0, (
             f"'context_items' should be >= 0, got {result['context_items']}"
+        )
 
-        assert isinstance(result["max_tokens_used"], int), \
+        assert isinstance(result["max_tokens_used"], int), (
             f"'max_tokens_used' should be int, got {type(result['max_tokens_used'])}"
-        assert result["max_tokens_used"] > 0, \
+        )
+        assert result["max_tokens_used"] > 0, (
             f"'max_tokens_used' should be > 0, got {result['max_tokens_used']}"
+        )
 
 
 @settings(max_examples=50, deadline=None)
@@ -505,12 +522,10 @@ def test_rejected_responses_have_note_explanation(prompt):
     if result.get("accepted") is False:
         # Note should explain rejection
         note = result.get("note", "")
-        assert len(note) > 0, \
-            "Rejected response has empty 'note' field"
+        assert len(note) > 0, "Rejected response has empty 'note' field"
 
         # Note should be descriptive (at least a few characters)
-        assert len(note) >= 5, \
-            f"Rejection note too short: '{note}'"
+        assert len(note) >= 5, f"Rejection note too short: '{note}'"
 
 
 @settings(max_examples=30, deadline=None)
@@ -538,8 +553,9 @@ def test_step_counter_increments_monotonically(num_calls, moral_value):
 
         current_step = result.get("step")
         assert current_step is not None, "Response missing 'step' field"
-        assert current_step > previous_step, \
+        assert current_step > previous_step, (
             f"Step counter did not increase: {previous_step} -> {current_step}"
+        )
 
         previous_step = current_step
 
@@ -564,15 +580,16 @@ def test_moral_threshold_in_valid_range(prompt, moral_value):
 
     threshold = result.get("moral_threshold")
     assert threshold is not None, "Response missing 'moral_threshold'"
-    assert isinstance(threshold, (int, float)), \
+    assert isinstance(threshold, (int, float)), (
         f"'moral_threshold' should be numeric, got {type(threshold)}"
-    assert 0.0 <= threshold <= 1.0, \
-        f"'moral_threshold' {threshold} out of valid range [0.0, 1.0]"
+    )
+    assert 0.0 <= threshold <= 1.0, f"'moral_threshold' {threshold} out of valid range [0.0, 1.0]"
 
 
 # ============================================================================
 # Edge Cases
 # ============================================================================
+
 
 @pytest.mark.parametrize("moral_value", [0.0, 0.01, 0.5, 0.99, 1.0])
 def test_boundary_moral_values(moral_value):
@@ -677,6 +694,7 @@ def test_repeated_identical_prompts():
 # ============================================================================
 # Speech Governance Tests (if enabled)
 # ============================================================================
+
 
 @settings(max_examples=30, deadline=None)
 @given(

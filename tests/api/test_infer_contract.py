@@ -82,10 +82,7 @@ class TestInferSuccessContract:
 
     def test_infer_moral_metadata_structure(self, client):
         """POST /infer with moral_value returns moral_metadata with expected fields."""
-        response = client.post(
-            "/infer",
-            json={"prompt": "Test moral metadata", "moral_value": 0.7}
-        )
+        response = client.post("/infer", json={"prompt": "Test moral metadata", "moral_value": 0.7})
         assert response.status_code == 200
 
         data = response.json()
@@ -100,8 +97,7 @@ class TestInferSuccessContract:
     def test_infer_rag_metadata_when_enabled(self, client):
         """POST /infer with rag_enabled=true returns rag_metadata with expected fields."""
         response = client.post(
-            "/infer",
-            json={"prompt": "Test RAG", "rag_enabled": True, "context_top_k": 3}
+            "/infer", json={"prompt": "Test RAG", "rag_enabled": True, "context_top_k": 3}
         )
         assert response.status_code == 200
 
@@ -118,10 +114,7 @@ class TestInferSuccessContract:
 
     def test_infer_rag_metadata_when_disabled(self, client):
         """POST /infer with rag_enabled=false returns rag_metadata with disabled state."""
-        response = client.post(
-            "/infer",
-            json={"prompt": "Test RAG disabled", "rag_enabled": False}
-        )
+        response = client.post("/infer", json={"prompt": "Test RAG disabled", "rag_enabled": False})
         assert response.status_code == 200
 
         data = response.json()
@@ -133,10 +126,7 @@ class TestInferSuccessContract:
 
     def test_infer_aphasia_metadata_when_enabled(self, client):
         """POST /infer with aphasia_mode=true returns aphasia_metadata."""
-        response = client.post(
-            "/infer",
-            json={"prompt": "Test aphasia mode", "aphasia_mode": True}
-        )
+        response = client.post("/infer", json={"prompt": "Test aphasia mode", "aphasia_mode": True})
         assert response.status_code == 200
 
         data = response.json()
@@ -161,7 +151,7 @@ class TestInferSuccessContract:
                 "prompt": "Test secure mode boost",
                 "secure_mode": True,
                 "moral_value": 0.5,
-            }
+            },
         )
         assert response.status_code == 200
 
@@ -179,7 +169,7 @@ class TestInferSuccessContract:
                 "prompt": "Test secure mode cap",
                 "secure_mode": True,
                 "moral_value": 0.9,  # 0.9 + 0.2 = 1.1 -> capped to 1.0
-            }
+            },
         )
         assert response.status_code == 200
 
@@ -218,7 +208,7 @@ class TestInferErrorContract:
         """POST /infer with out-of-range moral_value returns 422."""
         response = client.post(
             "/infer",
-            json={"prompt": "Test", "moral_value": 1.5}  # Out of [0.0, 1.0]
+            json={"prompt": "Test", "moral_value": 1.5},  # Out of [0.0, 1.0]
         )
         assert response.status_code == 422
 
@@ -226,7 +216,7 @@ class TestInferErrorContract:
         """POST /infer with out-of-range max_tokens returns 422."""
         response = client.post(
             "/infer",
-            json={"prompt": "Test", "max_tokens": 5000}  # Out of [1, 4096]
+            json={"prompt": "Test", "max_tokens": 5000},  # Out of [1, 4096]
         )
         assert response.status_code == 422
 
@@ -234,7 +224,7 @@ class TestInferErrorContract:
         """POST /infer with out-of-range context_top_k returns 422."""
         response = client.post(
             "/infer",
-            json={"prompt": "Test", "context_top_k": 200}  # Out of [1, 100]
+            json={"prompt": "Test", "context_top_k": 200},  # Out of [1, 100]
         )
         assert response.status_code == 422
 
@@ -271,7 +261,7 @@ class TestInferWithUserIntent:
             json={
                 "prompt": "Test user intent",
                 "user_intent": "analytical",
-            }
+            },
         )
         assert response.status_code == 200
 

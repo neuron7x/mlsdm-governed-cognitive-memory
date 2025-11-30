@@ -105,6 +105,7 @@ class TestExceptionRaiseScenarios:
 
     def test_raise_and_catch_timeout(self) -> None:
         """Test raising and catching timeout error."""
+
         def failing_function() -> None:
             raise LLMTimeoutError(
                 "Call timed out",

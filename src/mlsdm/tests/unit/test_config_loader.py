@@ -1,4 +1,5 @@
 """Comprehensive unit tests for ConfigLoader."""
+
 import os
 import tempfile
 
@@ -12,7 +13,7 @@ class TestConfigLoader:
 
     def test_load_yaml_config(self):
         """Test loading a YAML configuration file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write("dimension: 384\n")
             f.write("moral_filter:\n")
             f.write("  threshold: 0.5\n")
@@ -27,7 +28,7 @@ class TestConfigLoader:
 
     def test_load_yml_extension(self):
         """Test loading a .yml file (alternative YAML extension)."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             # Use default dimension to avoid ontology mismatch
             f.write("strict_mode: false\n")
             yml_path = f.name
@@ -41,7 +42,7 @@ class TestConfigLoader:
 
     def test_load_ini_config(self):
         """Test loading an INI configuration file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.ini', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ini", delete=False) as f:
             f.write("[section1]\n")
             f.write("dimension = 384\n")
             f.write("strict_mode = false\n")
@@ -56,7 +57,7 @@ class TestConfigLoader:
 
     def test_load_empty_yaml(self):
         """Test loading an empty YAML file - should use defaults."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write("")
             yaml_path = f.name
 
@@ -70,7 +71,7 @@ class TestConfigLoader:
 
     def test_load_nested_yaml(self):
         """Test loading a nested YAML configuration."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write("cognitive_rhythm:\n")
             f.write("  wake_duration: 10\n")
             f.write("  sleep_duration: 5\n")
@@ -86,7 +87,7 @@ class TestConfigLoader:
 
     def test_invalid_file_format(self):
         """Test that unsupported file formats raise ValueError."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("test")
             txt_path = f.name
 
@@ -103,7 +104,7 @@ class TestConfigLoader:
 
     def test_ini_boolean_parsing(self):
         """Test that INI boolean values are parsed correctly."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.ini', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ini", delete=False) as f:
             f.write("[section]\n")
             f.write("strict_mode = true\n")
             ini_path = f.name
@@ -116,7 +117,7 @@ class TestConfigLoader:
 
     def test_ini_numeric_parsing(self):
         """Test that INI numeric values are parsed correctly - disable validation."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.ini', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ini", delete=False) as f:
             f.write("[section]\n")
             f.write("dimension = 768\n")
             ini_path = f.name
@@ -131,7 +132,7 @@ class TestConfigLoader:
 
     def test_yaml_list_parsing(self):
         """Test that YAML lists are parsed correctly."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write("ontology_matcher:\n")
             f.write("  ontology_labels:\n")
             f.write("    - category1\n")
@@ -153,7 +154,7 @@ class TestConfigLoader:
 
     def test_multiple_ini_sections(self):
         """Test loading INI file with multiple sections - disable validation."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.ini', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ini", delete=False) as f:
             f.write("[section1]\n")
             f.write("dimension = 512\n")
             f.write("[section2]\n")
@@ -170,7 +171,7 @@ class TestConfigLoader:
 
     def test_yaml_with_special_types(self):
         """Test YAML with special types (null, lists, etc.) - disable validation."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write("string_key: hello\n")
             f.write("int_key: 123\n")
             f.write("float_key: 45.67\n")
@@ -196,7 +197,9 @@ class TestConfigLoader:
 
     def test_yaml_encoding(self):
         """Test that YAML files with UTF-8 encoding are handled correctly."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False, encoding='utf-8') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".yaml", delete=False, encoding="utf-8"
+        ) as f:
             # Disable validation to test encoding without schema constraints
             f.write("dimension: 384\n")
             yaml_path = f.name

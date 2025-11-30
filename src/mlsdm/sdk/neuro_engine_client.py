@@ -61,9 +61,7 @@ class MLSDMTimeoutError(MLSDMError):
     Raised when the generation request times out.
     """
 
-    def __init__(
-        self, message: str, timeout_seconds: float | None = None
-    ) -> None:
+    def __init__(self, message: str, timeout_seconds: float | None = None) -> None:
         super().__init__(message)
         self.timeout_seconds = timeout_seconds
 
@@ -135,23 +133,25 @@ class GenerateResponseDTO:
 
 
 # Expected keys in GenerateResponseDTO for contract validation
-GENERATE_RESPONSE_DTO_KEYS = frozenset({
-    "response",
-    "accepted",
-    "phase",
-    "moral_score",
-    "aphasia_flags",
-    "emergency_shutdown",
-    "cognitive_state",
-    "metrics",
-    "safety_flags",
-    "memory_stats",
-    "governance",
-    "timing",
-    "validation_steps",
-    "error",
-    "rejected_at",
-})
+GENERATE_RESPONSE_DTO_KEYS = frozenset(
+    {
+        "response",
+        "accepted",
+        "phase",
+        "moral_score",
+        "aphasia_flags",
+        "emergency_shutdown",
+        "cognitive_state",
+        "metrics",
+        "safety_flags",
+        "memory_stats",
+        "governance",
+        "timing",
+        "validation_steps",
+        "error",
+        "rejected_at",
+    }
+)
 
 
 class NeuroCognitiveClient:

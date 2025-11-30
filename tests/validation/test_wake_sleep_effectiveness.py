@@ -13,8 +13,7 @@ from mlsdm.core.cognitive_controller import CognitiveController
 from mlsdm.utils.coherence_safety_metrics import CoherenceSafetyAnalyzer
 
 
-def generate_test_vectors(n_vectors: int, dim: int = 384,
-                         n_clusters: int = 3) -> tuple:
+def generate_test_vectors(n_vectors: int, dim: int = 384, n_clusters: int = 3) -> tuple:
     """
     Generate clustered test vectors to simulate realistic memory patterns.
 
@@ -138,8 +137,9 @@ def test_wake_sleep_phase_separation():
     print(f"  Wake/Sleep ratio: {wake_count}/{sleep_count}")
 
     # Validation: System should support phase-based organization
-    assert has_phase_organization or wake_count + sleep_count > 0, \
+    assert has_phase_organization or wake_count + sleep_count > 0, (
         "System should support memory storage"
+    )
 
     print("\n✅ PASS: Wake/sleep cycles enable phase-based memory organization")
     print(f"  - {wake_count} memories in wake phase")
@@ -206,8 +206,9 @@ def test_wake_sleep_retrieval_quality():
     print(f"  Improvement:                       {improvement:.4f} ({pct_improvement:+.1f}%)")
 
     # Note: Improvement may be small but should be non-negative
-    assert coherence_with >= coherence_without * 0.95, \
+    assert coherence_with >= coherence_without * 0.95, (
         "Wake/sleep cycles should not significantly harm retrieval quality"
+    )
 
     if improvement > 0:
         print(f"\n✅ PASS: Wake/sleep cycles improve semantic coherence by {pct_improvement:.1f}%")
@@ -273,20 +274,19 @@ def test_wake_sleep_resource_efficiency():
     print(f"  Total events:          {n_events}")
     print(f"  Processed (wake):      {processed_count}")
     print(f"  Rejected (sleep):      {sleep_rejected}")
-    print(f"  Processing rate:       {processed_count/n_events*100:.1f}%")
+    print(f"  Processing rate:       {processed_count / n_events * 100:.1f}%")
 
     print("\nWITHOUT Wake/Sleep Rhythm:")
     print(f"  Total events:          {n_events}")
     print(f"  Processed:             {baseline_processed}")
-    print(f"  Processing rate:       {baseline_processed/n_events*100:.1f}%")
+    print(f"  Processing rate:       {baseline_processed / n_events * 100:.1f}%")
 
     print("\nEFFICIENCY GAIN:")
     print(f"  Processing reduction:  {processing_reduction:.1f}%")
     print(f"  Resource savings:      {sleep_rejected} events skipped during sleep")
 
     # Validation: Sleep phase should block some processing
-    assert sleep_rejected > 0, \
-        "Sleep phase should block processing for resource efficiency"
+    assert sleep_rejected > 0, "Sleep phase should block processing for resource efficiency"
 
     print("\n✅ PASS: Wake/sleep cycles provide resource efficiency")
     print(f"  - {sleep_rejected} events efficiently rejected during sleep phase")
@@ -395,21 +395,29 @@ def run_all_tests():
     results = {}
 
     try:
-        results['phase_separation'] = test_wake_sleep_phase_separation()
-        results['retrieval_quality'] = test_wake_sleep_retrieval_quality()
-        results['resource_efficiency'] = test_wake_sleep_resource_efficiency()
-        results['comprehensive'] = test_comprehensive_coherence_metrics()
+        results["phase_separation"] = test_wake_sleep_phase_separation()
+        results["retrieval_quality"] = test_wake_sleep_retrieval_quality()
+        results["resource_efficiency"] = test_wake_sleep_resource_efficiency()
+        results["comprehensive"] = test_comprehensive_coherence_metrics()
 
         print("\n" + "=" * 60)
         print("SUMMARY OF RESULTS")
         print("=" * 60)
 
-        print(f"\n1. Phase Organization: {results['phase_separation']['total_stored']} memories organized "
-              f"({results['phase_separation']['wake_count']} wake, {results['phase_separation']['sleep_count']} sleep)")
-        print(f"2. Retrieval Quality: {results['retrieval_quality']['pct_improvement']:+.1f}% improvement")
-        print(f"3. Resource Efficiency: {results['resource_efficiency']['processing_reduction']:.1f}% load reduction, "
-              f"{results['resource_efficiency']['sleep_rejected']} events skipped")
-        print(f"4. Overall Coherence: {results['comprehensive']['pct_improvement']:+.1f}% improvement")
+        print(
+            f"\n1. Phase Organization: {results['phase_separation']['total_stored']} memories organized "
+            f"({results['phase_separation']['wake_count']} wake, {results['phase_separation']['sleep_count']} sleep)"
+        )
+        print(
+            f"2. Retrieval Quality: {results['retrieval_quality']['pct_improvement']:+.1f}% improvement"
+        )
+        print(
+            f"3. Resource Efficiency: {results['resource_efficiency']['processing_reduction']:.1f}% load reduction, "
+            f"{results['resource_efficiency']['sleep_rejected']} events skipped"
+        )
+        print(
+            f"4. Overall Coherence: {results['comprehensive']['pct_improvement']:+.1f}% improvement"
+        )
 
         print("\n" + "=" * 60)
         print("✅ ALL WAKE/SLEEP EFFECTIVENESS TESTS PASSED")

@@ -270,15 +270,17 @@ class ThreatPreFilter:
     """
 
     # Default risk keywords - can be overridden via constructor
-    DEFAULT_RISK_KEYWORDS: frozenset[str] = frozenset({
-        "hack",
-        "exploit",
-        "bypass",
-        "override",
-        "inject",
-        "attack",
-        "malicious",
-    })
+    DEFAULT_RISK_KEYWORDS: frozenset[str] = frozenset(
+        {
+            "hack",
+            "exploit",
+            "bypass",
+            "override",
+            "inject",
+            "attack",
+            "malicious",
+        }
+    )
 
     # Score increment per detected keyword (0.2 = 5 keywords to reach max)
     KEYWORD_SCORE_INCREMENT: float = 0.2
@@ -297,9 +299,7 @@ class ThreatPreFilter:
         """
         self._sensitivity = sensitivity
         self._risk_keywords = (
-            frozenset(risk_keywords)
-            if risk_keywords is not None
-            else self.DEFAULT_RISK_KEYWORDS
+            frozenset(risk_keywords) if risk_keywords is not None else self.DEFAULT_RISK_KEYWORDS
         )
 
     def evaluate(self, prompt: str, context: dict[str, Any]) -> FilterResult:
@@ -515,9 +515,7 @@ class LLMPipeline:
         # Initialize pre-filters
         self._pre_filters: list[tuple[str, PreFilter]] = []
         if self._config.moral_filter_enabled:
-            moral_filter = MoralPreFilter(
-                initial_threshold=self._config.moral_threshold
-            )
+            moral_filter = MoralPreFilter(initial_threshold=self._config.moral_threshold)
             self._pre_filters.append(("moral_filter", moral_filter))
             self._moral_filter = moral_filter
 
@@ -572,9 +570,7 @@ class LLMPipeline:
         # Stage 1: Pre-filters
         pre_filter_result = self._run_pre_filters(prompt, full_context, stages)
         if pre_filter_result is not None:
-            pre_filter_result.total_duration_ms = (
-                time.perf_counter() - start_time
-            ) * 1000
+            pre_filter_result.total_duration_ms = (time.perf_counter() - start_time) * 1000
             self._emit_telemetry(pre_filter_result)
             return pre_filter_result
 
@@ -595,9 +591,7 @@ class LLMPipeline:
         response_text = llm_result
 
         # Stage 3: Post-filters
-        response_text = self._run_post_filters(
-            response_text, full_context, stages
-        )
+        response_text = self._run_post_filters(response_text, full_context, stages)
 
         # Stage 4: Build result
         total_duration = (time.perf_counter() - start_time) * 1000
@@ -761,9 +755,7 @@ class LLMPipeline:
             except Exception as e:
                 _logger.warning("Telemetry callback failed: %s", e)
 
-    def register_telemetry_callback(
-        self, callback: Callable[[PipelineResult], None]
-    ) -> None:
+    def register_telemetry_callback(self, callback: Callable[[PipelineResult], None]) -> None:
         """Register a telemetry callback.
 
         Args:

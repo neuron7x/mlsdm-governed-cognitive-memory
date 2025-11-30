@@ -68,8 +68,9 @@ _logger = logging.getLogger(__name__)
 
 class CircuitBreakerState(Enum):
     """Circuit breaker states for embedding function."""
+
     CLOSED = "closed"  # Normal operation
-    OPEN = "open"      # Too many failures, blocking requests
+    OPEN = "open"  # Too many failures, blocking requests
     HALF_OPEN = "half_open"  # Testing if service recovered
 
 
@@ -78,19 +79,13 @@ class CircuitBreaker:
 
     # Default values from calibration
     DEFAULT_FAILURE_THRESHOLD = (
-        RELIABILITY_DEFAULTS.circuit_breaker_failure_threshold
-        if RELIABILITY_DEFAULTS
-        else 5
+        RELIABILITY_DEFAULTS.circuit_breaker_failure_threshold if RELIABILITY_DEFAULTS else 5
     )
     DEFAULT_RECOVERY_TIMEOUT = (
-        RELIABILITY_DEFAULTS.circuit_breaker_recovery_timeout
-        if RELIABILITY_DEFAULTS
-        else 60.0
+        RELIABILITY_DEFAULTS.circuit_breaker_recovery_timeout if RELIABILITY_DEFAULTS else 60.0
     )
     DEFAULT_SUCCESS_THRESHOLD = (
-        RELIABILITY_DEFAULTS.circuit_breaker_success_threshold
-        if RELIABILITY_DEFAULTS
-        else 2
+        RELIABILITY_DEFAULTS.circuit_breaker_success_threshold if RELIABILITY_DEFAULTS else 2
     )
 
     def __init__(
@@ -100,19 +95,13 @@ class CircuitBreaker:
         success_threshold: int | None = None,
     ):
         self.failure_threshold = (
-            failure_threshold
-            if failure_threshold is not None
-            else self.DEFAULT_FAILURE_THRESHOLD
+            failure_threshold if failure_threshold is not None else self.DEFAULT_FAILURE_THRESHOLD
         )
         self.recovery_timeout = (
-            recovery_timeout
-            if recovery_timeout is not None
-            else self.DEFAULT_RECOVERY_TIMEOUT
+            recovery_timeout if recovery_timeout is not None else self.DEFAULT_RECOVERY_TIMEOUT
         )
         self.success_threshold = (
-            success_threshold
-            if success_threshold is not None
-            else self.DEFAULT_SUCCESS_THRESHOLD
+            success_threshold if success_threshold is not None else self.DEFAULT_SUCCESS_THRESHOLD
         )
 
         self.failure_count = 0
@@ -191,27 +180,19 @@ class LLMWrapper:
 
     # Default values from calibration
     MAX_WAKE_TOKENS = (
-        COGNITIVE_RHYTHM_DEFAULTS.max_wake_tokens
-        if COGNITIVE_RHYTHM_DEFAULTS
-        else 2048
+        COGNITIVE_RHYTHM_DEFAULTS.max_wake_tokens if COGNITIVE_RHYTHM_DEFAULTS else 2048
     )
     MAX_SLEEP_TOKENS = (
-        COGNITIVE_RHYTHM_DEFAULTS.max_sleep_tokens
-        if COGNITIVE_RHYTHM_DEFAULTS
-        else 150
+        COGNITIVE_RHYTHM_DEFAULTS.max_sleep_tokens if COGNITIVE_RHYTHM_DEFAULTS else 150
     )  # Forced short responses during sleep
-    DEFAULT_LLM_TIMEOUT = (
-        RELIABILITY_DEFAULTS.llm_timeout if RELIABILITY_DEFAULTS else 30.0
-    )
+    DEFAULT_LLM_TIMEOUT = RELIABILITY_DEFAULTS.llm_timeout if RELIABILITY_DEFAULTS else 30.0
     DEFAULT_LLM_RETRY_ATTEMPTS = (
         RELIABILITY_DEFAULTS.llm_retry_attempts if RELIABILITY_DEFAULTS else 3
     )
     DEFAULT_PELM_FAILURE_THRESHOLD = (
         RELIABILITY_DEFAULTS.pelm_failure_threshold if RELIABILITY_DEFAULTS else 3
     )
-    DEFAULT_PHASE_TOLERANCE = (
-        PELM_DEFAULTS.phase_tolerance if PELM_DEFAULTS else 0.15
-    )
+    DEFAULT_PHASE_TOLERANCE = PELM_DEFAULTS.phase_tolerance if PELM_DEFAULTS else 0.15
     WAKE_PHASE = PELM_DEFAULTS.wake_phase if PELM_DEFAULTS else 0.1
     SLEEP_PHASE = PELM_DEFAULTS.sleep_phase if PELM_DEFAULTS else 0.9
 
@@ -252,8 +233,14 @@ class LLMWrapper:
         self._init_core_params(dim, llm_timeout, llm_retry_attempts)
         # Initialize core components
         self._init_core_components(
-            llm_generate_fn, embedding_fn, dim, capacity,
-            wake_duration, sleep_duration, initial_moral_threshold, speech_governor
+            llm_generate_fn,
+            embedding_fn,
+            dim,
+            capacity,
+            wake_duration,
+            sleep_duration,
+            initial_moral_threshold,
+            speech_governor,
         )
         # Initialize reliability components
         self._init_reliability()
@@ -273,15 +260,11 @@ class LLMWrapper:
             capacity = PELM_DEFAULTS.default_capacity if PELM_DEFAULTS else 20_000
         if wake_duration is None:
             wake_duration = (
-                COGNITIVE_RHYTHM_DEFAULTS.wake_duration
-                if COGNITIVE_RHYTHM_DEFAULTS
-                else 8
+                COGNITIVE_RHYTHM_DEFAULTS.wake_duration if COGNITIVE_RHYTHM_DEFAULTS else 8
             )
         if sleep_duration is None:
             sleep_duration = (
-                COGNITIVE_RHYTHM_DEFAULTS.sleep_duration
-                if COGNITIVE_RHYTHM_DEFAULTS
-                else 3
+                COGNITIVE_RHYTHM_DEFAULTS.sleep_duration if COGNITIVE_RHYTHM_DEFAULTS else 3
             )
         if llm_timeout is None:
             llm_timeout = self.DEFAULT_LLM_TIMEOUT
@@ -360,11 +343,12 @@ class LLMWrapper:
         For true preemptive timeout, the LLM client should implement timeout in the
         llm_generate_fn itself (e.g., using requests timeout, asyncio timeout, etc.).
         """
+
         @retry(
             retry=retry_if_exception_type((TimeoutError, ConnectionError, RuntimeError)),
             stop=stop_after_attempt(self.llm_retry_attempts),
             wait=wait_exponential(multiplier=1, min=1, max=10),
-            reraise=True
+            reraise=True,
         )
         def _generate_with_timeout() -> str:
             start_time = time.time()
@@ -373,7 +357,9 @@ class LLMWrapper:
 
             # Post-call timeout detection for monitoring and retry trigger
             if elapsed > self.llm_timeout:
-                raise TimeoutError(f"LLM call exceeded timeout: {elapsed:.2f}s > {self.llm_timeout}s")
+                raise TimeoutError(
+                    f"LLM call exceeded timeout: {elapsed:.2f}s > {self.llm_timeout}s"
+                )
 
             return result
 
@@ -400,12 +386,7 @@ class LLMWrapper:
             self.embedding_failure_count += 1
             raise e
 
-    def _safe_pelm_operation(
-        self,
-        operation: str,
-        *args: Any,
-        **kwargs: Any
-    ) -> Any:
+    def _safe_pelm_operation(self, operation: str, *args: Any, **kwargs: Any) -> Any:
         """
         Execute PELM operation with graceful degradation.
 
@@ -486,7 +467,9 @@ class LLMWrapper:
                 rejection = self._check_moral_and_phase(moral_value)
                 if rejection is not None:
                     moral_span.set_attribute("mlsdm.moral.accepted", False)
-                    moral_span.set_attribute("mlsdm.moral.rejection_reason", rejection.get("note", ""))
+                    moral_span.set_attribute(
+                        "mlsdm.moral.rejection_reason", rejection.get("note", "")
+                    )
                     return rejection
                 moral_span.set_attribute("mlsdm.moral.accepted", True)
 
@@ -587,7 +570,9 @@ class LLMWrapper:
 
         except RuntimeError as e:
             if "Circuit breaker is OPEN" in str(e):
-                return self._build_error_response("embedding service unavailable (circuit breaker open)")
+                return self._build_error_response(
+                    "embedding service unavailable (circuit breaker open)"
+                )
             return self._build_error_response(f"embedding failed: {str(e)}")
         except Exception as e:
             return self._build_error_response(f"embedding failed: {str(e)}")
@@ -668,10 +653,7 @@ class LLMWrapper:
                 self._safe_pelm_operation("entangle", prompt_vector.tolist(), phase=phase_val)
                 self.consolidation_buffer.append(prompt_vector)
             except Exception as mem_err:
-                _logger.debug(
-                    "Memory update failed (graceful degradation): %s",
-                    mem_err
-                )
+                _logger.debug("Memory update failed (graceful degradation): %s", mem_err)
 
         self.accepted_count += 1
 
@@ -679,14 +661,15 @@ class LLMWrapper:
         """Advance cognitive rhythm and perform consolidation if entering sleep."""
         self.rhythm.step()
 
-        if self.rhythm.is_sleep() and len(self.consolidation_buffer) > 0 and not self.stateless_mode:
+        if (
+            self.rhythm.is_sleep()
+            and len(self.consolidation_buffer) > 0
+            and not self.stateless_mode
+        ):
             try:
                 self._consolidate_memories()
             except Exception as consol_err:
-                _logger.debug(
-                    "Memory consolidation failed (non-critical): %s",
-                    consol_err
-                )
+                _logger.debug("Memory consolidation failed (non-critical): %s", consol_err)
 
     def _build_success_response(
         self,
@@ -705,7 +688,7 @@ class LLMWrapper:
             "moral_threshold": round(self.moral.threshold, 4),
             "context_items": len(memories),
             "max_tokens_used": max_tokens,
-            "stateless_mode": self.stateless_mode
+            "stateless_mode": self.stateless_mode,
         }
 
         if governed_metadata is not None:
@@ -739,8 +722,8 @@ class LLMWrapper:
         # Simple context building - could be enhanced with more sophisticated approaches
         context_parts = []
         for i, mem in enumerate(memories[:3]):  # Use top 3
-            resonance = getattr(mem, 'resonance', 0.0)
-            context_parts.append(f"[Context {i+1}, relevance: {resonance:.2f}]")
+            resonance = getattr(mem, "resonance", 0.0)
+            context_parts.append(f"[Context {i + 1}, relevance: {resonance:.2f}]")
 
         return " ".join(context_parts) if context_parts else ""
 
@@ -761,7 +744,7 @@ class LLMWrapper:
             "note": reason,
             "moral_threshold": round(self.moral.threshold, 4),
             "context_items": 0,
-            "max_tokens_used": 0
+            "max_tokens_used": 0,
         }
 
     def _build_error_response(self, error: str) -> dict[str, Any]:
@@ -774,7 +757,7 @@ class LLMWrapper:
             "note": f"error: {error}",
             "moral_threshold": round(self.moral.threshold, 4),
             "context_items": 0,
-            "max_tokens_used": 0
+            "max_tokens_used": 0,
         }
 
     def _is_error_response(self, result: Any) -> bool:
@@ -801,7 +784,7 @@ class LLMWrapper:
                 "synaptic_norms": {
                     "L1": float(np.linalg.norm(l1)),
                     "L2": float(np.linalg.norm(l2)),
-                    "L3": float(np.linalg.norm(l3))
+                    "L3": float(np.linalg.norm(l3)),
                 },
                 "pelm_stats": self.pelm.get_state_stats(),
                 # Backward compatibility: also expose as qilm_stats (deprecated)
@@ -814,8 +797,8 @@ class LLMWrapper:
                     # Backward compatibility: also expose as qilm_failure_count (deprecated, use pelm_failure_count instead)
                     "qilm_failure_count": self.pelm_failure_count,
                     "embedding_failure_count": self.embedding_failure_count,
-                    "llm_failure_count": self.llm_failure_count
-                }
+                    "llm_failure_count": self.llm_failure_count,
+                },
             }
 
     def get_cognitive_state(self) -> CognitiveState:
@@ -859,8 +842,7 @@ class LLMWrapper:
             self.moral = MoralFilterV2(initial_threshold=0.50)
             self.pelm = PhaseEntangledLatticeMemory(dimension=self.dim, capacity=self.pelm.capacity)
             self.rhythm = CognitiveRhythm(
-                wake_duration=self.rhythm.wake_duration,
-                sleep_duration=self.rhythm.sleep_duration
+                wake_duration=self.rhythm.wake_duration, sleep_duration=self.rhythm.sleep_duration
             )
             self.synaptic.reset_all()
 

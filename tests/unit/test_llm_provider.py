@@ -218,6 +218,7 @@ class TestOpenAIProviderInit:
             pytest.skip("openai package is installed, skipping ImportError test")
         else:
             from mlsdm.adapters.llm_provider import OpenAIProvider
+
             with pytest.raises(ImportError, match="openai package is required"):
                 OpenAIProvider(api_key="test-key")
 

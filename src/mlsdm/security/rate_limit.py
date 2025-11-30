@@ -85,9 +85,7 @@ class RateLimiter:
 
             # Remove expired entries
             cutoff_time = current_time - self._window_seconds
-            client_requests = [
-                (ts, count) for ts, count in client_requests if ts > cutoff_time
-            ]
+            client_requests = [(ts, count) for ts, count in client_requests if ts > cutoff_time]
             self._requests[client_id] = client_requests
 
             # Count total requests in window
@@ -115,9 +113,7 @@ class RateLimiter:
             cutoff_time = current_time - self._window_seconds
 
             client_requests = self._requests.get(client_id, [])
-            client_requests = [
-                (ts, count) for ts, count in client_requests if ts > cutoff_time
-            ]
+            client_requests = [(ts, count) for ts, count in client_requests if ts > cutoff_time]
 
             total_requests = sum(count for _, count in client_requests)
             return max(0, self._requests_per_window - total_requests)
@@ -165,9 +161,7 @@ _global_rate_limiter: RateLimiter | None = None
 _global_limiter_lock = Lock()
 
 
-def get_rate_limiter(
-    requests_per_window: int = 100, window_seconds: int = 60
-) -> RateLimiter:
+def get_rate_limiter(requests_per_window: int = 100, window_seconds: int = 60) -> RateLimiter:
     """Get or create the global rate limiter instance.
 
     This function is thread-safe and implements the singleton pattern.

@@ -34,7 +34,7 @@ class TestVectorValidation:
     def test_validate_vector_with_nan(self):
         """Test validation rejects NaN values."""
         validator = InputValidator()
-        vector = [0.1, float('nan'), 0.3, 0.4]
+        vector = [0.1, float("nan"), 0.3, 0.4]
 
         with pytest.raises(ValueError, match="NaN"):
             validator.validate_vector(vector, expected_dim=4)
@@ -42,7 +42,7 @@ class TestVectorValidation:
     def test_validate_vector_with_infinity(self):
         """Test validation rejects Infinity values."""
         validator = InputValidator()
-        vector = [0.1, float('inf'), 0.3, 0.4]
+        vector = [0.1, float("inf"), 0.3, 0.4]
 
         with pytest.raises(ValueError, match="NaN or Inf"):
             validator.validate_vector(vector, expected_dim=4)
@@ -114,14 +114,14 @@ class TestMoralValueValidation:
         validator = InputValidator()
 
         with pytest.raises(ValueError, match="NaN"):
-            validator.validate_moral_value(float('nan'))
+            validator.validate_moral_value(float("nan"))
 
     def test_validate_moral_value_infinity(self):
         """Test validation rejects Infinity."""
         validator = InputValidator()
 
         with pytest.raises(ValueError, match="NaN or Inf"):
-            validator.validate_moral_value(float('inf'))
+            validator.validate_moral_value(float("inf"))
 
     def test_validate_moral_value_wrong_type(self):
         """Test validation rejects wrong types."""
@@ -240,14 +240,14 @@ class TestNumericValidation:
         validator = InputValidator()
 
         with pytest.raises(ValueError, match="NaN"):
-            validator.validate_numeric_range(float('nan'), min_val=0.0, max_val=10.0)
+            validator.validate_numeric_range(float("nan"), min_val=0.0, max_val=10.0)
 
     def test_validate_numeric_range_infinity(self):
         """Test rejection of Infinity."""
         validator = InputValidator()
 
         with pytest.raises(ValueError, match="NaN or Inf"):
-            validator.validate_numeric_range(float('inf'), min_val=0.0, max_val=10.0)
+            validator.validate_numeric_range(float("inf"), min_val=0.0, max_val=10.0)
 
     def test_validate_numeric_range_at_boundaries(self):
         """Test validation at exact boundaries."""
@@ -388,7 +388,9 @@ class TestPromptValidation:
         validator = InputValidator()
         # Create a prompt that exceeds the token limit
         # With CHARS_PER_TOKEN=4 and MAX_PROMPT_TOKENS=2048, max chars = 8192
-        long_prompt = "a" * (InputValidator.MAX_PROMPT_TOKENS * InputValidator.CHARS_PER_TOKEN + 100)
+        long_prompt = "a" * (
+            InputValidator.MAX_PROMPT_TOKENS * InputValidator.CHARS_PER_TOKEN + 100
+        )
 
         # Should raise ValueError for exceeding length (either in sanitize or token check)
         with pytest.raises(ValueError, match="exceeds maximum|String length"):
