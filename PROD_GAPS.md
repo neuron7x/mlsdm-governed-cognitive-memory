@@ -278,22 +278,25 @@ _All blockers resolved._
 
 ---
 
-### DOC-001: Create Architecture Decision Records (ADRs)
+### ~~DOC-001: Create Architecture Decision Records (ADRs)~~ ✅ COMPLETED
 
 **Block**: Docs  
-**Criticality**: HIGH  
+**Criticality**: ~~HIGH~~ COMPLETED  
 **Type**: Docs
 
-**Description**: No documented rationale for key architecture decisions. Makes it hard for new contributors to understand design choices.
+**Description**: ~~No documented rationale for key architecture decisions. Makes it hard for new contributors to understand design choices.~~ Created ADR directory with template and initial ADRs.
 
 **Acceptance Criteria**:
-- Create `docs/adr/` directory
-- Add ADRs for: PELM design, moral filter algorithm, memory bounds
-- Template for future ADRs
+- ✅ Create `docs/adr/` directory
+- ✅ Add ADRs for: PELM design, moral filter algorithm, memory bounds
+- ✅ Template for future ADRs
 
 **Affected Files**:
-- `docs/adr/` (new directory)
-- `docs/adr/0001-record-architecture-decisions.md` (new)
+- `docs/adr/0000-adr-template.md` (new)
+- `docs/adr/0001-use-adrs.md` (new)
+- `docs/adr/0002-pelm-design.md` (new)
+- `docs/adr/0003-moral-filter.md` (new)
+- `docs/adr/0004-memory-bounds.md` (new)
 
 ---
 
@@ -672,3 +675,4 @@ _Track completed items here:_
 |----|-------------|----------------|-----|
 | CICD-001 | Add linting and type checking to CI workflows | 2025-11-27 | #124 |
 | SEC-003 | Add dependency vulnerability scanning to PR workflow | 2025-11-27 | #124 |
+| DOC-001 | Create Architecture Decision Records (ADRs) | 2025-11-30 | #157 |
