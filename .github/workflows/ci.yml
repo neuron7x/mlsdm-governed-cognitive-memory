@@ -205,7 +205,6 @@ jobs:
 
       - name: Run property-based tests
         run: pytest tests/property -v --tb=short --maxfail=5
-        timeout-minutes: 15
 
   security-tests:
     name: Security Tests

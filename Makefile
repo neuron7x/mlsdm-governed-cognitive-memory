@@ -65,10 +65,26 @@ type:
 
 security:
 	@echo "Running pip-audit for dependency vulnerabilities..."
-	pip-audit --strict --progress-spinner=off || true
+	@pip-audit --strict --progress-spinner=off; \
+		EXIT_CODE=$$?; \
+		if [ $$EXIT_CODE -eq 0 ]; then \
+			echo "✓ No dependency vulnerabilities found"; \
+		elif [ $$EXIT_CODE -eq 1 ]; then \
+			echo "⚠ Dependency vulnerabilities detected (see above)"; \
+		else \
+			echo "✗ pip-audit failed to run"; \
+		fi
 	@echo ""
 	@echo "Running bandit security linter..."
-	bandit -r src -ll -ii -x "*/tests/*" || true
+	@bandit -r src -ll -ii -x "*/tests/*"; \
+		EXIT_CODE=$$?; \
+		if [ $$EXIT_CODE -eq 0 ]; then \
+			echo "✓ No security issues found"; \
+		elif [ $$EXIT_CODE -eq 1 ]; then \
+			echo "⚠ Security issues detected (see above)"; \
+		else \
+			echo "✗ bandit failed to run"; \
+		fi
 
 # ============================================
 # Testing
