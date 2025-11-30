@@ -6,19 +6,27 @@ NeuroCognitiveEngine with moral governance, FSLGS integration, and production-re
 Public API:
 -----------
 - LLMWrapper: Universal wrapper for any LLM with cognitive governance
+- LLMPipeline: Unified pipeline with integrated pre/post filters
 - NeuroCognitiveEngine: High-level orchestration of MLSDM + FSLGS
 - NeuroCognitiveClient: Convenient SDK client for generating responses
 - SpeechGovernor: Protocol for pluggable speech governance policies
 - SpeechGovernanceResult: Result type for speech governance
 - create_llm_wrapper: Factory function for creating LLMWrapper instances
 - create_neuro_engine: Factory function for creating NeuroCognitiveEngine instances
+- create_llm_pipeline: Factory function for creating LLMPipeline instances
 
 Quick Start:
 -----------
->>> from mlsdm import create_llm_wrapper, create_neuro_engine
+>>> from mlsdm import create_llm_wrapper, create_neuro_engine, create_llm_pipeline
 >>> engine = create_neuro_engine()
 >>> result = engine.generate("Hello, world!")
 >>> print(result["response"])
+
+>>> # Using the unified pipeline
+>>> from mlsdm import create_llm_pipeline
+>>> pipeline = create_llm_pipeline()
+>>> result = pipeline.process("Hello, world!", moral_value=0.8)
+>>> print(result.response)
 """
 
 from __future__ import annotations
@@ -30,6 +38,19 @@ if TYPE_CHECKING:
 
     import numpy as np
 
+from .core.llm_pipeline import (
+    AphasiaPostFilter,
+    FilterDecision,
+    FilterResult,
+    LLMPipeline,
+    MoralPreFilter,
+    PipelineConfig,
+    PipelineResult,
+    PipelineStageResult,
+    PostFilter,
+    PreFilter,
+    ThreatPreFilter,
+)
 from .core.llm_wrapper import LLMWrapper
 from .engine import NeuroCognitiveEngine, NeuroEngineConfig, build_neuro_engine_from_env
 from .engine.factory import build_stub_embedding_fn
@@ -139,14 +160,66 @@ def create_neuro_engine(
     )
 
 
+def create_llm_pipeline(
+    llm_generate_fn: Callable[[str, int], str] | None = None,
+    embedding_fn: Callable[[str], np.ndarray] | None = None,
+    config: PipelineConfig | None = None,
+) -> LLMPipeline:
+    """
+    Factory function to create an LLMPipeline instance with sensible defaults.
+
+    This is the recommended way to create an LLMPipeline for integration.
+    The pipeline provides a unified interface with integrated pre/post filters.
+
+    Args:
+        llm_generate_fn: Function (prompt, max_tokens) -> str. If None, uses local stub.
+        embedding_fn: Optional embedding function for memory operations.
+        config: Optional PipelineConfig for customization.
+
+    Returns:
+        Configured LLMPipeline instance ready for use.
+
+    Example:
+        >>> from mlsdm import create_llm_pipeline
+        >>> pipeline = create_llm_pipeline()
+        >>> result = pipeline.process("Hello", moral_value=0.8)
+        >>> print(result.response)
+    """
+    from .adapters import build_local_stub_llm_adapter
+
+    if llm_generate_fn is None:
+        llm_generate_fn = build_local_stub_llm_adapter()
+
+    if config is None:
+        config = PipelineConfig()
+
+    return LLMPipeline(
+        llm_generate_fn=llm_generate_fn,
+        embedding_fn=embedding_fn,
+        config=config,
+    )
+
+
 __all__ = [
     # Version
     "__version__",
     # Core classes
     "LLMWrapper",
+    "LLMPipeline",
     "NeuroCognitiveEngine",
     "NeuroEngineConfig",
     "NeuroCognitiveClient",
+    # Pipeline components
+    "PipelineConfig",
+    "PipelineResult",
+    "PipelineStageResult",
+    "FilterDecision",
+    "FilterResult",
+    "PreFilter",
+    "PostFilter",
+    "MoralPreFilter",
+    "ThreatPreFilter",
+    "AphasiaPostFilter",
     # Speech governance
     "SpeechGovernor",
     "SpeechGovernanceResult",
@@ -154,6 +227,7 @@ __all__ = [
     # Factory functions
     "create_llm_wrapper",
     "create_neuro_engine",
+    "create_llm_pipeline",
     "build_neuro_engine_from_env",
     "build_stub_embedding_fn",
 ]
