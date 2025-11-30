@@ -169,14 +169,14 @@ class TestJSONFormatterTraceContext:
             args=(),
             exc_info=None,
         )
-        record.trace_id = "0" * 32  # Valid trace ID
-        record.span_id = "1" * 16  # Valid span ID
+        record.trace_id = "0af7651916cd43dd8448eb211c80319c"  # Valid trace ID
+        record.span_id = "b7ad6b7169203331"  # Valid span ID
 
         output = formatter.format(record)
         log_dict = json.loads(output)
 
-        assert log_dict["trace_id"] == "0" * 32
-        assert log_dict["span_id"] == "1" * 16
+        assert log_dict["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
+        assert log_dict["span_id"] == "b7ad6b7169203331"
 
     def test_formatter_preserves_other_fields(self):
         """Test that formatter preserves all standard fields."""
@@ -190,8 +190,8 @@ class TestJSONFormatterTraceContext:
             args=(),
             exc_info=None,
         )
-        record.trace_id = "a" * 32
-        record.span_id = "b" * 16
+        record.trace_id = "1a2b3c4d5e6f7890abcdef1234567890"
+        record.span_id = "f1e2d3c4b5a69870"
         record.event_type = "test_event"
         record.correlation_id = "corr-123"
 
@@ -203,8 +203,8 @@ class TestJSONFormatterTraceContext:
         assert log_dict["message"] == "test message"
         assert log_dict["event_type"] == "test_event"
         assert log_dict["correlation_id"] == "corr-123"
-        assert log_dict["trace_id"] == "a" * 32
-        assert log_dict["span_id"] == "b" * 16
+        assert log_dict["trace_id"] == "1a2b3c4d5e6f7890abcdef1234567890"
+        assert log_dict["span_id"] == "f1e2d3c4b5a69870"
 
 
 class TestLoggerIntegrationWithTracing:
