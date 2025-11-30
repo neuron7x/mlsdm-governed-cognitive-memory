@@ -416,7 +416,7 @@ class AphasiaPostFilter:
         Returns:
             FilterResult with ALLOW or MODIFY decision.
         """
-        analysis = self._detector.analyze(response)
+        analysis = self._detector.analyze(response)  # type: ignore[no-untyped-call]
 
         if not analysis["is_aphasic"]:
             return FilterResult(
