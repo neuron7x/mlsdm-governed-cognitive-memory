@@ -22,6 +22,7 @@ from mlsdm.observability.tracing import (
     initialize_tracing,
     shutdown_tracing,
 )
+from mlsdm.security.rbac import RBACMiddleware, get_role_validator
 from mlsdm.utils.config_loader import ConfigLoader
 from mlsdm.utils.input_validator import InputValidator
 from mlsdm.utils.rate_limiter import RateLimiter
@@ -54,6 +55,16 @@ app = FastAPI(
 # Add production middleware
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
+
+# Add RBAC middleware for role-based access control (SEC-001)
+# Can be disabled for testing with DISABLE_RBAC=1
+_rbac_enabled = os.getenv("DISABLE_RBAC") != "1"
+if _rbac_enabled:
+    app.add_middleware(
+        RBACMiddleware,
+        role_validator=get_role_validator(),
+        skip_paths=["/", "/health", "/healthz", "/docs", "/redoc", "/openapi.json", "/status"],
+    )
 
 # Include health check router
 app.include_router(health.router)

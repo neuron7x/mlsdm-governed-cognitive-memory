@@ -408,12 +408,31 @@ def sanitize_log_data(data: dict) -> dict:
 
 ### Authorization Model
 
-**Current**: Simple authentication (authenticated = authorized)
+**Current**: Role-Based Access Control (RBAC) ✅ Implemented
 
-**Future** (v1.1+): Role-Based Access Control (RBAC)
-- `read`: View state and metrics
-- `write`: Submit events for processing
-- `admin`: Configuration and system management
+The system now uses RBAC for fine-grained access control:
+- `read`: View state and metrics (GET /v1/state/, /metrics)
+- `write`: Submit events for processing (POST /v1/process_event/, /generate)
+- `admin`: Configuration and system management (POST /admin/*, /v1/admin/*)
+
+**Configuration**:
+- Set `API_KEY` for write-level access
+- Set `ADMIN_API_KEY` for admin-level access
+- Disable RBAC for testing with `DISABLE_RBAC=1`
+
+**Environment Variables**:
+```bash
+# Write-level key (default user)
+export API_KEY="your-write-key"
+
+# Admin-level key (full access)
+export ADMIN_API_KEY="your-admin-key"
+
+# Multiple keys with custom roles
+export API_KEY_1_VALUE="key1"
+export API_KEY_1_ROLES="read"
+export API_KEY_1_USER="read-only-user"
+```
 
 ---
 
@@ -816,8 +835,8 @@ HEALTHCHECK --interval=30s --timeout=3s \
 ### v1.1 (Planned)
 - ⚠️ OAuth 2.0 / OpenID Connect
 - ⚠️ mTLS support
-- ⚠️ RBAC (role-based access control)
-- ⚠️ SBOM generation
+- ✅ RBAC (role-based access control) - **IMPLEMENTED**
+- ✅ SBOM generation - **IMPLEMENTED**
 - ⚠️ Penetration testing
 - ⚠️ Security audit
 

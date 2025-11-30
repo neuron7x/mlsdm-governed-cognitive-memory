@@ -404,14 +404,14 @@ This threat model identifies security threats to MLSDM Governed Cognitive Memory
 
 ### Planned Controls (v1.1+)
 
-| Control | Type | Timeline | Priority |
-|---------|------|----------|----------|
-| **RBAC** | Preventive | Q1 2026 | High |
-| **Token Rotation** | Preventive | Q1 2026 | High |
-| **Anomaly Detection** | Detective | Q2 2026 | Medium |
-| **WAF Integration** | Preventive | Q2 2026 | Medium |
-| **MFA** | Preventive | Q2 2026 | Low |
-| **SBOM** | Detective | Q1 2026 | Medium |
+| Control | Type | Timeline | Priority | Status |
+|---------|------|----------|----------|--------|
+| **RBAC** | Preventive | Q1 2026 | High | ✅ Implemented |
+| **Token Rotation** | Preventive | Q1 2026 | High | Planned |
+| **Anomaly Detection** | Detective | Q2 2026 | Medium | Planned |
+| **WAF Integration** | Preventive | Q2 2026 | Medium | Planned |
+| **MFA** | Preventive | Q2 2026 | Low | Planned |
+| **SBOM** | Detective | Q1 2026 | Medium | ✅ Implemented |
 
 ---
 

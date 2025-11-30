@@ -126,23 +126,23 @@ _All blockers resolved._
 
 ---
 
-### SEC-001: Implement RBAC for API endpoints
+### ~~SEC-001: Implement RBAC for API endpoints~~ ✅ COMPLETED
 
 **Block**: Security  
-**Criticality**: HIGH  
+**Criticality**: ~~HIGH~~ COMPLETED  
 **Type**: Code
 
-**Description**: Current authentication is binary (authenticated = authorized). Production needs role-based access control.
+**Description**: ~~Current authentication is binary (authenticated = authorized). Production needs role-based access control.~~ Added RBAC middleware integration with roles: `read`, `write`, `admin`.
 
 **Acceptance Criteria**:
-- Define roles: `read`, `write`, `admin`
-- Add role validation middleware
-- Document role assignment process
+- ✅ Define roles: `read`, `write`, `admin`
+- ✅ Add role validation middleware
+- ✅ Document role assignment process
 
 **Affected Files**:
-- `src/mlsdm/security/rbac.py` (new)
-- `src/mlsdm/api/app.py`
-- `SECURITY_POLICY.md`
+- `src/mlsdm/security/rbac.py` (implemented)
+- `src/mlsdm/api/app.py` (integrated)
+- `tests/integration/test_rbac_integration.py` (new)
 
 ---
 
@@ -416,21 +416,21 @@ _All blockers resolved._
 
 ---
 
-### SEC-005: Generate SBOM on release
+### ~~SEC-005: Generate SBOM on release~~ ✅ COMPLETED
 
 **Block**: Security  
-**Criticality**: MEDIUM  
+**Criticality**: ~~MEDIUM~~ COMPLETED  
 **Type**: CI
 
-**Description**: No Software Bill of Materials generated. Required for supply chain security.
+**Description**: ~~No Software Bill of Materials generated. Required for supply chain security.~~ Added SBOM generation workflow using CycloneDX.
 
 **Acceptance Criteria**:
-- Add syft or cyclonedx-bom to release workflow
-- Attach SBOM to GitHub release
-- Document SBOM usage
+- ✅ Add syft or cyclonedx-bom to release workflow
+- ✅ Attach SBOM to GitHub release
+- ✅ Document SBOM usage
 
 **Affected Files**:
-- `.github/workflows/release.yml`
+- `.github/workflows/sbom.yml` (new)
 
 ---
 
@@ -676,3 +676,5 @@ _Track completed items here:_
 | CICD-001 | Add linting and type checking to CI workflows | 2025-11-27 | #124 |
 | SEC-003 | Add dependency vulnerability scanning to PR workflow | 2025-11-27 | #124 |
 | DOC-001 | Create Architecture Decision Records (ADRs) | 2025-11-30 | #157 |
+| SEC-001 | Implement RBAC for API endpoints | 2025-11-30 | - |
+| SEC-005 | Generate SBOM on release | 2025-11-30 | - |
