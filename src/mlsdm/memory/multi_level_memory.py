@@ -3,13 +3,13 @@ from typing import TYPE_CHECKING, Any, Optional
 import numpy as np
 
 if TYPE_CHECKING:
-    from config.calibration import SynapticMemoryCalibration
+    from mlsdm.config import SynapticMemoryCalibration
 
 # Import calibration defaults for consistent parameter values
 # Type annotation uses Optional since module may not be available
 _SYNAPTIC_MEMORY_DEFAULTS: Optional["SynapticMemoryCalibration"] = None
 try:
-    from config.calibration import SYNAPTIC_MEMORY_DEFAULTS as _IMPORTED_DEFAULTS
+    from mlsdm.config import SYNAPTIC_MEMORY_DEFAULTS as _IMPORTED_DEFAULTS
     _SYNAPTIC_MEMORY_DEFAULTS = _IMPORTED_DEFAULTS
 except ImportError:
     # Fallback if calibration module is not available - already None

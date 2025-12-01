@@ -11,7 +11,7 @@ Tests cover:
 import numpy as np
 import pytest
 
-from config.calibration import (
+from mlsdm.config import (
     SYNAPTIC_MEMORY_DEFAULTS,
     SynapticMemoryCalibration,
     get_synaptic_memory_config,

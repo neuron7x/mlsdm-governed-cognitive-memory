@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from config.calibration import MoralFilterCalibration
+    from mlsdm.config import MoralFilterCalibration
 
 # Import calibration defaults - these can be overridden via config
 # Type hints use Optional to allow None when calibration module unavailable
 MORAL_FILTER_DEFAULTS: MoralFilterCalibration | None
 
 try:
-    from config.calibration import MORAL_FILTER_DEFAULTS
+    from mlsdm.config import MORAL_FILTER_DEFAULTS
 except ImportError:
     MORAL_FILTER_DEFAULTS = None
 

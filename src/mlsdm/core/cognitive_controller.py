@@ -14,7 +14,7 @@ from ..observability.tracing import get_tracer_manager
 from ..rhythm.cognitive_rhythm import CognitiveRhythm
 
 if TYPE_CHECKING:
-    from config.calibration import SynapticMemoryCalibration
+    from mlsdm.config import SynapticMemoryCalibration
 
 # Import recovery calibration parameters and synaptic memory defaults
 # Type annotations use X | None since module may not be available
@@ -25,13 +25,13 @@ _get_synaptic_memory_config: Callable[[dict[str, Any] | None], "SynapticMemoryCa
 _DEFAULT_MAX_MEMORY_BYTES = int(1.4 * 1024**3)
 
 try:
-    from config.calibration import (
+    from mlsdm.config import (
         COGNITIVE_CONTROLLER_DEFAULTS,
     )
-    from config.calibration import (
+    from mlsdm.config import (
         SYNAPTIC_MEMORY_DEFAULTS as _IMPORTED_DEFAULTS,
     )
-    from config.calibration import (
+    from mlsdm.config import (
         get_synaptic_memory_config as _imported_get_config,
     )
     _CC_RECOVERY_COOLDOWN_STEPS = COGNITIVE_CONTROLLER_DEFAULTS.recovery_cooldown_steps

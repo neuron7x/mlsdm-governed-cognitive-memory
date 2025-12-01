@@ -41,7 +41,7 @@ from ..utils.embedding_cache import EmbeddingCache, EmbeddingCacheConfig
 from .cognitive_state import CognitiveState
 
 if TYPE_CHECKING:
-    from config.calibration import (
+    from mlsdm.config import (
         CognitiveRhythmCalibration,
         PELMCalibration,
         ReliabilityCalibration,
@@ -54,7 +54,7 @@ PELM_DEFAULTS: PELMCalibration | None
 RELIABILITY_DEFAULTS: ReliabilityCalibration | None
 
 try:
-    from config.calibration import (
+    from mlsdm.config import (
         COGNITIVE_RHYTHM_DEFAULTS,
         PELM_DEFAULTS,
         RELIABILITY_DEFAULTS,

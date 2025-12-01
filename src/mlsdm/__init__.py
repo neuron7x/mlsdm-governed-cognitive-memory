@@ -15,6 +15,13 @@ Public API:
 - create_neuro_engine: Factory function for creating NeuroCognitiveEngine instances
 - create_llm_pipeline: Factory function for creating LLMPipeline instances
 
+Configuration:
+--------------
+>>> from mlsdm.config import get_calibration_config
+>>> config = get_calibration_config()
+>>> config.moral_filter.threshold
+0.50
+
 Quick Start:
 -----------
 >>> from mlsdm import create_llm_wrapper, create_neuro_engine, create_llm_pipeline

@@ -12,7 +12,7 @@ from mlsdm.core.llm_wrapper import LLMWrapper
 from mlsdm.observability.aphasia_logging import AphasiaLogEvent, log_aphasia_event
 
 if TYPE_CHECKING:
-    from config.calibration import AphasiaDetectorCalibration, SecureModeCalibration
+    from mlsdm.config import AphasiaDetectorCalibration, SecureModeCalibration
 
 # Import calibration defaults - these can be overridden via config
 # Type hints use Optional to allow None when calibration module unavailable
@@ -20,7 +20,7 @@ APHASIA_DEFAULTS: AphasiaDetectorCalibration | None
 SECURE_MODE_DEFAULTS: SecureModeCalibration | None
 
 try:
-    from config.calibration import APHASIA_DEFAULTS, SECURE_MODE_DEFAULTS
+    from mlsdm.config import APHASIA_DEFAULTS, SECURE_MODE_DEFAULTS
 except ImportError:
     APHASIA_DEFAULTS = None
     SECURE_MODE_DEFAULTS = None

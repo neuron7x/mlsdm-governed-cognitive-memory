@@ -9,14 +9,14 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from config.calibration import PELMCalibration
+    from mlsdm.config import PELMCalibration
 
 # Import calibration defaults - these can be overridden via config
 # Type hints use Optional to allow None when calibration module unavailable
 PELM_DEFAULTS: PELMCalibration | None
 
 try:
-    from config.calibration import PELM_DEFAULTS
+    from mlsdm.config import PELM_DEFAULTS
 except ImportError:
     PELM_DEFAULTS = None
 
