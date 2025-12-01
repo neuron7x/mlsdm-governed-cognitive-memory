@@ -381,7 +381,8 @@ async def process_event(
             details={"client_id": client_id},
         )
 
-    # Validate moral value (Pydantic already validates [0.0, 1.0] range)
+    # Validate moral value - InputValidator checks for NaN/Inf which Pydantic doesn't validate
+    # Pydantic validates [0.0, 1.0] range, InputValidator adds additional safety checks
     try:
         moral_value = _validator.validate_moral_value(event.moral_value)
     except ValueError as e:
@@ -396,7 +397,8 @@ async def process_event(
             details={"field": "moral_value", "value": event.moral_value},
         )
 
-    # Validate vector dimension
+    # Validate vector dimension at runtime (dimension is config-driven, not static)
+    # Note: Pydantic model validates non-empty and finite values, but dimension is runtime config
     if len(event.event_vector) != _manager.dimension:
         error_msg = (
             f"Vector dimension mismatch: expected {_manager.dimension}, "

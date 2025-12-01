@@ -56,7 +56,7 @@ Process a cognitive event through the complete pipeline including moral filterin
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `event_vector` | `list[float]` | Yes | Embedding vector matching configured dimension |
+| `event_vector` | `list[float]` | Yes | Embedding vector matching configured dimension (default: 10 for testing, 384 for production) |
 | `moral_value` | `float` | Yes | Moral score for the event (0.0-1.0) |
 
 **Response:** [StateResponse](#stateresponse)

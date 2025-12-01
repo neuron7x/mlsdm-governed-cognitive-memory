@@ -230,8 +230,11 @@ def setup_test_environment():
     os.environ["LLM_BACKEND"] = "local_stub"
     os.environ["API_KEY"] = "test_key"
     yield
+    # Cleanup all environment variables
     if "DISABLE_RATE_LIMIT" in os.environ:
         del os.environ["DISABLE_RATE_LIMIT"]
+    if "LLM_BACKEND" in os.environ:
+        del os.environ["LLM_BACKEND"]
     if "API_KEY" in os.environ:
         del os.environ["API_KEY"]
 
