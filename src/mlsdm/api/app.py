@@ -1,6 +1,8 @@
 import hashlib
 import logging
 import os
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from typing import Any
 
 import numpy as np
@@ -42,29 +44,9 @@ _tracing_config = TracingConfig(
 )
 initialize_tracing(_tracing_config)
 
-# Initialize FastAPI with production-ready settings
-app = FastAPI(
-    title="mlsdm-governed-cognitive-memory",
-    version="1.0.0",
-    description="Production-ready neurobiologically-grounded cognitive architecture",
-    docs_url="/docs",
-    redoc_url="/redoc",
-)
-
-# Add production middleware
-app.add_middleware(RequestIDMiddleware)
-app.add_middleware(SecurityHeadersMiddleware)
-
-# Include health check router
-app.include_router(health.router)
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
+# Module-level config and resources that need to be initialized before app starts
 _config_path = os.getenv("CONFIG_PATH", "config/default_config.yaml")
 _manager = MemoryManager(ConfigLoader.load_config(_config_path))
-
-# Set memory manager for health checks
-health.set_memory_manager(_manager)
 
 # Initialize rate limiter (5 RPS per client as per SECURITY_POLICY.md)
 # Can be disabled in testing with DISABLE_RATE_LIMIT=1
@@ -81,6 +63,66 @@ _engine_config = NeuroEngineConfig(
     enable_metrics=True,
 )
 _neuro_engine = build_neuro_engine_from_env(config=_engine_config)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Modern lifespan context manager for FastAPI startup/shutdown events."""
+    # STARTUP
+    # Initialize lifecycle manager
+    lifecycle = get_lifecycle_manager()
+    await lifecycle.startup()
+
+    # Register cleanup tasks
+    lifecycle.register_cleanup(lambda: cleanup_memory_manager(_manager))
+
+    # Log system startup
+    security_logger.log_system_event(
+        SecurityEventType.STARTUP,
+        "MLSDM Governed Cognitive Memory API started",
+        additional_data={
+            "version": "1.0.0",
+            "dimension": _manager.dimension
+        }
+    )
+
+    yield
+
+    # SHUTDOWN
+    # Log system shutdown
+    security_logger.log_system_event(
+        SecurityEventType.SHUTDOWN,
+        "MLSDM Governed Cognitive Memory API shutting down"
+    )
+
+    # Shutdown OpenTelemetry tracing (flush pending spans)
+    shutdown_tracing()
+
+    # Execute graceful shutdown
+    await lifecycle.shutdown()
+
+
+# Initialize FastAPI with production-ready settings
+app = FastAPI(
+    title="mlsdm-governed-cognitive-memory",
+    version="1.0.0",
+    description="Production-ready neurobiologically-grounded cognitive architecture",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    lifespan=lifespan,
+)
+
+# Add production middleware
+app.add_middleware(RequestIDMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Include health check router
+app.include_router(health.router)
+
+# Set memory manager for health checks
+health.set_memory_manager(_manager)
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def _get_client_id(request: Request) -> str:
@@ -559,27 +601,6 @@ async def generate(
             )
 
 
-@app.on_event("startup")
-async def startup_event() -> None:
-    """Initialize application on startup."""
-    # Initialize lifecycle manager
-    lifecycle = get_lifecycle_manager()
-    await lifecycle.startup()
-
-    # Register cleanup tasks
-    lifecycle.register_cleanup(lambda: cleanup_memory_manager(_manager))
-
-    # Log system startup
-    security_logger.log_system_event(
-        SecurityEventType.STARTUP,
-        "MLSDM Governed Cognitive Memory API started",
-        additional_data={
-            "version": "1.0.0",
-            "dimension": _manager.dimension
-        }
-    )
-
-
 @app.post(
     "/infer",
     response_model=InferResponse,
@@ -817,20 +838,3 @@ async def get_status() -> dict[str, Any]:
             "rate_limiting_enabled": _rate_limiting_enabled,
         },
     }
-
-
-@app.on_event("shutdown")
-async def shutdown_event() -> None:
-    """Clean up resources on shutdown."""
-    # Log system shutdown
-    security_logger.log_system_event(
-        SecurityEventType.SHUTDOWN,
-        "MLSDM Governed Cognitive Memory API shutting down"
-    )
-
-    # Shutdown OpenTelemetry tracing (flush pending spans)
-    shutdown_tracing()
-
-    # Execute graceful shutdown
-    lifecycle = get_lifecycle_manager()
-    await lifecycle.shutdown()
