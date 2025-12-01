@@ -6,6 +6,7 @@ This module defines stable API contracts for internal services and external endp
 Contracts:
 - errors: Standard error models (ApiError)
 - engine_models: NeuroCognitiveEngine input/output contracts
+- speech_models: Speech governance contracts
 
 CONTRACT STABILITY:
 All models in this module are part of the stable API contract.
@@ -20,6 +21,12 @@ from mlsdm.contracts.engine_models import (
     EngineValidationStep,
 )
 from mlsdm.contracts.errors import ApiError
+from mlsdm.contracts.speech_models import (
+    AphasiaMetadata,
+    AphasiaReport,
+    PipelineMetadata,
+    PipelineStepResult,
+)
 
 __all__ = [
     "ApiError",
@@ -28,4 +35,9 @@ __all__ = [
     "EngineResultMeta",
     "EngineTiming",
     "EngineValidationStep",
+    # Speech governance models
+    "AphasiaReport",
+    "AphasiaMetadata",
+    "PipelineMetadata",
+    "PipelineStepResult",
 ]

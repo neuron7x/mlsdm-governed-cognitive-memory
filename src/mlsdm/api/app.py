@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from mlsdm.api import health
 from mlsdm.api.lifecycle import cleanup_memory_manager, get_lifecycle_manager
 from mlsdm.api.middleware import RequestIDMiddleware, SecurityHeadersMiddleware
+from mlsdm.contracts import AphasiaMetadata
 from mlsdm.core.memory_manager import MemoryManager
 from mlsdm.engine import NeuroEngineConfig, build_neuro_engine_from_env
 from mlsdm.observability.tracing import (
@@ -224,7 +225,7 @@ class InferResponse(BaseModel):
     moral_metadata: dict[str, Any] | None = Field(
         default=None, description="Moral filtering metadata"
     )
-    aphasia_metadata: dict[str, Any] | None = Field(
+    aphasia_metadata: AphasiaMetadata | None = Field(
         default=None, description="Aphasia detection/repair metadata (if aphasia_mode enabled)"
     )
     rag_metadata: dict[str, Any] | None = Field(
@@ -755,30 +756,30 @@ async def infer(
                 }
 
             # Build aphasia metadata (detection happens at speech governance level)
-            aphasia_metadata = None
+            aphasia_metadata: AphasiaMetadata | None = None
             if request_body.aphasia_mode:
                 speech_gov = result.get("mlsdm", {}).get("speech_governance")
                 if speech_gov and "metadata" in speech_gov:
                     aphasia_report = speech_gov["metadata"].get("aphasia_report")
-                    aphasia_metadata = {
-                        "enabled": True,
-                        "detected": aphasia_report.get("is_aphasic") if aphasia_report else False,
-                        "severity": aphasia_report.get("severity") if aphasia_report else 0.0,
-                        "repaired": speech_gov["metadata"].get("repaired", False),
-                    }
+                    aphasia_metadata = AphasiaMetadata(
+                        enabled=True,
+                        detected=aphasia_report.get("is_aphasic") if aphasia_report else False,
+                        severity=aphasia_report.get("severity") if aphasia_report else 0.0,
+                        repaired=speech_gov["metadata"].get("repaired", False),
+                    )
                     # Add aphasia info to span
                     if aphasia_report:
                         span.set_attribute("mlsdm.aphasia.detected", aphasia_report.get("is_aphasic", False))
                         span.set_attribute("mlsdm.aphasia.severity", aphasia_report.get("severity", 0.0))
                 else:
                     # Aphasia mode requested but no speech governor configured
-                    aphasia_metadata = {
-                        "enabled": True,
-                        "detected": False,
-                        "severity": 0.0,
-                        "repaired": False,
-                        "note": "aphasia_mode enabled but no speech governor configured",
-                    }
+                    aphasia_metadata = AphasiaMetadata(
+                        enabled=True,
+                        detected=False,
+                        severity=0.0,
+                        repaired=False,
+                        note="aphasia_mode enabled but no speech governor configured",
+                    )
 
             # Timing info
             timing = result.get("timing")
