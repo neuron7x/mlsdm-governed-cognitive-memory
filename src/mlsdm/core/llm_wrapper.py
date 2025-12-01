@@ -37,6 +37,7 @@ from ..speech.governance import (  # noqa: TC001 - used at runtime in function s
     SpeechGovernanceResult,
     SpeechGovernor,
 )
+from ..utils.embedding_cache import EmbeddingCache, EmbeddingCacheConfig
 from .cognitive_state import CognitiveState
 
 if TYPE_CHECKING:
@@ -227,6 +228,7 @@ class LLMWrapper:
         llm_timeout: float | None = None,
         llm_retry_attempts: int | None = None,
         speech_governor: SpeechGovernor | None = None,
+        embedding_cache_config: EmbeddingCacheConfig | None = None,
     ):
         """
         Initialize the LLM wrapper with cognitive governance.
@@ -242,6 +244,9 @@ class LLMWrapper:
             llm_timeout: Timeout for LLM calls in seconds (default from calibration)
             llm_retry_attempts: Number of retry attempts for LLM calls (default from calibration)
             speech_governor: Optional speech governance policy (default None)
+            embedding_cache_config: Optional configuration for embedding cache.
+                If provided, enables caching of embedding results to improve performance.
+                If None (default), caching is disabled for backward compatibility.
         """
         # Apply calibration defaults
         defaults = self._apply_calibration_defaults(
@@ -250,6 +255,10 @@ class LLMWrapper:
         capacity, wake_duration, sleep_duration, llm_timeout, llm_retry_attempts = defaults
         # Initialize core parameters
         self._init_core_params(dim, llm_timeout, llm_retry_attempts)
+        # Initialize embedding cache (before core components so embed can use it)
+        self._embedding_cache: EmbeddingCache | None = None
+        if embedding_cache_config is not None:
+            self._embedding_cache = EmbeddingCache(config=embedding_cache_config)
         # Initialize core components
         self._init_core_components(
             llm_generate_fn, embedding_fn, dim, capacity,
@@ -385,17 +394,30 @@ class LLMWrapper:
 
     def _embed_with_circuit_breaker(self, text: str) -> np.ndarray:
         """
-        Embed text with circuit breaker protection.
+        Embed text with circuit breaker protection and optional caching.
 
         Circuit breaker prevents cascading failures from embedding service.
+        Embedding cache improves performance for repeated prompts.
         """
+        # Performance optimization: check cache first if enabled
+        if self._embedding_cache is not None:
+            cached = self._embedding_cache.get(text)
+            if cached is not None:
+                return cached
+
         try:
             # Circuit breaker returns Any; we validate it's ndarray or convert
             result: Any = self.embedding_circuit_breaker.call(self.embed, text)
             if not isinstance(result, np.ndarray):
                 result = np.array(result, dtype=np.float32)
             # Cast to proper return type after validation
-            return cast("np.ndarray", result.astype(np.float32))
+            vector = cast("np.ndarray", result.astype(np.float32))
+
+            # Store in cache if enabled
+            if self._embedding_cache is not None:
+                self._embedding_cache.put(text, vector)
+
+            return vector
         except Exception as e:
             self.embedding_failure_count += 1
             raise e
@@ -790,7 +812,7 @@ class LLMWrapper:
         """
         with self._lock:
             l1, l2, l3 = self.synaptic.state()
-            return {
+            state: dict[str, Any] = {
                 "step": self.step_counter,
                 "phase": self.rhythm.phase,
                 "phase_counter": self.rhythm.counter,
@@ -817,6 +839,36 @@ class LLMWrapper:
                     "llm_failure_count": self.llm_failure_count
                 }
             }
+
+            # Include embedding cache stats if cache is enabled
+            if self._embedding_cache is not None:
+                cache_stats = self._embedding_cache.get_stats()
+                state["embedding_cache"] = {
+                    "hits": cache_stats.hits,
+                    "misses": cache_stats.misses,
+                    "evictions": cache_stats.evictions,
+                    "size": cache_stats.current_size,
+                    "hit_rate": round(cache_stats.hit_rate, 2),
+                }
+
+            return state
+
+    def get_embedding_cache_stats(self) -> dict[str, Any] | None:
+        """Get embedding cache statistics.
+
+        Returns:
+            Dictionary with cache statistics or None if caching is disabled.
+        """
+        if self._embedding_cache is None:
+            return None
+        stats = self._embedding_cache.get_stats()
+        return {
+            "hits": stats.hits,
+            "misses": stats.misses,
+            "evictions": stats.evictions,
+            "size": stats.current_size,
+            "hit_rate": round(stats.hit_rate, 2),
+        }
 
     def get_cognitive_state(self) -> CognitiveState:
         """
@@ -870,3 +922,8 @@ class LLMWrapper:
             self.pelm_failure_count = 0
             self.embedding_failure_count = 0
             self.llm_failure_count = 0
+
+            # Reset embedding cache if enabled
+            if self._embedding_cache is not None:
+                self._embedding_cache.clear()
+                self._embedding_cache.reset_stats()
