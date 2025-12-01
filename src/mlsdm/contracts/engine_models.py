@@ -77,17 +77,19 @@ class EngineTiming(BaseModel):
     )
 
     @classmethod
-    def from_dict(cls, timing_dict: dict[str, float]) -> EngineTiming:
+    def from_dict(cls, timing_dict: dict[str, float | None]) -> EngineTiming:
         """Create EngineTiming from raw timing dictionary.
 
         Args:
             timing_dict: Dictionary with timing values (keys may vary).
+                Values can be float or None.
 
         Returns:
             EngineTiming with mapped values.
         """
+        total_val = timing_dict.get("total")
         return cls(
-            total=timing_dict.get("total", 0.0),
+            total=total_val if total_val is not None else 0.0,
             moral_precheck=timing_dict.get("moral_precheck"),
             grammar_precheck=timing_dict.get("grammar_precheck"),
             generation=timing_dict.get("generation"),
@@ -304,7 +306,7 @@ class EngineResult(BaseModel):
         default=None,
         description="Error information if generation failed",
     )
-    rejected_at: Literal["pre_flight", "generation", "pre_moral", None] = Field(
+    rejected_at: Literal["pre_flight", "generation", "pre_moral"] | None = Field(
         default=None,
         description="Stage at which request was rejected",
     )
@@ -383,6 +385,10 @@ class EngineResult(BaseModel):
 
     def to_dict(self) -> dict[str, Any]:
         """Convert back to dictionary format for backwards compatibility.
+
+        Note: Uses exclude_none=True for nested models to match the sparse format
+        expected by legacy code. Missing keys in from_dict() are handled by using
+        .get() with defaults.
 
         Returns:
             Dictionary matching the legacy format.
