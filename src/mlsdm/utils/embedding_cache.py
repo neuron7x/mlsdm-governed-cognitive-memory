@@ -264,8 +264,14 @@ class EmbeddingCache:
 _default_cache: EmbeddingCache | None = None
 
 
+# Module-level lock for thread-safe default cache initialization
+_default_cache_lock = threading.Lock()
+
+
 def get_default_cache(config: EmbeddingCacheConfig | None = None) -> EmbeddingCache:
     """Get or create the default embedding cache.
+
+    Thread-safe singleton pattern using double-checked locking.
 
     Args:
         config: Optional configuration for cache creation
@@ -275,7 +281,9 @@ def get_default_cache(config: EmbeddingCacheConfig | None = None) -> EmbeddingCa
     """
     global _default_cache
     if _default_cache is None:
-        _default_cache = EmbeddingCache(config=config)
+        with _default_cache_lock:
+            if _default_cache is None:
+                _default_cache = EmbeddingCache(config=config)
     return _default_cache
 
 

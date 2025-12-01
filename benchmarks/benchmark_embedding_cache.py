@@ -8,6 +8,7 @@ These benchmarks measure:
 Benchmarks establish baseline and optimized performance metrics.
 """
 
+import hashlib
 import time
 
 import numpy as np
@@ -27,10 +28,12 @@ def slow_embedding(text: str) -> np.ndarray:
     """Embedding function with simulated compute latency.
 
     Simulates realistic embedding model overhead (~0.5ms per call).
-    This helps demonstrate the value of caching.
+    Uses hashlib for deterministic seeding across Python runs.
     """
     time.sleep(0.0005)  # 0.5ms simulated embedding latency
-    seed = hash(text) % (2**31)
+    # Use SHA-256 for deterministic seeding across Python runs
+    hash_bytes = hashlib.sha256(text.encode()).digest()
+    seed = int.from_bytes(hash_bytes[:4], "big") % (2**31)
     return np.random.RandomState(seed).randn(384).astype(np.float32)
 
 

@@ -11,6 +11,7 @@ Tests cover:
 
 from __future__ import annotations
 
+import hashlib
 import threading
 import time
 
@@ -26,8 +27,13 @@ from mlsdm.utils.embedding_cache import (
 
 
 def simple_embedding(text: str) -> np.ndarray:
-    """Simple deterministic embedding for testing."""
-    seed = hash(text) % (2**31)
+    """Simple deterministic embedding for testing.
+
+    Uses hashlib for consistent results across Python runs.
+    """
+    # Use SHA-256 for deterministic seeding across Python runs
+    hash_bytes = hashlib.sha256(text.encode()).digest()
+    seed = int.from_bytes(hash_bytes[:4], "big") % (2**31)
     return np.random.RandomState(seed).randn(384).astype(np.float32)
 
 
@@ -343,11 +349,11 @@ class TestEmbeddingCacheIntegration:
         )
 
         # Generate with same prompt multiple times
+        # Result dict is always returned (even on rejection), so assert not None is valid
         prompt = "Hello, how are you?"
         for _ in range(5):
             result = wrapper.generate(prompt, moral_value=0.8, max_tokens=50)
-            # May be rejected due to moral/phase, but cache should still work
-            assert result is not None
+            assert result is not None  # LLMWrapper always returns a result dict
 
         # Check cache stats
         cache_stats = wrapper.get_embedding_cache_stats()
