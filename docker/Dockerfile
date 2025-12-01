@@ -49,7 +49,9 @@ EXPOSE 8000
 # Default configuration (override with environment variables)
 ENV CONFIG_PATH=config/production.yaml \
     LOG_LEVEL=INFO \
-    JSON_LOGGING=true
+    JSON_LOGGING=true \
+    MLSDM_RUNTIME_MODE=cloud-prod \
+    MLSDM_SECURE_MODE=1
 
-# Run API server
-CMD ["python", "-m", "mlsdm.main", "--api"]
+# Run API server using cloud entrypoint
+CMD ["python", "-m", "mlsdm.entrypoints.cloud"]

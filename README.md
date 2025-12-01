@@ -342,6 +342,45 @@ pytest tests/validation/ -v
 pytest tests/property/ -v
 ```
 
+### Runtime Modes
+
+MLSDM supports three runtime profiles for different deployment scenarios:
+
+| Mode | Command | Use Case |
+|:-----|:--------|:---------|
+| **Development** | `make run-dev` | Local development with hot reload |
+| **Cloud** | `make run-cloud-local` | Docker/k8s production deployment |
+| **Agent/API** | `make run-agent` | External LLM/client integration |
+
+```bash
+# Development mode (hot reload, debug logging, no rate limit)
+make run-dev
+
+# Cloud production mode (multiple workers, secure mode)
+make run-cloud-local
+
+# Agent/API mode (for LLM platform integration)
+make run-agent
+
+# Health check
+make health-check
+```
+
+Or run directly with Python:
+
+```bash
+# Development mode
+python -m mlsdm.entrypoints.dev
+
+# Cloud mode
+python -m mlsdm.entrypoints.cloud
+
+# Agent mode
+python -m mlsdm.entrypoints.agent
+```
+
+See [env.dev.example](env.dev.example), [env.cloud.example](env.cloud.example), and [env.agent.example](env.agent.example) for configuration options.
+
 ---
 
 ## 📖 Usage Examples

@@ -57,7 +57,9 @@ ENV PATH="/opt/venv/bin:$PATH" \
     LLM_BACKEND="local_stub" \
     ENABLE_FSLGS="true" \
     ENABLE_METRICS="true" \
-    EMBEDDING_DIM="384"
+    EMBEDDING_DIM="384" \
+    MLSDM_RUNTIME_MODE="cloud-prod" \
+    MLSDM_SECURE_MODE="1"
 
 # Switch to non-root user
 USER neuro
