@@ -30,3 +30,6 @@ load_test_report.json
 # Effectiveness suite generated reports
 reports/effectiveness_snapshot.json
 reports/EFFECTIVENESS_SNAPSHOT.md
+
+# Eval suite generated reports
+evals/*_report.json

@@ -1,4 +1,4 @@
-.PHONY: test lint type cov help run-dev run-cloud-local run-agent health-check
+.PHONY: test lint type cov help run-dev run-cloud-local run-agent health-check eval-moral_filter
 
 help:
 	@echo "MLSDM Governed Cognitive Memory - Development Commands"
@@ -8,6 +8,9 @@ help:
 	@echo "  make lint     - Run ruff linter on src and tests"
 	@echo "  make type     - Run mypy type checker on src/mlsdm"
 	@echo "  make cov      - Run tests with coverage report"
+	@echo ""
+	@echo "Evaluations:"
+	@echo "  make eval-moral_filter - Run moral filter evaluation suite"
 	@echo ""
 	@echo "Runtime Modes:"
 	@echo "  make run-dev        - Start development server (hot reload, debug logging)"
@@ -42,3 +45,7 @@ run-agent:
 
 health-check:
 	python -m mlsdm.entrypoints.health
+
+# Evaluation Suites
+eval-moral_filter:
+	python -m evals.moral_filter_runner
