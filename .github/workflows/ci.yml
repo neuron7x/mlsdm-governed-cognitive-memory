@@ -338,6 +338,16 @@ jobs:
              [[ "${{ needs.coverage.result }}" != "success" ]] || \
              [[ "${{ needs.effectiveness-validation.result }}" != "success" ]]; then
             echo "One or more CI checks failed"
+            echo "lint: ${{ needs.lint.result }}"
+            echo "type-check: ${{ needs.type-check.result }}"
+            echo "unit-tests: ${{ needs.unit-tests.result }}"
+            echo "integration-tests: ${{ needs.integration-tests.result }}"
+            echo "e2e-tests: ${{ needs.e2e-tests.result }}"
+            echo "property-tests: ${{ needs.property-tests.result }}"
+            echo "security-tests: ${{ needs.security-tests.result }}"
+            echo "coverage: ${{ needs.coverage.result }}"
+            echo "effectiveness-validation: ${{ needs.effectiveness-validation.result }}"
+            echo "Note: security-scan is advisory and not blocking: ${{ needs.security-scan.result }}"
             exit 1
           fi
           echo "All CI checks passed successfully!"
