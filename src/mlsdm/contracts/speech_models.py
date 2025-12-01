@@ -227,7 +227,11 @@ class PipelineMetadata(BaseModel):
         elif hasattr(val, "items"):
             # Handle dict-like objects (e.g., custom mappings)
             try:
-                return dict(val)  # type: ignore[arg-type]
+                # Cast to Mapping for type safety when converting dict-like objects
+                from collections.abc import Mapping
+                if isinstance(val, Mapping):
+                    return dict(val)
+                return None
             except TypeError:
                 return None
         return None
