@@ -35,9 +35,12 @@ from typing import TYPE_CHECKING, Any, Literal
 from mlsdm.core.llm_wrapper import LLMWrapper
 from mlsdm.governance import (
     GovernanceContext,
-    GovernanceDecision,
     apply_decision,
+)
+from mlsdm.governance import (
     evaluate as governance_evaluate,
+)
+from mlsdm.governance import (
     record_decision as record_governance_decision,
 )
 from mlsdm.observability.tracing import get_tracer_manager

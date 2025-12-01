@@ -179,10 +179,13 @@ rules:
   # ---------------------------------------------------------------------------
   # R006: Low Moral Score - Block below threshold
   # ---------------------------------------------------------------------------
+  # NOTE: This rule is disabled because moral threshold enforcement is already
+  # handled by the engine's moral pre-check (MLSDM.moral.compute_moral_value).
+  # Enabling this rule would duplicate the check and cause conflicts.
   - id: "R006"
     description: "Block content below moral threshold"
     priority: 50
-    enabled: true
+    enabled: false  # Disabled: moral check is done in engine pre-flight
     trigger:
       type: "threshold"
       signal: "moral_score"

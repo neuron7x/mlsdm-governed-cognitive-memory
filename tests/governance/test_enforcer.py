@@ -12,11 +12,9 @@ This test suite covers:
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 import pytest
-
 
 # =============================================================================
 # Test Fixtures
@@ -112,7 +110,7 @@ class TestPolicyLoader:
         from mlsdm.governance.enforcer import PolicyLoader, reload_policy
 
         loader = PolicyLoader()
-        policy1 = loader.load()
+        _ = loader.load()  # Initial load
         policy2 = reload_policy()
 
         # Should return fresh policy (even if same content)

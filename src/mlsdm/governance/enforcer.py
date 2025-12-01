@@ -24,12 +24,9 @@ import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import Any, Literal
 
 import yaml
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 
@@ -244,10 +241,7 @@ class SignalExtractor:
         for key in path.split("."):
             if not key:
                 continue
-            if isinstance(value, dict):
-                value = value.get(key)
-            else:
-                value = None
+            value = value.get(key) if isinstance(value, dict) else None
             if value is None:
                 return default
 
@@ -321,24 +315,30 @@ class ModeSelector:
         if actual is None:
             return False
 
-        if operator == "eq":
-            return actual == expected
-        elif operator == "neq":
-            return actual != expected
-        elif operator == "gt":
-            return actual > expected
-        elif operator == "gte":
-            return actual >= expected
-        elif operator == "lt":
-            return actual < expected
-        elif operator == "lte":
-            return actual <= expected
-        elif operator == "in":
-            return actual in expected
-        elif operator == "not_in":
-            return actual not in expected
+        return self._compare(actual, operator, expected)
 
-        return False
+    def _compare(self, actual: Any, operator: str, expected: Any) -> bool:
+        """Compare values based on operator.
+
+        Args:
+            actual: Actual value
+            operator: Comparison operator
+            expected: Expected value
+
+        Returns:
+            Comparison result
+        """
+        ops: dict[str, Any] = {
+            "eq": lambda a, e: a == e,
+            "neq": lambda a, e: a != e,
+            "gt": lambda a, e: a > e,
+            "gte": lambda a, e: a >= e,
+            "lt": lambda a, e: a < e,
+            "lte": lambda a, e: a <= e,
+            "in": lambda a, e: a in e,
+            "not_in": lambda a, e: a not in e,
+        }
+        return ops.get(operator, lambda a, e: False)(actual, expected)
 
 
 # =============================================================================
@@ -456,10 +456,7 @@ class RuleEvaluator:
         elif trigger_type == "pattern":
             # Check if any of the specified signals are present
             trigger_signals = trigger.get("signals", [])
-            for sig in trigger_signals:
-                if signals.get(sig):
-                    return True
-            return False
+            return any(signals.get(sig) for sig in trigger_signals)
 
         elif trigger_type == "threshold":
             signal_name = trigger.get("signal")
@@ -472,17 +469,7 @@ class RuleEvaluator:
                 threshold = trigger.get("value", 0.0)
 
             actual = signals.get(signal_name, 0.0)
-
-            if operator == "gte":
-                return actual >= threshold
-            elif operator == "gt":
-                return actual > threshold
-            elif operator == "lte":
-                return actual <= threshold
-            elif operator == "lt":
-                return actual < threshold
-            elif operator == "eq":
-                return actual == threshold
+            return self._compare(actual, operator, threshold)
 
         elif trigger_type == "compound":
             # All conditions must be true
@@ -496,10 +483,7 @@ class RuleEvaluator:
                 if signal_name:
                     actual = signals.get(signal_name)
                 elif context_key:
-                    if context_key == "mode":
-                        actual = mode
-                    else:
-                        actual = signals.get(context_key)
+                    actual = mode if context_key == "mode" else signals.get(context_key)
                 else:
                     continue
 
@@ -523,24 +507,17 @@ class RuleEvaluator:
         if actual is None:
             return False
 
-        if operator == "eq":
-            return actual == expected
-        elif operator == "neq":
-            return actual != expected
-        elif operator == "gt":
-            return actual > expected
-        elif operator == "gte":
-            return actual >= expected
-        elif operator == "lt":
-            return actual < expected
-        elif operator == "lte":
-            return actual <= expected
-        elif operator == "in":
-            return actual in expected
-        elif operator == "not_in":
-            return actual not in expected
-
-        return False
+        ops: dict[str, Any] = {
+            "eq": lambda a, e: a == e,
+            "neq": lambda a, e: a != e,
+            "gt": lambda a, e: a > e,
+            "gte": lambda a, e: a >= e,
+            "lt": lambda a, e: a < e,
+            "lte": lambda a, e: a <= e,
+            "in": lambda a, e: a in e,
+            "not_in": lambda a, e: a not in e,
+        }
+        return ops.get(operator, lambda a, e: False)(actual, expected)
 
 
 # =============================================================================

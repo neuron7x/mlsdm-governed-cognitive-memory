@@ -15,10 +15,7 @@ from __future__ import annotations
 import logging
 import threading
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    pass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -286,9 +283,7 @@ def log_governance_event(
         }
 
     # Select log level based on action
-    if action == "block":
-        logger.warning("Governance event: %s", log_entry)
-    elif action == "escalate":
+    if action in ("block", "escalate"):
         logger.warning("Governance event: %s", log_entry)
     else:
         logger.info("Governance event: %s", log_entry)
