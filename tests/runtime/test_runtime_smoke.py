@@ -171,33 +171,29 @@ class TestEntrypointsImport:
 class TestMakefileCommands:
     """Test Makefile commands exist."""
 
-    def test_makefile_has_run_dev(self):
+    MAKEFILE_PATH = "Makefile"
+
+    @pytest.fixture
+    def makefile_content(self) -> str:
+        """Load Makefile content once for all tests."""
+        with open(self.MAKEFILE_PATH) as f:
+            return f.read()
+
+    def test_makefile_has_run_dev(self, makefile_content: str):
         """Test Makefile has run-dev target."""
-        makefile_path = "Makefile"
-        with open(makefile_path) as f:
-            content = f.read()
-        assert "run-dev:" in content
+        assert "run-dev:" in makefile_content
 
-    def test_makefile_has_run_cloud_local(self):
+    def test_makefile_has_run_cloud_local(self, makefile_content: str):
         """Test Makefile has run-cloud-local target."""
-        makefile_path = "Makefile"
-        with open(makefile_path) as f:
-            content = f.read()
-        assert "run-cloud-local:" in content
+        assert "run-cloud-local:" in makefile_content
 
-    def test_makefile_has_run_agent(self):
+    def test_makefile_has_run_agent(self, makefile_content: str):
         """Test Makefile has run-agent target."""
-        makefile_path = "Makefile"
-        with open(makefile_path) as f:
-            content = f.read()
-        assert "run-agent:" in content
+        assert "run-agent:" in makefile_content
 
-    def test_makefile_has_health_check(self):
+    def test_makefile_has_health_check(self, makefile_content: str):
         """Test Makefile has health-check target."""
-        makefile_path = "Makefile"
-        with open(makefile_path) as f:
-            content = f.read()
-        assert "health-check:" in content
+        assert "health-check:" in makefile_content
 
 
 class TestHealthCheckCLI:

@@ -100,8 +100,7 @@ def main() -> int:
         print("Error: uvicorn not installed. Install with: pip install uvicorn")
         return 1
 
-    # Import app
-
+    # For multi-worker mode, uvicorn requires app path as string
     print(f"🚀 Starting cloud production server on {config.server.host}:{config.server.port}")
     print(f"   Workers: {config.server.workers}")
     print(f"   Secure Mode: {config.security.secure_mode}")
