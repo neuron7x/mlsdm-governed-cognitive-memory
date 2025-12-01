@@ -4,6 +4,7 @@ MLSDM Utility modules.
 Provides common utilities for the MLSDM framework including:
 - Bulkhead pattern for fault isolation
 - Rate limiting
+- Embedding cache for performance optimization
 - Configuration management
 - Error handling
 - Input validation
@@ -17,6 +18,13 @@ from .bulkhead import (
     BulkheadFullError,
     BulkheadStats,
 )
+from .embedding_cache import (
+    EmbeddingCache,
+    EmbeddingCacheConfig,
+    EmbeddingCacheStats,
+    clear_default_cache,
+    get_default_cache,
+)
 from .rate_limiter import RateLimiter
 
 __all__ = [
@@ -26,6 +34,12 @@ __all__ = [
     "BulkheadConfig",
     "BulkheadFullError",
     "BulkheadStats",
+    # Embedding cache
+    "EmbeddingCache",
+    "EmbeddingCacheConfig",
+    "EmbeddingCacheStats",
+    "get_default_cache",
+    "clear_default_cache",
     # Rate limiting
     "RateLimiter",
 ]
