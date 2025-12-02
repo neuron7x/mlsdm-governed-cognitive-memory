@@ -149,7 +149,7 @@ def save_system_state(
 
     try:
         # Update state with new timestamp and id if provided
-        update_data = {"updated_at": datetime.now(timezone.utc)}
+        update_data: dict[str, datetime | str] = {"updated_at": datetime.now(timezone.utc)}
         if state_id is not None:
             update_data["id"] = state_id
 
