@@ -1,3 +1,4 @@
+import time
 from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
@@ -14,6 +15,13 @@ try:
 except ImportError:
     # Fallback if calibration module is not available - already None
     pass
+
+# Observability imports - gracefully handle missing module
+try:
+    from mlsdm.observability.memory_telemetry import record_synaptic_update
+    _OBSERVABILITY_AVAILABLE = True
+except ImportError:
+    _OBSERVABILITY_AVAILABLE = False
 
 
 # Helper to get default value from calibration or fallback
@@ -99,9 +107,20 @@ class MultiLevelSynapticMemory:
         self.l2 = np.zeros(self.dim, dtype=np.float32)
         self.l3 = np.zeros(self.dim, dtype=np.float32)
 
-    def update(self, event: np.ndarray) -> None:
+    def update(self, event: np.ndarray, correlation_id: str | None = None) -> None:
+        """Update synaptic memory with a new event vector.
+
+        Args:
+            event: Event vector to process (must match dimension)
+            correlation_id: Optional correlation ID for observability tracking
+
+        Raises:
+            ValueError: If event is not a valid numpy array of correct dimension
+        """
         if not isinstance(event, np.ndarray) or event.shape[0] != self.dim:
             raise ValueError(f"Event vector must be a NumPy array of dimension {self.dim}.")
+
+        start_time = time.perf_counter() if _OBSERVABILITY_AVAILABLE else None
 
         # Optimize: perform decay in-place to avoid temporary arrays
         self.l1 *= (1 - self.lambda_l1)
@@ -121,6 +140,29 @@ class MultiLevelSynapticMemory:
         transfer23 = (self.l2 > self.theta_l2) * self.l2 * self.gating23
         self.l2 -= transfer23
         self.l3 += transfer23
+
+        # Record observability metrics
+        if _OBSERVABILITY_AVAILABLE and start_time is not None:
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            l1_norm = float(np.linalg.norm(self.l1))
+            l2_norm = float(np.linalg.norm(self.l2))
+            l3_norm = float(np.linalg.norm(self.l3))
+
+            # Detect consolidation by checking if transfers occurred
+            # Transfer happened if L2 increased more than from decay alone
+            consolidation_l1_l2 = float(np.sum(transfer12)) > 0
+            consolidation_l2_l3 = float(np.sum(transfer23)) > 0
+
+            record_synaptic_update(
+                l1_norm=l1_norm,
+                l2_norm=l2_norm,
+                l3_norm=l3_norm,
+                memory_bytes=self.memory_usage_bytes(),
+                consolidation_l1_l2=consolidation_l1_l2,
+                consolidation_l2_l3=consolidation_l2_l3,
+                latency_ms=latency_ms,
+                correlation_id=correlation_id,
+            )
 
     def state(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         return self.l1.copy(), self.l2.copy(), self.l3.copy()

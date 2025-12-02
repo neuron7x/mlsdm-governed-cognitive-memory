@@ -1,4 +1,4 @@
-.PHONY: test lint type cov help run-dev run-cloud-local run-agent health-check eval-moral_filter
+.PHONY: test lint type cov help run-dev run-cloud-local run-agent health-check eval-moral_filter test-memory-obs
 
 help:
 	@echo "MLSDM Governed Cognitive Memory - Development Commands"
@@ -8,6 +8,9 @@ help:
 	@echo "  make lint     - Run ruff linter on src and tests"
 	@echo "  make type     - Run mypy type checker on src/mlsdm"
 	@echo "  make cov      - Run tests with coverage report"
+	@echo ""
+	@echo "Observability Tests:"
+	@echo "  make test-memory-obs - Run memory observability tests"
 	@echo ""
 	@echo "Evaluations:"
 	@echo "  make eval-moral_filter - Run moral filter evaluation suite"
@@ -32,6 +35,10 @@ type:
 
 cov:
 	pytest --ignore=tests/load --cov=src --cov-report=html --cov-report=term-missing
+
+# Observability Tests
+test-memory-obs:
+	pytest tests/observability/test_memory_observability.py -v
 
 # Runtime Modes
 run-dev:

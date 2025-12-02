@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import time
 from dataclasses import dataclass
 from threading import Lock
 from typing import TYPE_CHECKING
@@ -19,6 +20,17 @@ try:
     from mlsdm.config import PELM_DEFAULTS
 except ImportError:
     PELM_DEFAULTS = None
+
+# Observability imports - gracefully handle missing module
+try:
+    from mlsdm.observability.memory_telemetry import (
+        record_pelm_corruption,
+        record_pelm_retrieve,
+        record_pelm_store,
+    )
+    _OBSERVABILITY_AVAILABLE = True
+except ImportError:
+    _OBSERVABILITY_AVAILABLE = False
 
 
 @dataclass
@@ -96,8 +108,17 @@ class PhaseEntangledLatticeMemory:
         Raises:
             RuntimeError: If corruption is detected and recovery fails.
         """
-        if self._detect_corruption_unsafe():  # noqa: SIM102
-            if not self._auto_recover_unsafe():
+        if self._detect_corruption_unsafe():
+            recovered = self._auto_recover_unsafe()
+            # Record corruption event
+            if _OBSERVABILITY_AVAILABLE:
+                record_pelm_corruption(
+                    detected=True,
+                    recovered=recovered,
+                    pointer=self.pointer,
+                    size=self.size,
+                )
+            if not recovered:
                 raise RuntimeError(
                     "Memory corruption detected and recovery failed. "
                     f"Current state: pointer={self.pointer}, size={self.size}, capacity={self.capacity}. "
@@ -105,12 +126,18 @@ class PhaseEntangledLatticeMemory:
                     "Consider restarting the system or reducing capacity."
                 )
 
-    def entangle(self, vector: list[float], phase: float) -> int:
+    def entangle(
+        self,
+        vector: list[float],
+        phase: float,
+        correlation_id: str | None = None,
+    ) -> int:
         """Store a vector with associated phase in memory.
 
         Args:
             vector: Embedding vector to store (must match dimension)
             phase: Phase value in [0.0, 1.0] representing cognitive state
+            correlation_id: Optional correlation ID for observability tracking
 
         Returns:
             Index where the vector was stored
@@ -120,6 +147,8 @@ class PhaseEntangledLatticeMemory:
             ValueError: If vector dimension doesn't match, phase out of range,
                        or vector contains NaN/inf values
         """
+        start_time = time.perf_counter() if _OBSERVABILITY_AVAILABLE else None
+
         with self._lock:
             # Ensure integrity before operation
             self._ensure_integrity()
@@ -176,6 +205,20 @@ class PhaseEntangledLatticeMemory:
             # Update checksum after modification
             self._checksum = self._compute_checksum()
 
+            # Record observability metrics
+            if _OBSERVABILITY_AVAILABLE and start_time is not None:
+                latency_ms = (time.perf_counter() - start_time) * 1000
+                record_pelm_store(
+                    index=idx,
+                    phase=phase,
+                    vector_norm=norm,
+                    capacity_used=self.size,
+                    capacity_total=self.capacity,
+                    memory_bytes=self.memory_usage_bytes(),
+                    latency_ms=latency_ms,
+                    correlation_id=correlation_id,
+                )
+
             return idx
 
     def retrieve(
@@ -184,6 +227,7 @@ class PhaseEntangledLatticeMemory:
         current_phase: float,
         phase_tolerance: float | None = None,
         top_k: int | None = None,
+        correlation_id: str | None = None,
     ) -> list[MemoryRetrieval]:
         # Use calibration defaults if not specified
         if phase_tolerance is None:
@@ -191,11 +235,24 @@ class PhaseEntangledLatticeMemory:
         if top_k is None:
             top_k = self.DEFAULT_TOP_K
 
+        start_time = time.perf_counter() if _OBSERVABILITY_AVAILABLE else None
+
         with self._lock:
             # Ensure integrity before operation
             self._ensure_integrity()
 
             if self.size == 0:
+                # Record empty result
+                if _OBSERVABILITY_AVAILABLE and start_time is not None:
+                    latency_ms = (time.perf_counter() - start_time) * 1000
+                    record_pelm_retrieve(
+                        query_phase=current_phase,
+                        phase_tolerance=phase_tolerance,
+                        top_k=top_k,
+                        results_count=0,
+                        latency_ms=latency_ms,
+                        correlation_id=correlation_id,
+                    )
                 return []
             q_vec = np.array(query_vector, dtype=np.float32)
             q_norm = float(np.linalg.norm(q_vec))
@@ -206,6 +263,17 @@ class PhaseEntangledLatticeMemory:
             phase_diff = np.abs(self.phase_bank[:self.size] - current_phase)
             phase_mask = phase_diff <= phase_tolerance
             if not np.any(phase_mask):
+                # Record empty result due to phase mismatch
+                if _OBSERVABILITY_AVAILABLE and start_time is not None:
+                    latency_ms = (time.perf_counter() - start_time) * 1000
+                    record_pelm_retrieve(
+                        query_phase=current_phase,
+                        phase_tolerance=phase_tolerance,
+                        top_k=top_k,
+                        results_count=0,
+                        latency_ms=latency_ms,
+                        correlation_id=correlation_id,
+                    )
                 return []
 
             candidates_idx = np.nonzero(phase_mask)[0]
@@ -236,6 +304,19 @@ class PhaseEntangledLatticeMemory:
                     phase=self.phase_bank[glob],
                     resonance=float(cosine_sims[loc])
                 ))
+
+            # Record successful retrieval
+            if _OBSERVABILITY_AVAILABLE and start_time is not None:
+                latency_ms = (time.perf_counter() - start_time) * 1000
+                record_pelm_retrieve(
+                    query_phase=current_phase,
+                    phase_tolerance=phase_tolerance,
+                    top_k=top_k,
+                    results_count=len(results),
+                    latency_ms=latency_ms,
+                    correlation_id=correlation_id,
+                )
+
             return results
 
     def get_state_stats(self) -> dict[str, int | float]:
