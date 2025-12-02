@@ -6,6 +6,7 @@ for the cognitive architecture system, including:
 - OpenTelemetry distributed tracing
 - Prometheus metrics
 - Structured JSON logging
+- Memory subsystem telemetry (PELM + Synaptic)
 """
 
 from .aphasia_logging import (
@@ -33,6 +34,29 @@ from .logger import (
     get_observability_logger,
     payload_scrubber,
     scrub_for_log,
+)
+from .memory_telemetry import (
+    LOGGER_NAME as MEMORY_LOGGER_NAME,
+)
+from .memory_telemetry import (
+    MemoryEventType,
+    MemoryMetricsExporter,
+    MemoryOperationTimer,
+    get_memory_logger,
+    get_memory_metrics_exporter,
+    log_pelm_capacity_warning,
+    log_pelm_corruption,
+    log_pelm_retrieve,
+    log_pelm_store,
+    log_synaptic_update,
+    record_pelm_corruption,
+    record_pelm_retrieve,
+    record_pelm_store,
+    record_synaptic_update,
+    reset_memory_metrics_exporter,
+    trace_pelm_retrieve,
+    trace_pelm_store,
+    trace_synaptic_update,
 )
 from .metrics import (
     MetricsExporter,
@@ -71,6 +95,26 @@ __all__ = [
     "APHASIA_LOGGER_NAME",
     "AphasiaLogEvent",
     "AphasiaMetricsExporter",
+    # Memory-specific observability
+    "MEMORY_LOGGER_NAME",
+    "MemoryEventType",
+    "MemoryMetricsExporter",
+    "MemoryOperationTimer",
+    "get_memory_logger",
+    "get_memory_metrics_exporter",
+    "log_pelm_capacity_warning",
+    "log_pelm_corruption",
+    "log_pelm_retrieve",
+    "log_pelm_store",
+    "log_synaptic_update",
+    "record_pelm_corruption",
+    "record_pelm_retrieve",
+    "record_pelm_store",
+    "record_synaptic_update",
+    "reset_memory_metrics_exporter",
+    "trace_pelm_retrieve",
+    "trace_pelm_store",
+    "trace_synaptic_update",
     # General observability
     "EventType",
     "JSONFormatter",
