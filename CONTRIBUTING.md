@@ -7,6 +7,8 @@
 
 Thank you for your interest in contributing to MLSDM Governed Cognitive Memory! This document provides comprehensive guidelines and instructions for contributors.
 
+> **See also:** [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) for a comprehensive guide to the project layout, development workflow, patterns, and debugging.
+
 ## Table of Contents
 
 - [Code of Conduct](#code-of-conduct)
