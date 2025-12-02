@@ -12,6 +12,7 @@ Tests cover:
 8. Router integration
 9. Moral check paths
 10. Exception handling
+11. Circuit breaker integration
 """
 
 from unittest.mock import Mock, patch
@@ -20,6 +21,7 @@ import numpy as np
 import pytest
 
 from mlsdm.engine import NeuroCognitiveEngine, NeuroEngineConfig
+from mlsdm.utils.circuit_breaker import CircuitState
 
 
 class TestNeuroEngineConfig:
@@ -663,3 +665,188 @@ class TestNeuroCognitiveEngineExceptionHandling:
         error_message = result["error"].get("message", "")
         assert error_type == "empty_response" or "empty" in error_message.lower(), \
             f"Expected empty_response error, got type='{error_type}', message='{error_message}'"
+
+
+class TestCircuitBreakerIntegration:
+    """Test circuit breaker integration with NeuroCognitiveEngine."""
+
+    def test_circuit_breaker_enabled_by_default(self):
+        """Test that circuit breaker is enabled by default."""
+        llm_fn = Mock(return_value="response")
+        embed_fn = Mock(return_value=np.random.randn(384))
+
+        config = NeuroEngineConfig(enable_fslgs=False)
+        engine = NeuroCognitiveEngine(
+            llm_generate_fn=llm_fn,
+            embedding_fn=embed_fn,
+            config=config,
+        )
+
+        assert engine.get_circuit_breaker() is not None
+        state = engine.get_circuit_breaker_state()
+        assert state["enabled"] is True
+        assert state["state"] == "closed"
+
+    def test_circuit_breaker_can_be_disabled(self):
+        """Test that circuit breaker can be disabled via config."""
+        llm_fn = Mock(return_value="response")
+        embed_fn = Mock(return_value=np.random.randn(384))
+
+        config = NeuroEngineConfig(
+            enable_fslgs=False,
+            enable_circuit_breaker=False
+        )
+        engine = NeuroCognitiveEngine(
+            llm_generate_fn=llm_fn,
+            embedding_fn=embed_fn,
+            config=config,
+        )
+
+        assert engine.get_circuit_breaker() is None
+        state = engine.get_circuit_breaker_state()
+        assert state["enabled"] is False
+
+    def test_circuit_breaker_custom_config(self):
+        """Test circuit breaker with custom configuration."""
+        llm_fn = Mock(return_value="response")
+        embed_fn = Mock(return_value=np.random.randn(384))
+
+        config = NeuroEngineConfig(
+            enable_fslgs=False,
+            circuit_breaker_failure_threshold=10,
+            circuit_breaker_success_threshold=5,
+            circuit_breaker_recovery_timeout=60.0,
+        )
+        engine = NeuroCognitiveEngine(
+            llm_generate_fn=llm_fn,
+            embedding_fn=embed_fn,
+            config=config,
+        )
+
+        cb = engine.get_circuit_breaker()
+        assert cb is not None
+        assert cb.config.failure_threshold == 10
+        assert cb.config.success_threshold == 5
+        assert cb.config.recovery_timeout == 60.0
+
+    def test_circuit_breaker_records_success(self):
+        """Test that successful generations record success on circuit breaker."""
+        llm_fn = Mock(return_value="test response")
+        embed_fn = Mock(return_value=np.random.randn(384))
+
+        config = NeuroEngineConfig(enable_fslgs=False)
+        engine = NeuroCognitiveEngine(
+            llm_generate_fn=llm_fn,
+            embedding_fn=embed_fn,
+            config=config,
+        )
+
+        # Generate should record success
+        result = engine.generate("Test prompt")
+        assert result["error"] is None
+
+        cb = engine.get_circuit_breaker()
+        stats = cb.get_stats()
+        assert stats.total_successes == 1
+        assert stats.total_failures == 0
+
+    def test_circuit_breaker_records_failure(self):
+        """Test that failed generations record failure on circuit breaker."""
+        # LLM that throws exception
+        llm_fn = Mock(side_effect=RuntimeError("Provider error"))
+        embed_fn = Mock(return_value=np.random.randn(384))
+
+        config = NeuroEngineConfig(
+            enable_fslgs=False,
+            circuit_breaker_failure_threshold=5,
+        )
+        engine = NeuroCognitiveEngine(
+            llm_generate_fn=llm_fn,
+            embedding_fn=embed_fn,
+            config=config,
+        )
+
+        # Generate with high moral_value to pass moral filter and reach LLM
+        result = engine.generate("Test prompt", moral_value=0.99)
+        assert result["error"] is not None
+
+        cb = engine.get_circuit_breaker()
+        stats = cb.get_stats()
+        assert stats.total_failures == 1
+
+    def test_circuit_breaker_opens_after_threshold(self):
+        """Test circuit breaker opens after failure threshold."""
+        call_count = 0
+
+        def failing_llm(prompt, max_tokens, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            raise RuntimeError(f"Provider error {call_count}")
+
+        embed_fn = Mock(return_value=np.random.randn(384))
+
+        config = NeuroEngineConfig(
+            enable_fslgs=False,
+            circuit_breaker_failure_threshold=3,
+        )
+        engine = NeuroCognitiveEngine(
+            llm_generate_fn=failing_llm,
+            embedding_fn=embed_fn,
+            config=config,
+        )
+
+        # Generate 3 times with high moral_value to trigger threshold
+        for _ in range(3):
+            result = engine.generate("Test prompt", moral_value=0.99)
+            assert result["error"] is not None
+
+        # Circuit should now be open
+        cb = engine.get_circuit_breaker()
+        assert cb.state == CircuitState.OPEN
+
+        # Next call should fail fast with circuit_open error
+        result = engine.generate("Test prompt", moral_value=0.99)
+        assert result["error"]["type"] == "circuit_open"
+        assert "circuit breaker" in result["error"]["message"].lower()
+
+    def test_circuit_breaker_state_in_response(self):
+        """Test that circuit breaker state is included in get_circuit_breaker_state."""
+        llm_fn = Mock(return_value="response")
+        embed_fn = Mock(return_value=np.random.randn(384))
+
+        config = NeuroEngineConfig(enable_fslgs=False)
+        engine = NeuroCognitiveEngine(
+            llm_generate_fn=llm_fn,
+            embedding_fn=embed_fn,
+            config=config,
+        )
+
+        state = engine.get_circuit_breaker_state()
+
+        assert "name" in state
+        assert "state" in state
+        assert "config" in state
+        assert "total_failures" in state
+        assert "total_successes" in state
+
+    def test_circuit_breaker_ignores_moral_rejections(self):
+        """Test that moral rejections don't trigger circuit breaker failures."""
+        llm_fn = Mock(return_value="response")
+        embed_fn = Mock(return_value=np.random.randn(384))
+
+        config = NeuroEngineConfig(enable_fslgs=False)
+        engine = NeuroCognitiveEngine(
+            llm_generate_fn=llm_fn,
+            embedding_fn=embed_fn,
+            config=config,
+        )
+
+        # Generate with very high moral threshold to trigger moral rejection
+        # Using a prompt that will be evaluated as low moral score
+        _ = engine.generate("Test", moral_value=0.99)
+
+        # Check circuit breaker wasn't affected
+        cb = engine.get_circuit_breaker()
+        stats = cb.get_stats()
+        # Either it succeeded (success recorded) or it was a moral rejection (no failure recorded)
+        assert stats.total_failures == 0

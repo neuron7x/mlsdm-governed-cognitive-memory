@@ -40,6 +40,11 @@ from mlsdm.utils.bulkhead import (
     BulkheadConfig,
     BulkheadFullError,
 )
+from mlsdm.utils.circuit_breaker import (
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    CircuitOpenError,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -65,6 +70,11 @@ class MLSDMRejectionError(Exception):
 
 class EmptyResponseError(Exception):
     """LLM/MLSDM повернули порожню відповідь."""
+    pass
+
+
+class LLMProviderError(Exception):
+    """LLM provider failed (network, API, timeout, etc.)."""
     pass
 
 
@@ -164,6 +174,13 @@ class NeuroEngineConfig:
     bulkhead_embedding_limit: int = 20  # Max concurrent embedding operations
     bulkhead_memory_limit: int = 50  # Max concurrent memory operations
     bulkhead_cognitive_limit: int = 100  # Max concurrent cognitive operations
+
+    # Circuit Breaker / Failure Protection (Reliability)
+    # Prevents cascading failures by failing fast when LLM providers are unhealthy.
+    enable_circuit_breaker: bool = True
+    circuit_breaker_failure_threshold: int = 5  # Failures before opening circuit
+    circuit_breaker_success_threshold: int = 3  # Successes in HALF_OPEN to close
+    circuit_breaker_recovery_timeout: float = 30.0  # Seconds before OPEN -> HALF_OPEN
 
 
 # ---------------------------------------------------------------------------
@@ -304,6 +321,17 @@ class NeuroCognitiveEngine:
                 enable_metrics=self.config.enable_metrics,
             )
             self._bulkhead = Bulkhead(config=bulkhead_config)
+
+        # Circuit Breaker for LLM provider resilience (Reliability)
+        # Fails fast when LLM providers are unhealthy to prevent cascading failures
+        self._circuit_breaker: CircuitBreaker | None = None
+        if self.config.enable_circuit_breaker:
+            cb_config = CircuitBreakerConfig(
+                failure_threshold=self.config.circuit_breaker_failure_threshold,
+                success_threshold=self.config.circuit_breaker_success_threshold,
+                recovery_timeout=self.config.circuit_breaker_recovery_timeout,
+            )
+            self._circuit_breaker = CircuitBreaker(name="llm-provider", config=cb_config)
 
     # ------------------------------------------------------------------ #
     # Internal builders                                                   #
@@ -556,6 +584,36 @@ class NeuroCognitiveEngine:
                         validation_steps=validation_steps,
                         record_generation_metrics=False,
                     )
+                except CircuitOpenError as e:
+                    # Circuit breaker is open - fast-fail to protect system
+                    pipeline_span.set_attribute("mlsdm.error_type", "circuit_open")
+                    pipeline_span.set_attribute("mlsdm.circuit_name", e.name)
+                    pipeline_span.set_attribute("mlsdm.recovery_time_remaining", e.recovery_time_remaining)
+                    return self._build_error_response(
+                        error_type="circuit_open",
+                        message=f"LLM provider circuit breaker open: {e.name}. Recovery in {e.recovery_time_remaining:.1f}s",
+                        rejected_at="generation",
+                        mlsdm_state=self._last_mlsdm_state,
+                        fslgs_result=fslgs_result,
+                        timing=timing,
+                        validation_steps=validation_steps,
+                        record_generation_metrics=False,
+                    )
+                except Exception as e:
+                    # General provider/LLM error - record failure and return structured error
+                    # Circuit breaker failure is already recorded in _run_llm_generation
+                    pipeline_span.set_attribute("mlsdm.error_type", "provider_error")
+                    tracer_manager.record_exception(pipeline_span, e)
+                    return self._build_error_response(
+                        error_type="provider_error",
+                        message=str(e),
+                        rejected_at="generation",
+                        mlsdm_state=self._last_mlsdm_state,
+                        fslgs_result=fslgs_result,
+                        timing=timing,
+                        validation_steps=validation_steps,
+                        record_generation_metrics=True,
+                    )
 
                 # Mark pipeline as successful
                 pipeline_span.set_attribute("mlsdm.accepted", True)
@@ -776,8 +834,8 @@ class NeuroCognitiveEngine:
     ) -> tuple[str, dict[str, Any] | None, dict[str, Any] | None]:
         """Run the core LLM/FSLGS generation.
 
-        Applies bulkhead pattern to isolate LLM operations and prevent
-        cascading failures from overload.
+        Applies bulkhead pattern and circuit breaker to isolate LLM operations
+        and prevent cascading failures from overload or provider outages.
 
         Returns:
             Tuple of (response_text, mlsdm_state, fslgs_result).
@@ -786,27 +844,63 @@ class NeuroCognitiveEngine:
             MLSDMRejectionError: If MLSDM rejects the request.
             EmptyResponseError: If MLSDM returns empty response.
             BulkheadFullError: If LLM bulkhead is at capacity.
+            CircuitOpenError: If LLM circuit breaker is open.
         """
         mlsdm_state: dict[str, Any] | None = None
         fslgs_result: dict[str, Any] | None = None
 
         with TimingContext(timing, "generation"):
+            # Check circuit breaker first (fast-fail if provider is unhealthy)
+            if self._circuit_breaker is not None and not self._circuit_breaker.can_execute():
+                stats = self._circuit_breaker.get_stats()
+                recovery_remaining = (
+                    self.config.circuit_breaker_recovery_timeout - stats.time_in_current_state
+                )
+                raise CircuitOpenError(
+                    self._circuit_breaker.name,
+                    max(0.0, recovery_remaining)
+                )
+
             # Wrap LLM generation in bulkhead for fault isolation
             # This limits concurrent LLM calls to prevent resource exhaustion
-            if self._bulkhead is not None:
-                with self._bulkhead.acquire(
-                    BulkheadCompartment.LLM_GENERATION,
-                    timeout=self.config.bulkhead_timeout,
-                ):
+            try:
+                if self._bulkhead is not None:
+                    with self._bulkhead.acquire(
+                        BulkheadCompartment.LLM_GENERATION,
+                        timeout=self.config.bulkhead_timeout,
+                    ):
+                        response_text, mlsdm_state, fslgs_result = self._execute_generation(
+                            prompt, max_tokens, cognitive_load, user_intent,
+                            moral_value, context_top_k, enable_diagnostics
+                        )
+                else:
                     response_text, mlsdm_state, fslgs_result = self._execute_generation(
                         prompt, max_tokens, cognitive_load, user_intent,
                         moral_value, context_top_k, enable_diagnostics
                     )
-            else:
-                response_text, mlsdm_state, fslgs_result = self._execute_generation(
-                    prompt, max_tokens, cognitive_load, user_intent,
-                    moral_value, context_top_k, enable_diagnostics
-                )
+
+                # Record success on circuit breaker
+                if self._circuit_breaker is not None:
+                    self._circuit_breaker.record_success()
+
+            except (MLSDMRejectionError, EmptyResponseError):
+                # These are business logic rejections, not provider failures
+                # Don't count them as circuit breaker failures
+                raise
+            except BulkheadFullError:
+                # Bulkhead full is a local capacity issue, not a provider failure
+                raise
+            except LLMProviderError as e:
+                # LLM provider failures (API errors, network issues, etc.)
+                # Should count as circuit breaker failures
+                if self._circuit_breaker is not None:
+                    self._circuit_breaker.record_failure(e)
+                raise
+            except Exception as e:
+                # Other unexpected errors should also count as circuit breaker failures
+                if self._circuit_breaker is not None:
+                    self._circuit_breaker.record_failure(e)
+                raise
 
         return response_text, mlsdm_state, fslgs_result
 
@@ -849,8 +943,12 @@ class NeuroCognitiveEngine:
             )
             self._last_mlsdm_state = mlsdm_state
 
+            # Check for provider error (LLMWrapper returns error in note field)
+            note = mlsdm_state.get("note", "")
+            if "generation failed" in str(note).lower():
+                raise LLMProviderError(note)
+
             if not mlsdm_state.get("accepted", True):
-                note = mlsdm_state.get("note", "rejected")
                 raise MLSDMRejectionError(f"MLSDM rejected: {note}")
 
             response_text = mlsdm_state.get("response", "")
@@ -1113,6 +1211,30 @@ class NeuroCognitiveEngine:
             return {"enabled": False}
 
         state = self._bulkhead.get_state()
+        state["enabled"] = True
+        return state
+
+    def get_circuit_breaker(self) -> CircuitBreaker | None:
+        """Get CircuitBreaker instance if enabled.
+
+        Returns:
+            CircuitBreaker instance or None if circuit breaker is disabled
+        """
+        return self._circuit_breaker
+
+    def get_circuit_breaker_state(self) -> dict[str, Any]:
+        """Get circuit breaker state for observability.
+
+        Returns comprehensive state of the circuit breaker including
+        current state, failure counts, and configuration.
+
+        Returns:
+            Dictionary with circuit breaker state or empty dict if disabled
+        """
+        if self._circuit_breaker is None:
+            return {"enabled": False}
+
+        state = self._circuit_breaker.get_state_dict()
         state["enabled"] = True
         return state
 
