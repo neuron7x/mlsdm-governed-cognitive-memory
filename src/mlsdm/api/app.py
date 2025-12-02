@@ -14,7 +14,13 @@ from pydantic import BaseModel, Field
 
 from mlsdm.api import health
 from mlsdm.api.lifecycle import cleanup_memory_manager, get_lifecycle_manager
-from mlsdm.api.middleware import RequestIDMiddleware, SecurityHeadersMiddleware
+from mlsdm.api.middleware import (
+    BulkheadMiddleware,
+    PriorityMiddleware,
+    RequestIDMiddleware,
+    SecurityHeadersMiddleware,
+    TimeoutMiddleware,
+)
 from mlsdm.contracts import AphasiaMetadata
 from mlsdm.core.memory_manager import MemoryManager
 from mlsdm.engine import NeuroEngineConfig, build_neuro_engine_from_env
@@ -113,9 +119,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Add production middleware
-app.add_middleware(RequestIDMiddleware)
+# Add production middleware (order matters: outer to inner)
+# 1. SecurityHeaders - adds security headers to all responses
+# 2. RequestID - adds request ID for tracking
+# 3. Timeout - enforces request-level timeouts (REL-004)
+# 4. Priority - parses priority header (REL-005)
+# 5. Bulkhead - limits concurrent requests (REL-002)
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestIDMiddleware)
+app.add_middleware(TimeoutMiddleware)
+app.add_middleware(PriorityMiddleware)
+app.add_middleware(BulkheadMiddleware)
 
 # Include health check router
 app.include_router(health.router)

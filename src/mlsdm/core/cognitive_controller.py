@@ -38,6 +38,8 @@ try:
     _CC_RECOVERY_MEMORY_SAFETY_RATIO = COGNITIVE_CONTROLLER_DEFAULTS.recovery_memory_safety_ratio
     _CC_RECOVERY_MAX_ATTEMPTS = COGNITIVE_CONTROLLER_DEFAULTS.recovery_max_attempts
     _CC_MAX_MEMORY_BYTES = COGNITIVE_CONTROLLER_DEFAULTS.max_memory_bytes
+    _CC_AUTO_RECOVERY_ENABLED = COGNITIVE_CONTROLLER_DEFAULTS.auto_recovery_enabled
+    _CC_AUTO_RECOVERY_COOLDOWN_SECONDS = COGNITIVE_CONTROLLER_DEFAULTS.auto_recovery_cooldown_seconds
     _SYNAPTIC_MEMORY_DEFAULTS = _IMPORTED_DEFAULTS
     _get_synaptic_memory_config = _imported_get_config
 except ImportError:
@@ -46,6 +48,8 @@ except ImportError:
     _CC_RECOVERY_MEMORY_SAFETY_RATIO = 0.8
     _CC_RECOVERY_MAX_ATTEMPTS = 3
     _CC_MAX_MEMORY_BYTES = _DEFAULT_MAX_MEMORY_BYTES
+    _CC_AUTO_RECOVERY_ENABLED = True
+    _CC_AUTO_RECOVERY_COOLDOWN_SECONDS = 60.0
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +64,8 @@ class CognitiveController:
         max_memory_bytes: int | None = None,
         synaptic_config: "SynapticMemoryCalibration | None" = None,
         yaml_config: dict[str, Any] | None = None,
+        auto_recovery_enabled: bool | None = None,
+        auto_recovery_cooldown_seconds: float | None = None,
     ) -> None:
         """Initialize the CognitiveController.
 
@@ -75,6 +81,11 @@ class CognitiveController:
             yaml_config: Optional YAML config dictionary. If provided and
                 synaptic_config is None, loads synaptic memory config from
                 'multi_level_memory' section merged with SYNAPTIC_MEMORY_DEFAULTS.
+            auto_recovery_enabled: Enable time-based auto-recovery after emergency
+                shutdown. When True, controller will attempt recovery after
+                auto_recovery_cooldown_seconds have passed. Defaults to True.
+            auto_recovery_cooldown_seconds: Time in seconds to wait before attempting
+                automatic recovery after emergency shutdown. Defaults to 60.0.
         """
         self.dim = dim
         self._lock = Lock()
@@ -109,6 +120,16 @@ class CognitiveController:
         # Auto-recovery state tracking
         self._last_emergency_step: int = 0
         self._recovery_attempts: int = 0
+        # Time-based auto-recovery (REL-001)
+        self._last_emergency_time: float = 0.0
+        self.auto_recovery_enabled = (
+            auto_recovery_enabled if auto_recovery_enabled is not None
+            else _CC_AUTO_RECOVERY_ENABLED
+        )
+        self.auto_recovery_cooldown_seconds = (
+            auto_recovery_cooldown_seconds if auto_recovery_cooldown_seconds is not None
+            else _CC_AUTO_RECOVERY_COOLDOWN_SECONDS
+        )
 
     @property
     def qilm(self) -> PhaseEntangledLatticeMemory:
@@ -336,15 +357,17 @@ class CognitiveController:
     def reset_emergency_shutdown(self) -> None:
         """Reset emergency shutdown flag (use with caution).
 
-        This also resets recovery attempt counter, allowing auto-recovery
-        to function again if the controller enters emergency state again.
+        This also resets recovery attempt counter and time tracking,
+        allowing auto-recovery to function again if the controller
+        enters emergency state again.
         """
         self.emergency_shutdown = False
         self._emergency_reason = None
         self._recovery_attempts = 0
+        self._last_emergency_time = 0.0
 
     def _enter_emergency_shutdown(self, reason: str = "unknown") -> None:
-        """Enter emergency shutdown state and record the step.
+        """Enter emergency shutdown state and record the step and time.
 
         Args:
             reason: The reason for emergency shutdown (e.g., 'memory_limit_exceeded').
@@ -352,6 +375,7 @@ class CognitiveController:
         self.emergency_shutdown = True
         self._emergency_reason = reason
         self._last_emergency_step = self.step_counter
+        self._last_emergency_time = time.time()
         self._recovery_attempts += 1
         logger.warning(f"Emergency shutdown entered: reason={reason}, step={self.step_counter}")
 
@@ -363,7 +387,10 @@ class CognitiveController:
             False if recovery conditions are not met.
 
         Recovery requires:
-        1. Cooldown period has passed (step_counter - _last_emergency_step >= cooldown)
+        1. Either step-based cooldown OR time-based cooldown has passed
+           - Step-based: step_counter - _last_emergency_step >= cooldown_steps
+           - Time-based: time.time() - _last_emergency_time >= cooldown_seconds
+             (only if auto_recovery_enabled is True)
         2. Memory usage is below safety threshold
         3. Recovery attempts have not exceeded the maximum limit
         """
@@ -371,9 +398,16 @@ class CognitiveController:
         if self._recovery_attempts >= _CC_RECOVERY_MAX_ATTEMPTS:
             return False
 
-        # Check cooldown period
+        # Check cooldown period (step-based OR time-based)
         steps_since_emergency = self.step_counter - self._last_emergency_step
-        if steps_since_emergency < _CC_RECOVERY_COOLDOWN_STEPS:
+        step_cooldown_passed = steps_since_emergency >= _CC_RECOVERY_COOLDOWN_STEPS
+
+        time_cooldown_passed = False
+        if self.auto_recovery_enabled and self._last_emergency_time > 0:
+            time_since_emergency = time.time() - self._last_emergency_time
+            time_cooldown_passed = time_since_emergency >= self.auto_recovery_cooldown_seconds
+
+        if not (step_cooldown_passed or time_cooldown_passed):
             return False
 
         # Health check: verify memory is within safe limits
@@ -384,6 +418,11 @@ class CognitiveController:
 
         # All conditions met - perform recovery
         self.emergency_shutdown = False
+        recovery_mode = "time" if time_cooldown_passed and not step_cooldown_passed else "step"
+        logger.info(
+            f"Auto-recovery succeeded via {recovery_mode}-based cooldown "
+            f"(steps_since={steps_since_emergency}, time_since={time.time() - self._last_emergency_time:.1f}s)"
+        )
         return True
 
     def _build_state(self, rejected: bool, note: str) -> dict[str, Any]:

@@ -498,6 +498,39 @@ async def generate(prompt: str, moral_value: float = 0.8):
     return result
 ```
 
+### Request Priority (REL-005)
+
+When using the HTTP API, you can prioritize requests using the `X-MLSDM-Priority` header:
+
+```bash
+# High priority request - processed first under load
+curl -X POST http://localhost:8000/generate \
+  -H "Content-Type: application/json" \
+  -H "X-MLSDM-Priority: high" \
+  -d '{"prompt": "Critical request that needs fast processing"}'
+
+# Normal priority (default)
+curl -X POST http://localhost:8000/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Regular request"}'
+
+# Low priority - processed last under load
+curl -X POST http://localhost:8000/generate \
+  -H "Content-Type: application/json" \
+  -H "X-MLSDM-Priority: low" \
+  -d '{"prompt": "Background task"}'
+```
+
+**Priority Levels:**
+- `high` (weight: 3): For critical, user-facing requests
+- `normal` (weight: 2): Default for most requests
+- `low` (weight: 1): For background tasks, batch processing
+
+**Best Practices:**
+- Don't overuse `high` priority - it loses meaning if everything is high priority
+- Use `low` for batch processing, analytics, and non-time-sensitive tasks
+- Default `normal` is appropriate for most interactive requests
+
 ## See Also
 
 - [README.md](README.md) - Project overview

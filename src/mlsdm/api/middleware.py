@@ -5,6 +5,7 @@ Provides:
 - Security headers
 - Bulkhead pattern for request isolation (REL-002)
 - Request timeout handling (REL-004)
+- Request prioritization (REL-005)
 - Queue depth metrics
 """
 
@@ -189,6 +190,7 @@ class BulkheadMiddleware(BaseHTTPMiddleware):
         app: Any,
         max_concurrent: int | None = None,
         queue_timeout: float | None = None,
+        enable_prometheus_metrics: bool = True,
     ) -> None:
         """Initialize bulkhead middleware.
 
@@ -196,6 +198,7 @@ class BulkheadMiddleware(BaseHTTPMiddleware):
             app: FastAPI/Starlette application
             max_concurrent: Maximum concurrent requests (default: 100, env: MLSDM_MAX_CONCURRENT)
             queue_timeout: Queue timeout in seconds (default: 5.0, env: MLSDM_QUEUE_TIMEOUT)
+            enable_prometheus_metrics: Whether to export metrics to Prometheus (default: True)
         """
         super().__init__(app)
         self._max_concurrent = max_concurrent or int(
@@ -208,11 +211,36 @@ class BulkheadMiddleware(BaseHTTPMiddleware):
             max_concurrent=self._max_concurrent,
             queue_timeout=self._queue_timeout,
         )
+        self._enable_prometheus_metrics = enable_prometheus_metrics
 
     @property
     def metrics(self) -> BulkheadMetrics:
         """Get bulkhead metrics."""
         return self._bulkhead.metrics
+
+    def _update_prometheus_metrics(self, rejected: bool = False) -> None:
+        """Update Prometheus metrics for bulkhead state.
+
+        Args:
+            rejected: Whether the request was rejected
+        """
+        if not self._enable_prometheus_metrics:
+            return
+
+        try:
+            from mlsdm.observability.metrics import get_metrics_exporter
+
+            metrics = self._bulkhead.metrics
+            exporter = get_metrics_exporter()
+            exporter.update_bulkhead_metrics(
+                queue_depth=self._bulkhead.queue_depth,
+                active_requests=metrics.current_active,
+                max_queue_depth=metrics.max_queue_depth,
+                rejected_increment=1 if rejected else 0,
+            )
+        except Exception:
+            # Graceful degradation - don't fail request if metrics fail
+            pass
 
     async def dispatch(
         self,
@@ -222,8 +250,10 @@ class BulkheadMiddleware(BaseHTTPMiddleware):
         """Process request with bulkhead isolation."""
         try:
             async with self._bulkhead.acquire():
+                self._update_prometheus_metrics(rejected=False)
                 return await call_next(request)
         except asyncio.TimeoutError:
+            self._update_prometheus_metrics(rejected=True)
             logger.warning(
                 "Request rejected by bulkhead",
                 extra={
@@ -312,6 +342,166 @@ class TimeoutMiddleware(BaseHTTPMiddleware):
                 media_type="application/json",
                 headers={"X-Request-Timeout": str(self._timeout)},
             )
+
+
+# ---------------------------------------------------------------------------
+# Request Prioritization (REL-005)
+# ---------------------------------------------------------------------------
+
+
+class RequestPriority:
+    """Priority levels for request prioritization.
+
+    Higher priority requests are processed before lower priority ones
+    when the system is under load.
+    """
+
+    HIGH = "high"
+    NORMAL = "normal"
+    LOW = "low"
+
+    # Priority weights (higher = more likely to be processed first)
+    WEIGHTS: dict[str, int] = {
+        HIGH: 3,
+        NORMAL: 2,
+        LOW: 1,
+    }
+
+    @classmethod
+    def from_header(cls, header_value: str | None, default: str = "normal") -> str:
+        """Parse priority from header value.
+
+        Args:
+            header_value: Value from X-MLSDM-Priority header
+            default: Default priority if header is missing or invalid
+
+        Returns:
+            Validated priority string (high, normal, or low)
+        """
+        if header_value is None:
+            return default
+
+        value = header_value.lower().strip()
+        if value in (cls.HIGH, cls.NORMAL, cls.LOW):
+            return value
+
+        # Support numeric priorities (1-10 -> low/normal/high)
+        try:
+            numeric = int(value)
+            if numeric <= 3:
+                return cls.LOW
+            elif numeric <= 6:
+                return cls.NORMAL
+            else:
+                return cls.HIGH
+        except ValueError:
+            pass
+
+        return default
+
+
+@dataclass
+class PriorityQueueItem:
+    """Item in the priority queue.
+
+    Attributes:
+        priority: Request priority level
+        timestamp: Time when request was queued
+        request_id: Unique identifier for the request
+    """
+
+    priority: str
+    timestamp: float
+    request_id: str
+
+    def __lt__(self, other: "PriorityQueueItem") -> bool:
+        """Compare items for priority queue ordering.
+
+        Higher priority items should be processed first (lower sort value).
+        For same priority, earlier timestamp wins.
+        """
+        self_weight = RequestPriority.WEIGHTS.get(self.priority, 2)
+        other_weight = RequestPriority.WEIGHTS.get(other.priority, 2)
+
+        # Higher weight = higher priority = should come first (lower sort value)
+        if self_weight != other_weight:
+            return self_weight > other_weight
+
+        # Same priority: earlier timestamp wins
+        return self.timestamp < other.timestamp
+
+
+class PriorityMiddleware(BaseHTTPMiddleware):
+    """Middleware for request prioritization.
+
+    Parses the X-MLSDM-Priority header and stores priority in request state.
+    Works in conjunction with BulkheadMiddleware to prioritize high-priority
+    requests during resource contention.
+
+    Implements REL-005 from PROD_GAPS.md.
+
+    Header: X-MLSDM-Priority: high | normal | low (or 1-10 numeric)
+
+    Example:
+        >>> app.add_middleware(PriorityMiddleware)
+
+        # Client request:
+        # curl -H "X-MLSDM-Priority: high" http://localhost:8000/generate
+    """
+
+    PRIORITY_HEADER = "X-MLSDM-Priority"
+
+    def __init__(
+        self,
+        app: Any,
+        enabled: bool = True,
+        default_priority: str = "normal",
+    ) -> None:
+        """Initialize priority middleware.
+
+        Args:
+            app: FastAPI/Starlette application
+            enabled: Whether priority handling is enabled (default: True)
+            default_priority: Default priority for requests without header
+        """
+        super().__init__(app)
+        self._enabled = enabled
+        self._default_priority = default_priority
+
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
+        """Process request with priority handling."""
+        if self._enabled:
+            # Parse priority from header
+            header_value = request.headers.get(self.PRIORITY_HEADER)
+            priority = RequestPriority.from_header(header_value, self._default_priority)
+
+            # Store priority in request state for downstream middleware/handlers
+            request.state.priority = priority
+            request.state.priority_weight = RequestPriority.WEIGHTS.get(priority, 2)
+
+            # Log high priority requests
+            if priority == RequestPriority.HIGH:
+                logger.info(
+                    "High priority request received",
+                    extra={
+                        "path": request.url.path,
+                        "method": request.method,
+                        "priority": priority,
+                        "request_id": getattr(request.state, "request_id", "unknown"),
+                    },
+                )
+
+        response = await call_next(request)
+
+        # Add priority to response headers for observability
+        if self._enabled and hasattr(request.state, "priority"):
+            response.headers["X-MLSDM-Priority-Applied"] = request.state.priority
+
+        return response
 
 
 # ---------------------------------------------------------------------------

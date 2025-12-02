@@ -505,3 +505,126 @@ class TestCognitiveControllerAutoRecovery:
         # Recovery attempts should increment
         assert controller._recovery_attempts == 2
         assert controller._last_emergency_step == controller.step_counter
+
+
+class TestCognitiveControllerTimeBasedRecovery:
+    """Test time-based auto-recovery after emergency shutdown (REL-001)."""
+
+    def test_time_based_recovery_default_enabled(self):
+        """Test that time-based recovery is enabled by default."""
+        controller = CognitiveController()
+        assert controller.auto_recovery_enabled is True
+        assert controller.auto_recovery_cooldown_seconds == 60.0
+
+    def test_time_based_recovery_can_be_disabled(self):
+        """Test that time-based recovery can be disabled."""
+        controller = CognitiveController(auto_recovery_enabled=False)
+        assert controller.auto_recovery_enabled is False
+
+    def test_time_based_recovery_custom_cooldown(self):
+        """Test custom cooldown duration."""
+        controller = CognitiveController(auto_recovery_cooldown_seconds=120.0)
+        assert controller.auto_recovery_cooldown_seconds == 120.0
+
+    def test_emergency_records_time(self):
+        """Test that emergency shutdown records the time."""
+        controller = CognitiveController(memory_threshold_mb=0.001)
+        vector = np.random.randn(384).astype(np.float32)
+
+        # Initially, no emergency time
+        assert controller._last_emergency_time == 0.0
+
+        # Trigger emergency
+        controller.process_event(vector, moral_value=0.8)
+        assert controller.emergency_shutdown is True
+        assert controller._last_emergency_time > 0
+
+    def test_time_based_recovery_after_cooldown(self):
+        """Test recovery after time-based cooldown passes."""
+        # Use short cooldown for testing
+        controller = CognitiveController(
+            memory_threshold_mb=0.001,
+            auto_recovery_enabled=True,
+            auto_recovery_cooldown_seconds=0.1,  # 100ms cooldown
+        )
+        vector = np.random.randn(384).astype(np.float32)
+
+        # Trigger emergency
+        controller.process_event(vector, moral_value=0.8)
+        assert controller.emergency_shutdown is True
+
+        # Increase memory threshold to allow recovery
+        controller.memory_threshold_mb = 10000.0
+
+        # Wait for time-based cooldown
+        time.sleep(0.15)  # Wait slightly longer than cooldown
+
+        # Process event - should trigger time-based recovery
+        result = controller.process_event(vector, moral_value=0.8)
+
+        # Should have recovered
+        assert controller.emergency_shutdown is False
+        assert result is not None
+
+    def test_time_based_recovery_before_cooldown_fails(self):
+        """Test that recovery fails if time-based cooldown has not passed."""
+        controller = CognitiveController(
+            memory_threshold_mb=0.001,
+            auto_recovery_enabled=True,
+            auto_recovery_cooldown_seconds=10.0,  # Long cooldown
+        )
+        vector = np.random.randn(384).astype(np.float32)
+
+        # Trigger emergency
+        controller.process_event(vector, moral_value=0.8)
+        assert controller.emergency_shutdown is True
+
+        # Increase memory threshold
+        controller.memory_threshold_mb = 10000.0
+
+        # Don't wait for cooldown - process immediately
+        result = controller.process_event(vector, moral_value=0.8)
+
+        # Should still be in emergency (neither step nor time cooldown passed)
+        assert controller.emergency_shutdown is True
+        assert result["rejected"] is True
+
+    def test_time_based_recovery_disabled_uses_step_only(self):
+        """Test that with time-based recovery disabled, only step-based works."""
+        from mlsdm.core.cognitive_controller import _CC_RECOVERY_COOLDOWN_STEPS
+
+        controller = CognitiveController(
+            memory_threshold_mb=0.001,
+            auto_recovery_enabled=False,  # Disable time-based
+        )
+        vector = np.random.randn(384).astype(np.float32)
+
+        # Trigger emergency
+        controller.process_event(vector, moral_value=0.8)
+        assert controller.emergency_shutdown is True
+
+        # Increase memory threshold
+        controller.memory_threshold_mb = 10000.0
+
+        # Even with time passed, won't recover without step cooldown
+        time.sleep(0.1)
+        result = controller.process_event(vector, moral_value=0.8)
+        assert controller.emergency_shutdown is True
+
+        # Now pass step-based cooldown
+        controller.step_counter += _CC_RECOVERY_COOLDOWN_STEPS
+        result = controller.process_event(vector, moral_value=0.8)
+        assert controller.emergency_shutdown is False
+
+    def test_manual_reset_clears_time_tracking(self):
+        """Test that manual reset clears time tracking."""
+        controller = CognitiveController(memory_threshold_mb=0.001)
+        vector = np.random.randn(384).astype(np.float32)
+
+        # Trigger emergency
+        controller.process_event(vector, moral_value=0.8)
+        assert controller._last_emergency_time > 0
+
+        # Manual reset
+        controller.reset_emergency_shutdown()
+        assert controller._last_emergency_time == 0.0

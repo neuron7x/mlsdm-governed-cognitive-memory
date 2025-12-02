@@ -147,26 +147,73 @@ Example counterexample entry:
 **Current State**: The system uses property-based testing (Hypothesis) and comprehensive unit/integration tests as the primary verification methods. Formal verification remains a planned enhancement for strengthening mathematical correctness guarantees.
 
 ---
-## 5. Resilience & Chaos Engineering (Roadmap)
+## 5. Resilience & Chaos Engineering
 
-**Status**: ⚠️ **Not yet implemented** - Planned for future versions (v1.x+)
+**Status**: ✅ **Implemented** (REL-003)
 
-**Planned Scenarios**:
-1. Fault Injection: kill vector DB (or simulate 5s latency)
-2. Network Partition: drop 20% packets between memory and policy components
-3. Disk Pressure: fill 90% storage; verify graceful read-only mode
-4. Clock Skew: offset scheduler time by +7m
+### Implemented Scenarios
 
-**Planned Graceful Degradation Goals**:
-- Retrieval fallback returns structured envelope with degraded flag
-- Policy decisions still deterministic under partial state
+The following chaos engineering tests are implemented in `tests/chaos/`:
 
-**Planned Tooling**:
-- chaos-toolkit scripts (to be created in `/scripts/chaos/`)
-- Kubernetes pod disruption budgets
-- Metrics: chaos_recovery_seconds, degraded_response_ratio
+1. **Memory Pressure Tests** (`test_memory_pressure.py`)
+   - Emergency shutdown under memory pressure
+   - Recovery after pressure relief
+   - Graceful degradation under sustained pressure
+   - Large vector allocation handling
+   - Memory tracking accuracy
 
-**Current State**: The system includes error handling and graceful degradation in the code, but automated chaos testing infrastructure is not yet implemented.
+2. **Slow LLM Tests** (`test_slow_llm.py`)
+   - Slow LLM completion within timeout
+   - Very slow LLM timeout handling
+   - Concurrent slow requests
+   - Degrading LLM performance over time
+   - Intermittent slow responses
+
+3. **Network Timeout Tests** (`test_network_timeout.py`)
+   - LLM timeout graceful failure
+   - Connection error handling
+   - Gradual network degradation
+   - Intermittent failures recovery
+   - Concurrent requests with failures
+
+### Graceful Degradation Goals ✅
+
+- ✅ Emergency shutdown triggers controlled rejection
+- ✅ Auto-recovery after cooldown period
+- ✅ Bulkhead limits concurrent requests
+- ✅ Timeout middleware returns 504 on timeout
+- ✅ Circuit breaker pattern for LLM failures
+
+### CI Integration
+
+Chaos tests run on a **scheduled basis** (not on every PR) to avoid slowing down regular CI:
+
+- **Schedule**: Daily at 3:00 AM UTC
+- **Workflow**: `.github/workflows/chaos-tests.yml`
+- **Manual Trigger**: Available via `workflow_dispatch`
+- **Artifacts**: Test results uploaded with 30-day retention
+
+### Running Chaos Tests Locally
+
+```bash
+# Run all chaos tests
+pytest tests/chaos/ -v -m chaos
+
+# Run specific category
+pytest tests/chaos/test_memory_pressure.py -v -m chaos
+pytest tests/chaos/test_slow_llm.py -v -m chaos
+pytest tests/chaos/test_network_timeout.py -v -m chaos
+```
+
+### Test Markers
+
+Chaos tests are marked with `@pytest.mark.chaos` to allow selective execution:
+
+```python
+@pytest.mark.chaos
+def test_emergency_shutdown_on_memory_pressure(self):
+    ...
+```
 
 ---
 ## 6. Soak & Endurance Testing (Roadmap)
