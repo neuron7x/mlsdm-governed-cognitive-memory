@@ -59,7 +59,7 @@ class TestMemoryStateRecord:
             state_L3=[0.0, 0.0, 0.0],
         )
         assert record.dimension == 3
-        assert len(record.state_L1) == 3
+        assert len(record.state_l1) == 3
 
     def test_invalid_dimension_zero(self):
         """Test that dimension=0 raises validation error."""
@@ -253,7 +253,7 @@ class TestSaveAndLoadState:
 
             assert loaded.version == state.version
             assert loaded.memory_state.dimension == 5
-            assert len(loaded.memory_state.state_L1) == 5
+            assert len(loaded.memory_state.state_l1) == 5
 
     def test_read_after_write_consistency(self):
         """Test that loaded state is identical to saved state (logically)."""
@@ -279,7 +279,7 @@ class TestSaveAndLoadState:
             assert loaded.id == state.id
             assert loaded.version == state.version
             assert loaded.memory_state.dimension == state.memory_state.dimension
-            assert loaded.memory_state.state_L1 == state.memory_state.state_L1
+            assert loaded.memory_state.state_l1 == state.memory_state.state_l1
             assert loaded.memory_state.lambda_l1 == state.memory_state.lambda_l1
 
     def test_invalid_filepath_type(self):
@@ -587,7 +587,7 @@ class TestCreateEmptyState:
         state = create_empty_system_state()
         assert state.version == CURRENT_SCHEMA_VERSION
         assert state.memory_state.dimension == 10
-        assert all(v == 0.0 for v in state.memory_state.state_L1)
+        assert all(v == 0.0 for v in state.memory_state.state_l1)
 
     def test_create_empty_state_custom(self):
         """Test creating empty state with custom parameters."""

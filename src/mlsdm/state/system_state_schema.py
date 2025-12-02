@@ -20,7 +20,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +39,8 @@ class MemoryStateRecord(BaseModel):
     - state array lengths == dimension
     """
 
+    model_config = ConfigDict(populate_by_name=True)
+
     dimension: int = Field(..., gt=0, description="Vector dimension")
     lambda_l1: float = Field(..., gt=0, le=1, description="L1 decay rate")
     lambda_l2: float = Field(..., gt=0, le=1, description="L2 decay rate")
@@ -47,24 +49,24 @@ class MemoryStateRecord(BaseModel):
     theta_l2: float = Field(..., gt=0, description="L2→L3 consolidation threshold")
     gating12: float = Field(..., ge=0, le=1, description="L1→L2 gating factor")
     gating23: float = Field(..., ge=0, le=1, description="L2→L3 gating factor")
-    state_L1: list[float] = Field(..., description="L1 memory state vector")
-    state_L2: list[float] = Field(..., description="L2 memory state vector")
-    state_L3: list[float] = Field(..., description="L3 memory state vector")
+    state_l1: list[float] = Field(..., alias="state_L1", description="L1 memory state vector")
+    state_l2: list[float] = Field(..., alias="state_L2", description="L2 memory state vector")
+    state_l3: list[float] = Field(..., alias="state_L3", description="L3 memory state vector")
 
     @model_validator(mode="after")
     def validate_state_dimensions(self) -> MemoryStateRecord:
         """Validate that state arrays match declared dimension."""
-        if len(self.state_L1) != self.dimension:
+        if len(self.state_l1) != self.dimension:
             raise ValueError(
-                f"state_L1 length ({len(self.state_L1)}) != dimension ({self.dimension})"
+                f"state_L1 length ({len(self.state_l1)}) != dimension ({self.dimension})"
             )
-        if len(self.state_L2) != self.dimension:
+        if len(self.state_l2) != self.dimension:
             raise ValueError(
-                f"state_L2 length ({len(self.state_L2)}) != dimension ({self.dimension})"
+                f"state_L2 length ({len(self.state_l2)}) != dimension ({self.dimension})"
             )
-        if len(self.state_L3) != self.dimension:
+        if len(self.state_l3) != self.dimension:
             raise ValueError(
-                f"state_L3 length ({len(self.state_L3)}) != dimension ({self.dimension})"
+                f"state_L3 length ({len(self.state_l3)}) != dimension ({self.dimension})"
             )
         return self
 
@@ -192,15 +194,15 @@ def validate_state_integrity(state: SystemStateRecord) -> list[str]:
         warnings.append(f"Invalid memory dimension: {memory.dimension}")
 
     # Check for potential numerical issues in state vectors
-    for i, val in enumerate(memory.state_L1):
+    for i, val in enumerate(memory.state_l1):
         if abs(val) > 1e10:
             warnings.append(f"L1 value at index {i} is very large: {val}")
 
-    for i, val in enumerate(memory.state_L2):
+    for i, val in enumerate(memory.state_l2):
         if abs(val) > 1e10:
             warnings.append(f"L2 value at index {i} is very large: {val}")
 
-    for i, val in enumerate(memory.state_L3):
+    for i, val in enumerate(memory.state_l3):
         if abs(val) > 1e10:
             warnings.append(f"L3 value at index {i} is very large: {val}")
 

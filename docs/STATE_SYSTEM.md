@@ -14,7 +14,7 @@ The `SystemStateRecord` contains:
    - `lambda_l1/l2/l3`: Decay rates (float in (0, 1])
    - `theta_l1/l2`: Consolidation thresholds (float > 0)
    - `gating12/23`: Gating factors (float in [0, 1])
-   - `state_L1/L2/L3`: Memory level vectors (list of floats)
+   - `state_l1/l2/l3`: Memory level vectors (list of floats). Aliases: `state_L1/L2/L3`
 
 2. **QILM State** (`QILMStateRecord`): Quantum-Inspired Lattice Memory state
    - `memory`: List of memory vectors
@@ -64,7 +64,7 @@ state = SystemStateRecord(
 - `0 < lambda_l1 <= 1`, `0 < lambda_l2 <= 1`, `0 < lambda_l3 <= 1`
 - `theta_l1 > 0`, `theta_l2 > 0`
 - `0 <= gating12 <= 1`, `0 <= gating23 <= 1`
-- `len(state_L1) == len(state_L2) == len(state_L3) == dimension`
+- `len(state_l1) == len(state_l2) == len(state_l3) == dimension`
 
 ### QILMStateRecord
 - `len(memory) == len(phases)`

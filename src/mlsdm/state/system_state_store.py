@@ -260,10 +260,7 @@ def load_system_state(
             if "state" in arrs:
                 state_data = arrs["state"]
                 # Handle numpy.void objects from npz loading
-                if hasattr(state_data, "item"):
-                    state_dict = state_data.item()
-                else:
-                    state_dict = dict(state_data)
+                state_dict = state_data.item() if hasattr(state_data, "item") else dict(state_data)
             else:
                 # Legacy format: direct state dict
                 state_dict = {
@@ -379,10 +376,7 @@ def recover_system_state(filepath: str) -> SystemStateRecord:
             arrs = np.load(backup_path, allow_pickle=True)
             if "state" in arrs:
                 state_data = arrs["state"]
-                if hasattr(state_data, "item"):
-                    state_dict = state_data.item()
-                else:
-                    state_dict = dict(state_data)
+                state_dict = state_data.item() if hasattr(state_data, "item") else dict(state_data)
             else:
                 state_dict = {
                     k: v.tolist() if isinstance(v, np.ndarray) else v
