@@ -271,6 +271,139 @@ class MetricsExporter:
             registry=self.registry,
         )
 
+        # ---------------------------------------------------------------------------
+        # HTTP-Level Metrics (OBS-001 enhancement)
+        # ---------------------------------------------------------------------------
+
+        # HTTP requests total with method, endpoint, and status labels
+        self.http_requests_total = Counter(
+            "mlsdm_http_requests_total",
+            "Total HTTP requests by method, endpoint, and status code",
+            ["method", "endpoint", "status"],
+            registry=self.registry,
+        )
+
+        # HTTP request latency histogram with endpoint label (buckets in seconds)
+        self.http_request_latency_seconds = Histogram(
+            "mlsdm_http_request_latency_seconds_bucket",
+            "HTTP request latency in seconds by endpoint",
+            ["endpoint"],
+            buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0),
+            registry=self.registry,
+        )
+
+        # HTTP requests in-flight gauge
+        self.http_requests_in_flight = Gauge(
+            "mlsdm_http_requests_in_flight",
+            "Number of HTTP requests currently in flight",
+            registry=self.registry,
+        )
+
+        # ---------------------------------------------------------------------------
+        # LLM Integration Metrics (OBS-001 enhancement)
+        # ---------------------------------------------------------------------------
+
+        # LLM request latency by model
+        self.llm_request_latency_seconds = Histogram(
+            "mlsdm_llm_request_latency_seconds_bucket",
+            "LLM request latency in seconds by model",
+            ["model"],
+            buckets=(0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0, 120.0),
+            registry=self.registry,
+        )
+
+        # LLM failures by reason
+        self.llm_failures_total = Counter(
+            "mlsdm_llm_failures_total",
+            "Total LLM failures by reason (timeout, quota, safety, transport)",
+            ["reason"],
+            registry=self.registry,
+        )
+
+        # LLM tokens total by direction
+        self.llm_tokens_total = Counter(
+            "mlsdm_llm_tokens_total",
+            "Total LLM tokens by direction (in=prompt, out=completion)",
+            ["direction"],
+            registry=self.registry,
+        )
+
+        # ---------------------------------------------------------------------------
+        # Cognitive Controller Metrics (OBS-001 enhancement)
+        # ---------------------------------------------------------------------------
+
+        # Cognitive cycle duration histogram
+        self.cognitive_cycle_duration_seconds = Histogram(
+            "mlsdm_cognitive_cycle_duration_seconds",
+            "Duration of cognitive processing cycles in seconds",
+            buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0),
+            registry=self.registry,
+        )
+
+        # Memory items total by level
+        self.memory_items_total = Gauge(
+            "mlsdm_memory_items_total",
+            "Total memory items by memory level (L1/L2/L3)",
+            ["level"],
+            registry=self.registry,
+        )
+
+        # Memory evictions total by reason
+        self.memory_evictions_total = Counter(
+            "mlsdm_memory_evictions_total",
+            "Total memory evictions by reason (decay, capacity, policy)",
+            ["reason"],
+            registry=self.registry,
+        )
+
+        # Auto-recovery total by result
+        self.auto_recovery_total = Counter(
+            "mlsdm_auto_recovery_total",
+            "Total auto-recovery attempts by result (success, failure)",
+            ["result"],
+            registry=self.registry,
+        )
+
+        # ---------------------------------------------------------------------------
+        # Moral Filter Metrics (OBS-001 enhancement)
+        # ---------------------------------------------------------------------------
+
+        # Moral filter decisions by decision type
+        self.moral_filter_decisions_total = Counter(
+            "mlsdm_moral_filter_decisions_total",
+            "Total moral filter decisions by decision type (allow, block, moderate)",
+            ["decision"],
+            registry=self.registry,
+        )
+
+        # Moral filter violation score histogram
+        self.moral_filter_violation_score = Histogram(
+            "mlsdm_moral_filter_violation_score",
+            "Distribution of moral filter violation scores",
+            buckets=(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0),
+            registry=self.registry,
+        )
+
+        # ---------------------------------------------------------------------------
+        # Timeout and Priority Metrics (OBS-001 enhancement)
+        # ---------------------------------------------------------------------------
+
+        # Timeout total by endpoint
+        self.timeout_total = Counter(
+            "mlsdm_timeout_total",
+            "Total request timeouts by endpoint",
+            ["endpoint"],
+            registry=self.registry,
+        )
+
+        # Priority queue depth by priority level
+        self.priority_queue_depth = Gauge(
+            "mlsdm_priority_queue_depth",
+            "Priority queue depth by priority level (high, normal, low)",
+            ["priority"],
+            registry=self.registry,
+        )
+
         # Track timing contexts
         self._processing_start_times: dict[str, float] = {}
         self._retrieval_start_times: dict[str, float] = {}
@@ -352,7 +485,8 @@ class MetricsExporter:
         """Increment the emergency shutdown counter.
 
         Args:
-            reason: Reason for the emergency shutdown (e.g., 'memory_exceeded', 'processing_timeout')
+            reason: Reason for the emergency shutdown
+                    (e.g., 'memory_exceeded', 'processing_timeout')
             count: Number to add (default: 1)
         """
         with self._lock:
@@ -637,6 +771,172 @@ class MetricsExporter:
             if rejected_increment > 0:
                 self.bulkhead_rejected_total.inc(rejected_increment)
 
+    # ---------------------------------------------------------------------------
+    # HTTP-Level Metrics Methods (OBS-001 enhancement)
+    # ---------------------------------------------------------------------------
+
+    def increment_http_requests(
+        self, method: str, endpoint: str, status: str, count: int = 1
+    ) -> None:
+        """Increment HTTP requests counter with method, endpoint, and status labels.
+
+        Args:
+            method: HTTP method (GET, POST, etc.)
+            endpoint: API endpoint path
+            status: HTTP status code (e.g., "200", "500")
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self.http_requests_total.labels(
+                method=method, endpoint=endpoint, status=status
+            ).inc(count)
+
+    def observe_http_request_latency(self, latency_seconds: float, endpoint: str) -> None:
+        """Observe HTTP request latency.
+
+        Args:
+            latency_seconds: Request latency in seconds
+            endpoint: API endpoint path
+        """
+        with self._lock:
+            self.http_request_latency_seconds.labels(endpoint=endpoint).observe(
+                latency_seconds
+            )
+
+    def increment_http_requests_in_flight(self) -> None:
+        """Increment the HTTP requests in-flight gauge."""
+        with self._lock:
+            self.http_requests_in_flight.inc()
+
+    def decrement_http_requests_in_flight(self) -> None:
+        """Decrement the HTTP requests in-flight gauge."""
+        with self._lock:
+            self.http_requests_in_flight.dec()
+
+    # ---------------------------------------------------------------------------
+    # LLM Integration Metrics Methods (OBS-001 enhancement)
+    # ---------------------------------------------------------------------------
+
+    def observe_llm_request_latency(self, latency_seconds: float, model: str) -> None:
+        """Observe LLM request latency by model.
+
+        Args:
+            latency_seconds: LLM request latency in seconds
+            model: LLM model identifier
+        """
+        with self._lock:
+            self.llm_request_latency_seconds.labels(model=model).observe(latency_seconds)
+
+    def increment_llm_failures(self, reason: str, count: int = 1) -> None:
+        """Increment LLM failures counter by reason.
+
+        Args:
+            reason: Failure reason (timeout, quota, safety, transport)
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self.llm_failures_total.labels(reason=reason).inc(count)
+
+    def increment_llm_tokens(self, direction: str, count: int) -> None:
+        """Increment LLM tokens counter by direction.
+
+        Args:
+            direction: Token direction ("in" for prompt, "out" for completion)
+            count: Number of tokens to add
+        """
+        with self._lock:
+            self.llm_tokens_total.labels(direction=direction).inc(count)
+
+    # ---------------------------------------------------------------------------
+    # Cognitive Controller Metrics Methods (OBS-001 enhancement)
+    # ---------------------------------------------------------------------------
+
+    def observe_cognitive_cycle_duration(self, duration_seconds: float) -> None:
+        """Observe cognitive cycle duration.
+
+        Args:
+            duration_seconds: Cycle duration in seconds
+        """
+        with self._lock:
+            self.cognitive_cycle_duration_seconds.observe(duration_seconds)
+
+    def set_memory_items(self, level: str, count: int) -> None:
+        """Set memory items count by level.
+
+        Args:
+            level: Memory level (L1, L2, L3)
+            count: Number of items in the level
+        """
+        with self._lock:
+            self.memory_items_total.labels(level=level).set(count)
+
+    def increment_memory_evictions(self, reason: str, count: int = 1) -> None:
+        """Increment memory evictions counter by reason.
+
+        Args:
+            reason: Eviction reason (decay, capacity, policy)
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self.memory_evictions_total.labels(reason=reason).inc(count)
+
+    def increment_auto_recovery(self, result: str, count: int = 1) -> None:
+        """Increment auto-recovery counter by result.
+
+        Args:
+            result: Recovery result (success, failure)
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self.auto_recovery_total.labels(result=result).inc(count)
+
+    # ---------------------------------------------------------------------------
+    # Moral Filter Metrics Methods (OBS-001 enhancement)
+    # ---------------------------------------------------------------------------
+
+    def increment_moral_filter_decision(self, decision: str, count: int = 1) -> None:
+        """Increment moral filter decisions counter by decision type.
+
+        Args:
+            decision: Decision type (allow, block, moderate)
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self.moral_filter_decisions_total.labels(decision=decision).inc(count)
+
+    def observe_moral_filter_violation_score(self, score: float) -> None:
+        """Observe moral filter violation score.
+
+        Args:
+            score: Violation score (0.0 to 1.0)
+        """
+        with self._lock:
+            self.moral_filter_violation_score.observe(score)
+
+    # ---------------------------------------------------------------------------
+    # Timeout and Priority Metrics Methods (OBS-001 enhancement)
+    # ---------------------------------------------------------------------------
+
+    def increment_timeout(self, endpoint: str, count: int = 1) -> None:
+        """Increment timeout counter by endpoint.
+
+        Args:
+            endpoint: API endpoint path
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self.timeout_total.labels(endpoint=endpoint).inc(count)
+
+    def set_priority_queue_depth(self, priority: str, depth: int) -> None:
+        """Set priority queue depth by priority level.
+
+        Args:
+            priority: Priority level (high, normal, low)
+            depth: Queue depth for this priority level
+        """
+        with self._lock:
+            self.priority_queue_depth.labels(priority=priority).set(depth)
+
     def get_severity_bucket(self, severity: float) -> str:
         """Convert aphasia severity score to bucket label.
 
@@ -707,6 +1007,8 @@ class MetricsExporter:
             "bulkhead_active_requests": self.bulkhead_active_requests._value.get(),
             "bulkhead_rejected_total": self.bulkhead_rejected_total._value.get(),
             "bulkhead_max_queue_depth": self.bulkhead_max_queue_depth._value.get(),
+            # HTTP-level metrics (OBS-001)
+            "http_requests_in_flight": self.http_requests_in_flight._value.get(),
         }
 
 

@@ -359,9 +359,9 @@ def test_emergency_shutdown_on_memory_pressure(self):
 - Recalibration logic planned for future versions
 
 ---
-## 12. Observability (Partially Implemented)
+## 12. Observability ✅ **Production-Ready**
 
-**Status**: ✅ **Core implemented**, ⚠️ **Advanced features planned**
+**Status**: ✅ **Fully Implemented**
 
 **Implemented** (✅):
 - ✅ Prometheus metrics export (`src/mlsdm/observability/metrics.py`)
@@ -369,32 +369,71 @@ def test_emergency_shutdown_on_memory_pressure(self):
 - ✅ Aphasia-specific event logging (`src/mlsdm/observability/aphasia_logging.py`)
 - ✅ Health check endpoints (liveness, readiness, detailed)
 - ✅ State introspection APIs
-- ✅ Basic performance metrics (latency, throughput)
+- ✅ OpenTelemetry distributed tracing (`src/mlsdm/observability/tracing.py`)
+- ✅ Grafana dashboards (`deploy/grafana/mlsdm_*.json`)
+- ✅ Prometheus alerting rules (`deploy/k8s/alerts/mlsdm-alerts.yaml`)
 
-**Current Metrics**:
-- `event_processing_time_seconds`: Request latency histogram
-- `total_events_processed`: Total request counter
-- `accepted_events_count`: Accepted request counter
-- `moral_filter_threshold`: Current threshold gauge
-- `memory_usage_bytes`: Memory consumption gauge
-- `cpu_usage_percent`: CPU utilization gauge
+**Current Metrics** (full list in OBSERVABILITY_SPEC.md):
+- HTTP-level: `mlsdm_http_requests_total`, `mlsdm_http_request_latency_seconds_bucket`, `mlsdm_http_requests_in_flight`
+- LLM integration: `mlsdm_llm_request_latency_seconds_bucket`, `mlsdm_llm_failures_total`, `mlsdm_llm_tokens_total`
+- Cognitive controller: `mlsdm_cognitive_cycle_duration_seconds`, `mlsdm_memory_items_total`, `mlsdm_memory_evictions_total`
+- Moral filter: `mlsdm_moral_filter_decisions_total`, `mlsdm_moral_filter_violation_score`
+- Reliability: `mlsdm_bulkhead_*`, `mlsdm_timeout_total`, `mlsdm_priority_queue_depth`
+- Emergency: `mlsdm_emergency_shutdowns_total`, `mlsdm_auto_recovery_total`
 
-**Planned Events** (v1.3+):
-- event_formal_violation
-- event_drift_alert
-- event_chaos_fault
+**Dashboards**:
+- `deploy/grafana/mlsdm_observability_dashboard.json` - Core observability
+- `deploy/grafana/mlsdm_slo_dashboard.json` - SLO tracking with error budget
 
-**Planned Metrics** (v1.3+):
-- moral_filter_eval_ms: Fine-grained moral evaluation timing
-- drift_vector_magnitude: Embedding drift measurement
-- ethical_block_rate: Moral rejection rate
+**Alerts** (see `deploy/k8s/alerts/mlsdm-alerts.yaml`):
+- SLO-based: HighErrorRate, HighLatency, ErrorBudgetBurnRate
+- Emergency: EmergencyShutdownSpike, MoralFilterBlockSpike
+- LLM: LLMTimeoutSpike, LLMQuotaExceeded
+- Reliability: BulkheadSaturation, HighTimeoutRate
 
-**Planned Traces** (v1.3+):
-- OpenTelemetry distributed tracing
-- Full request flow: MemoryRetrieve → SemanticMerge → PolicyCheck
-- Cross-service tracing (when applicable)
+**Current State**: Production-ready observability with full metrics, tracing, dashboards, and alerting.
 
-**Current State**: Production-ready observability with Prometheus metrics and structured logging. Advanced tracing features planned for v1.3+.
+### Observability Validation Tests
+
+Unit tests for observability components:
+
+```bash
+# Run all observability tests (293 tests)
+pytest tests/observability/ -v
+
+# Run specific test categories
+pytest tests/observability/test_metrics_basic.py -v        # Basic metrics
+pytest tests/observability/test_enhanced_metrics.py -v     # New OBS-001 metrics
+pytest tests/observability/test_tracing_smoke.py -v        # Tracing smoke tests
+pytest tests/observability/test_trace_context_logging.py -v # Log correlation
+```
+
+Integration tests with running app:
+
+```bash
+# E2E observability validation
+pytest tests/e2e/test_observability_pipeline.py -v
+
+# Verify metrics endpoint
+curl http://localhost:8000/health/metrics | grep mlsdm_
+```
+
+Post-deployment smoke tests:
+
+```bash
+# Verify metrics export
+curl http://localhost:8000/health/metrics
+
+# Verify health endpoints
+curl http://localhost:8000/health/live
+curl http://localhost:8000/health/ready
+curl http://localhost:8000/health/detailed
+
+# Verify tracing (with OTLP collector)
+export MLSDM_OTEL_ENABLED=true
+export OTEL_EXPORTER_TYPE=otlp
+# Check traces in Jaeger/Tempo UI
+```
 
 ---
 ## 13. Toolchain Summary
@@ -409,12 +448,14 @@ def test_emergency_shutdown_on_memory_pressure(self):
 | Type Checking | mypy | ✅ Implemented | Full codebase |
 | Invariant Traceability | docs/INVARIANT_TRACEABILITY.md | ✅ Implemented | 31 invariants mapped |
 | Formal Specs | TLA+, Coq | ⚠️ Planned (v1.3+) | N/A |
-| Chaos | chaos-toolkit | ⚠️ Planned (v1.3+) | N/A |
+| Chaos | chaos-toolkit | ✅ Implemented | 17 tests |
 | Load / Soak | Locust, K6 | ⚠️ Planned (v1.3+) | N/A |
 | Safety (RAG) | ragas | ⚠️ Planned (v1.3+) | N/A |
-| Tracing | OpenTelemetry | ✅ Baseline | Metrics exported |
-| Metrics | Prometheus | ✅ Baseline | SLO_SPEC.md defined |
-| CI | GitHub Actions | ✅ Implemented | 2 workflows |
+| Tracing | OpenTelemetry | ✅ Production | Full pipeline spans |
+| Metrics | Prometheus | ✅ Production | 40+ metrics |
+| Dashboards | Grafana | ✅ Production | 2 dashboards |
+| Alerting | Prometheus/Alertmanager | ✅ Production | 15 alert rules |
+| CI | GitHub Actions | ✅ Implemented | 4 workflows |
 
 ---
 ## 14. CI Integration

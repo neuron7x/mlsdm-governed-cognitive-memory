@@ -561,11 +561,224 @@ curl http://api/health/detailed
 **Slack Channel**: #mlsdm-production  
 **Documentation**: https://github.com/neuron7x/mlsdm
 
+---
+
+## Alert-Specific Runbook Procedures
+
+This section provides detailed procedures for each alert defined in `deploy/k8s/alerts/mlsdm-alerts.yaml`.
+
+### HighErrorRate / HighErrorRateCritical
+
+**Condition**: Error rate > 0.5% (warning) or > 1% (critical) for 5 minutes
+
+**Possible Causes**:
+- LLM backend failures
+- Memory pressure causing emergency shutdown
+- Configuration errors after deployment
+- Upstream service issues
+
+**Diagnosis Steps**:
+```bash
+# 1. Check error breakdown
+curl http://api/health/metrics | grep mlsdm_errors_total
+
+# 2. Check emergency shutdown status
+curl http://api/health/detailed | jq '.emergency_shutdown'
+
+# 3. Review recent logs for error patterns
+kubectl logs -n mlsdm-production -l app=mlsdm-api --tail=200 | grep ERROR
+
+# 4. Check LLM backend health
+curl http://api/health/metrics | grep mlsdm_llm_failures_total
+```
+
+**Mitigation Steps**:
+1. If LLM failures: Check LLM backend health, consider fallback
+2. If memory pressure: Scale up or restart pods
+3. If config error: Rollback deployment
+4. If upstream issue: Escalate to upstream team
+
+### HighLatency / HighLatencyCritical
+
+**Condition**: P95 latency > 120ms (warning) or > 500ms (critical)
+
+**Possible Causes**:
+- LLM backend slow responses
+- High concurrent load
+- Resource contention (CPU/memory)
+- Sleep phase processing (expected to be slower)
+
+**Diagnosis Steps**:
+```bash
+# 1. Check current phase
+curl http://api/health/detailed | jq '.phase'
+
+# 2. Check LLM latency specifically
+curl http://api/health/metrics | grep mlsdm_llm_request_latency
+
+# 3. Check bulkhead queue depth
+curl http://api/health/metrics | grep mlsdm_bulkhead
+
+# 4. Check resource usage
+kubectl top pods -n mlsdm-production
+```
+
+**Mitigation Steps**:
+1. If in sleep phase: Latency increase is expected, wait for wake phase
+2. If high load: Scale up replicas
+3. If LLM slow: Consider timeout reduction or backend switch
+4. If resource contention: Increase resource limits
+
+### EmergencyShutdownSpike / EmergencyShutdownActive
+
+**Condition**: Multiple emergency shutdowns or currently in shutdown state
+
+**Possible Causes**:
+- Memory limit exceeded (1.4 GB threshold)
+- Processing timeout
+- Configuration validation failure
+- Safety violation
+
+**Diagnosis Steps**:
+```bash
+# 1. Check shutdown reason in logs
+kubectl logs -n mlsdm-production -l app=mlsdm-api | grep "EMERGENCY SHUTDOWN"
+
+# 2. Check memory metrics
+curl http://api/health/metrics | grep mlsdm_memory_usage_bytes
+
+# 3. Check detailed health status
+curl http://api/health/detailed | jq '.components'
+```
+
+**Mitigation Steps**:
+1. If memory issue:
+   - Restart pods: `kubectl rollout restart deployment/mlsdm-api -n mlsdm-production`
+   - Check for memory leaks in recent changes
+2. If timeout issue:
+   - Check LLM backend health
+   - Increase timeout if appropriate
+3. If config error:
+   - Rollback to previous configuration
+   - Validate config before retry
+
+### MoralFilterBlockSpike / MoralFilterBlockSpikeCritical
+
+**Condition**: > 30% (warning) or > 50% (critical) of requests blocked
+
+**Possible Causes**:
+- Data drift (input distribution changed)
+- Adversarial attack
+- Threshold misconfiguration
+- Training data issues
+
+**Diagnosis Steps**:
+```bash
+# 1. Check current moral threshold
+curl http://api/health/detailed | jq '.statistics.moral_filter_threshold'
+
+# 2. Check block reasons
+curl http://api/health/metrics | grep mlsdm_moral_rejections_total
+
+# 3. Review recent blocked request patterns (check logs)
+kubectl logs -n mlsdm-production -l app=mlsdm-api | grep "moral_precheck"
+```
+
+**Mitigation Steps**:
+1. If adversarial attack: Enable rate limiting, block suspicious IPs
+2. If data drift: Review input sources, consider threshold adjustment
+3. If threshold misconfiguration: Adjust moral_threshold in config
+4. Log all blocked requests for analysis
+
+### LLMTimeoutSpike / LLMTimeoutSpikeCritical
+
+**Condition**: Multiple LLM timeout failures
+
+**Possible Causes**:
+- LLM backend overloaded
+- Network issues to LLM provider
+- LLM provider outage
+- Request complexity too high
+
+**Diagnosis Steps**:
+```bash
+# 1. Check LLM failure breakdown
+curl http://api/health/metrics | grep mlsdm_llm_failures_total
+
+# 2. Check LLM latency histogram
+curl http://api/health/metrics | grep mlsdm_llm_request_latency
+
+# 3. Test LLM backend directly if possible
+# (depends on LLM provider)
+```
+
+**Mitigation Steps**:
+1. Check LLM provider status page
+2. Consider increasing timeout temporarily
+3. Enable fallback LLM if configured
+4. Reduce max_tokens to speed up responses
+5. Scale up if using local LLM
+
+### BulkheadSaturation / BulkheadRejectionsHigh
+
+**Condition**: Bulkhead queue > 80 or high rejection rate
+
+**Possible Causes**:
+- Traffic spike
+- Slow request processing
+- Insufficient capacity
+- Upstream retry storm
+
+**Diagnosis Steps**:
+```bash
+# 1. Check bulkhead metrics
+curl http://api/health/metrics | grep mlsdm_bulkhead
+
+# 2. Check request rate
+curl http://api/health/metrics | grep mlsdm_http_requests_total
+
+# 3. Check active request latency
+curl http://api/health/metrics | grep mlsdm_request_latency
+```
+
+**Mitigation Steps**:
+1. Scale up replicas: `kubectl scale deployment mlsdm-api --replicas=5`
+2. Increase bulkhead capacity (MLSDM_MAX_CONCURRENT)
+3. Enable request prioritization for critical paths
+4. Investigate source of traffic spike
+
+### HighMemoryUsage / MemoryLimitExceeded
+
+**Condition**: Memory > 45MB (warning) or > 50MB (critical)
+
+**Possible Causes**:
+- Memory leak (unlikely with hard limits)
+- Configuration error (capacity too high)
+- Large vector allocations
+
+**Diagnosis Steps**:
+```bash
+# 1. Check memory state
+curl http://api/health/detailed | jq '.memory_state'
+
+# 2. Check memory metrics
+curl http://api/health/metrics | grep mlsdm_memory
+
+# 3. Check actual pod memory
+kubectl top pods -n mlsdm-production
+```
+
+**Mitigation Steps**:
+1. If near limit: Restart pod for clean slate
+2. If config issue: Reduce memory capacity in config
+3. If leak suspected: Capture heap dump, investigate recent changes
+
 ## Revision History
 
 | Version | Date | Changes | Author |
 |---------|------|---------|--------|
 | 1.0.0 | 2025-11 | Initial production runbook | neuron7x |
+| 1.1.0 | 2025-12 | Added alert-specific runbook procedures | copilot |
 
 ---
 
