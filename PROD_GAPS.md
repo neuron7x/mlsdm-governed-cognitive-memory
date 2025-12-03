@@ -1,7 +1,7 @@
 # Production Gaps
 
 **Version**: 1.2.0  
-**Last Updated**: November 2025  
+**Last Updated**: December 2025  
 **Purpose**: Prioritized task list for production-readiness improvements
 
 ---
@@ -22,13 +22,68 @@
 
 ## Core Reliability ✅ COMPLETE
 
-All Core Reliability tasks have been completed:
+All Core Reliability tasks have been completed with verified implementations and tests:
 
 - **REL-001**: Automated health-based recovery (time-based and step-based auto-recovery)
+  - Code: `src/mlsdm/core/cognitive_controller.py::CognitiveController._try_auto_recovery`, `_enter_emergency_shutdown`
+  - Config: `config/calibration.py::CognitiveControllerCalibration` (auto_recovery_enabled, auto_recovery_cooldown_seconds)
+  - Tests: `tests/unit/test_cognitive_controller.py::TestCognitiveControllerAutoRecovery`, `TestCognitiveControllerTimeBasedRecovery`
+  - Logs: `auto-recovery succeeded`, `Emergency shutdown entered`
+
 - **REL-002**: Bulkhead pattern for request isolation (BulkheadMiddleware with metrics)
+  - Code: `src/mlsdm/api/middleware.py::BulkheadMiddleware`, `BulkheadSemaphore`
+  - Metrics: `mlsdm_bulkhead_queue_depth`, `mlsdm_bulkhead_active_requests`, `mlsdm_bulkhead_rejected_total`
+  - Tests: `tests/api/test_middleware_reliability.py::TestBulkheadMetricsIntegration`, `tests/resilience/test_bulkhead_integration.py`
+
 - **REL-003**: Chaos engineering tests in CI (memory pressure, slow LLM, network timeout)
+  - Tests: `tests/chaos/test_memory_pressure.py`, `tests/chaos/test_slow_llm.py`, `tests/chaos/test_network_timeout.py`
+  - CI: `.github/workflows/chaos-tests.yml` (scheduled daily at 03:00 UTC)
+  - Marker: `@pytest.mark.chaos`
+
 - **REL-004**: Request timeout middleware (TimeoutMiddleware with 504 responses)
+  - Code: `src/mlsdm/api/middleware.py::TimeoutMiddleware`
+  - Config: `config/default_config.yaml::api.request_timeout_seconds` (default: 30s)
+  - Tests: `tests/api/test_middleware_reliability.py::TestTimeoutMiddleware`
+  - Response: HTTP 504 with `X-Request-Timeout` header
+
 - **REL-005**: Request prioritization (PriorityMiddleware with X-MLSDM-Priority header)
+  - Code: `src/mlsdm/api/middleware.py::PriorityMiddleware`, `RequestPriority`
+  - Header: `X-MLSDM-Priority: high|normal|low` (or numeric 1-10)
+  - Tests: `tests/api/test_middleware_reliability.py::TestRequestPriority`, `TestPriorityMiddleware`
+  - Docs: `API_REFERENCE.md` (X-MLSDM-Priority section), `USAGE_GUIDE.md` (Request Priority section)
+
+### Implementation Verification
+
+Run these commands to verify Core Reliability implementation:
+
+```bash
+# REL-001: Auto-recovery tests (15 tests)
+pytest tests/unit/test_cognitive_controller.py -k "AutoRecovery or TimeBasedRecovery" -v
+
+# REL-002: Bulkhead tests (10 tests)
+pytest tests/resilience/test_bulkhead_integration.py -v
+
+# REL-003: Chaos engineering tests (17 tests, ~3 min)
+pytest tests/chaos/ -m chaos -v
+
+# REL-004: Timeout middleware tests
+pytest tests/api/test_middleware_reliability.py::TestTimeoutMiddleware -v
+
+# REL-005: Priority middleware tests
+pytest tests/api/test_middleware_reliability.py::TestRequestPriority -v
+pytest tests/api/test_middleware_reliability.py::TestPriorityMiddleware -v
+
+# All Core Reliability tests
+pytest tests/unit/test_cognitive_controller.py tests/api/test_middleware_reliability.py tests/resilience/test_bulkhead_integration.py -v
+```
+
+Example curl for priority testing:
+```bash
+curl -X POST http://localhost:8000/generate \
+  -H "Content-Type: application/json" \
+  -H "X-MLSDM-Priority: high" \
+  -d '{"prompt": "Test high priority request"}'
+```
 
 ---
 
@@ -66,12 +121,23 @@ _All blockers resolved._
 **Criticality**: ~~HIGH~~ COMPLETED  
 **Type**: Code
 
-**Description**: ~~After `emergency_shutdown` is triggered due to memory threshold, manual intervention is required via `reset_emergency_shutdown()`. Production deployments need automated recovery.~~ Implemented time-based and step-based auto-recovery in CognitiveController.
+**Description**: ~~After `emergency_shutdown` is triggered due to memory threshold, manual intervention is required via `reset_emergency_shutdown()`. Production deployments need automated recovery.~~
+
+**Solution**: Implemented dual-mode auto-recovery in `CognitiveController`:
+- **Time-based recovery**: Attempts recovery after `auto_recovery_cooldown_seconds` (default: 60s)
+- **Step-based recovery**: Attempts recovery after `recovery_cooldown_steps` (default: 10 steps)
+- **Safety guards**: Memory must be below `recovery_memory_safety_ratio` (80%) of threshold
+- **Max attempts**: Stops auto-recovery after `recovery_max_attempts` (default: 3) to prevent infinite loops
 
 **Acceptance Criteria**:
 - ✅ Add optional auto-recovery after configurable cooldown period
 - ✅ Log recovery events
 - ✅ Add tests for recovery behavior
+
+**Implementation**:
+- `CognitiveController._try_auto_recovery()`: Core recovery logic
+- `CognitiveController._enter_emergency_shutdown()`: Records time and step for cooldown tracking
+- Parameters: `auto_recovery_enabled`, `auto_recovery_cooldown_seconds`, `recovery_cooldown_steps`, `recovery_memory_safety_ratio`, `recovery_max_attempts`
 
 **Affected Files**:
 - `src/mlsdm/core/cognitive_controller.py`
@@ -87,12 +153,23 @@ _All blockers resolved._
 **Criticality**: ~~HIGH~~ COMPLETED  
 **Type**: Code
 
-**Description**: ~~No resource isolation between concurrent requests. A slow request can impact all others.~~ Implemented semaphore-based BulkheadMiddleware with configurable concurrency limits and queue depth metrics.
+**Description**: ~~No resource isolation between concurrent requests. A slow request can impact all others.~~
+
+**Solution**: Implemented semaphore-based `BulkheadMiddleware` and `BulkheadSemaphore`:
+- **Concurrency limiting**: Max concurrent requests configurable via `MLSDM_MAX_CONCURRENT` (default: 100)
+- **Queue timeout**: Requests wait up to `MLSDM_QUEUE_TIMEOUT` (default: 5s) before 503 rejection
+- **Prometheus metrics**: Queue depth, active requests, rejected count exported to `/metrics`
+- **Graceful degradation**: Returns 503 with `Retry-After` header when capacity exceeded
 
 **Acceptance Criteria**:
 - ✅ Implement semaphore-based concurrency limiting
 - ✅ Configure max concurrent requests per endpoint
 - ✅ Add metrics for queue depth
+
+**Implementation**:
+- `BulkheadSemaphore`: Core semaphore with metrics tracking
+- `BulkheadMiddleware`: FastAPI middleware with Prometheus integration
+- Metrics: `mlsdm_bulkhead_queue_depth`, `mlsdm_bulkhead_active_requests`, `mlsdm_bulkhead_rejected_total`, `mlsdm_bulkhead_max_queue_depth`
 
 **Affected Files**:
 - `src/mlsdm/api/middleware.py`
@@ -323,12 +400,24 @@ _All blockers resolved._
 **Criticality**: ~~MEDIUM~~ COMPLETED  
 **Type**: Tests
 
-**Description**: ~~No automated failure injection tests. System resilience not verified continuously.~~ Implemented comprehensive chaos tests with memory pressure, slow LLM, and network timeout scenarios.
+**Description**: ~~No automated failure injection tests. System resilience not verified continuously.~~
+
+**Solution**: Implemented comprehensive chaos engineering test suite:
+- **Memory Pressure** (`test_memory_pressure.py`): 5 tests for emergency shutdown, recovery, and graceful degradation
+- **Slow LLM** (`test_slow_llm.py`): 5 tests for timeout handling, concurrent slow requests, degrading performance
+- **Network Timeout** (`test_network_timeout.py`): 7 tests for connection errors, gradual degradation, failure patterns
+- **CI Workflow**: Scheduled daily at 03:00 UTC via `.github/workflows/chaos-tests.yml`
+- **Test Marker**: All chaos tests marked with `@pytest.mark.chaos`
 
 **Acceptance Criteria**:
 - ✅ Add tests that inject: memory pressure, slow LLM, network timeouts
 - ✅ Verify graceful degradation
 - ✅ Run in scheduled CI (not every PR)
+
+**Implementation**:
+- `create_slow_llm()`, `create_failing_llm()`, `create_timeout_llm()`: Fault injection helpers
+- Tests verify: no panics, expected errors returned, system recovers
+- CI produces JUnit XML artifacts for test reporting
 
 **Affected Files**:
 - `tests/chaos/test_memory_pressure.py`
@@ -345,12 +434,23 @@ _All blockers resolved._
 **Criticality**: ~~MEDIUM~~ COMPLETED  
 **Type**: Code
 
-**Description**: ~~No explicit request-level timeout in API layer. Long requests can block workers.~~ Implemented TimeoutMiddleware with configurable timeout and 504 responses.
+**Description**: ~~No explicit request-level timeout in API layer. Long requests can block workers.~~
+
+**Solution**: Implemented `TimeoutMiddleware` in FastAPI middleware stack:
+- **Configurable timeout**: Via `MLSDM_REQUEST_TIMEOUT` env var or `api.request_timeout_seconds` config (default: 30s)
+- **504 response**: Returns HTTP 504 Gateway Timeout with structured error JSON
+- **Excluded paths**: Health endpoints (`/health`, `/health/live`, `/health/ready`) bypass timeout
+- **Logging**: Logs timeout events with path, method, elapsed time, request_id
+- **Response header**: `X-Request-Timeout` indicates configured timeout value
 
 **Acceptance Criteria**:
 - ✅ Add configurable request timeout middleware
 - ✅ Return 504 on timeout
 - ✅ Log timeout events
+
+**Implementation**:
+- `TimeoutMiddleware`: Uses `asyncio.wait_for()` for async timeout
+- Error response: `{"error": {"error_code": "E902", "message": "Request timed out"}}`
 
 **Affected Files**:
 - `src/mlsdm/api/middleware.py`
@@ -572,12 +672,25 @@ _All blockers resolved._
 **Criticality**: ~~LOW~~ COMPLETED  
 **Type**: Code
 
-**Description**: ~~All requests treated equally. Production may need priority lanes.~~ Implemented PriorityMiddleware with X-MLSDM-Priority header support for high/normal/low priorities.
+**Description**: ~~All requests treated equally. Production may need priority lanes.~~
+
+**Solution**: Implemented `PriorityMiddleware` for request prioritization:
+- **Header**: `X-MLSDM-Priority: high|normal|low` (or numeric 1-10)
+- **Weights**: high=3, normal=2, low=1 (higher processed first under load)
+- **Request state**: Priority stored in `request.state.priority` and `request.state.priority_weight`
+- **Response header**: `X-MLSDM-Priority-Applied` confirms applied priority
+- **Integration**: Works with BulkheadMiddleware to prioritize during resource contention
+- **Documentation**: API_REFERENCE.md and USAGE_GUIDE.md updated with examples
 
 **Acceptance Criteria**:
 - ✅ Add priority header support (X-MLSDM-Priority: high|normal|low)
 - ✅ Implement priority queue
 - ✅ Document usage
+
+**Implementation**:
+- `RequestPriority`: Enum-like class with weights and header parsing
+- `PriorityQueueItem`: Dataclass for priority queue ordering (higher weight = processed first)
+- `PriorityMiddleware`: Parses header, stores in request state, logs high-priority requests
 
 **Affected Files**:
 - `src/mlsdm/api/middleware.py`
@@ -700,8 +813,8 @@ _Track completed items here:_
 | CICD-001 | Add linting and type checking to CI workflows | 2025-11-27 | #124 |
 | SEC-003 | Add dependency vulnerability scanning to PR workflow | 2025-11-27 | #124 |
 | DOC-001 | Create Architecture Decision Records (ADRs) | 2025-11-30 | #157 |
-| REL-001 | Implement automated health-based recovery | 2025-12-03 | - |
-| REL-002 | Add bulkhead pattern for request isolation | 2025-12-03 | - |
-| REL-003 | Add chaos engineering tests to CI | 2025-12-03 | - |
-| REL-004 | Add request timeout middleware | 2025-12-03 | - |
-| REL-005 | Add request prioritization | 2025-12-03 | - |
+| REL-001 | Implement automated health-based recovery | 2025-12-03 | #185 |
+| REL-002 | Add bulkhead pattern for request isolation | 2025-12-03 | #185 |
+| REL-003 | Add chaos engineering tests to CI | 2025-12-03 | #185 |
+| REL-004 | Add request timeout middleware | 2025-12-03 | #185 |
+| REL-005 | Add request prioritization | 2025-12-03 | #185 |
