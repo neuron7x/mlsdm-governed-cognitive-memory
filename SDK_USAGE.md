@@ -1,7 +1,7 @@
 # SDK Usage Guide
 
-**Document Version:** 1.0.0  
-**Last Updated:** November 2025  
+**Document Version:** 1.2.0  
+**Last Updated:** December 2025  
 **Status:** Production
 
 This guide provides practical usage examples for the MLSDM SDK client (`NeuroCognitiveClient`).

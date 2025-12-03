@@ -1,8 +1,8 @@
 # Configuration Guide
 
-**Document Version:** 1.0.0  
-**Project Version:** 1.0.0  
-**Last Updated:** November 2025  
+**Document Version:** 1.2.0  
+**Project Version:** 1.2.0  
+**Last Updated:** December 2025  
 **Status:** Production
 
 Complete guide to configuring MLSDM Governed Cognitive Memory for different deployment scenarios.

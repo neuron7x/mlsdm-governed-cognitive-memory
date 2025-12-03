@@ -1,7 +1,7 @@
 # MLSDM Production Runbook
 
-**Status**: Production Ready v1.0.0  
-**Last Updated**: November 2025  
+**Status**: Production Ready v1.2.0  
+**Last Updated**: December 2025  
 **Maintainer**: neuron7x
 
 ## Table of Contents

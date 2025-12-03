@@ -265,7 +265,7 @@ def example_5_real_embeddings():
 if __name__ == "__main__":
     print("\n" + "="*70)
     print("MLSDM Governed Cognitive Memory - LLM Wrapper Examples")
-    print("Production-Ready v1.0.0")
+    print("Production-Ready v1.2.0")
     print("="*70)
 
     # Run examples

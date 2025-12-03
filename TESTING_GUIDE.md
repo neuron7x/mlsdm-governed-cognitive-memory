@@ -1,9 +1,9 @@
 # Testing Guide
 
-**Document Version:** 1.0.0  
-**Project Version:** 1.0.0  
-**Last Updated:** November 2025  
-**Test Coverage:** 97.63%
+**Document Version:** 1.2.0  
+**Project Version:** 1.2.0  
+**Last Updated:** December 2025  
+**Test Coverage:** 90.26%
 
 ## Table of Contents
 

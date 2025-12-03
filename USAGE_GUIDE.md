@@ -1,8 +1,8 @@
 # Usage Guide
 
-**Document Version:** 1.0.0  
-**Project Version:** 1.0.0  
-**Last Updated:** November 2025  
+**Document Version:** 1.2.0  
+**Project Version:** 1.2.0  
+**Last Updated:** December 2025  
 **Status:** Production
 
 Comprehensive guide for using MLSDM Governed Cognitive Memory in your applications.
