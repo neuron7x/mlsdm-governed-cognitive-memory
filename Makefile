@@ -57,9 +57,9 @@ test-package:
 	@echo "Testing package installation in fresh venv..."
 	rm -rf /tmp/mlsdm-test-venv
 	python -m venv /tmp/mlsdm-test-venv
-	/tmp/mlsdm-test-venv/bin/pip install --upgrade pip
-	/tmp/mlsdm-test-venv/bin/pip install dist/*.whl
-	/tmp/mlsdm-test-venv/bin/python -c "from mlsdm import __version__, create_llm_wrapper; print(f'MLSDM v{__version__} installed OK'); w = create_llm_wrapper(); r = w.generate('test', moral_value=0.8); print(f'Smoke test: accepted={r[\"accepted\"]}')"
+	/tmp/mlsdm-test-venv/bin/pip install --upgrade pip -q
+	/tmp/mlsdm-test-venv/bin/pip install dist/*.whl -q
+	/tmp/mlsdm-test-venv/bin/python scripts/test_package_install.py
 	rm -rf /tmp/mlsdm-test-venv
 	@echo "✓ Package test passed"
 

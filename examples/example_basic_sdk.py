@@ -31,7 +31,7 @@ def example_neuro_cognitive_client():
         moral_value=0.8,
     )
 
-    print(f"\nPrompt: What is consciousness?")
+    print("\nPrompt: What is consciousness?")
     print(f"Response: {result['response'][:200]}...")
     print(f"Phase: {result.get('mlsdm', {}).get('phase', 'unknown')}")
     print(f"Timing: {result.get('timing', {}).get('total', 0):.2f}ms")
@@ -56,14 +56,14 @@ def example_llm_wrapper():
         moral_value=0.85,
     )
 
-    print(f"\nPrompt: Explain quantum computing")
+    print("\nPrompt: Explain quantum computing")
     print(f"Accepted: {result['accepted']}")
     print(f"Phase: {result['phase']}")
     print(f"Response: {result['response'][:200]}...")
 
     # Get system state
     state = wrapper.get_state()
-    print(f"\nSystem State:")
+    print("\nSystem State:")
     print(f"  Step: {state['step']}")
     print(f"  Moral Threshold: {state['moral_threshold']:.2f}")
     print(f"  Memory Used: {state['qilm_stats']['used']}/{state['qilm_stats']['capacity']}")
@@ -85,7 +85,7 @@ def example_neuro_engine():
         moral_value=0.9,
     )
 
-    print(f"\nPrompt: Tell me about machine learning")
+    print("\nPrompt: Tell me about machine learning")
     print(f"Response: {result['response'][:200]}...")
 
     # Access MLSDM state

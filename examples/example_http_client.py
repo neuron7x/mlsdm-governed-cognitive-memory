@@ -15,7 +15,6 @@ Prerequisites:
 
 import json
 import sys
-import time
 
 try:
     import requests
@@ -25,6 +24,9 @@ except ImportError:
 
 
 BASE_URL = "http://localhost:8000"
+
+# Define newline character for cross-platform compatibility
+newline = "\n"
 
 
 def check_server() -> bool:
@@ -44,19 +46,19 @@ def example_health_check():
 
     # Simple health
     response = requests.get(f"{BASE_URL}/health", timeout=5)
-    print(f"\nGET /health")
+    print("\nGET /health")
     print(f"  Status: {response.status_code}")
     print(f"  Response: {response.json()}")
 
     # Liveness probe
     response = requests.get(f"{BASE_URL}/health/live", timeout=5)
-    print(f"\nGET /health/live")
+    print("\nGET /health/live")
     print(f"  Status: {response.status_code}")
     print(f"  Response: {response.json()}")
 
     # Readiness probe
     response = requests.get(f"{BASE_URL}/health/ready", timeout=5)
-    print(f"\nGET /health/ready")
+    print("\nGET /health/ready")
     print(f"  Status: {response.status_code}")
     data = response.json()
     print(f"  Ready: {data.get('ready', False)}")
@@ -74,7 +76,7 @@ def example_generate():
         "moral_value": 0.8,
     }
 
-    print(f"\nPOST /generate")
+    print("\nPOST /generate")
     print(f"  Payload: {json.dumps(payload, indent=4)}")
 
     response = requests.post(
@@ -107,7 +109,7 @@ def example_infer():
         "context_top_k": 5,
     }
 
-    print(f"\nPOST /infer")
+    print("\nPOST /infer")
     print(f"  Payload: {json.dumps(payload, indent=4)}")
 
     response = requests.post(
@@ -125,12 +127,12 @@ def example_infer():
 
     # Show metadata
     moral_metadata = data.get("moral_metadata", {})
-    print(f"\n  Moral Metadata:")
+    print("\n  Moral Metadata:")
     print(f"    Threshold: {moral_metadata.get('threshold', 0)}")
     print(f"    Applied Value: {moral_metadata.get('applied_moral_value', 0)}")
 
     rag_metadata = data.get("rag_metadata", {})
-    print(f"\n  RAG Metadata:")
+    print("\n  RAG Metadata:")
     print(f"    Enabled: {rag_metadata.get('enabled', False)}")
     print(f"    Context Items: {rag_metadata.get('context_items_retrieved', 0)}")
 
@@ -142,7 +144,7 @@ def example_status():
     print("=" * 60)
 
     response = requests.get(f"{BASE_URL}/status", timeout=5)
-    print(f"\nGET /status")
+    print("\nGET /status")
     print(f"  Status: {response.status_code}")
     data = response.json()
     print(f"  Version: {data.get('version', 'unknown')}")
@@ -157,15 +159,15 @@ def example_metrics():
     print("=" * 60)
 
     response = requests.get(f"{BASE_URL}/health/metrics", timeout=5)
-    print(f"\nGET /health/metrics")
+    print("\nGET /health/metrics")
     print(f"  Status: {response.status_code}")
     # Show first few lines
     lines = response.text.strip().split("\n")[:10]
-    print(f"  Sample metrics:")
+    print("  Sample metrics:")
     for line in lines:
         if not line.startswith("#"):
             print(f"    {line}")
-    print(f"  ... ({len(response.text.split(chr(10)))} total lines)")
+    print(f"  ... ({len(response.text.split(newline))} total lines)")
 
 
 def show_curl_examples():

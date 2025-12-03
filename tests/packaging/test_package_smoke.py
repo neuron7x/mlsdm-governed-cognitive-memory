@@ -8,8 +8,6 @@ Run with:
     pytest tests/packaging/test_package_smoke.py -v
 """
 
-import pytest
-
 
 class TestPackageSmoke:
     """Smoke tests for package installation verification."""
@@ -23,22 +21,24 @@ class TestPackageSmoke:
 
     def test_version_format(self):
         """Test that version follows semver format."""
+        import re
+
         from mlsdm import __version__
 
-        parts = __version__.split(".")
-        assert len(parts) >= 2, f"Version should have at least major.minor: {__version__}"
-        assert all(
-            part.isdigit() or part.replace("-", "").replace("rc", "").isdigit()
-            for part in parts[:2]
-        ), f"Version parts should be numeric: {__version__}"
+        # Semver pattern: major.minor.patch with optional pre-release
+        # Matches: 1.0.0, 1.2.3, 1.0.0-rc1, 1.0.0-alpha.1, etc.
+        semver_pattern = r"^\d+\.\d+(\.\d+)?(-[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*)?$"
+        assert re.match(
+            semver_pattern, __version__
+        ), f"Version should follow semver format: {__version__}"
 
     def test_core_imports(self):
         """Test that core classes can be imported."""
         from mlsdm import (
-            LLMWrapper,
             LLMPipeline,
-            NeuroCognitiveEngine,
+            LLMWrapper,
             NeuroCognitiveClient,
+            NeuroCognitiveEngine,
         )
 
         assert LLMWrapper is not None
@@ -49,10 +49,10 @@ class TestPackageSmoke:
     def test_factory_functions(self):
         """Test that factory functions can be imported."""
         from mlsdm import (
+            build_neuro_engine_from_env,
+            create_llm_pipeline,
             create_llm_wrapper,
             create_neuro_engine,
-            create_llm_pipeline,
-            build_neuro_engine_from_env,
         )
 
         assert callable(create_llm_wrapper)
@@ -145,8 +145,9 @@ class TestCLISmoke:
 
     def test_cli_info_command(self):
         """Test that info command works."""
-        from mlsdm.cli import cmd_info
         import argparse
+
+        from mlsdm.cli import cmd_info
 
         args = argparse.Namespace()
         result = cmd_info(args)
@@ -154,8 +155,9 @@ class TestCLISmoke:
 
     def test_cli_check_command(self):
         """Test that check command works."""
-        from mlsdm.cli import cmd_check
         import argparse
+
+        from mlsdm.cli import cmd_check
 
         args = argparse.Namespace(verbose=False)
         result = cmd_check(args)
