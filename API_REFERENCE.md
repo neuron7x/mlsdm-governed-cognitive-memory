@@ -41,6 +41,47 @@ uvicorn mlsdm.api.app:app --host 0.0.0.0 --port 8000
 CONFIG_PATH=config/production.yaml uvicorn mlsdm.api.app:app --host 0.0.0.0 --port 8000
 ```
 
+### Request Headers
+
+#### X-MLSDM-Priority (REL-005)
+
+Priority header for request prioritization. High-priority requests are processed before lower-priority ones when the system is under load.
+
+**Header:** `X-MLSDM-Priority`
+
+**Values:**
+| Value | Weight | Description |
+|-------|--------|-------------|
+| `high` | 3 | High priority - processed first under load |
+| `normal` | 2 | Normal priority (default) |
+| `low` | 1 | Low priority - processed last under load |
+| `1-3` | - | Numeric alias for `low` |
+| `4-6` | - | Numeric alias for `normal` |
+| `7-10` | - | Numeric alias for `high` |
+
+**Example:**
+```bash
+# High priority request
+curl -X POST http://localhost:8000/generate \
+  -H "Content-Type: application/json" \
+  -H "X-MLSDM-Priority: high" \
+  -d '{"prompt": "Critical request"}'
+
+# Using numeric priority
+curl -X POST http://localhost:8000/generate \
+  -H "Content-Type: application/json" \
+  -H "X-MLSDM-Priority: 9" \
+  -d '{"prompt": "High priority"}'
+```
+
+**Response Header:**
+- `X-MLSDM-Priority-Applied`: Returns the applied priority level
+
+**Notes:**
+- Default priority is `normal` when header is not provided
+- Priority only affects request ordering under load (when bulkhead is full)
+- All priority levels have the same timeout and quality guarantees
+
 ### Health Check
 
 Simple health check endpoint to verify service is running.

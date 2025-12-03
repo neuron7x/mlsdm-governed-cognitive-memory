@@ -47,3 +47,29 @@ aphasia:
   detect_enabled: true      # Enable/disable aphasia detection
   repair_enabled: true      # Enable/disable aphasia repair
   severity_threshold: 0.3   # Minimum severity for repair (0.0-1.0)
+
+# ============================================================
+# Core Reliability Configuration (REL-001 to REL-005)
+# ============================================================
+
+# Cognitive Controller Auto-Recovery (REL-001)
+cognitive_controller:
+  auto_recovery_enabled: true       # Enable time-based auto-recovery
+  auto_recovery_cooldown_seconds: 60.0  # Seconds before auto-recovery attempt
+
+# API Reliability Settings
+api:
+  # Request timeout (REL-004)
+  request_timeout_seconds: 30.0     # Request-level timeout (returns 504 on timeout)
+  
+  # Bulkhead concurrency limiting (REL-002)
+  max_concurrent_requests: 100      # Maximum concurrent requests
+  queue_timeout_seconds: 5.0        # Timeout for waiting in queue
+  
+  # Request prioritization (REL-005)
+  priority:
+    enabled: true                   # Enable priority header support
+    default_priority: "normal"      # Default priority: high, normal, low
+    high_weight: 3                  # Weight for high priority requests
+    normal_weight: 2                # Weight for normal priority requests
+    low_weight: 1                   # Weight for low priority requests

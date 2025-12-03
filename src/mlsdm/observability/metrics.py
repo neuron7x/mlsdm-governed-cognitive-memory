@@ -239,6 +239,38 @@ class MetricsExporter:
             registry=self.registry,
         )
 
+        # ---------------------------------------------------------------------------
+        # Bulkhead Metrics (REL-002)
+        # ---------------------------------------------------------------------------
+
+        # Bulkhead queue depth gauge
+        self.bulkhead_queue_depth = Gauge(
+            "mlsdm_bulkhead_queue_depth",
+            "Current number of requests waiting in bulkhead queue",
+            registry=self.registry,
+        )
+
+        # Bulkhead active requests gauge
+        self.bulkhead_active_requests = Gauge(
+            "mlsdm_bulkhead_active_requests",
+            "Current number of active requests in bulkhead",
+            registry=self.registry,
+        )
+
+        # Bulkhead rejected requests counter
+        self.bulkhead_rejected_total = Counter(
+            "mlsdm_bulkhead_rejected_total",
+            "Total requests rejected by bulkhead (capacity exceeded)",
+            registry=self.registry,
+        )
+
+        # Bulkhead max queue depth gauge (high water mark)
+        self.bulkhead_max_queue_depth = Gauge(
+            "mlsdm_bulkhead_max_queue_depth",
+            "Maximum observed queue depth in bulkhead",
+            registry=self.registry,
+        )
+
         # Track timing contexts
         self._processing_start_times: dict[str, float] = {}
         self._retrieval_start_times: dict[str, float] = {}
@@ -540,6 +572,71 @@ class MetricsExporter:
         with self._lock:
             self.generate_latency_seconds.observe(latency_seconds)
 
+    # ---------------------------------------------------------------------------
+    # Bulkhead Metrics Methods (REL-002)
+    # ---------------------------------------------------------------------------
+
+    def set_bulkhead_queue_depth(self, depth: int) -> None:
+        """Set current bulkhead queue depth.
+
+        Args:
+            depth: Number of requests currently waiting in queue
+        """
+        with self._lock:
+            self.bulkhead_queue_depth.set(depth)
+
+    def set_bulkhead_active_requests(self, count: int) -> None:
+        """Set current bulkhead active requests.
+
+        Args:
+            count: Number of requests currently being processed
+        """
+        with self._lock:
+            self.bulkhead_active_requests.set(count)
+
+    def increment_bulkhead_rejected(self, count: int = 1) -> None:
+        """Increment bulkhead rejected counter.
+
+        Args:
+            count: Number of rejected requests to add
+        """
+        with self._lock:
+            self.bulkhead_rejected_total.inc(count)
+
+    def set_bulkhead_max_queue_depth(self, depth: int) -> None:
+        """Set maximum observed queue depth.
+
+        Args:
+            depth: Maximum queue depth observed
+        """
+        with self._lock:
+            self.bulkhead_max_queue_depth.set(depth)
+
+    def update_bulkhead_metrics(
+        self,
+        queue_depth: int,
+        active_requests: int,
+        max_queue_depth: int,
+        rejected_increment: int = 0,
+    ) -> None:
+        """Update all bulkhead metrics at once.
+
+        This is more efficient than calling individual methods when updating
+        multiple metrics at the same time.
+
+        Args:
+            queue_depth: Current queue depth
+            active_requests: Current active requests
+            max_queue_depth: Maximum observed queue depth
+            rejected_increment: Number of rejections to add (default: 0)
+        """
+        with self._lock:
+            self.bulkhead_queue_depth.set(queue_depth)
+            self.bulkhead_active_requests.set(active_requests)
+            self.bulkhead_max_queue_depth.set(max_queue_depth)
+            if rejected_increment > 0:
+                self.bulkhead_rejected_total.inc(rejected_increment)
+
     def get_severity_bucket(self, severity: float) -> str:
         """Convert aphasia severity score to bucket label.
 
@@ -605,6 +702,11 @@ class MetricsExporter:
             "requests_inflight": self.requests_inflight._value.get(),
             "cognitive_emergency_total": self.cognitive_emergency_total._value.get(),
             "emergency_shutdown_active": self.emergency_shutdown_active._value.get(),
+            # Bulkhead metrics (REL-002)
+            "bulkhead_queue_depth": self.bulkhead_queue_depth._value.get(),
+            "bulkhead_active_requests": self.bulkhead_active_requests._value.get(),
+            "bulkhead_rejected_total": self.bulkhead_rejected_total._value.get(),
+            "bulkhead_max_queue_depth": self.bulkhead_max_queue_depth._value.get(),
         }
 
 

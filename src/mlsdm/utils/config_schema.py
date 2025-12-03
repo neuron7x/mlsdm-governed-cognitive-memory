@@ -358,6 +358,97 @@ class SynergyExperienceConfig(BaseModel):
         return self
 
 
+class CognitiveControllerConfig(BaseModel):
+    """Cognitive Controller configuration (REL-001).
+
+    Controls time-based auto-recovery behavior after emergency shutdown.
+    """
+    auto_recovery_enabled: bool = Field(
+        default=True,
+        description="Enable time-based auto-recovery after emergency shutdown."
+    )
+    auto_recovery_cooldown_seconds: float = Field(
+        default=60.0,
+        ge=0.0,
+        le=3600.0,
+        description="Seconds to wait before attempting auto-recovery."
+    )
+
+
+class APIPriorityConfig(BaseModel):
+    """API Priority configuration (REL-005).
+
+    Controls request prioritization via X-MLSDM-Priority header.
+    """
+    enabled: bool = Field(
+        default=True,
+        description="Enable priority header support."
+    )
+    default_priority: str = Field(
+        default="normal",
+        description="Default priority for requests without header."
+    )
+    high_weight: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="Weight for high priority requests."
+    )
+    normal_weight: int = Field(
+        default=2,
+        ge=1,
+        le=10,
+        description="Weight for normal priority requests."
+    )
+    low_weight: int = Field(
+        default=1,
+        ge=1,
+        le=10,
+        description="Weight for low priority requests."
+    )
+
+    @field_validator('default_priority')
+    @classmethod
+    def validate_default_priority(cls, v: str) -> str:
+        """Ensure default priority is valid."""
+        allowed = {"high", "normal", "low"}
+        if v.lower() not in allowed:
+            raise ValueError(
+                f"Invalid default_priority: '{v}'. "
+                f"Must be one of: {', '.join(sorted(allowed))}"
+            )
+        return v.lower()
+
+
+class APIConfig(BaseModel):
+    """API configuration (REL-002, REL-004, REL-005).
+
+    Controls request timeout, bulkhead, and prioritization settings.
+    """
+    request_timeout_seconds: float = Field(
+        default=30.0,
+        ge=0.1,
+        le=600.0,
+        description="Request-level timeout in seconds. Returns 504 on timeout."
+    )
+    max_concurrent_requests: int = Field(
+        default=100,
+        ge=1,
+        le=10000,
+        description="Maximum concurrent requests (bulkhead limit)."
+    )
+    queue_timeout_seconds: float = Field(
+        default=5.0,
+        ge=0.0,
+        le=60.0,
+        description="Timeout for waiting in bulkhead queue."
+    )
+    priority: APIPriorityConfig = Field(
+        default_factory=APIPriorityConfig,
+        description="Request prioritization configuration."
+    )
+
+
 class SystemConfig(BaseModel):
     """Complete system configuration.
 
@@ -404,6 +495,14 @@ class SystemConfig(BaseModel):
     strict_mode: bool = Field(
         default=False,
         description="Enable strict mode for enhanced validation. Not recommended for production."
+    )
+    cognitive_controller: CognitiveControllerConfig = Field(
+        default_factory=CognitiveControllerConfig,
+        description="Cognitive Controller auto-recovery configuration (REL-001)."
+    )
+    api: APIConfig = Field(
+        default_factory=APIConfig,
+        description="API reliability configuration (REL-002, REL-004, REL-005)."
     )
 
     @model_validator(mode='after')
