@@ -229,7 +229,7 @@ addopts = "--cov=src --cov-report=html --cov-fail-under=90"
 Make sure you're running tests from the repository root:
 
 ```bash
-cd /path/to/mlsdm-governed-cognitive-memory
+cd /path/to/mlsdm
 pytest --cov=src tests/ src/tests/unit/
 ```
 

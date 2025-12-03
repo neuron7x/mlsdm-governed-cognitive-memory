@@ -298,7 +298,7 @@ This PR transforms the MLSDM Governed Cognitive Memory project into a profession
 
 ### 1. Run All Tests
 ```bash
-cd /home/runner/work/mlsdm-governed-cognitive-memory/mlsdm-governed-cognitive-memory
+cd /home/runner/work/mlsdm/mlsdm
 pytest tests/ src/tests/ -v --cov=src --cov-report=html
 ```
 **Expected**: 293 tests pass, coverage > 96%
