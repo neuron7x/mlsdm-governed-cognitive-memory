@@ -200,6 +200,85 @@ All observability functions are designed to fail gracefully:
 
 ---
 
+## Implementation Checklist
+
+This checklist tracks the implementation status of observability components as specified in PROD_GAPS.md.
+
+### Metrics
+
+| Metric | Required | Status | Location |
+|--------|----------|--------|----------|
+| `mlsdm_http_requests_total{method,endpoint,status}` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+| `mlsdm_http_request_latency_seconds_bucket{endpoint}` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+| `mlsdm_http_requests_in_flight` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+| `mlsdm_cognitive_cycle_duration_seconds` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+| `mlsdm_memory_items_total{level}` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+| `mlsdm_memory_evictions_total{reason}` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+| `mlsdm_emergency_shutdown_total{reason}` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+| `mlsdm_auto_recovery_total{result}` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+| `mlsdm_moral_filter_decisions_total{decision}` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+| `mlsdm_moral_filter_violation_score` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+| `mlsdm_llm_request_latency_seconds_bucket{model}` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+| `mlsdm_llm_failures_total{reason}` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+| `mlsdm_llm_tokens_total{direction}` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+| `mlsdm_bulkhead_active_requests` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+| `mlsdm_bulkhead_queue_depth` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+| `mlsdm_timeout_total{endpoint}` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+| `mlsdm_priority_queue_depth{priority}` | Yes | ✅ Implemented | `src/mlsdm/observability/metrics.py` |
+
+### Structured Logs
+
+| Field | Required | Status | Location |
+|-------|----------|--------|----------|
+| `timestamp` | Yes | ✅ Implemented | `src/mlsdm/observability/logger.py` |
+| `level` | Yes | ✅ Implemented | `src/mlsdm/observability/logger.py` |
+| `service` | Yes | ✅ Implemented | `src/mlsdm/observability/logger.py` |
+| `component` | Yes | ✅ Implemented | `src/mlsdm/observability/logger.py` |
+| `trace_id` | Yes | ✅ Implemented | `src/mlsdm/observability/logger.py` |
+| `span_id` | Yes | ✅ Implemented | `src/mlsdm/observability/logger.py` |
+| `correlation_id` | Yes | ✅ Implemented | `src/mlsdm/observability/logger.py` |
+| `request_id` | Yes | ✅ Implemented | `src/mlsdm/api/middleware.py` |
+| `event` | Yes | ✅ Implemented | `src/mlsdm/observability/logger.py` |
+| `message` | Yes | ✅ Implemented | `src/mlsdm/observability/logger.py` |
+
+### Tracing
+
+| Span | Required | Status | Location |
+|------|----------|--------|----------|
+| `api.generate` | Yes | ✅ Implemented | `src/mlsdm/api/app.py` |
+| `api.infer` | Yes | ✅ Implemented | `src/mlsdm/api/app.py` |
+| `engine.generate` | Yes | ✅ Implemented | `src/mlsdm/engine/neuro_cognitive_engine.py` |
+| `llm_wrapper.*` | Yes | ✅ Implemented | `src/mlsdm/observability/tracing.py` |
+
+### Dashboards
+
+| Dashboard | Required | Status | Location |
+|-----------|----------|--------|----------|
+| Core Observability | Yes | ✅ Implemented | `deploy/grafana/mlsdm_observability_dashboard.json` |
+| SLO Dashboard | Yes | ✅ Implemented | `deploy/grafana/mlsdm_slo_dashboard.json` |
+
+### Alerts
+
+| Alert | Required | Status | Location |
+|-------|----------|--------|----------|
+| HighErrorRate | Yes | ✅ Implemented | `deploy/k8s/alerts/mlsdm-alerts.yaml` |
+| HighLatency | Yes | ✅ Implemented | `deploy/k8s/alerts/mlsdm-alerts.yaml` |
+| EmergencyShutdownSpike | Yes | ✅ Implemented | `deploy/k8s/alerts/mlsdm-alerts.yaml` |
+| LLMTimeoutSpike | Yes | ✅ Implemented | `deploy/k8s/alerts/mlsdm-alerts.yaml` |
+| BulkheadSaturation | Yes | ✅ Implemented | `deploy/k8s/alerts/mlsdm-alerts.yaml` |
+| MoralFilterBlockSpike | Yes | ✅ Implemented | `deploy/k8s/alerts/mlsdm-alerts.yaml` |
+
+### Tests
+
+| Test Category | Required | Status | Location |
+|---------------|----------|--------|----------|
+| Metrics export | Yes | ✅ Implemented | `tests/observability/test_metrics_basic.py` |
+| Tracing spans | Yes | ✅ Implemented | `tests/observability/test_tracing_smoke.py` |
+| Log structure | Yes | ✅ Implemented | `tests/observability/test_trace_context_logging.py` |
+| Integration | Yes | ✅ Implemented | `tests/observability/test_metrics_and_tracing_integration.py` |
+
+---
+
 ## See Also
 
 - [OBSERVABILITY_GUIDE.md](./OBSERVABILITY_GUIDE.md) - Operational guide with SLO recommendations

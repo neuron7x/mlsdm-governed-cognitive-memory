@@ -1,6 +1,6 @@
 # Production Gaps
 
-**Version**: 1.2.0  
+**Version**: 1.2.1  
 **Last Updated**: December 2025  
 **Purpose**: Prioritized task list for production-readiness improvements
 
@@ -11,12 +11,12 @@
 | Block | Blockers | High | Medium | Low |
 |-------|----------|------|--------|-----|
 | Core Reliability | 0 | 0 | 0 | 0 |
-| Observability | 0 | 2 | 3 | 1 |
+| Observability | 0 | 0 | 2 | 1 |
 | Security | 0 | 2 | 2 | 2 |
 | Performance | 0 | 1 | 2 | 1 |
 | CI/CD | 0 | 4 | 2 | 1 |
 | Docs | 0 | 1 | 2 | 2 |
-| **Total** | **0** | **10** | **11** | **7** |
+| **Total** | **0** | **8** | **10** | **7** |
 
 ---
 
@@ -178,43 +178,59 @@ _All blockers resolved._
 
 ---
 
-### OBS-001: Implement OpenTelemetry distributed tracing
+### ~~OBS-001: Implement OpenTelemetry distributed tracing~~ ✅ COMPLETED
 
 **Block**: Observability  
-**Criticality**: HIGH  
+**Criticality**: ~~HIGH~~ COMPLETED  
 **Type**: Code
 
-**Description**: Dependencies (`opentelemetry-api`, `opentelemetry-sdk`) are installed but not integrated. Distributed tracing is critical for debugging production issues.
+**Description**: ~~Dependencies (`opentelemetry-api`, `opentelemetry-sdk`) are installed but not integrated. Distributed tracing is critical for debugging production issues.~~ OpenTelemetry tracing fully integrated.
+
+**Solution**: Implemented comprehensive tracing in `src/mlsdm/observability/tracing.py`:
+- TracerManager with configurable exporters (console, otlp, jaeger, none)
+- Span creation in API handlers (`api.generate`, `api.infer`)
+- Trace context propagation to logs
+- Engine-level spans for moral filter, memory, LLM calls
+- Added new metrics for HTTP, LLM, cognitive controller, moral filter
 
 **Acceptance Criteria**:
-- Add span creation in key paths (API handlers, generate, process_event)
-- Export traces to configurable backend (Jaeger/OTLP)
-- Add trace context propagation
-- Document configuration
+- ✅ Add span creation in key paths (API handlers, generate, process_event)
+- ✅ Export traces to configurable backend (Jaeger/OTLP)
+- ✅ Add trace context propagation
+- ✅ Document configuration
 
 **Affected Files**:
-- `src/mlsdm/observability/tracing.py` (new)
+- `src/mlsdm/observability/tracing.py`
+- `src/mlsdm/observability/metrics.py` (enhanced with new metrics)
 - `src/mlsdm/api/app.py`
-- `src/mlsdm/engine/neuro_cognitive_engine.py`
+- `OBSERVABILITY_GUIDE.md`
 
 ---
 
-### OBS-002: Deploy Alertmanager rules
+### ~~OBS-002: Deploy Alertmanager rules~~ ✅ COMPLETED
 
 **Block**: Observability  
-**Criticality**: HIGH  
+**Criticality**: ~~HIGH~~ COMPLETED  
 **Type**: Config/Docs
 
-**Description**: Alert rules are defined in `SLO_SPEC.md` but not deployed as actual Alertmanager configuration.
+**Description**: ~~Alert rules are defined in `SLO_SPEC.md` but not deployed as actual Alertmanager configuration.~~ Full alerting rules deployed.
+
+**Solution**: Created comprehensive Prometheus/Alertmanager rules in `deploy/k8s/alerts/mlsdm-alerts.yaml`:
+- SLO-based alerts: HighErrorRate, HighLatency, ErrorBudgetBurnRate
+- Emergency alerts: EmergencyShutdownSpike, MoralFilterBlockSpike
+- LLM alerts: LLMTimeoutSpike, LLMQuotaExceeded
+- Reliability alerts: BulkheadSaturation, HighTimeoutRate
+- Resource alerts: HighMemoryUsage, MemoryLimitExceeded
+- Added alert-specific runbook procedures to RUNBOOK.md
 
 **Acceptance Criteria**:
-- Create `deploy/monitoring/alertmanager-rules.yaml`
-- Add alerts for: availability breach, latency breach, error budget burn
-- Document alert routing configuration
+- ✅ Create `deploy/k8s/alerts/mlsdm-alerts.yaml`
+- ✅ Add alerts for: availability breach, latency breach, error budget burn
+- ✅ Document alert routing configuration (see RUNBOOK.md)
 
 **Affected Files**:
-- `deploy/monitoring/alertmanager-rules.yaml` (new)
-- `DEPLOYMENT_GUIDE.md`
+- `deploy/k8s/alerts/mlsdm-alerts.yaml` (new)
+- `RUNBOOK.md` (updated with alert-specific procedures)
 
 ---
 
@@ -458,22 +474,26 @@ _All blockers resolved._
 
 ---
 
-### OBS-003: Create Grafana dashboard templates
+### ~~OBS-003: Create Grafana dashboard templates~~ ✅ COMPLETED
 
 **Block**: Observability  
-**Criticality**: MEDIUM  
+**Criticality**: ~~MEDIUM~~ COMPLETED  
 **Type**: Config
 
-**Description**: Prometheus metrics exist but no dashboards provided for visualization.
+**Description**: ~~Prometheus metrics exist but no dashboards provided for visualization.~~ Grafana dashboards created.
+
+**Solution**: Created two production-ready Grafana dashboards:
+- `deploy/grafana/mlsdm_observability_dashboard.json` - Core observability
+- `deploy/grafana/mlsdm_slo_dashboard.json` - SLO-focused dashboard with error budget tracking
 
 **Acceptance Criteria**:
-- Create JSON dashboard for: latency, throughput, error rate, memory
-- Add SLO compliance panel
-- Document import process
+- ✅ Create JSON dashboard for: latency, throughput, error rate, memory
+- ✅ Add SLO compliance panel
+- ✅ Document import process (see OBSERVABILITY_GUIDE.md)
 
 **Affected Files**:
-- `deploy/monitoring/grafana-dashboard.json` (new)
-- `DEPLOYMENT_GUIDE.md`
+- `deploy/grafana/mlsdm_observability_dashboard.json`
+- `deploy/grafana/mlsdm_slo_dashboard.json` (new)
 
 ---
 
@@ -818,3 +838,6 @@ _Track completed items here:_
 | REL-003 | Add chaos engineering tests to CI | 2025-12-03 | #185 |
 | REL-004 | Add request timeout middleware | 2025-12-03 | #185 |
 | REL-005 | Add request prioritization | 2025-12-03 | #185 |
+| OBS-001 | Implement OpenTelemetry distributed tracing | 2025-12-03 | #186 |
+| OBS-002 | Deploy Alertmanager rules | 2025-12-03 | #186 |
+| OBS-003 | Create Grafana dashboard templates | 2025-12-03 | #186 |
