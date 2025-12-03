@@ -106,7 +106,6 @@ class EmbeddingCache:
         """Compute a cache key for the given text.
 
         Uses SHA-256 hash to ensure consistent, fixed-length keys.
-        Optimization: Uses hashlib with direct bytes encoding.
 
         Args:
             text: The input text to hash
@@ -114,11 +113,7 @@ class EmbeddingCache:
         Returns:
             Hex digest of the text hash
         """
-        # Optimization: encode once and use update for potentially large texts
-        # This avoids creating intermediate bytes object for the entire string
-        h = hashlib.sha256()
-        h.update(text.encode("utf-8"))
-        return h.hexdigest()
+        return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
     def _is_expired(self, entry: _CacheEntry) -> bool:
         """Check if a cache entry has expired based on TTL."""

@@ -257,11 +257,15 @@ class PhaseEntangledLatticeMemory:
                     )
                 return []
 
-            # Optimization: Use pre-allocated buffer instead of creating new array
-            # This reduces memory allocations in hot path
+            # Optimization: Use pre-allocated buffer with numpy copy
+            # Validate dimension first to avoid buffer overflow
+            if len(query_vector) != self.dimension:
+                raise ValueError(
+                    f"query_vector dimension mismatch: expected {self.dimension}, "
+                    f"got {len(query_vector)}"
+                )
+            self._query_buffer[:] = query_vector
             q_vec = self._query_buffer
-            for i, val in enumerate(query_vector):
-                q_vec[i] = val
             q_norm = float(np.linalg.norm(q_vec))
             if q_norm < self.MIN_NORM_THRESHOLD:
                 q_norm = self.MIN_NORM_THRESHOLD
