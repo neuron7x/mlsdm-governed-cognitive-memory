@@ -489,6 +489,66 @@ kubectl rollout restart deployment/mlsdm-api -n mlsdm-production
 kubectl logs -n mlsdm-production -l app=mlsdm-api | grep "Configuration loaded"
 ```
 
+### API Key Rotation
+
+MLSDM supports automated API key rotation with zero downtime. The RBAC system allows
+multiple API keys to be valid simultaneously during rotation.
+
+**Environment Variable Method**:
+```bash
+# Step 1: Add new key alongside existing key
+# Keys loaded from environment on startup:
+# - API_KEY: Default write access key
+# - ADMIN_API_KEY: Admin access key
+# - API_KEY_n_VALUE, API_KEY_n_ROLES, API_KEY_n_USER: Numbered keys
+
+# Step 2: Rolling restart to pick up new keys
+kubectl rollout restart deployment/mlsdm-api -n mlsdm-production
+
+# Step 3: Update clients to use new key
+
+# Step 4: Remove old key and restart again
+kubectl rollout restart deployment/mlsdm-api -n mlsdm-production
+```
+
+**Programmatic Rotation** (for dynamic key management):
+```python
+from mlsdm.security.rbac import get_role_validator, Role
+
+validator = get_role_validator()
+
+# Step 1: Add new key (multiple keys valid simultaneously)
+validator.add_key(
+    key="new-api-key-value",
+    roles=[Role.WRITE],
+    user_id="service-account-1",
+    expires_at=time.time() + 86400 * 90,  # 90 days
+    description="Rotation 2025-01"
+)
+
+# Step 2: Update clients to use new key
+
+# Step 3: Remove old key
+validator.remove_key("old-api-key-value")
+
+# Verify key count
+print(f"Active API keys: {validator.get_key_count()}")
+```
+
+**Key Expiration Monitoring**:
+- Keys with `expires_at` set will be rejected after expiration
+- Monitor logs for "Expired API key used" warnings
+- Set up alerts for keys expiring within 7 days
+
+**Rotation Best Practices**:
+1. Rotate API keys every 90 days (recommended)
+2. Always add new key before removing old key
+3. Allow 24-48 hours overlap for client migration
+4. Log all key operations for audit trail
+5. Monitor for failed auth attempts during rotation
+
+---
+
 ### Security Updates
 
 ```bash

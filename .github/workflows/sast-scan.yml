@@ -1,0 +1,110 @@
+name: SAST Security Scan
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  bandit:
+    name: Bandit SAST Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install bandit
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit[sarif]
+      
+      - name: Run bandit scan
+        run: |
+          # Run bandit with SARIF output for GitHub Security
+          bandit -r src/mlsdm \
+            -f sarif \
+            -o bandit-results.sarif \
+            --severity-level medium \
+            --confidence-level medium \
+            || true  # Don't fail yet, check results below
+      
+      - name: Check for high severity issues
+        run: |
+          # Run with high severity to display issues
+          bandit -r src/mlsdm \
+            -f txt \
+            --severity-level high \
+            --confidence-level high
+          
+          # This will fail if high severity issues are found
+          bandit -r src/mlsdm \
+            --severity-level high \
+            --confidence-level high \
+            -q  # Quiet mode, only returns exit code
+      
+      - name: Upload SARIF file
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: bandit-results.sarif
+          category: bandit
+      
+      - name: Generate readable report
+        if: always()
+        run: |
+          echo "## Bandit Security Scan Results" > bandit-summary.md
+          echo "" >> bandit-summary.md
+          bandit -r src/mlsdm -f txt >> bandit-summary.md 2>&1 || true
+      
+      - name: Upload scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-security-report
+          path: |
+            bandit-summary.md
+            bandit-results.sarif
+          retention-days: 30
+
+  semgrep:
+    name: Semgrep SAST Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Semgrep is optional for now - bandit is the primary SAST tool
+    # Remove continue-on-error once semgrep rules are tuned to minimize false positives
+    continue-on-error: true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/python
+            p/security-audit
+            p/owasp-top-ten
+          generateSarif: "1"
+      
+      - name: Upload Semgrep SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+        continue-on-error: true
