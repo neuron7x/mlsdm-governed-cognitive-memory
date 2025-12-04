@@ -36,7 +36,7 @@ def main():
         enable_metrics=True,
         enable_fslgs=False,  # Disable FSLGS for simplicity
     )
-    
+
     engine = NeuroCognitiveEngine(
         llm_generate_fn=stub_llm_generate,
         embedding_fn=stub_embedding,
@@ -48,7 +48,7 @@ def main():
     # Generate some requests
     print("Generating sample requests...")
     print("-" * 70)
-    
+
     prompts = [
         "What is the meaning of life?",
         "Explain quantum mechanics",
@@ -56,12 +56,12 @@ def main():
         "How do I make a cake?",
         "What is consciousness?",
     ]
-    
+
     for i, prompt in enumerate(prompts, 1):
         result = engine.generate(prompt, max_tokens=100)
         status = "✓" if result["error"] is None else "✗"
         print(f"  {status} Request {i}: {prompt[:40]}")
-    
+
     print()
 
     # Get metrics instance
@@ -95,7 +95,7 @@ def main():
     print(f"Total Rejections: {sum(summary['rejections_total'].values())}")
     print(f"Total Errors: {sum(summary['errors_total'].values())}")
     print()
-    
+
     print("Latency Statistics:")
     for latency_type, stats in summary["latency_stats"].items():
         if stats["count"] > 0:

@@ -31,7 +31,7 @@ if __name__ == "__main__":
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
     from mlsdm.service.neuro_engine_service import main
-    
+
     print("🚀 Starting NeuroCognitiveEngine HTTP API Service...")
     print(f"   Backend: {os.environ.get('LLM_BACKEND', 'local_stub')}")
     print(f"   Host: {os.environ.get('HOST', '0.0.0.0')}")
@@ -45,5 +45,5 @@ if __name__ == "__main__":
     print("  - GET  http://localhost:8000/metrics")
     print("  - GET  http://localhost:8000/docs (Swagger UI)")
     print()
-    
+
     main()

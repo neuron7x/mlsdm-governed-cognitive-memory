@@ -1,12 +1,10 @@
 """Tests for ArrayPool optimization utility."""
 
 import numpy as np
-import pytest
 
 from mlsdm.utils.array_pool import (
     ArrayPool,
     ArrayPoolConfig,
-    ArrayPoolStats,
     clear_default_pool,
     get_default_pool,
 )
@@ -66,7 +64,7 @@ class TestArrayPoolBasics:
         arr1 = pool.get((100,), np.float32)
         pool.put(arr1)
 
-        arr2 = pool.get((200,), np.float32)
+        _arr2 = pool.get((200,), np.float32)  # noqa: F841 - needed to trigger cache miss
         stats = pool.get_stats()
         # Should be miss for the (200,) shape
         assert stats.misses >= 1
@@ -146,7 +144,7 @@ class TestArrayPoolStats:
         # Generate some activity
         arr = pool.get((100,), np.float32)  # Miss
         pool.put(arr)  # Return
-        arr2 = pool.get((100,), np.float32)  # Hit
+        _arr2 = pool.get((100,), np.float32)  # noqa: F841 - Hit (triggers cache hit stats)
 
         stats = pool.get_stats()
         assert stats.hits == 1
@@ -189,7 +187,7 @@ class TestArrayPoolDisabled:
 
         arr1 = pool.get((100,), np.float32)
         pool.put(arr1)
-        arr2 = pool.get((100,), np.float32)
+        _arr2 = pool.get((100,), np.float32)  # noqa: F841 - triggers get operation
 
         stats = pool.get_stats()
         assert stats.hits == 0

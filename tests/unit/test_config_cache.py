@@ -3,9 +3,7 @@
 import os
 import tempfile
 import time
-from pathlib import Path
 
-import pytest
 import yaml
 
 from mlsdm.utils.config_loader import ConfigCache, ConfigLoader, get_config_cache
@@ -138,12 +136,13 @@ class TestConfigCache:
 
         # Create 3 config files
         for i in range(3):
-            f = tempfile.NamedTemporaryFile(suffix=".yaml", delete=False, mode="w")
-            config = {"index": i}
-            yaml.dump(config, f)
-            f.close()
-            configs.append(config)
-            paths.append(f.name)
+            with tempfile.NamedTemporaryFile(
+                suffix=".yaml", delete=False, mode="w"
+            ) as f:
+                config = {"index": i}
+                yaml.dump(config, f)
+                configs.append(config)
+                paths.append(f.name)
 
         try:
             # Put first two
@@ -286,7 +285,7 @@ class TestConfigLoaderWithCache:
             get_config_cache().clear()
 
             # env_override=True bypasses cache
-            result = ConfigLoader.load_config(
+            _result = ConfigLoader.load_config(  # noqa: F841 - triggers config load
                 path, validate=True, env_override=True, use_cache=True
             )
 

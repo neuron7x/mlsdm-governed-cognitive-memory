@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 from mlsdm.memory.phase_entangled_lattice_memory import (
-    MemoryRetrieval,
     PhaseEntangledLatticeMemory,
 )
 
@@ -63,7 +62,7 @@ class TestPELMBatchEntangle:
         ]
         phases = [0.1, 0.2, 0.3, 0.4]
 
-        indices = pelm.entangle_batch(vectors, phases)
+        pelm.entangle_batch(vectors, phases)
 
         # Verify each vector is at expected index
         for i, (vec, phase) in enumerate(zip(vectors, phases, strict=True)):
