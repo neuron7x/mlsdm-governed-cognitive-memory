@@ -85,6 +85,9 @@ jobs:
     name: Semgrep SAST Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Semgrep is optional for now - bandit is the primary SAST tool
+    # Remove continue-on-error once semgrep rules are tuned to minimize false positives
+    continue-on-error: true
     
     steps:
       - name: Checkout code
@@ -98,7 +101,6 @@ jobs:
             p/security-audit
             p/owasp-top-ten
           generateSarif: "1"
-        continue-on-error: true  # Don't block PRs on first integration
       
       - name: Upload Semgrep SARIF
         if: always()

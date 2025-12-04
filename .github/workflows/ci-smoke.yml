@@ -37,6 +37,8 @@ jobs:
       - name: Run smoke tests (fast unit tests only)
         run: |
           # Run all unit tests except slow ones for fast feedback
+          # The 'slow' marker is already defined and used in the codebase
+          # This gives us fast feedback on basic functionality
           pytest tests/unit/ -v -m "not slow" --tb=short -q --maxfail=5
         timeout-minutes: 3
       
