@@ -134,8 +134,20 @@ app.add_middleware(BulkheadMiddleware)
 # Include health check router
 app.include_router(health.router)
 
+# Include Product Layer routers (Memory and Decision APIs)
+from mlsdm.api import decision_routes, memory_routes
+from mlsdm.engine.factory import build_stub_embedding_fn
+
+app.include_router(memory_routes.router)
+app.include_router(decision_routes.router)
+
 # Set memory manager for health checks
 health.set_memory_manager(_manager)
+
+# Set engine for Product Layer routes with embedding function
+_embedding_fn = build_stub_embedding_fn(dim=_manager.dimension)
+memory_routes.set_engine(_neuro_engine, embedding_fn=_embedding_fn)
+decision_routes.set_engine(_neuro_engine)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
