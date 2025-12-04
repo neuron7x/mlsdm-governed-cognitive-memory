@@ -1,63 +1,55 @@
 # MLSDM Production Deployment Checklist
 
-**Version**: 1.0.0  
-**Status**: Production Ready  
-**Last Updated**: November 2025
+**Version**: 1.2.0  
+**Status**: Beta  
+**Last Updated**: December 2025
 
-Use this checklist before deploying MLSDM to production to ensure all critical components are properly configured and validated.
+> **Note:** This checklist outlines deployment considerations. MLSDM is in beta; users should validate suitability for their specific use case.
+
+Use this checklist before deploying MLSDM.
 
 ---
 
 ## Pre-Deployment Checklist
 
-### ✅ Infrastructure
+### Infrastructure
 
 - [ ] **Container Registry Access**
-  - [ ] Access to `ghcr.io/neuron7x/mlsdm-neuro-engine` configured
-  - [ ] Image pull secrets created in Kubernetes (if private)
-  - [ ] Latest stable image tagged and pushed
+  - [ ] Access to container registry configured
+  - [ ] Image pull secrets created (if needed)
+  - [ ] Image version verified
 
-- [ ] **Kubernetes Cluster**
-  - [ ] Cluster meets minimum requirements (3+ nodes)
-  - [ ] Namespace created (`mlsdm-production`)
+- [ ] **Kubernetes Cluster** (if using K8s)
+  - [ ] Namespace created
   - [ ] RBAC permissions configured
   - [ ] Resource quotas defined
-  - [ ] Network policies configured (if required)
 
 - [ ] **Networking**
-  - [ ] Ingress controller deployed and configured
-  - [ ] DNS records created
-  - [ ] TLS certificates provisioned (Let's Encrypt/cert-manager)
+  - [ ] TLS certificates provisioned (if external)
   - [ ] Firewall rules configured
-  - [ ] Load balancer health checks configured
 
 - [ ] **Storage**
-  - [ ] ConfigMaps created with production configuration
-  - [ ] Secrets created (API keys, tokens)
-  - [ ] Secret rotation policy defined
+  - [ ] ConfigMaps created
+  - [ ] Secrets created (API keys)
 
-### ✅ Configuration
+### Configuration
 
 - [ ] **Application Configuration**
-  - [ ] `config/production-ready.yaml` reviewed and customized
-  - [ ] `dimension` set to appropriate value (384/768/1024)
+  - [ ] Config file reviewed
+  - [ ] `dimension` set (384/768/1024)
   - [ ] `capacity` set based on memory limits
-  - [ ] Cognitive rhythm parameters validated
-  - [ ] Moral filter thresholds configured
-  - [ ] Rate limiting enabled and configured
+  - [ ] Rate limiting configured
 
 - [ ] **Environment Variables**
-  - [ ] `MLSDM_ENV=production` set
-  - [ ] `API_KEY` generated and stored securely
-  - [ ] `CONFIG_PATH` points to production config
-  - [ ] `LOG_LEVEL=INFO` (not DEBUG in production)
+  - [ ] `LLM_BACKEND` set
+  - [ ] API keys stored securely
+  - [ ] `LOG_LEVEL=INFO` (not DEBUG)
 
 - [ ] **Resource Limits**
   - [ ] Memory requests: 512Mi minimum
   - [ ] Memory limits: 2Gi maximum
   - [ ] CPU requests: 250m minimum
-  - [ ] CPU limits: 1000m maximum
-  - [ ] Limits match actual workload requirements
+  - [ ] Limits match workload
 
 ### ✅ Security
 
