@@ -4,11 +4,13 @@
 
 The MLSDM Governed Cognitive Memory system includes comprehensive security features:
 
-✅ **Rate Limiting** - 5 RPS per client  
-✅ **Input Validation** - Comprehensive validation and sanitization  
-✅ **Security Logging** - Structured audit logs with correlation IDs  
-✅ **Dependency Scanning** - Automated vulnerability detection  
-✅ **41 Security Tests** - All passing  
+✅ **Rate Limiting** - 5 RPS per client
+✅ **Input Validation** - Comprehensive validation and sanitization
+✅ **Security Logging** - Structured audit logs with correlation IDs
+✅ **Dependency Scanning** - Automated vulnerability detection (pip-audit in CI)
+✅ **SAST Scanning** - Bandit and Semgrep in CI/CD pipeline
+✅ **Pre-commit Hooks** - Security checks before commit (bandit, detect-private-key)
+✅ **41 Security Tests** - All passing
 
 ## Quick Start
 
@@ -22,17 +24,29 @@ python -m pytest src/tests/unit/test_security.py -v --no-cov
 python scripts/test_security_features.py
 ```
 
-### Run Security Audit
+### Run Dependency Security Audit
 
 ```bash
-# Scan for vulnerabilities
-python scripts/security_audit.py
+# Scan for known vulnerabilities in dependencies
+pip install pip-audit
+pip-audit --strict
 
-# Scan and attempt fixes
-python scripts/security_audit.py --fix
+# Alternative: Use safety (if installed)
+pip install safety
+safety check
+```
 
-# Generate report
-python scripts/security_audit.py --report security_report.txt
+### Run SAST Scan Locally
+
+```bash
+# Install bandit
+pip install bandit
+
+# Run bandit scan
+bandit -r src/mlsdm --severity-level medium --confidence-level medium
+
+# Check for high severity only
+bandit -r src/mlsdm --severity-level high --confidence-level high
 ```
 
 ### Configuration
@@ -44,6 +58,47 @@ export API_KEY="your-secure-key-here"
 # Disable rate limiting for testing
 export DISABLE_RATE_LIMIT=1
 ```
+
+## Dependency Security
+
+### Automated Scanning in CI
+
+The following security scans run automatically:
+
+| Scan Type | Workflow | Trigger |
+|-----------|----------|---------|
+| pip-audit | `ci-neuro-cognitive-engine.yml` | Every PR and push to main |
+| Bandit SAST | `sast-scan.yml` | Every PR to main |
+| Semgrep | `sast-scan.yml` | Every PR to main |
+| Trivy (container) | `release.yml` | On release tags |
+
+### Security Pinning
+
+Critical indirect dependencies are pinned in `requirements.txt` to avoid known vulnerabilities:
+
+- `certifi>=2024.7.4` - SSL certificate handling
+- `cryptography>=43.0.1` - Cryptographic operations
+- `jinja2>=3.1.6` - Template engine (used by sentence-transformers)
+- `urllib3>=2.2.2` - HTTP client (used by requests)
+- `setuptools>=78.1.1` - Build system security
+- `idna>=3.7` - Domain name handling
+
+### Pre-commit Hooks
+
+Install pre-commit hooks to catch security issues before commit:
+
+```bash
+pip install pre-commit
+pre-commit install
+
+# Run manually on all files
+pre-commit run --all-files
+```
+
+Security-related hooks:
+- `detect-private-key` - Prevents committing private keys
+- `bandit` - Python security linter
+- `check-merge-conflict` - Prevents incomplete merges
 
 ## Using Security Features
 
@@ -137,10 +192,26 @@ pytest src/tests/unit/ -v
 
 ## Status
 
-**Security Implementation:** ✅ Complete  
-**Tests:** ✅ 56/56 Passing  
-**CodeQL:** ✅ 0 Vulnerabilities  
-**Production Ready:** ✅ Yes  
+**Security Implementation:** ✅ Complete
+**Tests:** ✅ 56/56 Passing
+**CodeQL:** ✅ 0 Vulnerabilities
+**Dependency Audit:** ✅ No known vulnerabilities (pip-audit)
+**Production Ready:** ✅ Yes
+
+## GitHub Actions Versions
+
+All GitHub Actions are pinned to stable versions:
+
+- `actions/checkout@v4`
+- `actions/setup-python@v5`
+- `actions/upload-artifact@v4`
+- `github/codeql-action/upload-sarif@v3`
+- `docker/setup-buildx-action@v3`
+- `docker/login-action@v3`
+- `docker/build-push-action@v5`
+- `aquasecurity/trivy-action@0.31.0`
+- `softprops/action-gh-release@v2`
+- `semgrep/semgrep-action@v1`
 
 ## Support
 
