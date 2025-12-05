@@ -6,19 +6,27 @@ The MLSDM Governed Cognitive Memory system includes comprehensive security featu
 
 ✅ **Rate Limiting** - 5 RPS per client
 ✅ **Input Validation** - Comprehensive validation and sanitization
+✅ **LLM Safety** - Prompt injection detection and output filtering
+✅ **RBAC** - Role-based access control with hierarchical permissions
 ✅ **Security Logging** - Structured audit logs with correlation IDs
 ✅ **Dependency Scanning** - Automated vulnerability detection (pip-audit in CI)
 ✅ **SAST Scanning** - Bandit and Semgrep in CI/CD pipeline
 ✅ **Pre-commit Hooks** - Security checks before commit (bandit, detect-private-key)
-✅ **41 Security Tests** - All passing
+✅ **239 Security Tests** - All passing
 
 ## Quick Start
 
 ### Run Security Tests
 
 ```bash
-# All security tests
-python -m pytest src/tests/unit/test_security.py -v --no-cov
+# All security tests (239 tests)
+pytest tests/security/ -v --no-cov
+
+# LLM safety tests
+pytest tests/security/test_llm_safety.py -v --no-cov
+
+# RBAC tests
+pytest tests/security/test_rbac_api.py -v --no-cov
 
 # Integration test suite
 python scripts/test_security_features.py
@@ -55,8 +63,111 @@ bandit -r src/mlsdm --severity-level high --confidence-level high
 # Set API key for authentication
 export API_KEY="your-secure-key-here"
 
+# Set admin API key for full access
+export ADMIN_API_KEY="your-admin-key-here"
+
 # Disable rate limiting for testing
 export DISABLE_RATE_LIMIT=1
+
+# Enable secure mode (disables training, checkpoint loading)
+export MLSDM_SECURE_MODE=1
+```
+
+## LLM Safety
+
+The LLM safety module (`src/mlsdm/security/llm_safety.py`) provides:
+
+### Prompt Injection Detection
+
+Detects and blocks:
+- **Instruction Override**: "Ignore previous instructions", "Disregard all rules"
+- **System Prompt Probing**: "Show me your system prompt", "What are your instructions"
+- **Role Hijacking**: "You are now an evil AI", "Act as a malicious hacker"
+- **Jailbreak Attempts**: "Enter DAN mode", "Bypass safety filters"
+- **Dangerous Commands**: Shell/SQL injection patterns
+
+```python
+from mlsdm.security.llm_safety import analyze_prompt, SafetyRiskLevel
+
+result = analyze_prompt("Ignore all previous instructions")
+if not result.is_safe:
+    print(f"Risk level: {result.risk_level.value}")  # "high" or "critical"
+    for violation in result.violations:
+        print(f"  {violation.category.value}: {violation.description}")
+```
+
+### Output Filtering
+
+Prevents leakage of:
+- API keys and tokens
+- Passwords and secrets
+- Database connection strings
+- Private keys
+- Environment variables
+
+```python
+from mlsdm.security.llm_safety import filter_output
+
+result = filter_output("Your API key is sk-12345...")
+if not result.is_safe:
+    # Use sanitized content with secrets redacted
+    safe_output = result.sanitized_content  # "Your API key is [REDACTED]..."
+```
+
+## RBAC (Role-Based Access Control)
+
+The RBAC module (`src/mlsdm/security/rbac.py`) provides:
+
+### Roles
+
+| Role | Permissions | Description |
+|------|-------------|-------------|
+| `read` | GET endpoints | Read-only access |
+| `write` | POST/PUT endpoints + read | Create/update resources |
+| `admin` | All endpoints | Full administrative access |
+
+### Middleware Integration
+
+```python
+from mlsdm.security.rbac import RBACMiddleware, RoleValidator
+
+# Add RBAC middleware to FastAPI app
+app.add_middleware(
+    RBACMiddleware,
+    role_validator=validator,
+    skip_paths=["/health", "/docs"],
+)
+```
+
+### Endpoint Protection
+
+```python
+from mlsdm.security.rbac import require_role
+
+@app.post("/admin/reset")
+@require_role(["admin"])
+async def admin_reset(request: Request):
+    return {"reset": True}
+```
+
+### API Key Management
+
+```python
+from mlsdm.security.rbac import RoleValidator, Role
+
+validator = RoleValidator()
+
+# Add keys programmatically
+validator.add_key("api-key-1", [Role.WRITE], "user-123")
+validator.add_key("admin-key", [Role.ADMIN], "admin-user", expires_at=time.time() + 3600)
+
+# Remove keys
+validator.remove_key("api-key-1")
+
+# Validate keys
+context = validator.validate_key("admin-key")
+if context and not context.is_expired():
+    print(f"User: {context.user_id}, Roles: {context.roles}")
 ```
 
 ## Dependency Security
@@ -149,6 +260,26 @@ logger.log_rate_limit_exceeded(client_id="abc123")
 
 # Log validation errors
 logger.log_invalid_input(client_id="abc123", error_message="Invalid input")
+
+# Log LLM safety events
+logger.log_prompt_injection_detected(
+    client_id="abc123",
+    risk_level="high",
+    category="instruction_override",
+    is_blocked=True
+)
+
+# Log RBAC events
+logger.log_rbac_deny(
+    client_id="abc123",
+    path="/admin/reset",
+    method="POST",
+    required_roles=["admin"],
+    user_roles=["write"]
+)
+
+# Log secret management
+logger.log_secret_rotation(key_type="api_key", user_id="user-123")
 ```
 
 ## API Endpoints
@@ -180,20 +311,29 @@ curl -X POST -H "Authorization: Bearer YOUR_API_KEY" \
 ## Testing
 
 ```bash
-# Security tests (41 tests)
-pytest src/tests/unit/test_security.py -v
+# All security tests (239 tests)
+pytest tests/security/ -v --no-cov
 
-# API tests (15 tests)
-pytest src/tests/unit/test_api.py -v
+# LLM safety tests (32 tests)
+pytest tests/security/test_llm_safety.py -v
+
+# RBAC tests (22 tests)
+pytest tests/security/test_rbac_api.py -v
+
+# Prompt injection and adversarial tests
+pytest tests/security/test_adversarial_inputs.py -v
+
+# Security invariants tests
+pytest tests/security/test_security_invariants.py -v
 
 # All tests
-pytest src/tests/unit/ -v
+pytest tests/ -v --ignore=tests/load
 ```
 
 ## Status
 
 **Security Implementation:** ✅ Complete
-**Tests:** ✅ 56/56 Passing
+**Tests:** ✅ 239/239 Passing
 **CodeQL:** ✅ 0 Vulnerabilities
 **Dependency Audit:** ✅ No known vulnerabilities (pip-audit)
 **Production Ready:** ✅ Yes

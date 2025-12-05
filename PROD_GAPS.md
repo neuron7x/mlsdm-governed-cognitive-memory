@@ -322,6 +322,114 @@ _All blockers resolved._
 
 ---
 
+### ~~SEC-LLM-001: Add LLM safety module for prompt injection detection~~ ✅ COMPLETED
+
+**Block**: Security  
+**Criticality**: ~~HIGH~~ COMPLETED  
+**Type**: Code
+
+**Description**: ~~No centralized prompt injection detection. LLM inputs could be manipulated to bypass safety controls.~~ Implemented comprehensive LLM safety module.
+
+**Solution**: Implemented `LLMSafetyAnalyzer` in `src/mlsdm/security/llm_safety.py`:
+- **Prompt injection detection**: Instruction override, system prompt probing, jailbreak attempts
+- **Role hijacking detection**: Attempts to change AI role to malicious entity
+- **Output filtering**: Prevents leakage of API keys, passwords, connection strings
+- **Risk scoring**: NONE/LOW/MEDIUM/HIGH/CRITICAL risk levels
+- **Configurable blocking**: Block on high/critical risk by default
+
+**Acceptance Criteria**:
+- ✅ Add `analyze_prompt()` function for input safety analysis
+- ✅ Add `filter_output()` function for output sanitization
+- ✅ Detect common prompt injection patterns
+- ✅ Prevent secret/config leakage in outputs
+- ✅ Add comprehensive tests (32 tests)
+
+**Affected Files**:
+- `src/mlsdm/security/llm_safety.py` (new)
+- `tests/security/test_llm_safety.py` (new)
+
+---
+
+### ~~SEC-LLM-002: Enhance security logging for LLM safety events~~ ✅ COMPLETED
+
+**Block**: Security  
+**Criticality**: ~~MEDIUM~~ COMPLETED  
+**Type**: Code
+
+**Description**: ~~Security logger lacks events for LLM-specific threats.~~ Enhanced security logger with LLM safety event types.
+
+**Solution**: Added new event types and logging methods to `SecurityLogger`:
+- `PROMPT_INJECTION_DETECTED` - Log prompt injection attempts
+- `JAILBREAK_ATTEMPT` - Log jailbreak detection
+- `SECRET_LEAK_PREVENTED` - Log output filtering events
+- `MORAL_FILTER_BLOCK` - Log moral filter blocks
+- `RBAC_DENY` - Log access control denials
+- `SECRET_ROTATION` - Log key management events
+
+**Acceptance Criteria**:
+- ✅ Add new SecurityEventType enum values
+- ✅ Add logging methods for each event type
+- ✅ Maintain JSON structured format
+- ✅ No PII in logs
+
+**Affected Files**:
+- `src/mlsdm/utils/security_logger.py`
+
+---
+
+### ~~SEC-INPUT-001: Add centralized input sanitization~~ ✅ COMPLETED
+
+**Block**: Security  
+**Criticality**: ~~MEDIUM~~ COMPLETED  
+**Type**: Code
+
+**Description**: ~~Input sanitization scattered across codebase.~~ Centralized `sanitize_user_input()` function.
+
+**Solution**: Added `sanitize_user_input()` function to `input_validator.py`:
+- Basic string sanitization (control chars, length)
+- SQL injection pattern detection
+- Shell injection pattern detection
+- Path traversal pattern detection
+- Optional LLM safety integration
+
+**Acceptance Criteria**:
+- ✅ Single function for comprehensive sanitization
+- ✅ Returns sanitized text + security metadata
+- ✅ Detects common injection patterns
+- ✅ Integrates with LLM safety module
+
+**Affected Files**:
+- `src/mlsdm/utils/input_validator.py`
+
+---
+
+### ~~SEC-RBAC-TEST-001: Add comprehensive RBAC API tests~~ ✅ COMPLETED
+
+**Block**: Security  
+**Criticality**: ~~MEDIUM~~ COMPLETED  
+**Type**: Tests
+
+**Description**: ~~RBAC implementation lacks comprehensive API-level tests.~~ Added RBAC API test suite.
+
+**Solution**: Created comprehensive test suite in `tests/security/test_rbac_api.py`:
+- Middleware behavior tests (401/403 responses)
+- Role hierarchy tests (read/write/admin)
+- Token validation tests (missing, invalid, expired)
+- Decorator tests (@require_role)
+- No information leakage tests
+
+**Acceptance Criteria**:
+- ✅ Test missing token → 401
+- ✅ Test invalid token → 401 (no info leak)
+- ✅ Test insufficient permissions → 403
+- ✅ Test role hierarchy enforcement
+- ✅ 22 tests all passing
+
+**Affected Files**:
+- `tests/security/test_rbac_api.py` (new)
+
+---
+
 ### CICD-002: Add required status checks on main branch
 
 **Block**: CI/CD  
@@ -901,3 +1009,7 @@ _Track completed items here:_
 | CICD-003 | Separate smoke tests from slow tests | 2025-12-04 | #197 |
 | CICD-004 | Add SAST scanning to PR workflow | 2025-12-04 | #197 |
 | CICD-005 | Add production deployment gate workflow | 2025-12-04 | #197 |
+| SEC-LLM-001 | Add LLM safety module for prompt injection detection | 2025-12-05 | - |
+| SEC-LLM-002 | Enhance security logging for LLM safety events | 2025-12-05 | - |
+| SEC-INPUT-001 | Add centralized input sanitization | 2025-12-05 | - |
+| SEC-RBAC-TEST-001 | Add comprehensive RBAC API tests | 2025-12-05 | - |

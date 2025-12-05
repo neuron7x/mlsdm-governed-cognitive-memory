@@ -14,6 +14,7 @@ from mlsdm.security.llm_safety import (
     SafetyCategory,
     SafetyResult,
     SafetyRiskLevel,
+    SafetyViolation,
     analyze_prompt,
     filter_output,
     get_llm_safety_analyzer,
@@ -310,8 +311,6 @@ class TestSafetyResultSerialization:
 
     def test_to_dict_with_violations(self) -> None:
         """Test serialization of result with violations."""
-        from mlsdm.security.llm_safety import SafetyViolation
-
         result = SafetyResult(
             is_safe=False,
             risk_level=SafetyRiskLevel.HIGH,

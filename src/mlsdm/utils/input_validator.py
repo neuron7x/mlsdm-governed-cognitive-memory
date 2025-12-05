@@ -371,8 +371,17 @@ class InputValidator:
 
 
 # Pre-compiled patterns for injection detection
+# SQL injection pattern - using more specific context to reduce false positives
+# Matches SQL keywords when followed by typical SQL syntax (= ' " ( space)
 _SQL_INJECTION_PATTERN = re.compile(
-    r"(?:--|;|\b(?:SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|OR|AND)\b\s+)",
+    r"(?:"
+    r"--|"  # SQL comment
+    r";\s*(?:SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC)|"  # Statement chaining
+    r"\b(?:UNION\s+(?:ALL\s+)?SELECT)|"  # UNION attacks
+    r"\b(?:SELECT|DELETE|DROP|INSERT|UPDATE)\s+(?:\*|FROM|INTO|TABLE)|"  # Full SQL statements
+    r"'\s*(?:OR|AND)\s+['\d]|"  # Classic OR/AND injection
+    r"\bEXEC\s*\("  # EXEC function calls
+    r")",
     re.IGNORECASE,
 )
 _SHELL_INJECTION_PATTERN = re.compile(

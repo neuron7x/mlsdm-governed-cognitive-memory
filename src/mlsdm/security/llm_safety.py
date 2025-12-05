@@ -263,11 +263,17 @@ _SECRET_PATTERNS: list[tuple[re.Pattern[str], SafetyCategory, str]] = [
         SafetyCategory.SECRET_LEAK,
         "AWS access key exposure",
     ),
-    # Environment variable dumps
+    # Environment variable dumps (plain text format)
     (
         re.compile(r"(?:^|\n)(?:API_KEY|SECRET_KEY|OPENAI_API_KEY|ANTHROPIC_API_KEY)\s*=", re.IGNORECASE),
         SafetyCategory.CONFIG_LEAK,
         "Environment variable exposure",
+    ),
+    # JSON-style config exposure
+    (
+        re.compile(r'["\'](?:api_key|secret_key|openai_api_key|anthropic_api_key)["\']\s*:\s*["\'][a-zA-Z0-9_\-]{20,}["\']', re.IGNORECASE),
+        SafetyCategory.CONFIG_LEAK,
+        "JSON config key exposure",
     ),
     # Config file content
     (

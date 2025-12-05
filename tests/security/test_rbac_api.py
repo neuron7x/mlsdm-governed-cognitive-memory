@@ -8,12 +8,12 @@ This test suite validates that RBAC is properly integrated into the API:
 """
 
 import os
+import time
 from unittest.mock import patch
 
 import pytest
 from fastapi import FastAPI, status
 from fastapi.testclient import TestClient
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from mlsdm.security.rbac import (
     RBACMiddleware,
@@ -177,10 +177,12 @@ class TestRBACMiddleware:
             headers={"Authorization": "Bearer almost-correct-key"},
         )
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-        error = response.json()["error"]
+        response_json = response.json()
         # Should not contain the token or details about valid keys
-        assert "almost-correct-key" not in str(response.json())
-        assert "test-read-key" not in str(response.json())
+        assert "almost-correct-key" not in str(response_json)
+        assert "test-read-key" not in str(response_json)
+        # Verify error structure exists
+        assert "error" in response_json
 
 
 class TestRoleValidator:
@@ -226,8 +228,6 @@ class TestRoleValidator:
 
     def test_expired_key_returns_none(self) -> None:
         """Test that expired key returns None."""
-        import time
-
         validator = RoleValidator()
         # Add key that expires immediately
         validator.add_key(
