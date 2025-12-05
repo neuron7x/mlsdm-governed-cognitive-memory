@@ -60,11 +60,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
-      # Run all chaos tests in one step - they are designed to pass
-      # Chaos tests exercise failure modes but should still pass
+      # Run chaos tests based on test_category input
+      # Supports selective execution for debugging specific failures
       - name: Run chaos tests
         run: |
-          pytest tests/chaos/ -v -m chaos --tb=short --junitxml=chaos-results.xml
+          CATEGORY="${{ github.event.inputs.test_category || 'all' }}"
+          if [ "$CATEGORY" = "all" ]; then
+            pytest tests/chaos/ -v -m chaos --tb=short --junitxml=chaos-results.xml
+          elif [ "$CATEGORY" = "memory" ]; then
+            pytest tests/chaos/test_memory_pressure.py -v -m chaos --tb=short --junitxml=chaos-results.xml
+          elif [ "$CATEGORY" = "llm" ]; then
+            pytest tests/chaos/test_slow_llm.py -v -m chaos --tb=short --junitxml=chaos-results.xml
+          elif [ "$CATEGORY" = "network" ]; then
+            pytest tests/chaos/test_network_timeout.py -v -m chaos --tb=short --junitxml=chaos-results.xml
+          else
+            pytest tests/chaos/ -v -m chaos --tb=short --junitxml=chaos-results.xml
+          fi
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -72,14 +83,14 @@ jobs:
         with:
           name: chaos-test-results-py${{ matrix.python-version }}
           path: |
-            chaos-*.xml
+            chaos-results.xml
           retention-days: 30
 
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v4
         if: always()
         with:
-          report_paths: 'chaos-*.xml'
+          report_paths: 'chaos-results.xml'
           check_name: Chaos Test Results (Python ${{ matrix.python-version }})
           fail_on_failure: true  # Chaos tests should pass - they test resilience, not breakage
 
@@ -109,7 +120,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if ls chaos-*.xml 1> /dev/null 2>&1; then
+          if ls chaos-results.xml 1> /dev/null 2>&1; then
             echo "Test result files generated. See artifacts for details." >> $GITHUB_STEP_SUMMARY
           else
             echo "No test results found." >> $GITHUB_STEP_SUMMARY
