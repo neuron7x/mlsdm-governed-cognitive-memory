@@ -742,8 +742,9 @@ HEALTHCHECK --interval=30s --timeout=3s \
 
 ### Testing Strategy
 
-1. **Static Analysis**
-   - `bandit`: Python security linter
+1. **Static Analysis (SAST)**
+   - `semgrep`: Multi-language SAST scanner with OWASP rules
+   - `bandit`: Python-specific security linter
    - `ruff`: Code quality checks
    - `mypy`: Type safety verification
 
@@ -760,6 +761,38 @@ HEALTHCHECK --interval=30s --timeout=3s \
    - ⚠️ Planned for v1.1
    - OWASP Top 10 coverage
    - API security testing
+
+### Static Analysis (Semgrep)
+
+Semgrep scans are run automatically on all PRs and pushes to main via GitHub Actions.
+
+**Workflow location**: `.github/workflows/sast-scan.yml`
+
+**Rulesets used**:
+- `auto` - Semgrep's automatic language-appropriate rules
+- `p/python` - Python-specific security rules
+- `p/security-audit` - General security audit rules
+- `p/owasp-top-ten` - OWASP Top 10 vulnerability patterns
+
+**Running Semgrep locally**:
+```bash
+# Using Docker (recommended - same as CI)
+docker run --rm -v "${PWD}:/src" semgrep/semgrep:latest \
+  semgrep scan \
+  --config auto \
+  --config p/python \
+  --config p/security-audit \
+  --config p/owasp-top-ten \
+  --exclude '.venv' --exclude 'dist' --exclude 'build'
+
+# Using pip
+pip install semgrep
+semgrep scan --config auto --config p/python --config p/security-audit
+```
+
+**Excluding false positives**:
+- Add inline comments: `# nosemgrep: rule-id`
+- Or add to `.semgrepignore` file
 
 ### Test Coverage
 

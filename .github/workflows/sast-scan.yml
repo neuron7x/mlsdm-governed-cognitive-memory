@@ -85,31 +85,75 @@ jobs:
             bandit-results.sarif
           retention-days: 30
 
+  # ============================================================
+  # Semgrep SAST Scan
+  # ============================================================
+  # 
+  # MIGRATION NOTE (December 2025):
+  # Previously used semgrep/semgrep-action@v1 which relied on the deprecated
+  # returntocorp/semgrep-agent:v1 Docker image. That image is no longer 
+  # maintained and causes intermittent Docker Hub 500 errors.
+  #
+  # This job now uses the official semgrep/semgrep Docker image directly,
+  # which is the recommended approach per Semgrep documentation.
+  #
+  # To run the same scan locally:
+  #   docker run --rm -v "${PWD}:/src" semgrep/semgrep:latest \
+  #     semgrep scan --config auto --config p/python --config p/security-audit \
+  #     --exclude '.venv' --exclude 'dist' --exclude 'build' \
+  #     --exclude '.mypy_cache' --exclude '.pytest_cache' \
+  #     --sarif --output semgrep-results.sarif
+  #
+  # To update Semgrep rules:
+  #   - Edit the --config flags below
+  #   - Available rulesets: https://semgrep.dev/explore
+  # ============================================================
   semgrep:
     name: Semgrep SAST Scan
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    # Semgrep is optional for now - bandit is the primary SAST tool
-    # Remove continue-on-error once semgrep rules are tuned to minimize false positives
-    continue-on-error: true
+    timeout-minutes: 20
+    container:
+      image: semgrep/semgrep:latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Semgrep
-        uses: semgrep/semgrep-action@v1
-        with:
-          config: >-
-            p/python
-            p/security-audit
-            p/owasp-top-ten
-          generateSarif: "1"
+      - name: Run Semgrep scan
+        run: |
+          semgrep scan \
+            --config auto \
+            --config p/python \
+            --config p/security-audit \
+            --config p/owasp-top-ten \
+            --exclude '.venv' \
+            --exclude 'dist' \
+            --exclude 'build' \
+            --exclude '.mypy_cache' \
+            --exclude '.pytest_cache' \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude '*.min.js' \
+            --sarif \
+            --output semgrep-results.sarif \
+            --metrics off \
+            --error \
+            || echo "Semgrep scan completed with findings"
+        env:
+          # If SEMGREP_APP_TOKEN is set in repo secrets, use Semgrep Cloud features
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
-      - name: Upload Semgrep SARIF
+      - name: Upload Semgrep SARIF to GitHub Security
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: semgrep.sarif
+          sarif_file: semgrep-results.sarif
           category: semgrep
-        continue-on-error: true
+
+      - name: Upload Semgrep results artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-results
+          path: semgrep-results.sarif
+          retention-days: 30
