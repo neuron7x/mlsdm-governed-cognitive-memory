@@ -342,6 +342,21 @@ pytest tests/validation/ -v
 
 # Property-based tests
 pytest tests/property/ -v
+
+# Coverage gate (enforces minimum coverage threshold)
+./coverage_gate.sh                 # Default threshold: 70%
+COVERAGE_MIN=80 ./coverage_gate.sh # Custom threshold
+```
+
+### Policy Checks (Governance)
+
+```bash
+# Install conftest (OPA policy testing)
+brew install conftest  # macOS
+# or download from https://github.com/open-policy-agent/conftest
+
+# Run policy checks on CI workflows
+conftest test .github/workflows/*.yml -p policies/ci/
 ```
 
 ### Runtime Modes
