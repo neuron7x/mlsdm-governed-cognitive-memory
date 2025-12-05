@@ -8,7 +8,7 @@
 # coverage threshold. It is designed to work in CI and locally.
 #
 # Usage:
-#   ./coverage_gate.sh               # Uses default threshold (70%)
+#   ./coverage_gate.sh               # Uses default threshold (65%)
 #   COVERAGE_MIN=80 ./coverage_gate.sh  # Uses 80% threshold
 #
 # Exit codes:
@@ -16,7 +16,7 @@
 #   1 - Tests failed or coverage below threshold
 #
 # Environment Variables:
-#   COVERAGE_MIN - Minimum coverage percentage required (default: 70)
+#   COVERAGE_MIN - Minimum coverage percentage required (default: 65)
 #   PYTEST_ARGS  - Additional arguments to pass to pytest
 # ============================================================================
 

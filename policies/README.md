@@ -13,13 +13,8 @@ compliance.
 
 ### CI Workflow Policies (`ci/`)
 - Workflow permission restrictions (no `write-all`)
-- Required security checks
-- Action version pinning
-
-### Security Policies (`security/`)
-- No hardcoded secrets or credentials
-- Required authentication for external services
-- Secure defaults enforcement
+- Action version pinning for third-party actions
+- Protection against secret exposure in logs
 
 ## Usage
 
@@ -41,31 +36,34 @@ conftest test -p policies/ .github/workflows/*.yml config/*.yaml
 ### In CI
 
 Policy checks are integrated into the CI workflow and run automatically on PRs.
+The CI uses `--fail-on-warn=false` to allow warnings but fail on deny rules.
 
 ## Adding New Policies
 
 1. Create a new `.rego` file in the appropriate subdirectory
 2. Add tests for the policy in a `*_test.rego` file
 3. Update this README with a description of the new policy
-4. Run `conftest verify` to test the policies
+4. Run `conftest test` to validate the policies
 
 ## Policy Reference
 
 ### ci/workflows.rego
 
-| Rule | Description | STRIDE Category |
-|------|-------------|-----------------|
-| `deny_write_all_permissions` | Blocks workflows with overly permissive `write-all` | Elevation of Privilege |
-| `deny_unpinned_actions` | Requires pinned action versions | Tampering, Elevation of Privilege |
-| `deny_shell_injection` | Blocks potential shell injection patterns | Tampering |
-| `warn_missing_timeout` | Warns if job has no timeout | Denial of Service |
+**Deny Rules (will fail CI):**
 
-### security/secrets.rego
+| Policy | Description | STRIDE Category |
+|--------|-------------|-----------------|
+| Block `write-all` permissions | Prevents workflows/jobs with overly permissive access | Elevation of Privilege |
+| Block unpinned third-party actions | Requires `@` version pin on non-github/actions actions | Tampering |
+| Block mutable references (@main, @master) | Prevents third-party actions with mutable refs | Tampering |
+| Block secret exposure in logs | Flags `echo ${{ secrets.* }}` patterns | Information Disclosure |
 
-| Rule | Description | STRIDE Category |
-|------|-------------|-----------------|
-| `deny_hardcoded_secrets` | Blocks patterns matching secrets | Information Disclosure |
-| `deny_unencrypted_env` | Blocks plain text secrets in env vars | Information Disclosure |
+**Warn Rules (will warn but not fail CI):**
+
+| Policy | Description | STRIDE Category |
+|--------|-------------|-----------------|
+| Missing job timeouts | Warns if `timeout-minutes` not set | Denial of Service |
+| Mutable action references | Warns about `@main`/`@master` in any action | Tampering |
 
 ## Maintenance
 
