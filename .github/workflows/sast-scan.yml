@@ -97,9 +97,12 @@ jobs:
   # This job now uses the official semgrep/semgrep Docker image directly,
   # which is the recommended approach per Semgrep documentation.
   #
+  # IMPORTANT: --config auto is NOT used with explicit rulesets (p/python, etc.)
+  # as they conflict when --metrics off is specified.
+  #
   # To run the same scan locally:
   #   docker run --rm -v "${PWD}:/src" semgrep/semgrep:1.99 \
-  #     semgrep scan --config auto --config p/python --config p/security-audit \
+  #     semgrep scan --config p/python --config p/security-audit --config p/owasp-top-ten \
   #     --exclude '.venv' --exclude 'dist' --exclude 'build' \
   #     --exclude '.mypy_cache' --exclude '.pytest_cache' --exclude '.git'
   #
@@ -124,10 +127,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Prevent git dubious ownership warnings in container
+      - name: Configure Git safe directory
+        run: git config --global --add safe.directory /__w/mlsdm/mlsdm
+
       - name: Run Semgrep scan
         run: |
+          # Note: --config auto is omitted when using explicit rulesets
+          # as they conflict with --metrics off
           semgrep scan \
-            --config auto \
             --config p/python \
             --config p/security-audit \
             --config p/owasp-top-ten \
