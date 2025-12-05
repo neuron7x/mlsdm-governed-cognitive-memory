@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # ============================================================================
 # coverage_gate.sh - Coverage Gate Script for MLSDM
 # ============================================================================
@@ -20,7 +20,7 @@
 #   PYTEST_ARGS  - Additional arguments to pass to pytest
 # ============================================================================
 
-set -eu
+set -euo pipefail
 
 # Default coverage threshold (can be overridden via environment variable)
 # Current baseline is ~68%, default to 65% for some headroom
@@ -66,6 +66,7 @@ echo ""
 
 # Build pytest command
 # We run unit tests as the primary gate, but allow PYTEST_ARGS to customize
+# Use PIPESTATUS to capture pytest exit code through the tee pipeline
 # shellcheck disable=SC2086
 python -m pytest tests/unit/ \
     --cov=src/mlsdm \
@@ -75,10 +76,10 @@ python -m pytest tests/unit/ \
     -m "not slow" \
     -q \
     --tb=short \
-    $PYTEST_ARGS 2>&1 | tee /tmp/coverage_output.txt
+    $PYTEST_ARGS 2>&1 | tee /tmp/coverage_output.txt || true
 
-# Capture exit code from previous command
-PYTEST_EXIT_CODE=$?
+# Capture exit code from pytest (first command in pipeline)
+PYTEST_EXIT_CODE="${PIPESTATUS[0]}"
 
 if [ "$PYTEST_EXIT_CODE" -ne 0 ]; then
     echo ""

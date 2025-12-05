@@ -235,6 +235,7 @@ jobs:
   all-ci-passed:
     name: All CI Checks Passed
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [lint, security, test, e2e-tests, effectiveness-validation]
     steps:
       - name: All checks passed

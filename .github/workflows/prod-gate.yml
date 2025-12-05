@@ -199,6 +199,7 @@ jobs:
   approval:
     name: Manual Approval
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs: [preflight, property-tests, slo-validation, security-scan, docs-validation]
     if: ${{ github.event.inputs.skip_approval != 'true' }}
     environment: production
@@ -216,6 +217,7 @@ jobs:
   gate-passed:
     name: Production Gate Passed
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [preflight, property-tests, slo-validation, security-scan, docs-validation, approval]
     if: always()
     
