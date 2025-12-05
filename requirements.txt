@@ -22,7 +22,7 @@ ruff>=0.4.10
 mypy>=1.10.0
 locust>=2.29.1
 httpx>=0.27.0
-types-PyYAML>=6.0.0
+types-PyYAML>=6.0.1
 
 # Visualization (optional, from pyproject.toml [project.optional-dependencies].visualization)
 matplotlib>=3.8.4
