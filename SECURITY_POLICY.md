@@ -777,15 +777,21 @@ Semgrep scans are run automatically on all PRs and pushes to main via GitHub Act
 **Running Semgrep locally**:
 ```bash
 # Using Docker (recommended - same as CI)
-docker run --rm -v "${PWD}:/src" semgrep/semgrep:latest \
+docker run --rm -v "${PWD}:/src" semgrep/semgrep:1.99 \
   semgrep scan \
   --config auto \
   --config p/python \
   --config p/security-audit \
   --config p/owasp-top-ten \
-  --exclude '.venv' --exclude 'dist' --exclude 'build'
+  --exclude '.venv' \
+  --exclude 'dist' \
+  --exclude 'build' \
+  --exclude '.mypy_cache' \
+  --exclude '.pytest_cache' \
+  --exclude '.git' \
+  --exclude 'node_modules'
 
-# Using pip
+# Using pip (simplified, fewer excludes)
 pip install semgrep
 semgrep scan --config auto --config p/python --config p/security-audit
 ```

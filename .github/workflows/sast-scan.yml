@@ -98,11 +98,14 @@ jobs:
   # which is the recommended approach per Semgrep documentation.
   #
   # To run the same scan locally:
-  #   docker run --rm -v "${PWD}:/src" semgrep/semgrep:latest \
+  #   docker run --rm -v "${PWD}:/src" semgrep/semgrep:1.99 \
   #     semgrep scan --config auto --config p/python --config p/security-audit \
   #     --exclude '.venv' --exclude 'dist' --exclude 'build' \
-  #     --exclude '.mypy_cache' --exclude '.pytest_cache' \
-  #     --sarif --output semgrep-results.sarif
+  #     --exclude '.mypy_cache' --exclude '.pytest_cache' --exclude '.git'
+  #
+  # To update Semgrep version:
+  #   - Check https://hub.docker.com/r/semgrep/semgrep/tags for available versions
+  #   - Update the image tag in the container section below
   #
   # To update Semgrep rules:
   #   - Edit the --config flags below
@@ -113,7 +116,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     container:
-      image: semgrep/semgrep:latest
+      # Pin to a specific version for reproducible builds
+      # Check https://hub.docker.com/r/semgrep/semgrep/tags for updates
+      image: semgrep/semgrep:1.99
 
     steps:
       - name: Checkout code
@@ -137,8 +142,7 @@ jobs:
             --sarif \
             --output semgrep-results.sarif \
             --metrics off \
-            --error \
-            || echo "Semgrep scan completed with findings"
+            --error
         env:
           # If SEMGREP_APP_TOKEN is set in repo secrets, use Semgrep Cloud features
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
