@@ -463,6 +463,73 @@ class MetricsExporter:
             registry=self.registry,
         )
 
+        # ---------------------------------------------------------------------------
+        # Runtime Guardrails Metrics (STRIDE-aligned)
+        # ---------------------------------------------------------------------------
+
+        # Guardrail decisions by result (allow/deny)
+        self.guardrail_decisions_total = Counter(
+            "mlsdm_guardrail_decisions_total",
+            "Total guardrail decisions by result (allow, deny)",
+            ["result"],
+            registry=self.registry,
+        )
+
+        # Guardrail checks by type and result
+        self.guardrail_checks_total = Counter(
+            "mlsdm_guardrail_checks_total",
+            "Total guardrail checks performed by type and result",
+            ["check_type", "result"],
+            registry=self.registry,
+        )
+
+        # STRIDE category violations
+        self.guardrail_stride_violations_total = Counter(
+            "mlsdm_guardrail_stride_violations_total",
+            "Total STRIDE category violations detected",
+            ["stride_category"],
+            registry=self.registry,
+        )
+
+        # Authentication failures by method
+        self.auth_failures_total = Counter(
+            "mlsdm_auth_failures_total",
+            "Total authentication failures by method (oidc, mtls, api_key, signing)",
+            ["method"],
+            registry=self.registry,
+        )
+
+        # Authorization failures by reason
+        self.authz_failures_total = Counter(
+            "mlsdm_authz_failures_total",
+            "Total authorization failures by reason (insufficient_role, missing_scope)",
+            ["reason"],
+            registry=self.registry,
+        )
+
+        # Safety filter blocks by category
+        self.safety_filter_blocks_total = Counter(
+            "mlsdm_safety_filter_blocks_total",
+            "Total safety filter blocks by category",
+            ["category"],
+            registry=self.registry,
+        )
+
+        # Rate limit hits
+        self.rate_limit_hits_total = Counter(
+            "mlsdm_rate_limit_hits_total",
+            "Total rate limit hits by client",
+            registry=self.registry,
+        )
+
+        # PII detections
+        self.pii_detections_total = Counter(
+            "mlsdm_pii_detections_total",
+            "Total PII detections in requests/responses",
+            ["pii_type"],
+            registry=self.registry,
+        )
+
         # Track timing contexts
         self._processing_start_times: dict[str, float] = {}
         self._retrieval_start_times: dict[str, float] = {}
@@ -1102,6 +1169,108 @@ class MetricsExporter:
         """
         with self._lock:
             self.active_users.set(count)
+
+    # ---------------------------------------------------------------------------
+    # Runtime Guardrails Metrics Methods
+    # ---------------------------------------------------------------------------
+
+    def record_guardrail_decision(
+        self,
+        allowed: bool,
+        stride_categories: list[str],
+        checks_performed: list[str],
+    ) -> None:
+        """Record a guardrail policy decision.
+
+        Args:
+            allowed: Whether the request was allowed
+            stride_categories: STRIDE categories that applied to this decision
+            checks_performed: List of check types performed
+        """
+        with self._lock:
+            result = "allow" if allowed else "deny"
+            self.guardrail_decisions_total.labels(result=result).inc()
+
+            # Record STRIDE category violations (only for denials)
+            if not allowed:
+                for category in stride_categories:
+                    self.guardrail_stride_violations_total.labels(
+                        stride_category=category
+                    ).inc()
+
+    def record_guardrail_check(
+        self,
+        check_type: str,
+        passed: bool,
+        stride_category: str = "",
+    ) -> None:
+        """Record an individual guardrail check result.
+
+        Args:
+            check_type: Type of check (authentication, authorization, etc.)
+            passed: Whether the check passed
+            stride_category: STRIDE category for this check
+        """
+        with self._lock:
+            result = "pass" if passed else "fail"
+            self.guardrail_checks_total.labels(
+                check_type=check_type, result=result
+            ).inc()
+
+            # Record STRIDE violation if check failed
+            if not passed and stride_category:
+                self.guardrail_stride_violations_total.labels(
+                    stride_category=stride_category
+                ).inc()
+
+    def increment_auth_failures(self, method: str, count: int = 1) -> None:
+        """Increment authentication failures counter.
+
+        Args:
+            method: Authentication method (oidc, mtls, api_key, signing)
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self.auth_failures_total.labels(method=method).inc(count)
+
+    def increment_authz_failures(self, reason: str, count: int = 1) -> None:
+        """Increment authorization failures counter.
+
+        Args:
+            reason: Failure reason (insufficient_role, missing_scope)
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self.authz_failures_total.labels(reason=reason).inc(count)
+
+    def increment_safety_filter_blocks(self, category: str, count: int = 1) -> None:
+        """Increment safety filter blocks counter.
+
+        Args:
+            category: Safety violation category
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self.safety_filter_blocks_total.labels(category=category).inc(count)
+
+    def increment_rate_limit_hits(self, count: int = 1) -> None:
+        """Increment rate limit hits counter.
+
+        Args:
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self.rate_limit_hits_total.inc(count)
+
+    def increment_pii_detections(self, pii_type: str, count: int = 1) -> None:
+        """Increment PII detections counter.
+
+        Args:
+            pii_type: Type of PII detected (email, ssn, credit_card, etc.)
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self.pii_detections_total.labels(pii_type=pii_type).inc(count)
 
     def get_metrics_text(self) -> str:
         """Export metrics in Prometheus format as text.
