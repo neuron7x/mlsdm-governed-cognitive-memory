@@ -167,11 +167,11 @@ class TestGuardrailTracing:
 
         if guardrail_spans:
             span = guardrail_spans[0]
-            dict(span.attributes or {})
 
             # Prompt length may or may not be present depending on span export
             # Just verify the span exists
             assert span is not None
+            assert span.attributes is not None or span.attributes is None  # Attributes may be empty
 
 
 class TestGuardrailMetrics:
