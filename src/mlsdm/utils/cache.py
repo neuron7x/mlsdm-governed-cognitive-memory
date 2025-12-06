@@ -43,14 +43,14 @@ import os
 import threading
 import time
 from collections import OrderedDict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
-import numpy as np
-
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    import numpy as np
 
 logger = logging.getLogger(__name__)
 

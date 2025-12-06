@@ -11,16 +11,15 @@ Tests the OIDC functionality including:
 from __future__ import annotations
 
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
-from fastapi import Request
 
 from mlsdm.security.oidc import (
-    OIDCConfig,
-    UserInfo,
     JWKSCache,
     OIDCAuthenticator,
+    OIDCConfig,
+    UserInfo,
 )
 
 

@@ -12,16 +12,15 @@ from __future__ import annotations
 import os
 from unittest.mock import MagicMock, patch
 
-import pytest
 from fastapi import Request
 
 from mlsdm.security.mtls import (
-    MTLSConfig,
     ClientCertInfo,
-    parse_certificate_subject,
+    MTLSConfig,
     get_client_cert_cn,
-    get_client_cert_info,
     get_client_cert_from_request,
+    get_client_cert_info,
+    parse_certificate_subject,
 )
 
 

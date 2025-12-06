@@ -5,6 +5,15 @@ This module provides security features including rate limiting,
 payload scrubbing, OIDC authentication, RBAC, and logging controls.
 """
 
+from mlsdm.security.oidc import (
+    OIDCAuthenticator,
+    OIDCAuthMiddleware,
+    OIDCConfig,
+    UserInfo,
+    get_current_user,
+    get_optional_user,
+    require_oidc_auth,
+)
 from mlsdm.security.payload_scrubber import (
     DEFAULT_SECRET_KEYS,
     EMAIL_PATTERN,
@@ -19,17 +28,6 @@ from mlsdm.security.payload_scrubber import (
     should_log_payload,
 )
 from mlsdm.security.rate_limit import RateLimiter, get_rate_limiter
-
-# OIDC authentication (SEC-004)
-from mlsdm.security.oidc import (
-    OIDCAuthenticator,
-    OIDCAuthMiddleware,
-    OIDCConfig,
-    UserInfo,
-    get_current_user,
-    get_optional_user,
-    require_oidc_auth,
-)
 
 __all__ = [
     "RateLimiter",

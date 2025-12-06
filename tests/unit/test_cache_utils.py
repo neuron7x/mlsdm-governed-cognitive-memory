@@ -17,16 +17,15 @@ import time
 from unittest.mock import patch
 
 import numpy as np
-import pytest
 
 from mlsdm.utils.cache import (
     CacheConfig,
-    CacheStats,
     CacheEntry,
-    MemoryCache,
     CacheManager,
-    hash_text,
+    CacheStats,
+    MemoryCache,
     hash_request,
+    hash_text,
     hash_vector,
 )
 

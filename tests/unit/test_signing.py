@@ -11,22 +11,18 @@ Tests the request signing functionality including:
 from __future__ import annotations
 
 import base64
-import hashlib
-import hmac
 import os
 import time
 from unittest.mock import patch
 
-import pytest
-
 from mlsdm.security.signing import (
-    SigningConfig,
+    RequestSigner,
     SignatureInfo,
+    SigningConfig,
     compute_signature,
     generate_signature,
     parse_signature_header,
     verify_signature,
-    RequestSigner,
 )
 
 
