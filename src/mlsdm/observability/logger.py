@@ -1152,6 +1152,223 @@ class ObservabilityLogger:
             metrics=metrics,
         )
 
+    # ------------------------------------------------------------------ #
+    # Structured error logging with error codes (OBS-004)                #
+    # ------------------------------------------------------------------ #
+
+    def log_error_with_code(
+        self,
+        error_code: str,
+        message: str,
+        details: dict[str, Any] | None = None,
+        correlation_id: str | None = None,
+        recoverable: bool = False,
+        request_id: str | None = None,
+    ) -> str:
+        """Log an error with a structured error code.
+
+        This method provides consistent error logging with error codes from
+        the MLSDM error code system (see mlsdm.utils.errors.ErrorCode).
+
+        Error codes follow the pattern: E{category}{number}
+        - E1xx: Input validation errors
+        - E2xx: Authentication/Authorization errors
+        - E3xx: Moral filter errors
+        - E4xx: Memory/PELM errors
+        - E5xx: Cognitive rhythm errors
+        - E6xx: LLM/Generation errors
+        - E7xx: System/Infrastructure errors
+        - E8xx: Configuration errors
+        - E9xx: API/Request errors
+
+        Args:
+            error_code: Error code (e.g., "E301", "E601")
+            message: Human-readable error message
+            details: Additional error details (no PII)
+            correlation_id: Optional correlation ID
+            recoverable: Whether the error is recoverable
+            request_id: Request ID for correlation
+
+        Returns:
+            Correlation ID
+
+        Example:
+            >>> logger.log_error_with_code(
+            ...     error_code="E301",
+            ...     message="Moral threshold exceeded",
+            ...     details={"score": 0.3, "threshold": 0.5},
+            ...     recoverable=True
+            ... )
+        """
+        metrics: dict[str, Any] = {
+            "error_code": error_code,
+            "recoverable": recoverable,
+        }
+
+        if details:
+            # Flatten details into metrics with prefix
+            for key, value in details.items():
+                if isinstance(value, (str, int, float, bool)):
+                    metrics[f"detail_{key}"] = value
+
+        if request_id:
+            metrics["request_id"] = request_id
+
+        return self.error(
+            EventType.SYSTEM_ERROR,
+            f"[{error_code}] {message}",
+            correlation_id=correlation_id,
+            metrics=metrics,
+        )
+
+    def log_validation_error(
+        self,
+        field: str,
+        reason: str,
+        value_type: str | None = None,
+        correlation_id: str | None = None,
+    ) -> str:
+        """Log a validation error with E1xx error code.
+
+        Args:
+            field: Field that failed validation
+            reason: Reason for validation failure
+            value_type: Type of the invalid value
+            correlation_id: Optional correlation ID
+
+        Returns:
+            Correlation ID
+        """
+        return self.log_error_with_code(
+            error_code="E100",
+            message=f"Validation failed for '{field}': {reason}",
+            details={"field": field, "reason": reason, "value_type": value_type or "unknown"},
+            correlation_id=correlation_id,
+            recoverable=True,
+        )
+
+    def log_auth_error(
+        self,
+        error_code: str,
+        reason: str,
+        correlation_id: str | None = None,
+    ) -> str:
+        """Log an authentication/authorization error with E2xx error code.
+
+        Args:
+            error_code: Specific auth error code (E201, E202, E203, etc.)
+            reason: Reason for auth failure
+            correlation_id: Optional correlation ID
+
+        Returns:
+            Correlation ID
+        """
+        return self.log_error_with_code(
+            error_code=error_code,
+            message=f"Authentication/Authorization failed: {reason}",
+            details={"reason": reason},
+            correlation_id=correlation_id,
+            recoverable=False,
+        )
+
+    def log_moral_filter_error(
+        self,
+        error_code: str,
+        score: float | None = None,
+        threshold: float | None = None,
+        reason: str | None = None,
+        correlation_id: str | None = None,
+    ) -> str:
+        """Log a moral filter error with E3xx error code.
+
+        Args:
+            error_code: Specific moral filter error code (E301, E302, etc.)
+            score: Moral score that caused the error
+            threshold: Moral threshold
+            reason: Additional reason information
+            correlation_id: Optional correlation ID
+
+        Returns:
+            Correlation ID
+        """
+        details: dict[str, Any] = {}
+        if score is not None:
+            details["score"] = round(score, 4)
+        if threshold is not None:
+            details["threshold"] = round(threshold, 4)
+        if reason:
+            details["reason"] = reason
+
+        return self.log_error_with_code(
+            error_code=error_code,
+            message="Moral filter rejection",
+            details=details,
+            correlation_id=correlation_id,
+            recoverable=True,
+        )
+
+    def log_llm_error(
+        self,
+        error_code: str,
+        provider: str | None = None,
+        reason: str | None = None,
+        latency_ms: float | None = None,
+        correlation_id: str | None = None,
+    ) -> str:
+        """Log an LLM/generation error with E6xx error code.
+
+        Args:
+            error_code: Specific LLM error code (E601, E602, etc.)
+            provider: LLM provider name
+            reason: Reason for error
+            latency_ms: Latency before error occurred
+            correlation_id: Optional correlation ID
+
+        Returns:
+            Correlation ID
+        """
+        details: dict[str, Any] = {}
+        if provider:
+            details["provider"] = provider
+        if reason:
+            details["reason"] = reason
+        if latency_ms is not None:
+            details["latency_ms"] = round(latency_ms, 2)
+
+        return self.log_error_with_code(
+            error_code=error_code,
+            message=f"LLM error: {reason or 'unknown'}",
+            details=details,
+            correlation_id=correlation_id,
+            recoverable=error_code in ("E601", "E602"),  # Timeout and rate limit are recoverable
+        )
+
+    def log_system_error_with_code(
+        self,
+        error_code: str,
+        message: str,
+        details: dict[str, Any] | None = None,
+        correlation_id: str | None = None,
+    ) -> str:
+        """Log a system/infrastructure error with E7xx error code.
+
+        Args:
+            error_code: Specific system error code (E701, E702, etc.)
+            message: Error message
+            details: Additional details
+            correlation_id: Optional correlation ID
+
+        Returns:
+            Correlation ID
+        """
+        return self.log_error_with_code(
+            error_code=error_code,
+            message=message,
+            details=details,
+            correlation_id=correlation_id,
+            recoverable=False,
+        )
+
     def get_config(self) -> dict[str, Any]:
         """Get logger configuration.
 

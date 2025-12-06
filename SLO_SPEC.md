@@ -511,6 +511,47 @@ Burn Rate = (Actual Error Rate) / (SLO Error Rate)
    - Resume releases when budget replenished (next month)
    - Or when burn rate < 1.0 for 7 consecutive days
 
+### Error Budget Tracking Dashboard (PERF-003)
+
+The error budget is tracked via Grafana dashboard:
+
+**Dashboard Location:** `deploy/grafana/mlsdm_slo_dashboard.json`
+
+**Key Panels:**
+- **30-Day Error Budget Remaining**: Shows percentage of error budget remaining
+- **Error Budget Burn Rate (1h window)**: Current burn rate with thresholds
+- **Error Budget Burn Rate Over Time**: Historical burn rate trend
+
+**Prometheus Queries:**
+
+```promql
+# Error budget remaining (30-day window)
+1 - (
+  sum(increase(mlsdm_http_requests_total{status=~"5.."}[30d])) 
+  / 
+  (sum(increase(mlsdm_http_requests_total[30d])) * 0.001)
+)
+
+# Current burn rate (1h window)
+(
+  sum(rate(mlsdm_http_requests_total{status=~"5.."}[1h]))
+  /
+  sum(rate(mlsdm_http_requests_total[1h]))
+) / 0.001
+
+# Burn rate alert threshold
+# > 2.0 = Warning, > 5.0 = Critical
+```
+
+**Import Dashboard:**
+```bash
+# Import via Grafana API
+curl -X POST http://localhost:3000/api/dashboards/db \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d @deploy/grafana/mlsdm_slo_dashboard.json
+```
+
 ---
 
 ## Monitoring and Alerting

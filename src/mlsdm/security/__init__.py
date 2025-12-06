@@ -2,9 +2,18 @@
 MLSDM Security: Security utilities for the NeuroCognitiveEngine.
 
 This module provides security features including rate limiting,
-payload scrubbing, and logging controls.
+payload scrubbing, OIDC authentication, RBAC, and logging controls.
 """
 
+from mlsdm.security.oidc import (
+    OIDCAuthenticator,
+    OIDCAuthMiddleware,
+    OIDCConfig,
+    UserInfo,
+    get_current_user,
+    get_optional_user,
+    require_oidc_auth,
+)
 from mlsdm.security.payload_scrubber import (
     DEFAULT_SECRET_KEYS,
     EMAIL_PATTERN,
@@ -34,4 +43,12 @@ __all__ = [
     "FORBIDDEN_FIELDS",
     "EMAIL_PATTERN",
     "DEFAULT_SECRET_KEYS",
+    # OIDC (SEC-004)
+    "OIDCAuthenticator",
+    "OIDCAuthMiddleware",
+    "OIDCConfig",
+    "UserInfo",
+    "get_current_user",
+    "get_optional_user",
+    "require_oidc_auth",
 ]

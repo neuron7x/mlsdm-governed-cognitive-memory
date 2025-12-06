@@ -9,6 +9,7 @@ Complete API reference for MLSDM Governed Cognitive Memory v1.2.0.
 
 ## Table of Contents
 
+- [API Versioning](#api-versioning)
 - [HTTP API Endpoints](#http-api-endpoints)
   - [Health Check](#health-check)
   - [Generate](#generate)
@@ -24,6 +25,118 @@ Complete API reference for MLSDM Governed Cognitive Memory v1.2.0.
   - [CognitiveRhythm](#cognitiverhythm)
 - [Utilities](#utilities)
   - [MetricsCollector](#metricscollector)
+
+---
+
+## API Versioning (DOC-002)
+
+### Versioning Scheme
+
+MLSDM follows **Semantic Versioning 2.0.0** (semver):
+
+```
+MAJOR.MINOR.PATCH
+  │     │     └── Bug fixes, no breaking changes
+  │     └──────── New features, backwards compatible
+  └────────────── Breaking changes
+```
+
+**Current Version:** 1.2.0
+
+### API Version Header
+
+All API responses include the API version in headers:
+
+```
+X-MLSDM-API-Version: 1.2.0
+X-MLSDM-Min-Supported-Version: 1.0.0
+```
+
+### Version Compatibility
+
+| API Version | Status | Support Until |
+|-------------|--------|---------------|
+| **1.x** | ✅ Current | Active support |
+| 0.x | ⚠️ Deprecated | December 2025 |
+
+### Breaking Change Policy
+
+**Breaking changes** are introduced only in MAJOR version increments. Examples:
+
+- Removing an endpoint
+- Removing a required field from responses
+- Changing the meaning of a field
+- Changing authentication requirements
+
+**Non-breaking changes** (MINOR/PATCH):
+
+- Adding new optional request parameters
+- Adding new fields to responses
+- Adding new endpoints
+- Adding new error codes
+- Performance improvements
+- Bug fixes
+
+### Deprecation Timeline
+
+1. **Deprecation Notice**: Feature marked deprecated in MINOR release
+   - Deprecation warning added to docs
+   - `Deprecation` header added to responses
+   - Minimum 3 months notice
+
+2. **Migration Period**: 3-6 months
+   - Feature continues to work
+   - Migration guide published
+   - New alternative documented
+
+3. **Removal**: In next MAJOR release
+   - Feature removed
+   - CHANGELOG updated
+   - Migration complete
+
+### Deprecated Features
+
+| Feature | Deprecated In | Removed In | Migration |
+|---------|---------------|------------|-----------|
+| `/v0/generate` | 1.0.0 | 2.0.0 | Use `/generate` |
+
+### Response Headers for Deprecation
+
+Deprecated endpoints include headers:
+
+```
+Deprecation: true
+Sunset: Sat, 31 Dec 2025 23:59:59 GMT
+Link: </docs/migration>; rel="deprecation"; type="text/html"
+```
+
+### OpenAPI Specification
+
+The OpenAPI specification is auto-generated and available at:
+
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
+- **JSON Spec**: `http://localhost:8000/openapi.json`
+- **Static Export**: `docs/openapi.json` (regenerated on release)
+
+To export the spec manually:
+
+```bash
+python scripts/export_openapi.py --output docs/openapi.json
+```
+
+### Client SDK Compatibility
+
+When upgrading, check client SDK compatibility:
+
+| SDK | Compatible API Versions |
+|-----|------------------------|
+| Python SDK | 1.0.0 - 1.2.x |
+| TypeScript SDK | 1.1.0 - 1.2.x |
+
+### Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed version history and breaking changes.
 
 ---
 

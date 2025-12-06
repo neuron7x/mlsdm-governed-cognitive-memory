@@ -358,6 +358,40 @@ docker-compose up -d
 - Container overhead
 - Requires Docker knowledge
 
+#### Container Image Verification (CICD-006, SEC-005)
+
+All official container images are signed using [cosign](https://github.com/sigstore/cosign) with GitHub Actions OIDC keyless signing. SBOMs (Software Bill of Materials) are also attached.
+
+**Verify container image signature:**
+
+```bash
+# Install cosign
+brew install cosign  # macOS
+# or: go install github.com/sigstore/cosign/v2/cmd/cosign@latest
+
+# Verify image signature (keyless OIDC verification)
+cosign verify ghcr.io/neuron7x/mlsdm-neuro-engine:latest \
+  --certificate-identity-regexp "https://github.com/neuron7x/mlsdm.*" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+```
+
+**Retrieve SBOM from image:**
+
+```bash
+# Download SBOM attached to image
+cosign download sbom ghcr.io/neuron7x/mlsdm-neuro-engine:latest > sbom.json
+
+# View SBOM contents
+cat sbom.json | jq '.components | length'  # Count dependencies
+```
+
+**SBOM Formats:**
+
+- **CycloneDX**: `sbom-cyclonedx.json` - Attached to GitHub Release
+- **SPDX**: `sbom-spdx.json` - Attached to GitHub Release
+
+Both formats are industry-standard for supply chain security and vulnerability management.
+
 ---
 
 ### Pattern 4: Kubernetes Deployment
@@ -482,6 +516,108 @@ kubectl get svc mlsdm-api-service
 **Cons:**
 - Kubernetes complexity
 - Higher operational overhead
+
+---
+
+### Pattern 5: Canary Deployment (CICD-007)
+
+Gradual rollout with traffic splitting for safe production updates.
+
+#### Overview
+
+Canary deployments allow testing new versions with a small percentage of traffic before full rollout. This minimizes risk by:
+
+1. Running new version alongside stable version
+2. Routing subset of traffic to canary
+3. Monitoring error rates and latency
+4. Promoting or rolling back based on metrics
+
+#### Deployment Steps
+
+```bash
+# 1. Update canary image tag in manifest
+# Edit deploy/k8s/canary-deployment.yaml, update image tag
+
+# 2. Deploy canary (runs alongside stable)
+kubectl apply -f deploy/k8s/canary-deployment.yaml
+
+# 3. Verify canary is healthy
+kubectl get pods -n mlsdm-canary -l track=canary
+kubectl logs -n mlsdm-canary -l track=canary --tail=50
+
+# 4. Monitor canary metrics (check for elevated error rates)
+# Prometheus query: rate(http_requests_total{track="canary",status=~"5.."}[5m])
+
+# 5a. If healthy: Promote canary to stable
+kubectl set image deployment/mlsdm-api -n mlsdm-production \
+  mlsdm-api=ghcr.io/neuron7x/mlsdm-neuro-engine:NEW_VERSION
+
+# 5b. If unhealthy: Rollback canary
+kubectl delete -f deploy/k8s/canary-deployment.yaml
+```
+
+#### Traffic Splitting (Service Mesh)
+
+For percentage-based traffic splitting, use a service mesh (Istio, Linkerd):
+
+**Istio VirtualService:**
+
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mlsdm-vs
+spec:
+  hosts:
+  - mlsdm-api
+  http:
+  - route:
+    - destination:
+        host: mlsdm-api
+        subset: stable
+      weight: 90
+    - destination:
+        host: mlsdm-api
+        subset: canary
+      weight: 10
+```
+
+**Header-based routing (for internal testing):**
+
+```yaml
+http:
+- match:
+  - headers:
+      x-canary:
+        exact: "true"
+  route:
+  - destination:
+      host: mlsdm-api
+      subset: canary
+```
+
+#### Rollback Procedure
+
+```bash
+# Immediate rollback (delete canary)
+kubectl delete -f deploy/k8s/canary-deployment.yaml
+
+# If promoted to stable, rollback to previous version
+kubectl rollout undo deployment/mlsdm-api -n mlsdm-production
+
+# Verify rollback
+kubectl rollout status deployment/mlsdm-api -n mlsdm-production
+```
+
+#### Canary Success Criteria
+
+Before promoting canary to stable, verify:
+
+- [ ] Error rate < 0.1% (same as or better than stable)
+- [ ] P95 latency < 500ms (per SLO_SPEC.md)
+- [ ] No increase in emergency shutdown events
+- [ ] Health checks passing for >15 minutes
+- [ ] No abnormal log patterns
 
 ---
 
@@ -668,6 +804,69 @@ async def health():
     }
 ```
 
+### Log Aggregation (OBS-005)
+
+MLSDM supports centralized log aggregation with Grafana Loki. This enables:
+
+- Centralized log search across all instances
+- Correlation with Prometheus metrics
+- Log-based alerting
+- Trace correlation via trace_id
+
+#### Quick Start with Loki
+
+```bash
+# Start the Loki stack (Loki + Promtail + Grafana)
+cd deploy/monitoring/loki
+docker compose up -d
+
+# Access Grafana at http://localhost:3000 (admin/admin)
+# Loki is pre-configured as a data source
+```
+
+#### Querying Logs (LogQL)
+
+```logql
+# All MLSDM logs
+{job="mlsdm"}
+
+# Filter by log level
+{job="mlsdm"} | json | level="ERROR"
+
+# View specific error codes
+{job="mlsdm"} | json | error_code=~"E3.."
+
+# Find logs for a specific request
+{job="mlsdm"} | json | request_id="req-12345"
+
+# High latency requests (>500ms)
+{job="mlsdm"} | json | latency_ms > 500
+```
+
+See `deploy/monitoring/loki/logql-examples.md` for comprehensive query examples.
+
+#### ELK Stack Alternative
+
+For ELK (Elasticsearch, Logstash, Kibana) deployment, use a Filebeat configuration:
+
+```yaml
+# filebeat.yml
+filebeat.inputs:
+  - type: log
+    paths:
+      - /var/log/mlsdm/*.log
+    json.keys_under_root: true
+    json.add_error_key: true
+
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+  index: "mlsdm-logs-%{+yyyy.MM.dd}"
+
+processors:
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~
+```
+
 ---
 
 ## Security Considerations
@@ -713,6 +912,104 @@ async def health():
                raise ValueError("Prompt cannot be empty")
            return v
    ```
+
+### OAuth 2.0 / OIDC Authentication (SEC-004)
+
+MLSDM supports OIDC authentication for enterprise deployments with identity providers like Auth0, Okta, Keycloak, Azure AD, and Google.
+
+#### Configuration
+
+Set environment variables to enable OIDC:
+
+```bash
+# Enable OIDC authentication
+export MLSDM_OIDC_ENABLED=true
+
+# OIDC issuer URL (your identity provider)
+export MLSDM_OIDC_ISSUER=https://your-domain.auth0.com/
+
+# Expected audience (API identifier or client ID)
+export MLSDM_OIDC_AUDIENCE=https://api.mlsdm.example.com
+
+# Optional: Custom roles claim (default: "roles")
+export MLSDM_OIDC_ROLES_CLAIM=https://mlsdm.example.com/roles
+
+# Optional: JWKS URI (auto-discovered if not set)
+export MLSDM_OIDC_JWKS_URI=https://your-domain.auth0.com/.well-known/jwks.json
+```
+
+#### Usage in FastAPI
+
+```python
+from fastapi import Depends
+from mlsdm.security import (
+    OIDCAuthenticator,
+    OIDCAuthMiddleware,
+    get_current_user,
+    get_optional_user,
+    require_oidc_auth,
+    UserInfo,
+)
+
+# Initialize authenticator
+authenticator = OIDCAuthenticator.from_env()
+
+# Add middleware for automatic authentication
+app.add_middleware(
+    OIDCAuthMiddleware,
+    authenticator=authenticator,
+    skip_paths=["/health", "/docs", "/openapi.json"],
+)
+
+# Use dependency injection for protected endpoints
+@app.get("/me")
+async def get_me(user: UserInfo = Depends(get_current_user)):
+    return {"subject": user.subject, "roles": user.roles}
+
+# Optional authentication
+@app.get("/public")
+async def public_endpoint(user: UserInfo | None = Depends(get_optional_user)):
+    if user:
+        return {"greeting": f"Hello, {user.name}"}
+    return {"greeting": "Hello, anonymous"}
+
+# Role-based access control with decorator
+@require_oidc_auth(roles=["admin", "operator"])
+@app.post("/admin/shutdown")
+async def admin_shutdown(request: Request):
+    return {"status": "shutdown initiated"}
+```
+
+#### Token Format
+
+OIDC tokens should be passed as Bearer tokens:
+
+```bash
+curl -X POST http://localhost:8000/generate \
+  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Hello"}'
+```
+
+#### Identity Provider Configuration
+
+For Auth0:
+1. Create an API in Auth0 Dashboard
+2. Set identifier as `MLSDM_OIDC_AUDIENCE`
+3. Use your Auth0 domain as `MLSDM_OIDC_ISSUER`
+4. Add custom claims for roles if needed
+
+For Azure AD:
+1. Register an application in Azure AD
+2. Configure API permissions
+3. Set issuer to `https://login.microsoftonline.com/{tenant-id}/v2.0`
+4. Set audience to your application client ID
+
+For Keycloak:
+1. Create a realm and client
+2. Configure client for confidential access
+3. Set issuer to `https://keycloak.example.com/realms/{realm}`
+4. Enable role mapping in client scopes
 
 ### Network Security
 
@@ -870,6 +1167,55 @@ Before deploying to production:
 - [ ] Resource limits tuned
 - [ ] Scaling strategy defined
 - [ ] Capacity planning done
+
+### CI/CD & Branch Protection (CICD-002)
+- [ ] Branch protection enabled on `main`
+- [ ] Required status checks configured (lint, test, type-check)
+- [ ] At least 1 approval required for PRs
+- [ ] SLO-based release gates enabled (PERF-001)
+- [ ] SBOM generation configured (SEC-005)
+- [ ] Container image signing enabled (CICD-006)
+
+---
+
+## Branch Protection Configuration
+
+The `main` branch should have branch protection rules configured to ensure code quality.
+
+### Required Status Checks
+
+| Check Name | Description |
+|------------|-------------|
+| `Lint and Type Check` | Ruff linting and mypy type checking |
+| `Security Vulnerability Scan` | pip-audit dependency scanning |
+| `test (3.10)` | Unit tests on Python 3.10 |
+| `test (3.11)` | Unit tests on Python 3.11 |
+| `End-to-End Tests` | E2E integration tests |
+| `Effectiveness Validation` | SLO and effectiveness validation |
+| `All CI Checks Passed` | Gate job requiring all checks |
+
+### Configuration via GitHub CLI
+
+```bash
+# Enable branch protection with required status checks
+gh api repos/{owner}/{repo}/branches/main/protection \
+  --method PUT \
+  --field required_status_checks='{"strict":true,"contexts":["Lint and Type Check","Security Vulnerability Scan","test (3.10)","test (3.11)","End-to-End Tests","Effectiveness Validation","All CI Checks Passed"]}' \
+  --field enforce_admins=true \
+  --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true}' \
+  --field restrictions=null
+
+# Verify branch protection
+gh api repos/{owner}/{repo}/branches/main/protection
+```
+
+### Recommended Settings
+
+- ✅ Require status checks to pass before merging
+- ✅ Require branches to be up to date before merging
+- ✅ Require at least 1 approval
+- ✅ Dismiss stale pull request approvals when new commits are pushed
+- ❌ Do not allow bypassing the above settings
 
 ---
 

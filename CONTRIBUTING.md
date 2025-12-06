@@ -415,6 +415,47 @@ Brief description of changes
 3. **Testing**: Maintainer may test changes locally
 4. **Merge**: Once approved, changes are merged to main
 
+### Branch Protection (CICD-002)
+
+The `main` branch has branch protection rules that require the following status checks to pass before merging:
+
+**Required Status Checks:**
+
+| Check Name | Workflow | Description |
+|------------|----------|-------------|
+| `Lint and Type Check` | `ci-neuro-cognitive-engine.yml` | Ruff linting and mypy type checking |
+| `Security Vulnerability Scan` | `ci-neuro-cognitive-engine.yml` | pip-audit dependency scanning |
+| `test (3.10)` | `ci-neuro-cognitive-engine.yml` | Unit tests on Python 3.10 |
+| `test (3.11)` | `ci-neuro-cognitive-engine.yml` | Unit tests on Python 3.11 |
+| `End-to-End Tests` | `ci-neuro-cognitive-engine.yml` | E2E integration tests |
+| `Effectiveness Validation` | `ci-neuro-cognitive-engine.yml` | SLO and effectiveness validation |
+| `All CI Checks Passed` | `ci-neuro-cognitive-engine.yml` | Gate job requiring all checks |
+
+**Additional Branch Protection Settings:**
+
+- ✅ Require status checks to pass before merging
+- ✅ Require branches to be up to date before merging
+- ✅ Require at least 1 approval (recommended)
+- ✅ Dismiss stale pull request approvals when new commits are pushed
+- ❌ Do not allow bypassing the above settings
+
+**Configure via GitHub CLI:**
+
+Repository administrators can configure branch protection using the GitHub CLI:
+
+```bash
+# Enable branch protection with required status checks
+gh api repos/{owner}/{repo}/branches/main/protection \
+  --method PUT \
+  --field required_status_checks='{"strict":true,"contexts":["Lint and Type Check","Security Vulnerability Scan","test (3.10)","test (3.11)","End-to-End Tests","Effectiveness Validation","All CI Checks Passed"]}' \
+  --field enforce_admins=true \
+  --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true}' \
+  --field restrictions=null
+
+# Verify branch protection is configured
+gh api repos/{owner}/{repo}/branches/main/protection
+```
+
 ### Aphasia / NeuroLang CI Gate
 
 Each PR that modifies NeuroLang/Aphasia-Broca components triggers a dedicated CI job (`aphasia-neurolang`) that:
