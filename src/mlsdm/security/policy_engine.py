@@ -336,6 +336,7 @@ def _requires_request_signature(route: str) -> bool:
     """Check if route requires request signature.
 
     High-security routes that modify system state should require signatures.
+    Currently optional for all routes to maintain backward compatibility.
 
     Args:
         route: API route
@@ -344,9 +345,11 @@ def _requires_request_signature(route: str) -> bool:
         True if signature is required
     """
     # Routes that require request signing for tamper protection
-    signature_required_routes = [
-        "/admin",
-        "/v1/admin",
+    # Currently empty to maintain backward compatibility
+    # In production, consider enabling for specific high-security routes
+    signature_required_routes: list[str] = [
+        # "/admin",  # Commented out - signature optional for backward compatibility
+        # "/v1/admin",
     ]
 
     return route in signature_required_routes

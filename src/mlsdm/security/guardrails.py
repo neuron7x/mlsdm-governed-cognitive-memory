@@ -461,10 +461,10 @@ async def _check_response_safety(response: str, context: GuardrailContext) -> Gu
 
     STRIDE: Information Disclosure
     """
-    from mlsdm.security.llm_safety import SafetyRiskLevel, analyze_output
+    from mlsdm.security.llm_safety import SafetyRiskLevel, filter_output
 
     # Analyze output using existing llm_safety module
-    safety_result = analyze_output(response)
+    safety_result = filter_output(response)
 
     passed = safety_result.is_safe and safety_result.risk_level in (
         SafetyRiskLevel.NONE,
@@ -566,19 +566,14 @@ def _log_guardrail_decision(
 
     # Log to security logger for audit trail
     if decision["allow"]:
-        security_logger.log_system_event(
-            SecurityEventType.ACCESS_GRANTED,
-            f"Guardrails allowed access to {context.route}",
-            additional_data={
-                "client_id": context.client_id,
-                "user_id": context.user_id,
-                "stride_categories": decision["stride_categories"],
-                "checks_performed": decision["checks_performed"],
-            },
+        # Use AUTH_SUCCESS for allowed access
+        security_logger.log_auth_success(
+            client_id=context.client_id or "unknown",
         )
     else:
+        # Use AUTHZ_DENIED for denied access - use system_event as it's more general
         security_logger.log_system_event(
-            SecurityEventType.ACCESS_DENIED,
+            SecurityEventType.AUTHZ_DENIED,
             f"Guardrails denied access to {context.route}",
             additional_data={
                 "client_id": context.client_id,
