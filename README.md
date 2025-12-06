@@ -28,7 +28,7 @@
 [Quick Start](#-quick-start) •
 [Documentation](#-documentation) •
 [Architecture](#-architecture) •
-[Metrics](#-validated-metrics) •
+[Validation](#validation) •
 [Contributing](#-contributing)
 
 </div>
@@ -54,57 +54,7 @@
 
 ## 🧬 What is MLSDM?
 
-**MLSDM (Multi-Level Synaptic Dynamic Memory)** is a governed cognitive wrapper for Large Language Models that enforces biological constraints inspired by neuroscience.
-
-<table>
-<tr>
-<td width="60%">
-
-### The Problem
-
-LLMs lack built-in mechanisms for:
-- ❌ Memory bounded constraints
-- ❌ Adaptive safety filtering without RLHF
-- ❌ Cognitive rhythm management (wake/sleep cycles)
-- ❌ Speech quality detection and repair
-
-### The Solution
-
-MLSDM wraps **any LLM** with a neurobiologically-grounded cognitive layer that provides:
-- ✅ **Fixed memory footprint** (29.37 MB)
-- ✅ **Adaptive moral filtering** (93.3% toxic rejection)
-- ✅ **Wake/sleep cycles** (89.5% resource reduction)
-- ✅ **Aphasia detection** (telegraphic speech repair)
-
-</td>
-<td width="40%">
-
-```text
-┌─────────────────────────┐
-│      Your LLM           │
-│  (OpenAI, Anthropic,    │
-│   Local, Custom...)     │
-└───────────┬─────────────┘
-            │
-    ┌───────▼───────┐
-    │    MLSDM      │
-    │   Wrapper     │
-    │               │
-    │ • Memory      │
-    │ • Moral       │
-    │ • Rhythm      │
-    │ • Speech      │
-    └───────┬───────┘
-            │
-    ┌───────▼───────┐
-    │   Governed    │
-    │   Response    │
-    └───────────────┘
-```
-
-</td>
-</tr>
-</table>
+**MLSDM (Multi-Level Synaptic Dynamic Memory)** is a production-ready cognitive governance layer for Large Language Models that adds memory, safety filtering, and neurobiologically-inspired constraints. It wraps any LLM (OpenAI, Anthropic, local models) with a lightweight framework that enforces bounded memory (29.37 MB fixed), adaptive moral filtering (93.3% toxic rejection), cognitive rhythm management (wake/sleep cycles), and speech quality detection. MLSDM is designed for teams building LLM systems that need auditable safety, observability, and production-grade reliability without expensive RLHF fine-tuning.
 
 ---
 
@@ -171,53 +121,57 @@ if abs(error) > 0.05:  # dead-band
 
 ### System Overview
 
-```mermaid
-flowchart TB
-    subgraph Client["Client Layer"]
-        U[User Prompt]
-        SDK[SDK Client]
-        API[HTTP API]
-    end
+MLSDM is organized as a modular cognitive governance layer with the following subsystems:
 
-    subgraph Wrapper["MLSDM Wrapper"]
-        LW[LLMWrapper]
-        NLW[NeuroLangWrapper]
-    end
-
-    subgraph Controller["Cognitive Controller"]
-        MF[Moral Filter V2]
-        CR[Cognitive Rhythm]
-        OM[Ontology Matcher]
-    end
-
-    subgraph Memory["Memory System"]
-        PELM[Phase-Entangled<br/>Lattice Memory]
-        MLM[Multi-Level<br/>Synaptic Memory]
-    end
-
-    subgraph Speech["Speech Governance"]
-        ABD[Aphasia-Broca<br/>Detector]
-        ASG[Aphasia Speech<br/>Governor]
-    end
-
-    subgraph LLM["LLM Provider"]
-        OpenAI[OpenAI]
-        Local[Local/Custom]
-    end
-
-    U --> SDK & API
-    SDK & API --> LW & NLW
-    LW & NLW --> Controller
-    Controller --> Memory
-    NLW --> Speech
-    LW & NLW --> LLM
-    LLM --> Response[Governed Response]
-
-    style Wrapper fill:#e1f5fe,stroke:#01579b
-    style Controller fill:#f3e5f5,stroke:#4a148c
-    style Memory fill:#e8f5e9,stroke:#1b5e20
-    style Speech fill:#fff3e0,stroke:#e65100
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│                           MLSDM System                              │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Client APIs                                                        │
+│  ├── HTTP API (FastAPI)                                            │
+│  ├── SDK Client (NeuroCognitiveClient)                             │
+│  └── Direct Integration (LLMWrapper, LLMPipeline)                  │
+│                                                                     │
+│  Core Governance Layer                                             │
+│  ├── Cognitive Controller                                          │
+│  │   ├── Moral Filter V2 (adaptive threshold, EMA-based)           │
+│  │   ├── Cognitive Rhythm (wake/sleep cycles)                      │
+│  │   └── Ontology Matcher (semantic safety)                        │
+│  │                                                                  │
+│  ├── Memory System                                                 │
+│  │   ├── Phase-Entangled Lattice Memory (PELM) - 20k vectors       │
+│  │   └── Multi-Level Synaptic Memory (L1/L2/L3)                    │
+│  │                                                                  │
+│  ├── Speech Governance                                             │
+│  │   ├── Aphasia-Broca Detector (telegraphic speech detection)     │
+│  │   └── Aphasia Speech Governor (repair logic)                    │
+│  │                                                                  │
+│  └── Security & Observability                                      │
+│      ├── Rate Limiter (5 RPS per client)                           │
+│      ├── Input Validator (type, range, dimension checks)           │
+│      ├── Prometheus Metrics                                        │
+│      └── Structured Logging (PII scrubbing)                        │
+│                                                                     │
+│  LLM Integration                                                   │
+│  └── Universal LLM Adapter (OpenAI, Anthropic, local, custom)      │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
+
+### Module Hierarchy
+
+- **src/mlsdm/**
+  - **core/** — LLMWrapper, LLMPipeline, CognitiveController, MemoryManager
+  - **cognition/** — MoralFilterV2, OntologyMatcher
+  - **memory/** — QILM (PELM implementation), MultiLevelMemory
+  - **rhythm/** — CognitiveRhythm (wake/sleep cycles)
+  - **speech/** — AphasiaBrocaDetector, SpeechGovernor
+  - **security/** — RateLimiter, InputValidator, SecurityLogger
+  - **observability/** — MetricsCollector, StructuredLogger
+  - **api/** — FastAPI HTTP endpoints
+  - **sdk/** — NeuroCognitiveClient
+  - **adapters/** — LLM adapters and router
 
 ### Request Flow
 
@@ -276,7 +230,7 @@ For complete system design, see [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md).
 ### Prerequisites
 
 - Python 3.10+
-- pip
+- pip or uv
 
 ### Installation
 
@@ -285,68 +239,101 @@ For complete system design, see [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md).
 git clone https://github.com/neuron7x/mlsdm.git
 cd mlsdm
 
-# Install core dependencies
+# Install dependencies
 pip install -r requirements.txt
 
 # (Optional) Install NeuroLang/Aphasia support
 pip install -r requirements-neurolang.txt
 ```
 
-### Basic Usage
+### Run Local Engine (Demo)
+
+```bash
+# Run the minimal memory demo (stores/retrieves facts + shows moral filtering)
+python examples/minimal_memory_demo.py
+```
+
+### Make a Test Request (Python SDK)
 
 ```python
-from mlsdm.core.llm_wrapper import LLMWrapper
-import numpy as np
+from mlsdm import create_llm_wrapper
 
-# Define your LLM function
-def my_llm(prompt: str, max_tokens: int) -> str:
-    # Replace with your LLM (OpenAI, Anthropic, local, etc.)
-    return "Your LLM response here"
+# Create governed wrapper with stub LLM (no API key needed for demo)
+wrapper = create_llm_wrapper()
 
-# Define your embedding function
-def my_embedder(text: str) -> np.ndarray:
-    # Replace with your embedding model
-    return np.random.randn(384).astype(np.float32)
-
-# Create governed wrapper
-wrapper = LLMWrapper(
-    llm_generate_fn=my_llm,
-    embedding_fn=my_embedder,
-    dim=384,                        # Embedding dimension
-    capacity=20_000,                # Memory capacity
-    wake_duration=8,                # Wake phase steps
-    sleep_duration=3,               # Sleep phase steps
-    initial_moral_threshold=0.50    # Starting threshold
-)
-
-# Generate with governance
+# Store a fact and retrieve it with governance
 result = wrapper.generate(
-    prompt="Explain quantum computing",
-    moral_value=0.8
+    prompt="The capital of France is Paris.",
+    moral_value=0.8  # High moral value = acceptable content
 )
 
 print(f"Response: {result['response']}")
 print(f"Accepted: {result['accepted']}")
 print(f"Phase: {result['phase']}")
-print(f"Threshold: {result['moral_threshold']}")
+
+# Test moral filtering with low moral value (simulating toxic input)
+toxic_result = wrapper.generate(
+    prompt="Some toxic content",
+    moral_value=0.2  # Low moral value = likely to be rejected
+)
+
+print(f"Toxic input accepted: {toxic_result['accepted']}")  # Should be False
 ```
 
-### Run Tests
+### Make a Test Request (HTTP API)
 
 ```bash
-# Full test suite
+# Terminal 1: Start the API server
+python -m mlsdm.entrypoints.dev
+
+# Terminal 2: Make a request
+curl -X POST http://localhost:8000/api/v1/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Explain machine learning",
+    "max_tokens": 256,
+    "moral_value": 0.8
+  }'
+```
+
+### Validation
+
+MLSDM has comprehensive testing and validation:
+
+**Test Coverage**: 90.26% (424 tests across 160 test files)
+
+**CI Gates**:
+- `ruff check src tests` — Linting (PEP 8, import sorting)
+- `mypy src/mlsdm` — Type checking (strict mode)
+- `pytest tests/` — Unit, integration, property-based tests
+- `./coverage_gate.sh` — Coverage enforcement (≥65% minimum)
+- Security scans (bandit, SAST)
+- Performance benchmarks
+- Resilience tests (chaos engineering)
+
+**Run Tests Locally**:
+
+```bash
+# Lint code
+ruff check src tests
+
+# Type check
+mypy src/mlsdm
+
+# Run all tests
 pytest tests/ -v
 
-# Effectiveness validation
-pytest tests/validation/ -v
+# Run with coverage
+./coverage_gate.sh
 
-# Property-based tests
-pytest tests/property/ -v
-
-# Coverage gate (enforces minimum coverage threshold)
-./coverage_gate.sh                 # Default threshold: 65%
-COVERAGE_MIN=80 ./coverage_gate.sh # Custom threshold
+# Run specific test suites
+pytest tests/unit/ -v            # Unit tests
+pytest tests/validation/ -v      # Effectiveness validation
+pytest tests/property/ -v        # Property-based tests
+pytest tests/integration/ -v     # Integration tests
 ```
+
+See [docs/MLSDM_VALIDATION_REPORT.md](docs/MLSDM_VALIDATION_REPORT.md) for detailed validation evidence.
 
 ### Policy Checks (Governance)
 
@@ -646,10 +633,16 @@ For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE
 
 | Document | Description |
 |:---------|:------------|
-| [Implementation Summary](IMPLEMENTATION_SUMMARY.md) | What was built and how |
+| [**Validation Report**](docs/MLSDM_VALIDATION_REPORT.md) | **Proof of reality: tests, coverage, CI gates** |
 | [Effectiveness Report](EFFECTIVENESS_VALIDATION_REPORT.md) | Quantitative validation results |
 | [Coverage Report](COVERAGE_REPORT_2025.md) | 90.26% test coverage details |
 | [Testing Guide](TESTING_GUIDE.md) | How to run and write tests |
+
+### Product & Positioning
+
+| Document | Description |
+|:---------|:------------|
+| [**Positioning Doc**](docs/MLSDM_POSITIONING.md) | **Problem, users, differentiators, use cases** |
 
 ### Scientific Foundation
 
