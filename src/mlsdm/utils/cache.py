@@ -45,7 +45,7 @@ import time
 from collections import OrderedDict
 from dataclasses import dataclass
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -327,8 +327,8 @@ class RedisCache(Generic[T]):
             with self._lock:
                 self._stats.hits += 1
 
-            # Deserialize
-            return json.loads(data)
+            # Deserialize - json.loads returns Any, cast to expected type T
+            return cast("T | None", json.loads(data))
         except Exception as e:
             logger.warning("Redis get error: %s", e)
             return None
@@ -351,7 +351,8 @@ class RedisCache(Generic[T]):
         """Delete entry from cache."""
         try:
             redis_key = self._make_key(key)
-            return self._redis.delete(redis_key) > 0
+            deleted: int = self._redis.delete(redis_key)
+            return deleted > 0
         except Exception as e:
             logger.warning("Redis delete error: %s", e)
             return False
@@ -507,7 +508,7 @@ def cached_llm_response(
             cached = cache.get(key)
             if cached is not None:
                 logger.debug("LLM cache hit for prompt hash %s", key[:20])
-                return cached
+                return cast("str", cached)
 
             # Call function
             result = func(prompt, max_tokens, *args, **kwargs)

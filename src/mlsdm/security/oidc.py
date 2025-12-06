@@ -270,7 +270,8 @@ class OIDCAuthenticator:
         # Auto-discover from .well-known/openid-configuration
         with self._discovery_lock:
             if "jwks_uri" in self._discovery_cache:
-                return self._discovery_cache["jwks_uri"]
+                jwks_uri: str = self._discovery_cache["jwks_uri"]
+                return jwks_uri
 
             try:
                 import requests
@@ -278,9 +279,10 @@ class OIDCAuthenticator:
                 discovery_url = f"{self.config.issuer.rstrip('/')}/.well-known/openid-configuration"
                 response = requests.get(discovery_url, timeout=10)
                 response.raise_for_status()
-                config = response.json()
+                config: dict[str, Any] = response.json()
                 self._discovery_cache = config
-                return config["jwks_uri"]
+                discovered_uri: str = config["jwks_uri"]
+                return discovered_uri
             except Exception as e:
                 logger.error("Failed to discover JWKS URI: %s", e)
                 raise HTTPException(
@@ -297,7 +299,7 @@ class OIDCAuthenticator:
         Returns:
             Token string or None if not present
         """
-        auth_header = request.headers.get("Authorization", "")
+        auth_header: str = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
             return auth_header[7:]
         return None
@@ -538,7 +540,7 @@ async def get_current_user(request: Request) -> UserInfo:
         >>> async def get_me(user: UserInfo = Depends(get_current_user)):
         ...     return {"subject": user.subject, "roles": user.roles}
     """
-    user_info = getattr(request.state, "user_info", None)
+    user_info: UserInfo | None = getattr(request.state, "user_info", None)
     if not user_info:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

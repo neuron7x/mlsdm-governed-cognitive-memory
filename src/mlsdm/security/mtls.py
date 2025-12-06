@@ -139,7 +139,9 @@ def get_client_cert_from_request(request: Request) -> dict[str, Any] | None:
 
     # Get peer certificate
     try:
-        return ssl_object.getpeercert()
+        # ssl.SSLSocket.getpeercert() returns dict[str, Any] when binary_form=False
+        peer_cert: dict[str, Any] | None = ssl_object.getpeercert()
+        return peer_cert
     except Exception as e:
         logger.debug("Failed to get peer certificate: %s", e)
         return None
