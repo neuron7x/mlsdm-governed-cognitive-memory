@@ -3,17 +3,18 @@
 Tests STRIDE-aligned guardrail enforcement and policy decisions.
 """
 
-import pytest
 from unittest.mock import Mock, patch
 
+import pytest
+
 from mlsdm.security.guardrails import (
+    GuardrailCheckType,
     GuardrailContext,
     GuardrailResult,
-    GuardrailCheckType,
-    StrideCategory,
     PolicyDecision,
-    enforce_request_guardrails,
+    StrideCategory,
     enforce_llm_guardrails,
+    enforce_request_guardrails,
 )
 
 
@@ -212,10 +213,10 @@ class TestEnforceLLMGuardrails:
     async def test_unsafe_prompt(self, mock_analyze_prompt):
         """Test DENY decision for unsafe prompt (STRIDE: Tampering, Elevation of Privilege)."""
         from mlsdm.security.llm_safety import (
+            SafetyCategory,
             SafetyResult,
             SafetyRiskLevel,
             SafetyViolation,
-            SafetyCategory,
         )
 
         # Mock unsafe prompt analysis
@@ -286,10 +287,10 @@ class TestEnforceLLMGuardrails:
     async def test_unsafe_response(self, mock_filter_output, mock_analyze_prompt):
         """Test DENY decision for unsafe response (STRIDE: Information Disclosure)."""
         from mlsdm.security.llm_safety import (
+            SafetyCategory,
             SafetyResult,
             SafetyRiskLevel,
             SafetyViolation,
-            SafetyCategory,
         )
 
         # Mock safe prompt but unsafe output

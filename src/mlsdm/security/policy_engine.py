@@ -28,10 +28,14 @@ Example:
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass, field
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# Policy configuration constants (can be overridden via environment)
+MAX_PAYLOAD_SIZE = int(os.getenv("MLSDM_MAX_PAYLOAD_SIZE", str(10 * 1024 * 1024)))  # 10MB default
 
 
 @dataclass
@@ -343,14 +347,20 @@ def _requires_request_signature(route: str) -> bool:
 
     Returns:
         True if signature is required
+
+    Note:
+        Signature requirements are disabled by default for backward compatibility.
+        Enable by setting MLSDM_REQUIRE_SIGNATURES=true and configure routes
+        in MLSDM_SIGNATURE_REQUIRED_ROUTES env var (comma-separated).
     """
-    # Routes that require request signing for tamper protection
-    # Currently empty to maintain backward compatibility
-    # In production, consider enabling for specific high-security routes
-    signature_required_routes: list[str] = [
-        # "/admin",  # Commented out - signature optional for backward compatibility
-        # "/v1/admin",
-    ]
+    # Check if signature requirement is enabled globally
+    require_sigs = os.getenv("MLSDM_REQUIRE_SIGNATURES", "false").lower() == "true"
+    if not require_sigs:
+        return False
+
+    # Get routes from environment (comma-separated)
+    routes_str = os.getenv("MLSDM_SIGNATURE_REQUIRED_ROUTES", "")
+    signature_required_routes = [r.strip() for r in routes_str.split(",") if r.strip()]
 
     return route in signature_required_routes
 
@@ -363,9 +373,6 @@ def _policy_payload_size_limit(context: PolicyContext) -> bool:
     Returns:
         True if payload size is within limits
     """
-    # Maximum payload size: 10MB
-    MAX_PAYLOAD_SIZE = 10 * 1024 * 1024  # 10MB in bytes
-
     return context.payload_size <= MAX_PAYLOAD_SIZE
 
 

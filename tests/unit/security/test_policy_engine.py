@@ -8,8 +8,8 @@ import pytest
 from mlsdm.security.policy_engine import (
     PolicyContext,
     PolicyDecisionDetail,
-    evaluate_request_policy,
     evaluate_llm_output_policy,
+    evaluate_request_policy,
 )
 
 
@@ -354,8 +354,9 @@ class TestEvaluateLLMOutputPolicy:
 
             assert decision.allow is False, f"Failed for violation: {violation}"
             # Check that at least one expected STRIDE category is present
-            assert any(cat in decision.stride_categories for cat in expected_categories), \
-                f"Expected one of {expected_categories} in {decision.stride_categories} for {violation}"
+            assert any(
+                cat in decision.stride_categories for cat in expected_categories
+            ), f"Expected one of {expected_categories} in {decision.stride_categories} for {violation}"
 
 
 @pytest.mark.parametrize(

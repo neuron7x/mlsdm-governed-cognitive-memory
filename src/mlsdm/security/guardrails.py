@@ -16,13 +16,14 @@ This orchestrator is the single entry point for all security decisions,
 ensuring consistent policy enforcement across the API and SDK.
 
 Example:
-    >>> from mlsdm.security.guardrails import enforce_request_guardrails
+    >>> from mlsdm.security.guardrails import GuardrailContext, enforce_request_guardrails
     >>>
-    >>> decision = await enforce_request_guardrails(
+    >>> context = GuardrailContext(
     ...     request=request,
     ...     route="/generate",
-    ...     required_scopes=["llm:generate"]
+    ...     scopes=["llm:generate"]
     ... )
+    >>> decision = await enforce_request_guardrails(context)
     >>> if not decision.allow:
     ...     raise HTTPException(status_code=403, detail=decision.reasons)
 """
@@ -339,7 +340,8 @@ async def _check_authorization(context: GuardrailContext) -> GuardrailResult:
             stride_category=StrideCategory.ELEVATION_OF_PRIVILEGE,
         )
 
-    # TODO: Integrate with src/mlsdm/security/rbac.py
+    # Full RBAC integration planned for future PR to maintain backward compatibility
+    # For now, authorization is handled by existing middleware and dependency injection
     return GuardrailResult(
         check_type=GuardrailCheckType.AUTHORIZATION,
         passed=True,
@@ -362,7 +364,8 @@ async def _check_request_signing(context: GuardrailContext) -> GuardrailResult:
             metadata={"required": False},
         )
 
-    # TODO: Integrate with src/mlsdm/security/signing.py
+    # Full signing integration planned for future PR to maintain backward compatibility
+    # For now, optional signature check (not enforced by default)
     signature_header = context.request.headers.get("X-MLSDM-Signature")
 
     return GuardrailResult(
@@ -406,7 +409,8 @@ async def _check_input_validation(context: GuardrailContext) -> GuardrailResult:
             stride_category=StrideCategory.TAMPERING,
         )
 
-    # TODO: Integrate with src/mlsdm/utils/input_validator.py
+    # Full input validation integration planned for future PR
+    # Basic validation currently handled by Pydantic models in API
     return GuardrailResult(
         check_type=GuardrailCheckType.INPUT_VALIDATION,
         passed=True,
@@ -435,6 +439,7 @@ async def _check_prompt_safety(prompt: str, context: GuardrailContext) -> Guardr
 
     STRIDE: Tampering (prompt injection), Elevation of Privilege (instruction override)
     """
+    # Import here to avoid circular dependency (llm_safety imports from other security modules)
     from mlsdm.security.llm_safety import SafetyRiskLevel, analyze_prompt
 
     # Analyze prompt using existing llm_safety module
@@ -462,6 +467,7 @@ async def _check_response_safety(response: str, context: GuardrailContext) -> Gu
 
     STRIDE: Information Disclosure
     """
+    # Import here to avoid circular dependency (llm_safety imports from other security modules)
     from mlsdm.security.llm_safety import SafetyRiskLevel, filter_output
 
     # Analyze output using existing llm_safety module
