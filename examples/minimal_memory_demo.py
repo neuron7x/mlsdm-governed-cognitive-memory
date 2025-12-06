@@ -29,12 +29,14 @@ def main() -> None:
     print()
 
     # Create MLSDM wrapper with stub LLM (no API key needed)
+    # Default configuration: 20k vectors × 384 dimensions = 29.37 MB fixed memory
     print("1. Creating MLSDM wrapper...")
     wrapper = create_llm_wrapper(
         wake_duration=8,
         sleep_duration=3,
         initial_moral_threshold=0.50,
     )
+    # Note: These values come from LLMWrapper defaults (capacity=20_000, dim=384)
     print("   ✓ Wrapper created with 20,000 vector capacity (29.37 MB fixed)")
     print()
 
