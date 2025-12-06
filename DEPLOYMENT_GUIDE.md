@@ -804,6 +804,69 @@ async def health():
     }
 ```
 
+### Log Aggregation (OBS-005)
+
+MLSDM supports centralized log aggregation with Grafana Loki. This enables:
+
+- Centralized log search across all instances
+- Correlation with Prometheus metrics
+- Log-based alerting
+- Trace correlation via trace_id
+
+#### Quick Start with Loki
+
+```bash
+# Start the Loki stack (Loki + Promtail + Grafana)
+cd deploy/monitoring/loki
+docker compose up -d
+
+# Access Grafana at http://localhost:3000 (admin/admin)
+# Loki is pre-configured as a data source
+```
+
+#### Querying Logs (LogQL)
+
+```logql
+# All MLSDM logs
+{job="mlsdm"}
+
+# Filter by log level
+{job="mlsdm"} | json | level="ERROR"
+
+# View specific error codes
+{job="mlsdm"} | json | error_code=~"E3.."
+
+# Find logs for a specific request
+{job="mlsdm"} | json | request_id="req-12345"
+
+# High latency requests (>500ms)
+{job="mlsdm"} | json | latency_ms > 500
+```
+
+See `deploy/monitoring/loki/logql-examples.md` for comprehensive query examples.
+
+#### ELK Stack Alternative
+
+For ELK (Elasticsearch, Logstash, Kibana) deployment, use a Filebeat configuration:
+
+```yaml
+# filebeat.yml
+filebeat.inputs:
+  - type: log
+    paths:
+      - /var/log/mlsdm/*.log
+    json.keys_under_root: true
+    json.add_error_key: true
+
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+  index: "mlsdm-logs-%{+yyyy.MM.dd}"
+
+processors:
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~
+```
+
 ---
 
 ## Security Considerations

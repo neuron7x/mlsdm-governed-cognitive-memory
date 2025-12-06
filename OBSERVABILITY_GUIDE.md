@@ -660,3 +660,128 @@ services:
 3. **Set appropriate sampling** - Use 10% sampling in high-traffic production
 4. **Monitor error budgets** - Set up alerts before budget exhaustion
 5. **Review traces periodically** - Look for slow spans and optimization opportunities
+
+---
+
+## Structured Error Logging with Error Codes (OBS-004)
+
+MLSDM uses a structured error code system for consistent error identification and automated alerting.
+
+### Error Code Format
+
+Error codes follow the pattern: `E{category}{number}`
+
+| Category | Range | Description |
+|----------|-------|-------------|
+| **E1xx** | Input | Input validation errors |
+| **E2xx** | Auth | Authentication/Authorization errors |
+| **E3xx** | Moral | Moral filter errors |
+| **E4xx** | Memory | Memory/PELM errors |
+| **E5xx** | Rhythm | Cognitive rhythm errors |
+| **E6xx** | LLM | LLM/Generation errors |
+| **E7xx** | System | System/Infrastructure errors |
+| **E8xx** | Config | Configuration errors |
+| **E9xx** | API | API/Request errors |
+
+### Common Error Codes
+
+| Code | Name | Description | Recoverable |
+|------|------|-------------|-------------|
+| `E100` | VALIDATION_ERROR | Input validation failed | Yes |
+| `E101` | INVALID_VECTOR | Invalid event vector dimension | Yes |
+| `E102` | INVALID_MORAL_VALUE | Moral value out of range | Yes |
+| `E201` | INVALID_TOKEN | Invalid authentication token | No |
+| `E203` | INSUFFICIENT_PERMISSIONS | Insufficient permissions | No |
+| `E301` | MORAL_THRESHOLD_EXCEEDED | Moral threshold not met | Yes |
+| `E302` | TOXIC_CONTENT_DETECTED | Toxic content in input | Yes |
+| `E401` | MEMORY_CAPACITY_EXCEEDED | Memory capacity limit | No |
+| `E501` | SLEEP_PHASE_REJECTION | Rejected during sleep | Yes |
+| `E601` | LLM_TIMEOUT | LLM request timed out | Yes |
+| `E602` | LLM_RATE_LIMITED | LLM rate limit exceeded | Yes |
+| `E701` | EMERGENCY_SHUTDOWN | System in emergency shutdown | No |
+| `E901` | RATE_LIMIT_EXCEEDED | API rate limit exceeded | Yes |
+| `E902` | REQUEST_TIMEOUT | Request timed out | Yes |
+
+### Using Error Code Logging
+
+```python
+from mlsdm.observability.logger import get_observability_logger
+
+logger = get_observability_logger()
+
+# Log with specific error code
+logger.log_error_with_code(
+    error_code="E301",
+    message="Moral threshold exceeded",
+    details={"score": 0.3, "threshold": 0.5},
+    recoverable=True,
+    request_id="req-12345"
+)
+
+# Convenience methods
+logger.log_validation_error(field="prompt", reason="empty string")
+logger.log_auth_error(error_code="E201", reason="expired token")
+logger.log_moral_filter_error(error_code="E301", score=0.3, threshold=0.5)
+logger.log_llm_error(error_code="E601", provider="openai", reason="timeout")
+```
+
+### Log Output Format
+
+```json
+{
+  "timestamp": "2025-12-06T07:30:00.123Z",
+  "level": "ERROR",
+  "event_type": "system_error",
+  "message": "[E301] Moral threshold exceeded",
+  "correlation_id": "abc-123",
+  "metrics": {
+    "error_code": "E301",
+    "recoverable": true,
+    "detail_score": 0.3,
+    "detail_threshold": 0.5,
+    "request_id": "req-12345"
+  },
+  "trace_id": "0af7651916cd43dd8448eb211c80319c",
+  "span_id": "b7ad6b7169203331"
+}
+```
+
+### Alerting on Error Codes
+
+Configure Prometheus alerts based on error codes:
+
+```yaml
+groups:
+- name: mlsdm-error-codes
+  rules:
+  - alert: HighMoralRejections
+    expr: |
+      sum(rate(mlsdm_errors_total{error_code=~"E3.."}[5m])) > 0.1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High rate of moral filter rejections (E3xx)"
+
+  - alert: AuthenticationErrors
+    expr: |
+      sum(rate(mlsdm_errors_total{error_code=~"E2.."}[5m])) > 0.05
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Authentication errors detected (E2xx)"
+
+  - alert: LLMTimeouts
+    expr: |
+      sum(rate(mlsdm_errors_total{error_code="E601"}[5m])) > 0.01
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "LLM timeout errors (E601)"
+```
+
+### Full Error Code Reference
+
+See [`src/mlsdm/utils/errors.py`](src/mlsdm/utils/errors.py) for the complete error code enum and default messages.
