@@ -174,6 +174,9 @@ jobs:
           retention-days: 90
   
   # Gate job (required for merge)
+  # Gate semantics:
+  # - On main / labeled PRs / schedule: fast and perf jobs MUST succeed → gate fails if they fail.
+  # - On unlabeled PRs where jobs are not scheduled: results = skipped → gate passes but logs a notice.
   perf-resilience-gate:
     name: Performance & Resilience Gate
     runs-on: ubuntu-latest
@@ -183,12 +186,28 @@ jobs:
     steps:
       - name: Check job results
         run: |
-          if [ "${{ needs.resilience-fast.result }}" != "success" ] || \
-             [ "${{ needs.performance-slo.result }}" != "success" ]; then
-            echo "::error::Performance or resilience tests failed"
+          RES_FAST="${{ needs.resilience-fast.result }}"
+          PERF_SLO="${{ needs.performance-slo.result }}"
+          
+          echo "Resilience-fast result: ${RES_FAST}"
+          echo "Performance-slo result: ${PERF_SLO}"
+          
+          # If any scheduled job failed or was cancelled → hard failure
+          if { [ "${RES_FAST}" = "failure" ] || [ "${RES_FAST}" = "cancelled" ]; } || \
+             { [ "${PERF_SLO}" = "failure" ] || [ "${PERF_SLO}" = "cancelled" ]; }; then
+            echo "::error::Performance or resilience tests failed (failure/cancelled)"
             exit 1
           fi
-          echo "::notice::All performance and resilience tests passed"
+          
+          # If both jobs were skipped → this PR simply didn't request perf/resilience tests
+          if [ "${RES_FAST}" = "skipped" ] && [ "${PERF_SLO}" = "skipped" ]; then
+            echo "::notice::Performance/resilience test jobs were skipped (no perf/resilience label, non-main branch, or not scheduled)."
+            exit 0
+          fi
+          
+          # Otherwise (some combination of success/skipped) → all required checks passed
+          echo "::notice::All required performance and resilience tests passed."
+          exit 0
       
       - name: Report success
         run: |
