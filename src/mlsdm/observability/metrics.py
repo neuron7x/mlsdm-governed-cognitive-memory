@@ -404,6 +404,65 @@ class MetricsExporter:
             registry=self.registry,
         )
 
+        # ---------------------------------------------------------------------------
+        # Business Metrics (OBS-006)
+        # ---------------------------------------------------------------------------
+
+        # Requests by feature/use case
+        self.requests_by_feature = Counter(
+            "mlsdm_requests_by_feature_total",
+            "Total requests by feature/use case",
+            ["feature"],
+            registry=self.registry,
+        )
+
+        # Token usage by request type (for cost tracking)
+        self.tokens_by_request_type = Counter(
+            "mlsdm_tokens_by_request_type_total",
+            "Total tokens consumed by request type",
+            ["request_type", "direction"],
+            registry=self.registry,
+        )
+
+        # Successful completions by category
+        self.completions_by_category = Counter(
+            "mlsdm_completions_by_category_total",
+            "Total successful completions by category/use case",
+            ["category"],
+            registry=self.registry,
+        )
+
+        # User satisfaction proxy (accepted/total ratio tracking)
+        self.user_feedback_total = Counter(
+            "mlsdm_user_feedback_total",
+            "User feedback events by feedback type",
+            ["feedback_type"],
+            registry=self.registry,
+        )
+
+        # Average response quality score (from post-processing)
+        self.response_quality_score = Histogram(
+            "mlsdm_response_quality_score",
+            "Distribution of response quality scores",
+            buckets=(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0),
+            registry=self.registry,
+        )
+
+        # Cost per request (estimated)
+        self.request_cost_usd = Histogram(
+            "mlsdm_request_cost_usd",
+            "Estimated cost per request in USD",
+            buckets=(0.0001, 0.001, 0.01, 0.1, 0.5, 1.0, 5.0),
+            registry=self.registry,
+        )
+
+        # Active users gauge (unique users in time window)
+        self.active_users = Gauge(
+            "mlsdm_active_users",
+            "Number of active unique users (approximation)",
+            registry=self.registry,
+        )
+
         # Track timing contexts
         self._processing_start_times: dict[str, float] = {}
         self._retrieval_start_times: dict[str, float] = {}
@@ -967,6 +1026,82 @@ class MetricsExporter:
             Prometheus-formatted metrics as bytes
         """
         return generate_latest(self.registry)
+
+    # ---------------------------------------------------------------------------
+    # Business Metrics Methods (OBS-006)
+    # ---------------------------------------------------------------------------
+
+    def increment_requests_by_feature(self, feature: str, count: int = 1) -> None:
+        """Increment requests counter by feature/use case.
+
+        Args:
+            feature: Feature or use case identifier (e.g., "chat", "summarization", "code")
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self.requests_by_feature.labels(feature=feature).inc(count)
+
+    def increment_tokens_by_request_type(
+        self, request_type: str, direction: str, count: int
+    ) -> None:
+        """Increment tokens by request type for cost tracking.
+
+        Args:
+            request_type: Type of request (e.g., "generation", "embedding", "moderation")
+            direction: Token direction ("in" for input, "out" for output)
+            count: Number of tokens
+        """
+        with self._lock:
+            self.tokens_by_request_type.labels(
+                request_type=request_type, direction=direction
+            ).inc(count)
+
+    def increment_completions_by_category(self, category: str, count: int = 1) -> None:
+        """Increment successful completions by category.
+
+        Args:
+            category: Completion category (e.g., "creative", "factual", "code")
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self.completions_by_category.labels(category=category).inc(count)
+
+    def increment_user_feedback(self, feedback_type: str, count: int = 1) -> None:
+        """Increment user feedback counter.
+
+        Args:
+            feedback_type: Type of feedback (e.g., "positive", "negative", "neutral", "regenerate")
+            count: Number to increment by (default: 1)
+        """
+        with self._lock:
+            self.user_feedback_total.labels(feedback_type=feedback_type).inc(count)
+
+    def observe_response_quality_score(self, score: float) -> None:
+        """Observe response quality score.
+
+        Args:
+            score: Quality score between 0.0 and 1.0
+        """
+        with self._lock:
+            self.response_quality_score.observe(score)
+
+    def observe_request_cost(self, cost_usd: float) -> None:
+        """Observe estimated request cost.
+
+        Args:
+            cost_usd: Estimated cost in USD
+        """
+        with self._lock:
+            self.request_cost_usd.observe(cost_usd)
+
+    def set_active_users(self, count: int) -> None:
+        """Set active users count.
+
+        Args:
+            count: Number of active users
+        """
+        with self._lock:
+            self.active_users.set(count)
 
     def get_metrics_text(self) -> str:
         """Export metrics in Prometheus format as text.

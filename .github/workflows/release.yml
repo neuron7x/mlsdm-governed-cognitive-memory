@@ -246,6 +246,108 @@ jobs:
         run: |
           pytest --ignore=tests/load --cov=src --cov-report=term-missing --cov-fail-under=90 -q
   
+  # CICD-008: Changelog Generation
+  generate-changelog:
+    name: Generate Changelog
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    outputs:
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for changelog
+      
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      
+      - name: Generate changelog from conventional commits
+        id: changelog
+        run: |
+          # Find previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          CURRENT_TAG=${{ steps.get_version.outputs.TAG }}
+          
+          if [ -n "$PREV_TAG" ]; then
+            echo "Generating changelog from $PREV_TAG to $CURRENT_TAG"
+            RANGE="$PREV_TAG..HEAD"
+          else
+            echo "First release - generating changelog from all commits"
+            RANGE="HEAD"
+          fi
+          
+          # Generate changelog grouped by type
+          echo "## [${{ steps.get_version.outputs.VERSION }}] - $(date +%Y-%m-%d)" > changelog-fragment.md
+          echo "" >> changelog-fragment.md
+          
+          # Features
+          FEATURES=$(git log $RANGE --pretty=format:"%s" 2>/dev/null | grep -E "^feat(\(.*\))?:" | sed 's/^feat\([^:]*\): /- /' || true)
+          if [ -n "$FEATURES" ]; then
+            echo "### ✨ Features" >> changelog-fragment.md
+            echo "$FEATURES" >> changelog-fragment.md
+            echo "" >> changelog-fragment.md
+          fi
+          
+          # Bug fixes
+          FIXES=$(git log $RANGE --pretty=format:"%s" 2>/dev/null | grep -E "^fix(\(.*\))?:" | sed 's/^fix\([^:]*\): /- /' || true)
+          if [ -n "$FIXES" ]; then
+            echo "### 🐛 Bug Fixes" >> changelog-fragment.md
+            echo "$FIXES" >> changelog-fragment.md
+            echo "" >> changelog-fragment.md
+          fi
+          
+          # Documentation
+          DOCS=$(git log $RANGE --pretty=format:"%s" 2>/dev/null | grep -E "^docs(\(.*\))?:" | sed 's/^docs\([^:]*\): /- /' || true)
+          if [ -n "$DOCS" ]; then
+            echo "### 📚 Documentation" >> changelog-fragment.md
+            echo "$DOCS" >> changelog-fragment.md
+            echo "" >> changelog-fragment.md
+          fi
+          
+          # Performance
+          PERF=$(git log $RANGE --pretty=format:"%s" 2>/dev/null | grep -E "^perf(\(.*\))?:" | sed 's/^perf\([^:]*\): /- /' || true)
+          if [ -n "$PERF" ]; then
+            echo "### ⚡ Performance" >> changelog-fragment.md
+            echo "$PERF" >> changelog-fragment.md
+            echo "" >> changelog-fragment.md
+          fi
+          
+          # Security
+          SECURITY=$(git log $RANGE --pretty=format:"%s" 2>/dev/null | grep -E "^(security|sec)(\(.*\))?:" | sed 's/^sec\(urity\)\?\([^:]*\): /- /' || true)
+          if [ -n "$SECURITY" ]; then
+            echo "### 🔒 Security" >> changelog-fragment.md
+            echo "$SECURITY" >> changelog-fragment.md
+            echo "" >> changelog-fragment.md
+          fi
+          
+          # Chores
+          CHORES=$(git log $RANGE --pretty=format:"%s" 2>/dev/null | grep -E "^chore(\(.*\))?:" | sed 's/^chore\([^:]*\): /- /' || true)
+          if [ -n "$CHORES" ]; then
+            echo "### 🔧 Maintenance" >> changelog-fragment.md
+            echo "$CHORES" >> changelog-fragment.md
+            echo "" >> changelog-fragment.md
+          fi
+          
+          cat changelog-fragment.md
+          
+          # Store for other jobs
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat changelog-fragment.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      
+      - name: Upload changelog fragment
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog-fragment
+          path: changelog-fragment.md
+          retention-days: 7
+
   # Build and Push Docker Image (only after ALL gates pass)
   build-and-push-docker:
     name: Build and Push Docker Image
@@ -261,6 +363,7 @@ jobs:
       - benchmarks
       - code-quality
       - coverage-check
+      - generate-changelog
     
     permissions:
       contents: write
@@ -270,6 +373,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Download changelog fragment
+        uses: actions/download-artifact@v4
+        with:
+          name: changelog-fragment
+          path: .
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -349,8 +458,21 @@ jobs:
       
       - name: Create release notes
         run: |
-          # Extract release notes from CHANGELOG.md
-          awk '/^## \['${{ steps.get_version.outputs.VERSION }}'\]/,/^## \[/' CHANGELOG.md | head -n -1 > release-notes.md || echo "Release ${{ steps.get_version.outputs.TAG }}" > release-notes.md
+          # Use generated changelog fragment if available, fallback to CHANGELOG.md extraction
+          if [ -f "changelog-fragment.md" ]; then
+            cp changelog-fragment.md release-notes.md
+            echo "" >> release-notes.md
+            echo "---" >> release-notes.md
+            echo "" >> release-notes.md
+            echo "**Assets:**" >> release-notes.md
+            echo "- Docker image: \`ghcr.io/neuron7x/mlsdm-neuro-engine:${{ steps.get_version.outputs.VERSION }}\`" >> release-notes.md
+            echo "- SBOM (CycloneDX): \`sbom-cyclonedx.json\`" >> release-notes.md
+            echo "- SBOM (SPDX): \`sbom-spdx.json\`" >> release-notes.md
+            echo "- OpenAPI Spec: \`openapi.json\`" >> release-notes.md
+          else
+            # Fallback: Extract from CHANGELOG.md
+            awk '/^## \['${{ steps.get_version.outputs.VERSION }}'\]/,/^## \[/' CHANGELOG.md | head -n -1 > release-notes.md || echo "Release ${{ steps.get_version.outputs.TAG }}" > release-notes.md
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -360,6 +482,7 @@ jobs:
             sbom-cyclonedx.json
             sbom-spdx.json
             docs/openapi.json
+            changelog-fragment.md
           draft: false
           prerelease: false
         env:
