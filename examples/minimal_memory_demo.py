@@ -44,7 +44,7 @@ def main() -> None:
         prompt="The capital of France is Paris.",
         moral_value=0.8,  # High moral value = acceptable content
     )
-    print(f"   Prompt: 'The capital of France is Paris.'")
+    print("   Prompt: 'The capital of France is Paris.'")
     print(f"   Accepted: {result1['accepted']}")
     print(f"   Phase: {result1['phase']}")
     print(f"   Response: {result1['response'][:100]}...")
@@ -56,7 +56,7 @@ def main() -> None:
         prompt="What is the capital of France?",
         moral_value=0.9,
     )
-    print(f"   Prompt: 'What is the capital of France?'")
+    print("   Prompt: 'What is the capital of France?'")
     print(f"   Accepted: {result2['accepted']}")
     print(f"   Response: {result2['response'][:100]}...")
     print()
@@ -76,8 +76,8 @@ def main() -> None:
         prompt="This is a toxic prompt that should be blocked.",
         moral_value=0.2,  # Low moral value = likely to be rejected
     )
-    print(f"   Prompt: 'This is a toxic prompt that should be blocked.'")
-    print(f"   Moral Value: 0.2 (low)")
+    print("   Prompt: 'This is a toxic prompt that should be blocked.'")
+    print("   Moral Value: 0.2 (low)")
     print(f"   Accepted: {toxic_result['accepted']}")
     if not toxic_result["accepted"]:
         print("   ✓ Toxic input was BLOCKED by moral filter")
@@ -91,8 +91,8 @@ def main() -> None:
         prompt="Tell me about the benefits of renewable energy.",
         moral_value=0.9,  # High moral value = acceptable content
     )
-    print(f"   Prompt: 'Tell me about the benefits of renewable energy.'")
-    print(f"   Moral Value: 0.9 (high)")
+    print("   Prompt: 'Tell me about the benefits of renewable energy.'")
+    print("   Moral Value: 0.9 (high)")
     print(f"   Accepted: {good_result['accepted']}")
     if good_result["accepted"]:
         print("   ✓ Good input was ACCEPTED by moral filter")

@@ -7,7 +7,6 @@ and demonstrates the expected behavior.
 
 from __future__ import annotations
 
-import sys
 from io import StringIO
 from unittest.mock import patch
 
