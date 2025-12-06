@@ -6,6 +6,12 @@ for deterministic, reproducible testing across the test suite.
 """
 
 import os
+
+# CRITICAL: Set environment variables BEFORE any imports that might load mlsdm.api.app
+# This ensures rate limiting is disabled before FastAPI middleware is initialized
+os.environ["DISABLE_RATE_LIMIT"] = "1"
+os.environ["LLM_BACKEND"] = "local_stub"
+
 import random
 from collections.abc import Callable
 from typing import Any

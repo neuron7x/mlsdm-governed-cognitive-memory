@@ -74,6 +74,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      DISABLE_RATE_LIMIT: "1"
+      LLM_BACKEND: "local_stub"
     strategy:
       matrix:
         python-version: ['3.10', '3.11']
@@ -101,6 +104,9 @@ jobs:
     name: End-to-End Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      DISABLE_RATE_LIMIT: "1"
+      LLM_BACKEND: "local_stub"
     
     steps:
       - name: Checkout code
@@ -120,14 +126,14 @@ jobs:
       - name: Run E2E tests
         run: |
           pytest tests/e2e -v -m "not slow" --tb=short
-        env:
-          LLM_BACKEND: local_stub
-          DISABLE_RATE_LIMIT: "1"
   
   effectiveness-validation:
     name: Effectiveness Validation
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      DISABLE_RATE_LIMIT: "1"
+      LLM_BACKEND: "local_stub"
     
     steps:
       - name: Checkout code
@@ -162,6 +168,9 @@ jobs:
     name: Performance Benchmarks (SLO Gate)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      DISABLE_RATE_LIMIT: "1"
+      LLM_BACKEND: "local_stub"
     
     steps:
       - name: Checkout code
@@ -290,6 +299,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: true
+    env:
+      DISABLE_RATE_LIMIT: "1"
+      LLM_BACKEND: "local_stub"
     
     steps:
       - name: Checkout code
