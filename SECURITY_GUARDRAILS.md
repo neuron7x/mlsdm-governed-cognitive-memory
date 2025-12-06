@@ -113,6 +113,8 @@ The guardrails layer implements controls for each STRIDE category:
 **Metrics**:
 - `mlsdm_auth_failures_total{method="oidc|mtls|api_key|signing"}`
 - `mlsdm_guardrail_stride_violations_total{stride_category="spoofing"}`
+- `mlsdm_guardrail_decisions_total{result="allow|deny"}`
+- `mlsdm_guardrail_checks_total{check_type="authentication", result="pass|fail"}`
 
 **Example**:
 ```python
@@ -623,31 +625,125 @@ if not decision.allow:
 
 ## Testing & Validation
 
+### Test Suite Overview
+
+The guardrails layer has comprehensive test coverage across multiple dimensions:
+
+**Test Files**:
+- `tests/security/test_guardrails_stride.py` - STRIDE threat coverage (21 tests)
+- `tests/observability/test_guardrails_otel.py` - OpenTelemetry integration (17 tests)
+- `tests/security/test_llm_safety.py` - LLM safety checks
+- `tests/security/test_policy*.py` - Policy engine tests
+
+**Total**: 38+ new tests specifically for runtime guardrails
+
 ### Unit Tests
 
-Run guardrail tests:
+Run all guardrail tests:
 
 ```bash
-pytest tests/unit/security/test_guardrails_orchestrator.py -v
-pytest tests/unit/security/test_policy_engine.py -v
+# Run STRIDE coverage tests
+pytest tests/security/test_guardrails_stride.py -v
+
+# Run OpenTelemetry integration tests
+pytest tests/observability/test_guardrails_otel.py -v
+
+# Run all security tests
+pytest tests/security/ -v
 ```
 
-### Integration Tests
+### STRIDE Test Coverage
 
-Test guardrails in full API flow:
+Each STRIDE category has dedicated test classes:
 
-```bash
-pytest tests/integration/test_guardrails_api.py -v
+```python
+# Spoofing tests (authentication)
+class TestStrideSpoof:
+    - test_missing_authentication_blocked()
+    - test_valid_authentication_allowed()
+
+# Tampering tests (integrity)
+class TestStrideTampering:
+    - test_unsigned_request_allowed_by_default()
+    - test_input_validation_passes_valid_payload()
+
+# Repudiation tests (accountability)
+class TestStrideRepudiation:
+    - test_guardrail_decision_logged()
+    - test_repudiation_stride_category_tracked()
+
+# Information Disclosure tests
+class TestStrideInformationDisclosure:
+    - test_pii_scrubbing_check_performed()
+
+# Denial of Service tests
+class TestStrideDenialOfService:
+    - test_rate_limiting_check_performed()
+
+# Elevation of Privilege tests
+class TestStrideElevationOfPrivilege:
+    - test_authorization_checked_when_scopes_required()
+```
+
+### Parametrized Tests
+
+STRIDE scenarios are tested with parametrized tests for comprehensive coverage:
+
+```python
+@pytest.mark.parametrize("scenario,context,expected_categories", [
+    ("spoofing_no_auth", {...}, ["spoofing"]),
+    ("tampering_no_signature", {...}, []),
+    ("denial_of_service", {...}, ["denial_of_service"]),
+])
+async def test_stride_scenarios(scenario, context, expected_categories):
+    # Test each STRIDE scenario
+    ...
+```
+
+### OpenTelemetry Tests
+
+Verify observability instrumentation:
+
+```python
+# Tracing tests
+- test_request_guardrails_creates_span()
+- test_span_attributes_include_stride_categories()
+
+# Metrics tests  
+- test_record_guardrail_decision_increments_counter()
+- test_stride_violations_tracked_separately()
+
+# Integration tests
+- test_end_to_end_observability()
 ```
 
 ### Coverage
 
-Ensure guardrail code coverage:
+Verify test coverage (must maintain ≥65%):
 
 ```bash
 pytest --cov=src/mlsdm/security/guardrails --cov-report=term-missing
 pytest --cov=src/mlsdm/security/policy_engine --cov-report=term-missing
+
+# Run with coverage gate
+./coverage_gate.sh
 ```
+
+### CI/CD Integration
+
+Tests run automatically in prod-gate workflow:
+
+```yaml
+# .github/workflows/prod-gate.yml
+jobs:
+  preflight:
+    - name: Run all unit tests
+      run: pytest tests/unit -v --tb=short
+    - name: Run coverage gate
+      run: ./coverage_gate.sh
+```
+
+All guardrail tests must pass before merge to main
 
 ---
 
