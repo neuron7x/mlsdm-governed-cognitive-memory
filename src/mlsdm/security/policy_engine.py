@@ -440,7 +440,7 @@ def _policy_content_compliance(context: PolicyContext) -> bool:
     """
     # For now, rely on safety violations
     # In production, this would integrate with content moderation APIs
-    
+
     # Check for dangerous commands or patterns
     dangerous_violations = [
         "dangerous_command",

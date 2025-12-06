@@ -17,7 +17,7 @@ ensuring consistent policy enforcement across the API and SDK.
 
 Example:
     >>> from mlsdm.security.guardrails import enforce_request_guardrails
-    >>> 
+    >>>
     >>> decision = await enforce_request_guardrails(
     ...     request=request,
     ...     route="/generate",
@@ -32,9 +32,10 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
-from fastapi import Request
+if TYPE_CHECKING:
+    from fastapi import Request
 
 from mlsdm.observability.tracing import get_tracer_manager
 from mlsdm.utils.security_logger import SecurityEventType, get_security_logger
@@ -363,7 +364,7 @@ async def _check_request_signing(context: GuardrailContext) -> GuardrailResult:
 
     # TODO: Integrate with src/mlsdm/security/signing.py
     signature_header = context.request.headers.get("X-MLSDM-Signature")
-    
+
     return GuardrailResult(
         check_type=GuardrailCheckType.REQUEST_SIGNING,
         passed=True,  # Not enforced by default
