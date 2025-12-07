@@ -204,6 +204,53 @@ Based on `SLO_SPEC.md`:
 
 ---
 
+## Quick Diagnostic Reference
+
+### Symptom → Action Table
+
+Use this table for quick diagnosis and resolution of common issues.
+
+| Symptom | Check / Command | Expected Result | Next Step / Escalation |
+|---------|-----------------|-----------------|------------------------|
+| **Readiness endpoint slow (P95 > 120ms)** | `pytest tests/perf/test_slo_api_endpoints.py::test_readiness_latency -v` | P95 < 120ms | Profile hot paths, check CPU usage, review recent code changes |
+| **Memory usage growing** | `pytest tests/unit/test_cognitive_controller.py::TestCognitiveControllerMemoryLeak -v` | later_growth ≤ initial_growth × 2 | Check for unbounded caches, review event listener cleanup |
+| **High error rate** | `curl http://localhost:8000/health/detailed` | `error_rate < 0.5%` | Check LLM backend status, review logs for exceptions |
+| **Pod crashlooping** | `kubectl logs -n mlsdm-production -l app=mlsdm-api --tail=100` | No OOM errors, no panics | Check memory limits, review startup configuration |
+| **SAST scan failing** | `bandit -r src/mlsdm --severity-level high --confidence-level high` | No HIGH/CRITICAL issues | Fix vulnerabilities or justify with `# nosec` |
+| **Coverage gate failing** | `./coverage_gate.sh` | Coverage ≥ 85% | Add tests for uncovered code, verify test configuration |
+| **Moral filter drifting** | `pytest tests/property/test_moral_filter_properties.py -v` | Threshold ∈ [0.30, 0.90] | Review toxic input patterns, check EMA parameters |
+| **Deployment validation failing** | `./deploy/scripts/validate-manifests.sh` | All manifests valid | Fix YAML syntax, check resource limits, verify image tags |
+| **Core implementation check failing** | `./scripts/verify_core_implementation.sh` | 0 TODOs in core modules | Remove or implement TODOs, verify test collection |
+| **Policy validation failing** | `python scripts/validate_policy_config.py` | 0 errors | Fix policy file references, verify workflow paths |
+| **Liveness endpoint failing** | `curl http://localhost:8000/health/liveness` | 200 OK | Check if process is alive, review OOM events |
+| **High memory usage** | `curl http://localhost:8000/health/metrics \| grep memory_usage_bytes` | < 1400 MB | Trigger cleanup, check PELM capacity, review memory limits |
+| **Circuit breaker open** | Check `mlsdm_circuit_breaker_state` metric | `state = 0` (closed) | Investigate upstream failures, check LLM provider |
+
+### Script Reference
+
+All operational scripts with their locations and usage:
+
+| Script | Location | Purpose | Command |
+|--------|----------|---------|---------|
+| **Coverage Gate** | `./coverage_gate.sh` | Enforce 85% code coverage | `./coverage_gate.sh` |
+| **Validate Manifests** | `./deploy/scripts/validate-manifests.sh` | Validate K8s YAML syntax | `./deploy/scripts/validate-manifests.sh [--strict]` |
+| **Verify Core** | `./scripts/verify_core_implementation.sh` | Check core modules complete | `./scripts/verify_core_implementation.sh` |
+| **Validate Policy** | `./scripts/validate_policy_config.py` | Verify policy consistency | `python scripts/validate_policy_config.py` |
+| **Security Audit** | `./scripts/security_audit.py` | Manual security checks | `python scripts/security_audit.py` |
+| **Test Security** | `./scripts/test_security_features.py` | Validate security features | `python scripts/test_security_features.py` |
+
+### Test Commands for SLO Validation
+
+| SLO | Test Command | Target | CI Threshold |
+|-----|--------------|--------|--------------|
+| **Readiness Latency** | `pytest tests/perf/test_slo_api_endpoints.py::test_readiness_latency -v` | P95 < 120ms | P95 < 150ms |
+| **Memory Leak** | `pytest tests/unit/test_cognitive_controller.py::TestCognitiveControllerMemoryLeak -v` | growth ≤ 2× | growth ≤ 2× |
+| **Moral Filter** | `pytest tests/property/test_moral_filter_properties.py -v` | [0.30, 0.90] | [0.30, 0.90] |
+| **All Performance** | `pytest tests/perf/ -v -m "benchmark and not slow"` | All pass | < 2 min total |
+| **All Resilience** | `pytest tests/resilience/ -v -m "not slow"` | All pass | < 2 min total |
+
+---
+
 ## Monitoring & Alerts
 
 ### Health Checks
@@ -677,10 +724,17 @@ curl http://api/health/detailed
 
 ## Contact Information
 
-**On-Call Rotation**: [TBD]  
-**Escalation Path**: [TBD]  
-**Slack Channel**: #mlsdm-production  
-**Documentation**: https://github.com/neuron7x/mlsdm
+**Primary Maintainer**: neuron7x (GitHub: @neuron7x)  
+**On-Call Rotation**: See `.github/CODEOWNERS` for current maintainers  
+**Escalation Path**: 
+1. Primary: Check GitHub Issues for similar problems
+2. Secondary: Create issue with `[URGENT]` prefix at https://github.com/neuron7x/mlsdm/issues
+3. Critical: Tag @neuron7x in issue for immediate attention
+
+**Communication Channels**:
+- **Issues**: https://github.com/neuron7x/mlsdm/issues  
+- **Discussions**: https://github.com/neuron7x/mlsdm/discussions  
+- **Documentation**: https://github.com/neuron7x/mlsdm
 
 ---
 

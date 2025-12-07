@@ -21,6 +21,7 @@
 - [Secure Deployment Guidelines](#secure-deployment-guidelines)
 - [Security Testing](#security-testing)
 - [Compliance and Standards](#compliance-and-standards)
+- [Policy-as-Code Integration](#policy-as-code-integration)
 
 ---
 
@@ -44,8 +45,13 @@ Security updates are provided for the following versions:
 
 | Version | Supported | Security Updates | End of Life |
 |---------|-----------|------------------|-------------|
-| 1.0.x   | ✅ Yes    | Active           | TBD         |
+| 1.0.x   | ✅ Yes    | Security-only patches | 2026-11-01 (subject to change) |
 | 0.x.x   | ❌ No     | None             | Nov 2025    |
+
+**Support Policy for 1.0.x:**
+- **Patch Types**: Security-only fixes. No new features will be backported.
+- **CVE Severity Threshold**: All CRITICAL and HIGH severity CVEs must be patched within the timelines specified in [Severity Classification](#severity-classification).
+- **EOL Date**: Approximately 12 months from 1.0.0 release (Nov 2025). EOL may be extended based on adoption and community needs.
 
 **Upgrade Policy**: Users should upgrade to the latest 1.0.x release within 30 days of release to receive security fixes.
 
@@ -1076,7 +1082,137 @@ python scripts/test_security_features.py
 
 ---
 
+## Policy-as-Code Integration
+
+All critical security requirements are enforced through machine-readable policy files and automated CI/CD checks. This ensures security is not just documented, but actively enforced.
+
+### Policy Files
+
+Security baseline requirements are defined in:
+- **`policy/security-baseline.yaml`**: Security checks, vulnerability thresholds, and enforcement rules
+
+### Enforcement Mechanisms
+
+**CI/CD Pipeline Enforcement:**
+
+All PRs must pass the following security checks before merge:
+
+1. **Bandit SAST** (`.github/workflows/sast-scan.yml`)
+   - Command: `bandit -r src/mlsdm -f sarif -o bandit-results.sarif`
+   - Threshold: No HIGH or CRITICAL severity issues
+   - SARIF validation: JSON schema validation before upload
+   - Failure: Blocks PR merge
+
+2. **CodeQL Semantic Analysis** (`.github/workflows/sast-scan.yml`)
+   - Automated semantic code analysis
+   - Security-focused queries
+   - Failure: Blocks PR merge
+
+3. **Ruff Linter** 
+   - Command: `ruff check src tests`
+   - Security-relevant rules enabled
+   - Failure: Blocks PR merge
+
+4. **Mypy Type Checker**
+   - Command: `mypy src/mlsdm`
+   - Type safety enforcement
+   - Failure: Blocks PR merge
+
+5. **Coverage Gate** (`./coverage_gate.sh`)
+   - Minimum: 85% code coverage
+   - Ensures security-critical paths are tested
+   - Failure: Blocks PR merge
+
+### API Key & Secret Management
+
+**Policy:** All secrets MUST be provided via environment variables. Hardcoded secrets are strictly prohibited.
+
+**Implementation:**
+- API keys read from `API_KEY` environment variable
+- Secrets managed via Kubernetes Secrets or secure credential store
+- Code enforcement: Bandit checks for hardcoded credentials
+
+**Code Reference:**
+```python
+# Correct: Read from environment
+api_key = os.environ.get("API_KEY")
+if not api_key:
+    raise ValueError("API_KEY environment variable required")
+
+# ❌ PROHIBITED: Hardcoded secrets
+api_key = "sk-1234..."  # Will fail Bandit scan
+```
+
+### LLM Safety Gateway
+
+**Policy:** The LLM safety gateway (`mlsdm.security.llm_safety`) is MANDATORY for all production usage involving LLM interactions.
+
+**Implementation:**
+- Module: `src/mlsdm/security/llm_safety.py`
+- Validates LLM inputs and outputs for safety
+- Prevents injection attacks and harmful content
+
+**Bypass Documentation:**
+Any bypass of the LLM safety gateway must be:
+1. Documented in an Architecture Decision Record (ADR)
+2. Reviewed by security team
+3. Limited to specific, justified use cases (e.g., testing)
+
+### PII & Logging Rules
+
+**Policy:** Personally Identifiable Information (PII) MUST be scrubbed from all logs and traces.
+
+**Implementation:**
+- Module: `src/mlsdm/security/payload_scrubber.py`
+- Fields always scrubbed: `password`, `api_key`, `secret`, `token`, `credit_card`, `ssn`
+- Applied to all log outputs and error messages
+
+**Code Reference:**
+```python
+from mlsdm.security.payload_scrubber import scrub_sensitive_data
+
+# Scrub before logging
+safe_payload = scrub_sensitive_data(request_payload)
+logger.info(f"Processing request: {safe_payload}")
+```
+
+### Vulnerability Response
+
+SAST violations are handled according to severity:
+
+| Severity | Max Allowed | Response Time | Fix Timeline | Action |
+|----------|-------------|---------------|--------------|--------|
+| CRITICAL | 0 | 24 hours | 7 days | Immediate hotfix, block all PRs |
+| HIGH | 0 | 48 hours | 14 days | Priority fix, block PRs |
+| MEDIUM | 0 | 7 days | 30 days | Planned fix |
+| LOW | 5 | 14 days | 90 days | Backlog item |
+
+### Policy Validation
+
+Policy configuration consistency is validated by:
+```bash
+python scripts/validate_policy_config.py
+```
+
+This script verifies:
+- Referenced workflows exist
+- Security modules are implemented
+- Test locations are valid
+- Documentation is complete
+
+**CI Integration:** Policy validation runs on every PR.
+
+### References
+
+- **Security Baseline Policy:** `policy/security-baseline.yaml`
+- **Observability SLO Policy:** `policy/observability-slo.yaml`
+- **Policy Validator:** `scripts/validate_policy_config.py`
+- **SAST Workflow:** `.github/workflows/sast-scan.yml`
+- **Security Implementation:** `SECURITY_IMPLEMENTATION.md`
+
+---
+
 **Document Maintainer**: neuron7x / Security Team  
-**Document Version**: 2.0 (System-Wide Coverage)  
-**Last Updated**: November 24, 2025  
-**Status**: Production-Ready with Enhancement Roadmap
+**Document Version**: 2.1 (With Policy-as-Code Integration)  
+**Last Updated**: December 7, 2025  
+**Status**: Production-Ready with Enforced Policy

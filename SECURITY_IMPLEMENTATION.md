@@ -450,8 +450,94 @@ If a security incident is detected:
 
 For security issues, please follow the responsible disclosure process outlined in SECURITY_POLICY.md.
 
+## SAST Scanning
+
+### Bandit Security Scanner
+
+**Purpose**: Static Application Security Testing (SAST) to identify security vulnerabilities in Python code.
+
+**Workflow**: `.github/workflows/sast-scan.yml`
+
+**Command**:
+```bash
+bandit -r src/mlsdm \
+  -f sarif \
+  -o bandit-results.sarif \
+  --severity-level medium \
+  --confidence-level medium
+```
+
+**SARIF Validation**: Before uploading results to GitHub Security, the SARIF JSON is validated:
+
+```python
+import json
+
+with open("bandit-results.sarif", "r", encoding="utf-8") as f:
+    data = json.load(f)  # Will raise JSONDecodeError if invalid
+print(f"✓ SARIF JSON validation passed")
+```
+
+**Enforcement**:
+- HIGH/CRITICAL severity issues BLOCK PR merge
+- SARIF must be valid JSON (schema validated)
+- Upload only happens after validation passes
+
+**Manual Run**:
+```bash
+# Install bandit with SARIF support
+pip install bandit[sarif]
+
+# Run scan
+bandit -r src/mlsdm -f sarif -o bandit-results.sarif
+
+# Validate SARIF
+python -c "import json; json.load(open('bandit-results.sarif'))"
+
+# Check for high severity issues
+bandit -r src/mlsdm --severity-level high --confidence-level high
+```
+
+**False Positives**: If Bandit reports a false positive:
+1. Review the finding carefully
+2. If truly a false positive, add `# nosec` comment with justification
+3. Document the suppression in PR description
+4. Require security team review
+
+Example:
+```python
+# Safe: API key from environment, not hardcoded
+api_key = os.environ.get("API_KEY")  # nosec B108
+```
+
+### CodeQL Semantic Analysis
+
+**Purpose**: Advanced semantic code analysis for security patterns.
+
+**Workflow**: `.github/workflows/sast-scan.yml`
+
+**Features**:
+- Data flow analysis
+- Taint tracking
+- SQL injection detection
+- Path traversal detection
+
+**CI Integration**: Runs automatically on all PRs.
+
+### Semgrep (Optional)
+
+**Status**: Advisory (does not block PRs)
+
+**Purpose**: Additional SAST with custom rules.
+
+**Usage**: Can be enabled for deeper analysis, but currently optional to minimize false positives.
+
 ## Version History
 
+- **v1.1.0** (2025-12-07): Enhanced SAST integration
+  - Bandit SARIF with JSON validation
+  - Policy-as-code enforcement
+  - Documented exact commands and workflows
+  
 - **v1.0.0** (2025-11-20): Initial security implementation
   - Rate limiting (leaky bucket)
   - Input validation and sanitization

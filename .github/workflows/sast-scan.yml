@@ -42,6 +42,27 @@ jobs:
             --confidence-level medium \
             || true  # Don't fail yet, check results below
       
+      - name: Validate Bandit SARIF JSON
+        run: |
+          # Validate that generated SARIF is valid JSON
+          python3 - << 'EOF'
+          import json
+          import sys
+          
+          try:
+              with open("bandit-results.sarif", "r", encoding="utf-8") as f:
+                  data = json.load(f)
+              print("✓ SARIF JSON validation passed")
+              print(f"  - Version: {data.get('version', 'unknown')}")
+              print(f"  - Runs: {len(data.get('runs', []))}")
+          except json.JSONDecodeError as e:
+              print(f"✗ SARIF JSON validation failed: {e}")
+              sys.exit(1)
+          except FileNotFoundError:
+              print("✗ SARIF file not found: bandit-results.sarif")
+              sys.exit(1)
+          EOF
+      
       - name: Check for high severity issues
         run: |
           # Run with high severity to display issues
