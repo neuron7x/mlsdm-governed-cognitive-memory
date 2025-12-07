@@ -32,7 +32,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install bandit[sarif]
       
-      - name: Run bandit scan
+      - name: Run bandit scan (comprehensive)
         run: |
           # Run bandit with SARIF output for GitHub Security
           bandit -r src/mlsdm \
@@ -40,17 +40,20 @@ jobs:
             -o bandit-results.sarif \
             --severity-level medium \
             --confidence-level medium \
+            -ll \
             || true  # Don't fail yet, check results below
       
-      - name: Check for high severity issues
+      - name: Check for high/critical severity issues
         run: |
+          echo "Checking for high and critical severity security issues..."
+          
           # Run with high severity to display issues
           bandit -r src/mlsdm \
             -f txt \
             --severity-level high \
             --confidence-level high
           
-          # This will fail if high severity issues are found
+          # This will fail if high severity issues are found (exit code 1)
           bandit -r src/mlsdm \
             --severity-level high \
             --confidence-level high \

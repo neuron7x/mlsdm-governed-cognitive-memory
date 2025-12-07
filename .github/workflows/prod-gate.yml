@@ -47,8 +47,12 @@ jobs:
       - name: Type check
         run: mypy src/mlsdm
       
-      - name: Security vulnerability scan
-        run: pip-audit --strict --progress-spinner=off
+      - name: Install pip-audit for vulnerability scanning
+        run: pip install pip-audit
+      
+      - name: Security vulnerability scan with pip-audit
+        run: pip-audit --strict --progress-spinner=off --desc on
+        continue-on-error: false
       
       - name: Run all unit tests
         run: pytest tests/unit -v --tb=short
@@ -61,6 +65,19 @@ jobs:
         env:
           LLM_BACKEND: local_stub
           DISABLE_RATE_LIMIT: "1"
+      
+      - name: Generate SBOM (Software Bill of Materials)
+        run: |
+          pip install cyclonedx-bom
+          cyclonedx-py requirements -r requirements.txt -o sbom-cyclonedx.json --format json
+          echo "SBOM generated successfully"
+      
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx
+          path: sbom-cyclonedx.json
+          retention-days: 90
 
   # Run property-based tests
   property-tests:
