@@ -177,8 +177,20 @@ SPAN_ATTR_PREFIX_HTTP = "http."
 def is_otel_available() -> bool:
     """Check if OpenTelemetry SDK is available.
 
+    This function checks if the opentelemetry-sdk package is installed
+    and was successfully imported. It does not check configuration or
+    environment variables - only package availability.
+
     Returns:
         True if OTEL is installed and importable, False otherwise
+
+    Example:
+        >>> if is_otel_available():
+        ...     # Full tracing available
+        ...     initialize_tracing()
+        ... else:
+        ...     # Will use no-op tracing
+        ...     logger.warning("OTEL not available, tracing disabled")
     """
     return OTEL_AVAILABLE
 
@@ -190,8 +202,16 @@ def is_otel_enabled() -> bool:
     1. Whether OTEL SDK is available (installed)
     2. Whether it's enabled via configuration/environment
 
+    Environment variable precedence (highest to lowest):
+    1. MLSDM_ENABLE_OTEL: Set to "true" to enable, "false" to disable
+    2. OTEL_SDK_DISABLED: Standard OTEL var, "true" disables tracing
+
     Returns:
         True if OTEL is available and enabled, False otherwise
+        - Returns False if OTEL SDK not installed, regardless of config
+        - Returns True if MLSDM_ENABLE_OTEL=true
+        - Returns False if MLSDM_ENABLE_OTEL=false
+        - Falls back to OTEL_SDK_DISABLED check if MLSDM_ENABLE_OTEL not set
     """
     if not OTEL_AVAILABLE:
         return False
@@ -225,7 +245,7 @@ class TracingConfig:
     - OTEL_TRACES_SAMPLER_ARG: Sampling rate (0.0 to 1.0)
 
     MLSDM-specific Variables (override OTEL equivalents):
-    - MLSDM_OTEL_ENABLED: Enable tracing (takes precedence over OTEL_SDK_DISABLED)
+    - MLSDM_ENABLE_OTEL: Enable tracing (takes precedence over OTEL_SDK_DISABLED)
     - MLSDM_OTEL_ENDPOINT: OTLP endpoint (takes precedence over OTEL_EXPORTER_OTLP_ENDPOINT)
 
     Attributes:
