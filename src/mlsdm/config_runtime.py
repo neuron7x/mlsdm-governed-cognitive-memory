@@ -53,7 +53,27 @@ class ServerConfig:
 
 @dataclass
 class SecurityConfig:
-    """Security configuration."""
+    """Security configuration.
+    
+    Attributes:
+        api_key: API key for basic authentication
+        rate_limit_enabled: Enable rate limiting
+        rate_limit_requests: Maximum requests per window
+        rate_limit_window: Rate limit window in seconds
+        secure_mode: Enable secure mode (training disabled)
+        cors_origins: Allowed CORS origins
+        
+        # Advanced Security Features (v1.1)
+        enable_oidc: Enable OIDC authentication (SEC-004)
+        enable_mtls: Enable mutual TLS client certificate authentication (SEC-006)
+        enable_rbac: Enable role-based access control
+        enable_request_signing: Enable request signature verification
+        enable_policy_engine: Enable policy-as-code request evaluation
+        enable_guardrails: Enable LLM output guardrails
+        enable_llm_safety: Enable LLM prompt/response safety analysis
+        enable_pii_scrub_logs: Enable PII scrubbing in logs
+        enable_multi_tenant_enforcement: Enable multi-tenant data isolation
+    """
 
     api_key: str | None = None
     rate_limit_enabled: bool = True
@@ -61,6 +81,17 @@ class SecurityConfig:
     rate_limit_window: int = 60
     secure_mode: bool = False
     cors_origins: list[str] = field(default_factory=list)
+    
+    # Advanced Security Features (v1.1)
+    enable_oidc: bool = False
+    enable_mtls: bool = False
+    enable_rbac: bool = False
+    enable_request_signing: bool = False
+    enable_policy_engine: bool = False
+    enable_guardrails: bool = False
+    enable_llm_safety: bool = False
+    enable_pii_scrub_logs: bool = False
+    enable_multi_tenant_enforcement: bool = False
 
 
 @dataclass
@@ -107,11 +138,21 @@ class RuntimeConfig:
             # Server
             "HOST": self.server.host,
             "PORT": str(self.server.port),
-            # Security
+            # Security - Basic
             "DISABLE_RATE_LIMIT": "0" if self.security.rate_limit_enabled else "1",
             "RATE_LIMIT_REQUESTS": str(self.security.rate_limit_requests),
             "RATE_LIMIT_WINDOW": str(self.security.rate_limit_window),
             "MLSDM_SECURE_MODE": "1" if self.security.secure_mode else "0",
+            # Security - Advanced (v1.1)
+            "MLSDM_SECURITY_ENABLE_OIDC": "1" if self.security.enable_oidc else "0",
+            "MLSDM_SECURITY_ENABLE_MTLS": "1" if self.security.enable_mtls else "0",
+            "MLSDM_SECURITY_ENABLE_RBAC": "1" if self.security.enable_rbac else "0",
+            "MLSDM_SECURITY_ENABLE_REQUEST_SIGNING": "1" if self.security.enable_request_signing else "0",
+            "MLSDM_SECURITY_ENABLE_POLICY_ENGINE": "1" if self.security.enable_policy_engine else "0",
+            "MLSDM_SECURITY_ENABLE_GUARDRAILS": "1" if self.security.enable_guardrails else "0",
+            "MLSDM_SECURITY_ENABLE_LLM_SAFETY": "1" if self.security.enable_llm_safety else "0",
+            "MLSDM_SECURITY_ENABLE_PII_SCRUB_LOGS": "1" if self.security.enable_pii_scrub_logs else "0",
+            "MLSDM_SECURITY_ENABLE_MULTI_TENANT_ENFORCEMENT": "1" if self.security.enable_multi_tenant_enforcement else "0",
             # Observability
             "LOG_LEVEL": self.observability.log_level,
             "JSON_LOGGING": "true" if self.observability.json_logging else "false",
@@ -180,6 +221,16 @@ def _get_mode_defaults(mode: RuntimeMode) -> dict[str, Any]:
             "rate_limit_window": 60,
             "secure_mode": False,
             "cors_origins": [],
+            # Advanced security features (default: disabled)
+            "enable_oidc": False,
+            "enable_mtls": False,
+            "enable_rbac": False,
+            "enable_request_signing": False,
+            "enable_policy_engine": False,
+            "enable_guardrails": False,
+            "enable_llm_safety": False,
+            "enable_pii_scrub_logs": False,
+            "enable_multi_tenant_enforcement": False,
         },
         "observability": {
             "log_level": "INFO",
@@ -201,31 +252,66 @@ def _get_mode_defaults(mode: RuntimeMode) -> dict[str, Any]:
 
     # Mode-specific overrides
     if mode == RuntimeMode.DEV:
+        # Development: minimal security for ease of use
         base["server"]["reload"] = True
         base["server"]["workers"] = 1
         base["server"]["log_level"] = "debug"
         base["security"]["rate_limit_enabled"] = False
+        base["security"]["secure_mode"] = False
+        # Advanced security disabled in dev (can be overridden via env)
+        base["security"]["enable_oidc"] = False
+        base["security"]["enable_mtls"] = False
+        base["security"]["enable_rbac"] = False
+        base["security"]["enable_request_signing"] = False
+        base["security"]["enable_policy_engine"] = False
+        base["security"]["enable_guardrails"] = False
+        base["security"]["enable_llm_safety"] = False
+        base["security"]["enable_pii_scrub_logs"] = False
+        base["security"]["enable_multi_tenant_enforcement"] = False
         base["observability"]["log_level"] = "DEBUG"
         base["observability"]["json_logging"] = False
         base["debug"] = True
         base["engine"]["config_path"] = "config/default_config.yaml"
 
     elif mode == RuntimeMode.LOCAL_PROD:
+        # Local production: moderate security
         base["server"]["workers"] = 2
         base["server"]["log_level"] = "info"
         base["security"]["rate_limit_enabled"] = True
         base["security"]["secure_mode"] = True
+        # Enable basic advanced security features
+        base["security"]["enable_policy_engine"] = True
+        base["security"]["enable_guardrails"] = True
+        base["security"]["enable_llm_safety"] = True
+        base["security"]["enable_pii_scrub_logs"] = True
+        # Optional features disabled by default (can enable via env)
+        base["security"]["enable_oidc"] = False
+        base["security"]["enable_mtls"] = False
+        base["security"]["enable_rbac"] = False
+        base["security"]["enable_request_signing"] = False
+        base["security"]["enable_multi_tenant_enforcement"] = False
         base["observability"]["log_level"] = "INFO"
         base["observability"]["json_logging"] = True
         base["observability"]["metrics_enabled"] = True
         base["engine"]["config_path"] = "config/production.yaml"
 
     elif mode == RuntimeMode.CLOUD_PROD:
+        # Cloud production: full security hardening
         base["server"]["workers"] = 4
         base["server"]["log_level"] = "info"
         base["server"]["timeout_keep_alive"] = 60
         base["security"]["rate_limit_enabled"] = True
         base["security"]["secure_mode"] = True
+        # Enable all advanced security features in production
+        base["security"]["enable_oidc"] = True
+        base["security"]["enable_mtls"] = True
+        base["security"]["enable_rbac"] = True
+        base["security"]["enable_request_signing"] = True
+        base["security"]["enable_policy_engine"] = True
+        base["security"]["enable_guardrails"] = True
+        base["security"]["enable_llm_safety"] = True
+        base["security"]["enable_pii_scrub_logs"] = True
+        base["security"]["enable_multi_tenant_enforcement"] = True
         base["observability"]["log_level"] = "INFO"
         base["observability"]["json_logging"] = True
         base["observability"]["metrics_enabled"] = True
@@ -234,10 +320,22 @@ def _get_mode_defaults(mode: RuntimeMode) -> dict[str, Any]:
         base["engine"]["config_path"] = "config/production.yaml"
 
     elif mode == RuntimeMode.AGENT_API:
+        # Agent API: moderate to high security
         base["server"]["workers"] = 2
         base["server"]["log_level"] = "info"
         base["security"]["rate_limit_enabled"] = True
         base["security"]["secure_mode"] = True
+        # Enable key security features for agent mode
+        base["security"]["enable_policy_engine"] = True
+        base["security"]["enable_guardrails"] = True
+        base["security"]["enable_llm_safety"] = True
+        base["security"]["enable_pii_scrub_logs"] = True
+        # Optional features (can enable via env)
+        base["security"]["enable_oidc"] = False
+        base["security"]["enable_mtls"] = False
+        base["security"]["enable_rbac"] = False
+        base["security"]["enable_request_signing"] = False
+        base["security"]["enable_multi_tenant_enforcement"] = False
         base["observability"]["log_level"] = "INFO"
         base["observability"]["json_logging"] = True
         base["observability"]["metrics_enabled"] = True
@@ -306,6 +404,34 @@ def get_runtime_config(mode: RuntimeMode | None = None) -> RuntimeConfig:
             "MLSDM_SECURE_MODE", defaults["security"]["secure_mode"]
         ),
         cors_origins=defaults["security"]["cors_origins"],
+        # Advanced security features with env overrides
+        enable_oidc=_get_env_bool(
+            "MLSDM_SECURITY_ENABLE_OIDC", defaults["security"]["enable_oidc"]
+        ),
+        enable_mtls=_get_env_bool(
+            "MLSDM_SECURITY_ENABLE_MTLS", defaults["security"]["enable_mtls"]
+        ),
+        enable_rbac=_get_env_bool(
+            "MLSDM_SECURITY_ENABLE_RBAC", defaults["security"]["enable_rbac"]
+        ),
+        enable_request_signing=_get_env_bool(
+            "MLSDM_SECURITY_ENABLE_REQUEST_SIGNING", defaults["security"]["enable_request_signing"]
+        ),
+        enable_policy_engine=_get_env_bool(
+            "MLSDM_SECURITY_ENABLE_POLICY_ENGINE", defaults["security"]["enable_policy_engine"]
+        ),
+        enable_guardrails=_get_env_bool(
+            "MLSDM_SECURITY_ENABLE_GUARDRAILS", defaults["security"]["enable_guardrails"]
+        ),
+        enable_llm_safety=_get_env_bool(
+            "MLSDM_SECURITY_ENABLE_LLM_SAFETY", defaults["security"]["enable_llm_safety"]
+        ),
+        enable_pii_scrub_logs=_get_env_bool(
+            "MLSDM_SECURITY_ENABLE_PII_SCRUB_LOGS", defaults["security"]["enable_pii_scrub_logs"]
+        ),
+        enable_multi_tenant_enforcement=_get_env_bool(
+            "MLSDM_SECURITY_ENABLE_MULTI_TENANT_ENFORCEMENT", defaults["security"]["enable_multi_tenant_enforcement"]
+        ),
     )
 
     # Observability config with env overrides
@@ -384,6 +510,16 @@ def print_runtime_config(config: RuntimeConfig) -> None:
     print(f"  API Key: {'<set>' if config.security.api_key else '<not set>'}")
     print(f"  Rate Limit Enabled: {config.security.rate_limit_enabled}")
     print(f"  Secure Mode: {config.security.secure_mode}")
+    print("  Advanced Security Features:")
+    print(f"    OIDC: {config.security.enable_oidc}")
+    print(f"    mTLS: {config.security.enable_mtls}")
+    print(f"    RBAC: {config.security.enable_rbac}")
+    print(f"    Request Signing: {config.security.enable_request_signing}")
+    print(f"    Policy Engine: {config.security.enable_policy_engine}")
+    print(f"    Guardrails: {config.security.enable_guardrails}")
+    print(f"    LLM Safety: {config.security.enable_llm_safety}")
+    print(f"    PII Scrubbing: {config.security.enable_pii_scrub_logs}")
+    print(f"    Multi-Tenant: {config.security.enable_multi_tenant_enforcement}")
     print()
     print("Observability:")
     print(f"  Log Level: {config.observability.log_level}")
