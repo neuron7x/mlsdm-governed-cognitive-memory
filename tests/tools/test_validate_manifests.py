@@ -129,16 +129,15 @@ exit 0
         k8s_dir = tmp_path / "k8s"
         k8s_dir.mkdir()
 
-        # Create an invalid YAML file
+        # Create an invalid YAML file (unmatched bracket)
         invalid_manifest = k8s_dir / "invalid.yaml"
         invalid_manifest.write_text("""
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: invalid
-  labels:
-    - this is invalid syntax:
-      because: indentation is wrong
+  labels: {
+    app: test
 """)
 
         # Create test script that tries to load the YAML
