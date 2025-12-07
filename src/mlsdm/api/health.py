@@ -374,7 +374,10 @@ async def ready(response: Response) -> ReadinessStatus:
         all_ready = False
 
     try:
-        cpu_percent = psutil.cpu_percent(interval=0.1)
+        # Use non-blocking CPU check (interval=0) for fast health checks
+        # This returns instantly using cached values from the last measurement
+        # Blocking interval=0.1 would add 100ms latency to every readiness check
+        cpu_percent = psutil.cpu_percent(interval=0)
         cpu_available = cpu_percent < 98.0
         components["system_cpu"] = ComponentStatus(
             healthy=cpu_available,

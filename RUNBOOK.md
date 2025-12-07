@@ -143,6 +143,67 @@ kubectl rollout undo deployment/mlsdm-api -n mlsdm-production
 
 ---
 
+## Performance & SLO Validation
+
+### Running Performance Tests
+
+The system includes automated performance and resilience validation tests that verify SLO compliance.
+
+**Run Locally**:
+```bash
+# Fast performance tests (<2 min)
+pytest tests/perf/ -v -m "benchmark and not slow"
+
+# Fast resilience tests (<2 min)
+pytest tests/resilience/ -v -m "not slow"
+
+# Full test suite (including slow tests)
+pytest tests/perf/ tests/resilience/ -v
+```
+
+**CI/CD Integration**:
+- **Automatic**: Runs on main branch and labeled PRs (`perf`, `resilience`)
+- **Scheduled**: Nightly comprehensive validation at 2 AM UTC
+- **Manual**: Trigger via GitHub Actions workflow dispatch
+
+### SLO Targets
+
+Based on `SLO_SPEC.md`:
+
+| Metric | Target | CI Threshold |
+|--------|--------|--------------|
+| **API P95 Latency** | < 120ms | < 150ms |
+| **Engine P95 Latency** | < 500ms | < 600ms |
+| **Error Rate** | < 0.5% | < 1.0% |
+| **Availability** | ≥ 99.9% | ≥ 99.0% |
+
+**Interpreting Results**:
+- **Green** (within target): System meets SLO
+- **Yellow** (within CI threshold): Acceptable for testing
+- **Red** (exceeds CI threshold): Performance regression - investigate
+
+### SLO Violation Response
+
+**If P95 Latency Exceeds Target**:
+1. Check system load and resource utilization
+2. Review recent code changes for performance impact
+3. Profile slow operations using metrics
+4. Consider scaling horizontally or optimizing hot paths
+
+**If Error Rate Exceeds Target**:
+1. Check error logs for root cause
+2. Verify LLM provider status
+3. Review circuit breaker state
+4. Check for configuration issues
+
+**If Availability Drops**:
+1. Check health endpoints immediately
+2. Review recent deployments
+3. Verify infrastructure (K8s, networking)
+4. Execute incident response procedures
+
+---
+
 ## Monitoring & Alerts
 
 ### Health Checks

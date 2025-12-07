@@ -222,12 +222,20 @@ class TestCognitiveControllerMemoryLeak:
             initial_growth = memory_samples[1] - memory_samples[0]
             later_growth = memory_samples[-1] - memory_samples[-2]
 
+            # Define noise tolerance (0.5 MB) for RSS measurement fluctuations
+            # RSS can vary due to allocator behavior, not actual leaks
+            noise_tolerance_mb = 0.5
+
             # Later growth should be less than or similar to initial growth
             # This indicates stabilization rather than continuous leak
-            assert later_growth <= initial_growth * 2, (
-                f"Memory continues to grow significantly: "
+            # Allow small noise within tolerance even if initial_growth is near zero
+            assert later_growth <= max(initial_growth * 2, noise_tolerance_mb), (
+                f"Memory continues to grow significantly beyond allocator noise: "
                 f"initial growth: {initial_growth:.2f} MB, "
-                f"later growth: {later_growth:.2f} MB"
+                f"later growth: {later_growth:.2f} MB, "
+                f"tolerance: {noise_tolerance_mb:.2f} MB. "
+                f"Note: Small differences (<{noise_tolerance_mb} MB) are normal allocator fluctuations, "
+                f"but sustained growth of hundreds of MB would indicate a real leak."
             )
 
 

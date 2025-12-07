@@ -653,6 +653,128 @@ services:
       - ./deploy/grafana:/etc/grafana/provisioning/dashboards
 ```
 
+## Performance Testing & SLO Validation
+
+### Automated Performance Tests
+
+The repository includes comprehensive performance and resilience tests located in:
+- `tests/perf/` - SLO validation tests for API endpoints
+- `tests/resilience/` - Failure mode and chaos tests
+
+### Running Performance Tests
+
+**Quick Validation** (< 2 minutes):
+```bash
+# Test API endpoint SLOs under light load
+pytest tests/perf/test_slo_api_endpoints.py -v -m "not slow"
+
+# Test resilience (rate limiting, circuit breakers, timeouts)
+pytest tests/resilience/ -v -m "not slow"
+```
+
+**Comprehensive Validation** (~15 minutes):
+```bash
+# Full performance test suite including moderate load
+pytest tests/perf/ -v
+
+# Full resilience test suite including slow tests
+pytest tests/resilience/ -v
+```
+
+### SLO Constants
+
+Performance targets are defined in `src/mlsdm/config/perf_slo.py`:
+
+```python
+from mlsdm.config.perf_slo import (
+    DEFAULT_LATENCY_SLO,
+    DEFAULT_ERROR_RATE_SLO,
+    get_load_profile,
+)
+
+# Example: Check if latency meets SLO
+assert latency_p95 < DEFAULT_LATENCY_SLO.api_p95_ms
+
+# Example: Get standard load profile
+profile = get_load_profile("light")  # 50 requests, 5 concurrent
+```
+
+### Load Test Utilities
+
+Use `tests/perf/utils.py` for custom load tests:
+
+```python
+from tests.perf.utils import run_load_test, LoadTestResults
+
+def my_operation():
+    # Your operation to test
+    response = client.post("/generate", json={"prompt": "test"})
+    assert response.status_code == 200
+
+# Run load test
+results = run_load_test(
+    operation=my_operation,
+    n_requests=100,
+    concurrency=10,
+)
+
+# Check results
+print(f"P95 latency: {results.p95_latency_ms:.2f}ms")
+print(f"Error rate: {results.error_rate_percent:.2f}%")
+assert results.p95_latency_ms < 150.0  # Custom SLO
+```
+
+### CI Integration
+
+Performance and resilience tests run automatically in CI:
+- **On main branch**: Fast subset (< 5 min)
+- **On labeled PRs**: Add `perf` or `resilience` label to trigger
+- **Nightly**: Full comprehensive suite at 2 AM UTC
+- **Manual**: GitHub Actions workflow dispatch
+
+See `.github/workflows/perf-resilience.yml` for configuration.
+
+### Interpreting Test Results
+
+**Successful Test Run**:
+```
+tests/perf/test_slo_api_endpoints.py::TestGenerateEndpointSLO::test_generate_latency_light_load PASSED
+```
+- All assertions passed
+- Latency and error rate within SLO targets
+
+**Failed Test**:
+```
+AssertionError: P95 latency 185.23ms exceeds SLO (150ms)
+```
+- Performance regression detected
+- Investigate recent changes
+- Profile slow operations
+
+### Performance Metrics to Monitor
+
+When running performance tests, monitor these key metrics:
+
+1. **Latency Distribution**:
+   - P50 (median)
+   - P95 (SLO target)
+   - P99 (tail latency)
+
+2. **Error Rates**:
+   - 5xx errors (system failures)
+   - Timeouts
+   - Rate limit rejections
+
+3. **Throughput**:
+   - Requests per second (RPS)
+   - Concurrent request capacity
+   - Queue depth
+
+4. **Resource Utilization**:
+   - Memory usage
+   - CPU utilization
+   - Network I/O
+
 ## Best Practices
 
 1. **Always use correlation IDs** - Pass `request_id` through the entire pipeline
