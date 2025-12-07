@@ -20,9 +20,9 @@ from fastapi.testclient import TestClient
 class TestSecurityProfiles:
     """Test security profile configuration."""
 
-    def test_dev_profile_disables_security_features(self):
+    def test_dev_profile_disables_security_features(self, monkeypatch):
         """Dev profile should disable advanced security features."""
-        os.environ["MLSDM_RUNTIME_MODE"] = "dev"
+        monkeypatch.setenv("MLSDM_RUNTIME_MODE", "dev")
         from mlsdm.config_runtime import get_runtime_config
         
         config = get_runtime_config()
@@ -34,9 +34,9 @@ class TestSecurityProfiles:
         assert config.security.enable_policy_engine is False
         assert config.security.enable_guardrails is False
         
-    def test_prod_profile_enables_security_features(self):
+    def test_prod_profile_enables_security_features(self, monkeypatch):
         """Cloud prod profile should enable all security features."""
-        os.environ["MLSDM_RUNTIME_MODE"] = "cloud-prod"
+        monkeypatch.setenv("MLSDM_RUNTIME_MODE", "cloud-prod")
         from mlsdm.config_runtime import get_runtime_config
         
         config = get_runtime_config()
