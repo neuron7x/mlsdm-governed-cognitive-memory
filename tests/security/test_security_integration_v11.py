@@ -9,12 +9,10 @@ Tests the integration of:
 - Security profiles
 """
 
-import os
 from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi import Request
-from fastapi.testclient import TestClient
 
 
 class TestSecurityProfiles:
