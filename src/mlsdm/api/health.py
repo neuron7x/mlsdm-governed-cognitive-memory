@@ -14,7 +14,7 @@ Health endpoints:
 import logging
 import threading
 import time
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 import psutil
@@ -103,7 +103,7 @@ _neuro_engine: Any | None = None
 # Cache is valid for 1 second to balance freshness and performance
 _health_cache: dict[str, Any] = {}
 _health_cache_ttl = 1.0  # seconds
-_health_cache_lock: threading.Lock | None = None  # Will be initialized on first use
+_health_cache_lock: Optional[threading.Lock] = None  # Will be initialized on first use
 
 
 def set_memory_manager(manager: Any) -> None:
