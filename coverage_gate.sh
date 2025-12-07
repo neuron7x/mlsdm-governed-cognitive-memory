@@ -23,8 +23,8 @@
 set -euo pipefail
 
 # Default coverage threshold (can be overridden via environment variable)
-# Current baseline is ~68%, default to 65% for some headroom
-COVERAGE_MIN="${COVERAGE_MIN:-65}"
+# Current baseline with unit+state tests is ~71%, set to 68% for headroom
+COVERAGE_MIN="${COVERAGE_MIN:-68}"
 
 # Additional pytest arguments (can be extended via environment variable)
 PYTEST_ARGS="${PYTEST_ARGS:-}"
@@ -65,14 +65,17 @@ echo "========================================================================"
 echo ""
 
 # Build pytest command
-# We run unit tests as the primary gate, but allow PYTEST_ARGS to customize
+# We run unit and state tests as the primary gate, but allow PYTEST_ARGS to customize
 #
 # NOTE: We use `|| true` after the pipeline because with `set -e` and `pipefail`,
 # a non-zero exit from pytest would terminate the script before we can capture
 # PIPESTATUS. We explicitly check the exit code below to fail appropriately.
 #
+# State tests are included because they are unit-level tests for state modules,
+# just organized in a separate directory for clarity.
+#
 # shellcheck disable=SC2086
-python -m pytest tests/unit/ \
+python -m pytest tests/unit/ tests/state/ \
     --cov=src/mlsdm \
     --cov-report=term-missing \
     --cov-report=xml:coverage.xml \
