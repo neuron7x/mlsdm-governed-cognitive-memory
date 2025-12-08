@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     try:
         from opentelemetry.trace import Span
     except ImportError:
-        Span = Any  # type: ignore[misc]
+        Span = Any
 
 # ---------------------------------------------------------------------------
 # Logger Configuration

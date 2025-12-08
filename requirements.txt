@@ -1,5 +1,10 @@
-# MLSDM Core Dependencies
-# Sync with pyproject.toml [project.dependencies]
+# MLSDM Full Installation Requirements
+# 
+# This file includes ALL dependencies including optional ones.
+# For minimal installation (no OTEL): pip install -e .
+# For this full install: pip install -r requirements.txt
+#
+# Core Dependencies (sync with pyproject.toml [project.dependencies])
 numpy>=2.0.0
 sentence-transformers>=3.0.0
 fastapi>=0.110.0

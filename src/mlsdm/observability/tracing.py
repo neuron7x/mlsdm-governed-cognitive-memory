@@ -45,15 +45,15 @@ try:
 except ImportError:
     OTEL_AVAILABLE = False
     # Define stub types for when OTEL is not available
-    trace = None  # type: ignore
-    Resource = None  # type: ignore
-    SpanProcessor = None  # type: ignore
-    TracerProvider = None  # type: ignore
-    BatchSpanProcessor = None  # type: ignore
-    ConsoleSpanExporter = None  # type: ignore
-    SpanKind = None  # type: ignore
-    Status = None  # type: ignore
-    StatusCode = None  # type: ignore
+    trace = None
+    Resource = None
+    SpanProcessor = None
+    TracerProvider = None
+    BatchSpanProcessor = None
+    ConsoleSpanExporter = None
+    SpanKind = None
+    Status = None
+    StatusCode = None
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -63,9 +63,9 @@ if TYPE_CHECKING:
         from opentelemetry.context import Context
         from opentelemetry.trace import Span, Tracer
     except ImportError:
-        Context = Any  # type: ignore[misc]
-        Span = Any  # type: ignore[misc]
-        Tracer = Any  # type: ignore[misc]
+        Context = Any
+        Span = Any
+        Tracer = Any
 
 logger = logging.getLogger(__name__)
 

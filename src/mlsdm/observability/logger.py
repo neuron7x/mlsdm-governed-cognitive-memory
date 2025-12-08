@@ -28,7 +28,7 @@ try:
     OTEL_AVAILABLE = True
 except ImportError:
     OTEL_AVAILABLE = False
-    trace = None  # type: ignore
+    trace = None
     INVALID_SPAN_ID = 0
     INVALID_TRACE_ID = 0
 

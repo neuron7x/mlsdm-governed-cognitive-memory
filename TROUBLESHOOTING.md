@@ -77,11 +77,19 @@ ModuleNotFoundError: No module named 'opentelemetry'
 
 **Solution:**
 
-✅ **This is now expected behavior!** OpenTelemetry is optional as of recent updates.
+✅ **This is expected and OK!** OpenTelemetry is an optional dependency.
 
-Options:
-1. **Ignore it** - MLSDM works fine without OpenTelemetry (tracing will be disabled)
-2. **Install it** if you want distributed tracing:
+**Important:** Importing `mlsdm` and using the core system does NOT require OpenTelemetry:
+```python
+import mlsdm  # ✓ This works without OTEL
+from mlsdm import LLMWrapper  # ✓ This works too
+```
+
+You'll only see this error if you directly import from `opentelemetry` in your own code without having it installed.
+
+**Options:**
+1. **Do nothing** - MLSDM works perfectly without OpenTelemetry (tracing is disabled)
+2. **Install it** only if you need distributed tracing:
    ```bash
    pip install ".[observability]"
    # OR

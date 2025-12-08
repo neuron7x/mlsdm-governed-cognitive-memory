@@ -291,18 +291,18 @@ For complete system design, see [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md).
 git clone https://github.com/neuron7x/mlsdm.git
 cd mlsdm
 
-# Minimal installation (core features only, recommended for first-time users)
-pip install numpy sentence-transformers fastapi uvicorn pyyaml pydantic prometheus-client tenacity requests psutil
+# Recommended: Install from source with pip
+pip install -e .
 
-# OR full installation with all optional features (includes OpenTelemetry tracing)
+# OR: Install with all dependencies (includes OpenTelemetry)
 pip install -r requirements.txt
 
-# (Optional) Install NeuroLang/Aphasia support
-pip install -r requirements-neurolang.txt
-
-# (Optional) Install OpenTelemetry for distributed tracing
-pip install ".[observability]"
+# Optional extras:
+pip install -e ".[observability]"  # Add OpenTelemetry tracing
+pip install -r requirements-neurolang.txt  # Add Aphasia/NeuroLang support
 ```
+
+> **Note:** For detailed installation options and minimal dependencies, see [GETTING_STARTED.md](GETTING_STARTED.md).
 
 **Note:** OpenTelemetry is now optional. MLSDM works perfectly without it if you don't need distributed tracing.
 
