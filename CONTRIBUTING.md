@@ -53,49 +53,64 @@ This project adheres to professional engineering standards. We expect:
 
 ## Development Setup
 
-### Install Dependencies
+### Local Dev / Tests
+
+#### 1. Create Virtual Environment
 
 ```bash
 # Create virtual environment (recommended)
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
 ```
 
-### Verify Installation
+#### 2. Install Development Dependencies
 
 ```bash
-# Install with test dependencies
-pip install -e ".[test]"
+# Install all dev/test dependencies
+pip install -r requirements-dev.txt
 
-# Run tests to ensure everything works
-make test
+# This includes:
+# - Core dependencies (from requirements.txt)
+# - Testing tools (pytest, pytest-cov, hypothesis)
+# - Linting/type checking (ruff, mypy)
+# - Load testing (locust)
+# - OpenTelemetry (for full observability testing)
+```
 
-# Or directly:
-pytest --ignore=tests/load
+#### 3. Verify Installation
+
+```bash
+# Run quick smoke tests
+./scripts/dev_smoke_tests.sh
+
+# Or use the canonical test command directly
+PYTHONPATH=src pytest -q --ignore=tests/load
 ```
 
 ### Development Tools
 
-We use the following tools (all included in dev dependencies):
+We use the following tools (all included in requirements-dev.txt):
 
 - **pytest**: Testing framework
 - **pytest-cov**: Code coverage
+- **pytest-asyncio**: Async test support
 - **hypothesis**: Property-based testing
 - **ruff**: Linting and formatting
 - **mypy**: Type checking
 - **httpx**: HTTP client for testing
+- **locust**: Load testing
+- **OpenTelemetry**: Observability (optional in prod, included in dev)
 
 ### Canonical Development Commands
 
 These commands match what CI runs. **Always run these before pushing:**
 
 ```bash
-# Run all tests (ignores load tests that require special setup)
-make test
-# Or: pytest --ignore=tests/load
+# CANONICAL TEST COMMAND (matches CI exactly)
+PYTHONPATH=src pytest -q --ignore=tests/load
+
+# Quick smoke tests (same as above but wrapped in a script)
+./scripts/dev_smoke_tests.sh
 
 # Run linter (ruff)
 make lint
