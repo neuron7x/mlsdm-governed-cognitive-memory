@@ -1,5 +1,10 @@
-# MLSDM Core Dependencies
-# Sync with pyproject.toml [project.dependencies]
+# MLSDM Full Installation Requirements
+# 
+# This file includes ALL dependencies including optional ones.
+# For minimal installation (no OTEL): pip install -e .
+# For this full install: pip install -r requirements.txt
+#
+# Core Dependencies (sync with pyproject.toml [project.dependencies])
 numpy>=2.0.0
 sentence-transformers>=3.0.0
 fastapi>=0.110.0
@@ -7,11 +12,15 @@ uvicorn>=0.29.0
 pyyaml>=6.0.1
 pydantic>=2.0.0
 prometheus-client>=0.20.0
-opentelemetry-api>=1.24.0
-opentelemetry-sdk>=1.24.0
 tenacity>=8.2.3
 requests>=2.32.3
 psutil>=5.9.0
+
+# Optional Observability (from pyproject.toml [project.optional-dependencies].observability)
+# Install with: pip install -r requirements.txt or pip install ".[observability]"
+# OpenTelemetry provides distributed tracing capabilities but is optional
+opentelemetry-api>=1.24.0
+opentelemetry-sdk>=1.24.0
 
 # Dev dependencies (from pyproject.toml [project.optional-dependencies].dev)
 pytest>=8.0.0

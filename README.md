@@ -25,6 +25,7 @@
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://github.com/neuron7x/mlsdm/pkgs/container/mlsdm-neuro-engine)
 [![Status](https://img.shields.io/badge/status-beta-orange?style=for-the-badge)](CHANGELOG.md)
 
+[🚀 Getting Started](GETTING_STARTED.md) •
 [Quick Start](#-quick-start) •
 [Documentation](#-documentation) •
 [Architecture](#-architecture) •
@@ -51,6 +52,9 @@
 - [License](#-license)
 
 ---
+
+> [!NOTE]
+> **🆕 Latest Updates:** OpenTelemetry is now optional, reducing installation complexity. See [Getting Started](GETTING_STARTED.md) for the simplified setup.
 
 ## 🧬 What is MLSDM?
 
@@ -273,6 +277,8 @@ For complete system design, see [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md).
 
 ## 🚀 Quick Start
 
+> **New to MLSDM?** Start with our [**Getting Started Guide**](GETTING_STARTED.md) for a streamlined introduction.
+
 ### Prerequisites
 
 - Python 3.10+
@@ -285,12 +291,20 @@ For complete system design, see [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md).
 git clone https://github.com/neuron7x/mlsdm.git
 cd mlsdm
 
-# Install core dependencies
+# Recommended: Install from source with pip
+pip install -e .
+
+# OR: Install with all dependencies (includes OpenTelemetry)
 pip install -r requirements.txt
 
-# (Optional) Install NeuroLang/Aphasia support
-pip install -r requirements-neurolang.txt
+# Optional extras:
+pip install -e ".[observability]"  # Add OpenTelemetry tracing
+pip install -r requirements-neurolang.txt  # Add Aphasia/NeuroLang support
 ```
+
+> **Note:** For detailed installation options and minimal dependencies, see [GETTING_STARTED.md](GETTING_STARTED.md).
+
+**Note:** OpenTelemetry is now optional. MLSDM works perfectly without it if you don't need distributed tracing.
 
 ### Basic Usage
 
@@ -660,10 +674,13 @@ For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE
 | [Safety Foundations](docs/ALIGNMENT_AND_SAFETY_FOUNDATIONS.md) | AI safety principles |
 | [Bibliography](BIBLIOGRAPHY.md) | Peer-reviewed references |
 
-### Operations
+### Operations & Support
 
 | Document | Description |
 |:---------|:------------|
+| [Getting Started](GETTING_STARTED.md) | **5-minute quickstart guide for new users** |
+| [Troubleshooting](TROUBLESHOOTING.md) | **Common issues and solutions** |
+| [CI Guide](CI_GUIDE.md) | **CI/CD configuration and workflows** |
 | [Observability Guide](OBSERVABILITY_GUIDE.md) | Metrics, logging, tracing setup |
 | [Runbook](RUNBOOK.md) | Operational procedures |
 | [Security Policy](SECURITY_POLICY.md) | Security guidelines |
@@ -682,10 +699,17 @@ For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE
 - [x] 90%+ test coverage with property-based tests
 - [x] Thread-safe concurrent access
 
+### Recent Improvements (v1.2+)
+
+- [x] **OpenTelemetry is now optional** - Core system works without tracing dependencies
+- [x] **Reduced entry barrier** - New Getting Started guide with 5-minute quickstart
+- [x] **Improved documentation** - Added Troubleshooting and CI guides
+- [x] **Graceful degradation** - All observability features work without OTEL
+
 ### In Progress
 
-- [ ] OpenTelemetry distributed tracing (v1.3+)
 - [ ] Enhanced Grafana dashboards
+- [ ] Additional usage examples
 
 ### Future Work
 

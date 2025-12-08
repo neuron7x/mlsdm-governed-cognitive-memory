@@ -7,7 +7,7 @@ Key features:
 - Payload scrubbing to prevent PII/sensitive data in logs
 - Mandatory fields for full observability (request_id, phase, etc.)
 - Thread-safe singleton pattern
-- Trace context correlation (trace_id, span_id) from OpenTelemetry
+- Trace context correlation (trace_id, span_id) from OpenTelemetry (optional)
 """
 
 import json
@@ -21,8 +21,17 @@ from pathlib import Path
 from threading import Lock
 from typing import Any
 
-from opentelemetry import trace
-from opentelemetry.trace import INVALID_SPAN_ID, INVALID_TRACE_ID
+# Try to import OpenTelemetry, but allow graceful degradation
+try:
+    from opentelemetry import trace
+    from opentelemetry.trace import INVALID_SPAN_ID, INVALID_TRACE_ID
+    OTEL_AVAILABLE = True
+except ImportError:
+    OTEL_AVAILABLE = False
+    # When OTEL is not available, define fallback values
+    trace = None  # type: ignore
+    INVALID_SPAN_ID = 0
+    INVALID_TRACE_ID = 0
 
 # ---------------------------------------------------------------------------
 # Trace Context Helpers
@@ -38,6 +47,9 @@ def get_current_trace_context() -> dict[str, str]:
     Returns:
         Dictionary with trace_id and span_id as hex strings
     """
+    if not OTEL_AVAILABLE or trace is None:
+        return {"trace_id": "", "span_id": ""}
+
     span = trace.get_current_span()
     span_context = span.get_span_context()
 

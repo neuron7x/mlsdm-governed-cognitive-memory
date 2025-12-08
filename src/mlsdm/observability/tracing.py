@@ -3,11 +3,19 @@
 This module provides distributed tracing capabilities using OpenTelemetry,
 enabling observability across the entire cognitive pipeline.
 
+NOTE: OpenTelemetry is an optional dependency. If not installed, tracing
+will be disabled automatically and the system will function normally.
+
 Features:
 - Span creation for key operations (API handlers, generate, process_event)
 - Trace context propagation
 - Export to configurable backends (Jaeger/OTLP)
 - Integration with FastAPI middleware
+
+Installation:
+    pip install "mlsdm[observability]"
+    # OR
+    pip install opentelemetry-api opentelemetry-sdk
 
 Configuration:
 - OTEL_SERVICE_NAME: Service name (default: mlsdm)
@@ -24,28 +32,128 @@ import os
 from contextlib import contextmanager
 from functools import wraps
 from threading import Lock
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import SpanProcessor, TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-from opentelemetry.trace import SpanKind, Status, StatusCode
+# Runtime imports and fallbacks for OpenTelemetry
+try:
+    from opentelemetry import trace
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.trace import SpanProcessor, TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+    from opentelemetry.trace import SpanKind, Status, StatusCode
+    OTEL_AVAILABLE = True
+except ImportError:
+    OTEL_AVAILABLE = False
+    # When OTEL is not available, define fallback values
+    trace = None  # type: ignore
+    Resource = None  # type: ignore
+    SpanProcessor = None  # type: ignore
+    TracerProvider = None  # type: ignore
+    BatchSpanProcessor = None  # type: ignore
+    ConsoleSpanExporter = None  # type: ignore
+    SpanKind = None  # type: ignore
+    Status = None  # type: ignore
+    StatusCode = None  # type: ignore
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
-    from opentelemetry.context import Context
+    # Type-only imports for static analysis
+    # These will only be used during type checking, not at runtime
     from opentelemetry.trace import Span, Tracer
 
 logger = logging.getLogger(__name__)
 
-# Version constant for consistency across the codebase
-MLSDM_VERSION = "1.0.0"
+# Version constant - import from parent package to avoid inconsistency
+try:
+    from mlsdm import __version__ as mlsdm_version
+except ImportError:
+    # Fallback for when package not installed
+    mlsdm_version = "1.2.0"
+
+MLSDM_VERSION = mlsdm_version
 
 # Span attribute prefix constants
 SPAN_ATTR_PREFIX_MLSDM = "mlsdm."
 SPAN_ATTR_PREFIX_HTTP = "http."
+
+
+# ---------------------------------------------------------------------------
+# No-op implementations for when OpenTelemetry is not available
+# ---------------------------------------------------------------------------
+
+# Helper to get SpanKind values safely
+def _get_span_kind_internal() -> Any:
+    """Get SpanKind.INTERNAL if available, else None."""
+    if OTEL_AVAILABLE and SpanKind is not None:
+        return SpanKind.INTERNAL
+    return None
+
+def _get_span_kind_server() -> Any:
+    """Get SpanKind.SERVER if available, else None."""
+    if OTEL_AVAILABLE and SpanKind is not None:
+        return SpanKind.SERVER
+    return None
+
+def _get_span_kind_client() -> Any:
+    """Get SpanKind.CLIENT if available, else None."""
+    if OTEL_AVAILABLE and SpanKind is not None:
+        return SpanKind.CLIENT
+    return None
+
+
+class NoOpSpan:
+    """No-op span implementation when OpenTelemetry is not available."""
+
+    def set_attribute(self, key: str, value: Any) -> None:
+        """No-op set attribute."""
+        pass
+
+    def set_attributes(self, attributes: dict[str, Any]) -> None:
+        """No-op set attributes."""
+        pass
+
+    def add_event(self, name: str, attributes: dict[str, Any] | None = None) -> None:
+        """No-op add event."""
+        pass
+
+    def record_exception(self, exception: Exception) -> None:
+        """No-op record exception."""
+        pass
+
+    def set_status(self, status: Any) -> None:
+        """No-op set status."""
+        pass
+
+    def __enter__(self) -> NoOpSpan:
+        """No-op context manager entry."""
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        """No-op context manager exit."""
+        pass
+
+
+class NoOpTracer:
+    """No-op tracer implementation when OpenTelemetry is not available."""
+
+    @contextmanager
+    def start_as_current_span(
+        self,
+        name: str,
+        kind: Any = None,
+        attributes: dict[str, Any] | None = None,
+        context: Any = None,
+    ) -> Iterator[NoOpSpan]:
+        """No-op span context manager."""
+        yield NoOpSpan()
+
+
+# Type alias for functions that return either a real tracer or NoOpTracer
+if TYPE_CHECKING:
+    TracerLike: TypeAlias = Tracer | NoOpTracer
+else:
+    TracerLike: TypeAlias = Any
 
 
 # ---------------------------------------------------------------------------
@@ -167,8 +275,8 @@ class TracerManager:
         self._config = config or TracingConfig()
         self._initialized = False
         self._tracer: Tracer | None = None
-        self._provider: TracerProvider | None = None
-        self._processor: SpanProcessor | None = None
+        self._provider: Any = None  # TracerProvider or None
+        self._processor: Any = None  # SpanProcessor or None
 
     @classmethod
     def get_instance(cls, config: TracingConfig | None = None) -> TracerManager:
@@ -205,6 +313,10 @@ class TracerManager:
         and registers it as the global tracer provider.
         """
         if self._initialized:
+            return
+
+        if not OTEL_AVAILABLE:
+            logger.info("OpenTelemetry is not installed, tracing disabled. Install with: pip install 'mlsdm[observability]'")
             return
 
         if not self._config.enabled:
@@ -315,18 +427,23 @@ class TracerManager:
                 self._initialized = False
 
     @property
-    def tracer(self) -> Tracer:
+    def tracer(self) -> TracerLike:
         """Get the tracer instance, initializing if necessary.
 
         Returns:
-            OpenTelemetry Tracer instance
+            OpenTelemetry Tracer instance or NoOpTracer if OTEL not available
         """
+        if not OTEL_AVAILABLE:
+            return NoOpTracer()
+
         if not self._initialized:
             self.initialize()
 
         if self._tracer is None:
             # Return a no-op tracer if not initialized
-            return trace.get_tracer("mlsdm", MLSDM_VERSION)
+            if trace is not None:
+                return trace.get_tracer("mlsdm", MLSDM_VERSION)
+            return NoOpTracer()
 
         return self._tracer
 
@@ -339,26 +456,30 @@ class TracerManager:
     def start_span(
         self,
         name: str,
-        kind: SpanKind = SpanKind.INTERNAL,
+        kind: Any = None,
         attributes: dict[str, Any] | None = None,
-        context: Context | None = None,
-    ) -> Iterator[Span]:
+        context: Any = None,
+    ) -> Iterator[Any]:
         """Start a new span as a context manager.
 
         Args:
             name: Name of the span
-            kind: Kind of span (INTERNAL, SERVER, CLIENT, PRODUCER, CONSUMER)
+            kind: Kind of span (INTERNAL, SERVER, CLIENT, PRODUCER, CONSUMER) if OTEL available
             attributes: Initial span attributes
             context: Parent context (optional)
 
         Yields:
-            The created span
+            The created span (or NoOpSpan if OTEL not available)
 
         Example:
             >>> with tracer_manager.start_span("process_event") as span:
             ...     span.set_attribute("event_type", "cognitive")
             ...     process_event()
         """
+        # Use default kind only if OTEL is available
+        if kind is None:
+            kind = _get_span_kind_internal()
+
         with self.tracer.start_as_current_span(
             name,
             kind=kind,
@@ -367,15 +488,19 @@ class TracerManager:
         ) as span:
             yield span
 
-    def record_exception(self, span: Span, exception: Exception) -> None:
+    def record_exception(self, span: Any, exception: Exception) -> None:
         """Record an exception on a span.
 
         Args:
             span: The span to record the exception on
             exception: The exception to record
         """
+        if not OTEL_AVAILABLE or isinstance(span, NoOpSpan):
+            return
+
         span.record_exception(exception)
-        span.set_status(Status(StatusCode.ERROR, str(exception)))
+        if Status is not None and StatusCode is not None:
+            span.set_status(Status(StatusCode.ERROR, str(exception)))
 
 
 # ---------------------------------------------------------------------------
@@ -398,11 +523,11 @@ def get_tracer_manager(config: TracingConfig | None = None) -> TracerManager:
     return TracerManager.get_instance(config)
 
 
-def get_tracer() -> Tracer:
+def get_tracer() -> TracerLike:
     """Get the global tracer instance.
 
     Returns:
-        OpenTelemetry Tracer instance
+        OpenTelemetry Tracer instance or NoOpTracer if OTEL not available
     """
     return get_tracer_manager().tracer
 
@@ -473,7 +598,7 @@ def span(name: str, **attrs: Any) -> Iterator[Span]:
 
 def traced(
     name: str | None = None,
-    kind: SpanKind = SpanKind.INTERNAL,
+    kind: Any = None,
     record_args: bool = False,
     record_result: bool = False,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
@@ -496,12 +621,13 @@ def traced(
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         span_name = name or func.__name__
+        span_kind = kind if kind is not None else _get_span_kind_internal()
 
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             manager = get_tracer_manager()
 
-            with manager.start_span(span_name, kind=kind) as span:
+            with manager.start_span(span_name, kind=span_kind) as span:
                 # Record arguments if requested
                 if record_args:
                     for i, arg in enumerate(args):
@@ -529,7 +655,7 @@ def traced(
 
 def traced_async(
     name: str | None = None,
-    kind: SpanKind = SpanKind.INTERNAL,
+    kind: Any = None,
     record_args: bool = False,
     record_result: bool = False,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
@@ -547,12 +673,13 @@ def traced_async(
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         span_name = name or func.__name__
+        span_kind = kind if kind is not None else _get_span_kind_internal()
 
         @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
             manager = get_tracer_manager()
 
-            with manager.start_span(span_name, kind=kind) as span:
+            with manager.start_span(span_name, kind=span_kind) as span:
                 # Record arguments if requested
                 if record_args:
                     for i, arg in enumerate(args):
@@ -601,7 +728,7 @@ def trace_generate(
     manager = get_tracer_manager()
     return manager.start_span(
         "mlsdm.generate",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes={
             "mlsdm.prompt_length": len(prompt),
             "mlsdm.moral_value": moral_value,
@@ -626,7 +753,7 @@ def trace_process_event(
     manager = get_tracer_manager()
     return manager.start_span(
         "mlsdm.process_event",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes={
             "mlsdm.event_type": event_type,
             "mlsdm.moral_value": moral_value,
@@ -650,7 +777,7 @@ def trace_memory_retrieval(
     manager = get_tracer_manager()
     return manager.start_span(
         "mlsdm.memory_retrieval",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes={
             "mlsdm.query_type": query_type,
             "mlsdm.top_k": top_k,
@@ -678,7 +805,7 @@ def trace_moral_filter(
 
     return manager.start_span(
         "mlsdm.moral_filter",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes=attributes,
     )
 
@@ -701,7 +828,7 @@ def trace_aphasia_detection(
     manager = get_tracer_manager()
     return manager.start_span(
         "mlsdm.aphasia_detection",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes={
             "mlsdm.aphasia.detect_enabled": detect_enabled,
             "mlsdm.aphasia.repair_enabled": repair_enabled,
@@ -733,7 +860,7 @@ def trace_emergency_shutdown(
 
     return manager.start_span(
         "mlsdm.emergency_shutdown",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes=attributes,
     )
 
@@ -754,7 +881,7 @@ def trace_phase_transition(
     manager = get_tracer_manager()
     return manager.start_span(
         "mlsdm.phase_transition",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes={
             "mlsdm.phase.from": from_phase,
             "mlsdm.phase.to": to_phase,
@@ -783,7 +910,7 @@ def trace_full_pipeline(
     manager = get_tracer_manager()
     return manager.start_span(
         "mlsdm.full_pipeline",
-        kind=SpanKind.SERVER,
+        kind=_get_span_kind_server(),
         attributes={
             "mlsdm.prompt_length": prompt_length,
             "mlsdm.moral_value": moral_value,
@@ -836,7 +963,7 @@ def trace_aphasia_repair(
     manager = get_tracer_manager()
     return manager.start_span(
         "mlsdm.aphasia_repair",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes={
             "mlsdm.aphasia.detected": detected,
             "mlsdm.aphasia.severity": severity,
@@ -870,7 +997,7 @@ def trace_llm_call(
 
     return manager.start_span(
         "mlsdm.llm_call",
-        kind=SpanKind.CLIENT,
+        kind=_get_span_kind_client(),
         attributes=attributes,
     )
 
@@ -891,7 +1018,7 @@ def trace_speech_governance(
     manager = get_tracer_manager()
     return manager.start_span(
         "mlsdm.speech_governance",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes={
             "mlsdm.speech.governance_enabled": governance_enabled,
             "mlsdm.speech.aphasia_mode": aphasia_mode,
@@ -919,7 +1046,7 @@ def trace_request(
     manager = get_tracer_manager()
     return manager.start_span(
         f"api.{endpoint.lstrip('/').replace('/', '_')}",
-        kind=SpanKind.SERVER,
+        kind=_get_span_kind_server(),
         attributes={
             "http.method": method,
             "http.route": endpoint,

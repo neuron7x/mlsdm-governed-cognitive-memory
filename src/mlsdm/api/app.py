@@ -9,8 +9,15 @@ import numpy as np
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
-from opentelemetry.trace import SpanKind
 from pydantic import BaseModel, Field
+
+# Try to import OpenTelemetry, but allow graceful degradation
+try:
+    from opentelemetry.trace import SpanKind
+    OTEL_AVAILABLE = True
+except ImportError:
+    OTEL_AVAILABLE = False
+    SpanKind = None  # type: ignore
 
 from mlsdm.api import health
 from mlsdm.api.lifecycle import cleanup_memory_manager, get_lifecycle_manager
@@ -450,9 +457,10 @@ async def generate(
 
     # Start root span for the generate endpoint
     tracer_manager = get_tracer_manager()
+    span_kind = SpanKind.SERVER if OTEL_AVAILABLE and SpanKind is not None else None
     with tracer_manager.start_span(
         "api.generate",
-        kind=SpanKind.SERVER,
+        kind=span_kind,
         attributes={
             "http.method": "POST",
             "http.route": "/generate",
@@ -652,9 +660,10 @@ async def infer(
 
     # Start root span for the infer endpoint
     tracer_manager = get_tracer_manager()
+    span_kind = SpanKind.SERVER if OTEL_AVAILABLE and SpanKind is not None else None
     with tracer_manager.start_span(
         "api.infer",
-        kind=SpanKind.SERVER,
+        kind=span_kind,
         attributes={
             "http.method": "POST",
             "http.route": "/infer",
