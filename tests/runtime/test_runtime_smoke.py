@@ -20,7 +20,7 @@ class TestRuntimeConfiguration:
 
     def test_import_config_runtime(self):
         """Test that config_runtime can be imported."""
-        from mlsdm.config_runtime import (
+        from mlsdm.config.runtime import (
             RuntimeMode,
             get_runtime_config,
             get_runtime_mode,
@@ -34,7 +34,7 @@ class TestRuntimeConfiguration:
 
     def test_get_runtime_mode_default(self):
         """Test default runtime mode is dev."""
-        from mlsdm.config_runtime import RuntimeMode, get_runtime_mode
+        from mlsdm.config.runtime import RuntimeMode, get_runtime_mode
 
         with patch.dict(os.environ, {}, clear=True):
             # Clear MLSDM_RUNTIME_MODE
@@ -44,7 +44,7 @@ class TestRuntimeConfiguration:
 
     def test_get_runtime_mode_from_env(self):
         """Test runtime mode from environment."""
-        from mlsdm.config_runtime import RuntimeMode, get_runtime_mode
+        from mlsdm.config.runtime import RuntimeMode, get_runtime_mode
 
         with patch.dict(os.environ, {"MLSDM_RUNTIME_MODE": "cloud-prod"}):
             mode = get_runtime_mode()
@@ -52,7 +52,7 @@ class TestRuntimeConfiguration:
 
     def test_get_runtime_config_dev(self):
         """Test dev mode configuration."""
-        from mlsdm.config_runtime import RuntimeMode, get_runtime_config
+        from mlsdm.config.runtime import RuntimeMode, get_runtime_config
 
         config = get_runtime_config(RuntimeMode.DEV)
         assert config.mode == RuntimeMode.DEV
@@ -62,7 +62,7 @@ class TestRuntimeConfiguration:
 
     def test_get_runtime_config_cloud_prod(self):
         """Test cloud-prod mode configuration."""
-        from mlsdm.config_runtime import RuntimeMode, get_runtime_config
+        from mlsdm.config.runtime import RuntimeMode, get_runtime_config
 
         config = get_runtime_config(RuntimeMode.CLOUD_PROD)
         assert config.mode == RuntimeMode.CLOUD_PROD
@@ -72,7 +72,7 @@ class TestRuntimeConfiguration:
 
     def test_get_runtime_config_agent_api(self):
         """Test agent-api mode configuration."""
-        from mlsdm.config_runtime import RuntimeMode, get_runtime_config
+        from mlsdm.config.runtime import RuntimeMode, get_runtime_config
 
         config = get_runtime_config(RuntimeMode.AGENT_API)
         assert config.mode == RuntimeMode.AGENT_API
@@ -81,7 +81,7 @@ class TestRuntimeConfiguration:
 
     def test_config_to_env_dict(self):
         """Test config to env dict conversion."""
-        from mlsdm.config_runtime import RuntimeMode, get_runtime_config
+        from mlsdm.config.runtime import RuntimeMode, get_runtime_config
 
         config = get_runtime_config(RuntimeMode.DEV)
         env_dict = config.to_env_dict()

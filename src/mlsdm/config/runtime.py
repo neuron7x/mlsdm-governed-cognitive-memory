@@ -13,7 +13,7 @@ Configuration priority (highest to lowest):
 3. Base defaults
 
 Usage:
-    from mlsdm.config_runtime import get_runtime_config, RuntimeMode
+    from mlsdm.config.runtime import get_runtime_config, RuntimeMode
 
     # Get configuration for a specific mode
     config = get_runtime_config(mode=RuntimeMode.DEV)

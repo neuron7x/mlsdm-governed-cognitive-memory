@@ -49,7 +49,7 @@ def main() -> int:
     os.environ["MLSDM_RUNTIME_MODE"] = "cloud-prod"
 
     # Import and apply configuration
-    from mlsdm.config_runtime import (
+    from mlsdm.config.runtime import (
         RuntimeMode,
         apply_runtime_config,
         get_runtime_config,
