@@ -3,11 +3,15 @@
 This module implements a Principal System Architect-level logging system
 with structured JSON logs, multiple log levels, and automatic rotation.
 
+**IMPORTANT**: OpenTelemetry is an optional dependency. When not installed,
+trace context features are disabled but logging continues to work normally.
+This ensures that logging never fails due to missing OTEL packages.
+
 Key features:
 - Payload scrubbing to prevent PII/sensitive data in logs
 - Mandatory fields for full observability (request_id, phase, etc.)
 - Thread-safe singleton pattern
-- Trace context correlation (trace_id, span_id) from OpenTelemetry
+- Trace context correlation (trace_id, span_id) from OpenTelemetry (when available)
 """
 
 import json
@@ -21,8 +25,18 @@ from pathlib import Path
 from threading import Lock
 from typing import Any
 
-from opentelemetry import trace
-from opentelemetry.trace import INVALID_SPAN_ID, INVALID_TRACE_ID
+# Conditional OpenTelemetry imports - OTEL is optional
+try:
+    from opentelemetry import trace
+    from opentelemetry.trace import INVALID_SPAN_ID, INVALID_TRACE_ID
+
+    OTEL_AVAILABLE = True
+except ImportError:
+    # When OTEL is not installed, provide no-op stubs
+    trace = None  # type: ignore[assignment]
+    INVALID_SPAN_ID = 0  # type: ignore[assignment]
+    INVALID_TRACE_ID = 0  # type: ignore[assignment]
+    OTEL_AVAILABLE = False
 
 # ---------------------------------------------------------------------------
 # Trace Context Helpers
@@ -34,24 +48,33 @@ def get_current_trace_context() -> dict[str, str]:
 
     Returns a dictionary with trace_id and span_id if a span is active,
     otherwise returns empty strings for both fields.
+    
+    When OpenTelemetry is not available, always returns empty strings.
 
     Returns:
         Dictionary with trace_id and span_id as hex strings
     """
-    span = trace.get_current_span()
-    span_context = span.get_span_context()
+    if not OTEL_AVAILABLE or trace is None:
+        return {"trace_id": "", "span_id": ""}
 
-    if span_context.trace_id != INVALID_TRACE_ID:
-        trace_id = format(span_context.trace_id, "032x")
-    else:
-        trace_id = ""
+    try:
+        span = trace.get_current_span()
+        span_context = span.get_span_context()
 
-    if span_context.span_id != INVALID_SPAN_ID:
-        span_id = format(span_context.span_id, "016x")
-    else:
-        span_id = ""
+        if span_context.trace_id != INVALID_TRACE_ID:
+            trace_id = format(span_context.trace_id, "032x")
+        else:
+            trace_id = ""
 
-    return {"trace_id": trace_id, "span_id": span_id}
+        if span_context.span_id != INVALID_SPAN_ID:
+            span_id = format(span_context.span_id, "016x")
+        else:
+            span_id = ""
+
+        return {"trace_id": trace_id, "span_id": span_id}
+    except Exception:
+        # If anything goes wrong with OTEL, just return empty strings
+        return {"trace_id": "", "span_id": ""}
 
 
 class TraceContextFilter(logging.Filter):
@@ -59,10 +82,14 @@ class TraceContextFilter(logging.Filter):
 
     This filter adds trace_id and span_id attributes to every log record,
     enabling correlation between logs and distributed traces.
+    
+    When OpenTelemetry is not available, this filter still works but
+    adds empty strings for trace_id and span_id.
 
     Example:
         >>> logger = logging.getLogger("mlsdm")
         >>> logger.addFilter(TraceContextFilter())
+        >>> # With OTEL available:
         >>> with tracer.start_as_current_span("my_span"):
         ...     logger.info("This log has trace context")
     """
@@ -77,8 +104,8 @@ class TraceContextFilter(logging.Filter):
             Always True (all records pass through)
         """
         ctx = get_current_trace_context()
-        record.trace_id = ctx["trace_id"]
-        record.span_id = ctx["span_id"]
+        record.trace_id = ctx["trace_id"]  # type: ignore[attr-defined]
+        record.span_id = ctx["span_id"]  # type: ignore[attr-defined]
         return True
 
 
@@ -216,6 +243,8 @@ class JSONFormatter(logging.Formatter):
 
     Includes trace_id and span_id from OpenTelemetry when available,
     enabling correlation between logs and distributed traces.
+    
+    When OpenTelemetry is not available, trace fields are omitted or empty.
     """
 
     def format(self, record: logging.LogRecord) -> str:

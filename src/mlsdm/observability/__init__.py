@@ -66,6 +66,7 @@ from .metrics import (
     record_request,
 )
 from .tracing import (
+    OTEL_AVAILABLE,
     TracerManager,
     TracingConfig,
     add_span_attributes,
@@ -136,6 +137,7 @@ __all__ = [
     "record_request",
     "record_aphasia_event",
     # Tracing
+    "OTEL_AVAILABLE",
     "TracerManager",
     "TracingConfig",
     "add_span_attributes",

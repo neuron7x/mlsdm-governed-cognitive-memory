@@ -31,11 +31,12 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies (core + neurolang extra)
+      - name: Install dependencies (core + neurolang + tracing extras)
         run: |
           python -m pip install --upgrade pip
-          pip install .[neurolang]
-          pip install pytest
+          # Install with tracing extra for OpenTelemetry support
+          # OpenTelemetry is optional but tests expect it for observability features
+          pip install .[neurolang,tracing,test]
 
       - name: Run Aphasia / NeuroLang tests
         run: |
