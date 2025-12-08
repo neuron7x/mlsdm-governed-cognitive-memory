@@ -45,15 +45,16 @@ try:
 except ImportError:
     OTEL_AVAILABLE = False
     # When OTEL is not available, define fallback values
-    trace = None  # type: ignore
-    Resource = None  # type: ignore
-    SpanProcessor = None  # type: ignore
-    TracerProvider = None  # type: ignore
-    BatchSpanProcessor = None  # type: ignore
-    ConsoleSpanExporter = None  # type: ignore
-    SpanKind = None  # type: ignore
-    Status = None  # type: ignore
-    StatusCode = None  # type: ignore
+    if not TYPE_CHECKING:
+        trace = None
+        Resource = None
+        SpanProcessor = None
+        TracerProvider = None
+        BatchSpanProcessor = None
+        ConsoleSpanExporter = None
+        SpanKind = None
+        Status = None
+        StatusCode = None
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator

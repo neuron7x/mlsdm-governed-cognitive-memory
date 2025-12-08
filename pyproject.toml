@@ -39,7 +39,6 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=2.0.0",
-    "sentence-transformers>=3.0.0",
     "fastapi>=0.110.0",
     "uvicorn>=0.29.0",
     "pyyaml>=6.0.1",
@@ -58,6 +57,9 @@ observability = [
 ]
 neurolang = [
     "torch>=2.0.0",
+]
+embeddings = [
+    "sentence-transformers>=3.0.0",
 ]
 dev = [
     "pytest>=8.0.0",
@@ -238,6 +240,17 @@ where = ["src"]
 "" = "src"
 
 [tool.deptry]
+# Exclude dev/test/docs dependencies from being treated as main dependencies
+exclude = ["tests", "docs"]
+
+[tool.deptry.per_rule_ignores]
+# Allow certain missing imports that are optional/conditional
+DEP001 = ["openai", "anthropic", "fslgs", "redis"]
+# Allow transitive dependencies that are re-exported by parent packages
+DEP003 = ["starlette", "typing_extensions"]
+# Allow certain optional dependencies that are defined but not yet used in src/
+DEP002 = ["sentence-transformers"]
+
 [tool.deptry.package_module_name_map]
 opentelemetry-api = "opentelemetry"
 opentelemetry-sdk = "opentelemetry"

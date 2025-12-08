@@ -19,7 +19,7 @@ from enum import Enum
 from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from pathlib import Path
 from threading import Lock
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 # Try to import OpenTelemetry, but allow graceful degradation
 try:
@@ -29,7 +29,8 @@ try:
 except ImportError:
     OTEL_AVAILABLE = False
     # When OTEL is not available, define fallback values
-    trace = None  # type: ignore
+    if not TYPE_CHECKING:
+        trace = None
     INVALID_SPAN_ID = 0
     INVALID_TRACE_ID = 0
 
