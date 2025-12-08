@@ -80,6 +80,26 @@ SPAN_ATTR_PREFIX_HTTP = "http."
 # No-op implementations for when OpenTelemetry is not available
 # ---------------------------------------------------------------------------
 
+# Helper to get SpanKind values safely
+def _get_span_kind_internal() -> Any:
+    """Get SpanKind.INTERNAL if available, else None."""
+    if OTEL_AVAILABLE and SpanKind is not None:
+        return SpanKind.INTERNAL
+    return None
+
+def _get_span_kind_server() -> Any:
+    """Get SpanKind.SERVER if available, else None."""
+    if OTEL_AVAILABLE and SpanKind is not None:
+        return SpanKind.SERVER
+    return None
+
+def _get_span_kind_client() -> Any:
+    """Get SpanKind.CLIENT if available, else None."""
+    if OTEL_AVAILABLE and SpanKind is not None:
+        return SpanKind.CLIENT
+    return None
+
+
 class NoOpSpan:
     """No-op span implementation when OpenTelemetry is not available."""
     
@@ -448,8 +468,8 @@ class TracerManager:
             ...     process_event()
         """
         # Use default kind only if OTEL is available
-        if kind is None and OTEL_AVAILABLE and SpanKind is not None:
-            kind = SpanKind.INTERNAL
+        if kind is None:
+            kind = _get_span_kind_internal()
         
         with self.tracer.start_as_current_span(
             name,
@@ -569,7 +589,7 @@ def span(name: str, **attrs: Any) -> Iterator[Span]:
 
 def traced(
     name: str | None = None,
-    kind: SpanKind = SpanKind.INTERNAL,
+    kind: Any = None,
     record_args: bool = False,
     record_result: bool = False,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
@@ -592,12 +612,13 @@ def traced(
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         span_name = name or func.__name__
+        span_kind = kind if kind is not None else _get_span_kind_internal()
 
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             manager = get_tracer_manager()
 
-            with manager.start_span(span_name, kind=kind) as span:
+            with manager.start_span(span_name, kind=span_kind) as span:
                 # Record arguments if requested
                 if record_args:
                     for i, arg in enumerate(args):
@@ -625,7 +646,7 @@ def traced(
 
 def traced_async(
     name: str | None = None,
-    kind: SpanKind = SpanKind.INTERNAL,
+    kind: Any = None,
     record_args: bool = False,
     record_result: bool = False,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
@@ -643,12 +664,13 @@ def traced_async(
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         span_name = name or func.__name__
+        span_kind = kind if kind is not None else _get_span_kind_internal()
 
         @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
             manager = get_tracer_manager()
 
-            with manager.start_span(span_name, kind=kind) as span:
+            with manager.start_span(span_name, kind=span_kind) as span:
                 # Record arguments if requested
                 if record_args:
                     for i, arg in enumerate(args):
@@ -697,7 +719,7 @@ def trace_generate(
     manager = get_tracer_manager()
     return manager.start_span(
         "mlsdm.generate",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes={
             "mlsdm.prompt_length": len(prompt),
             "mlsdm.moral_value": moral_value,
@@ -722,7 +744,7 @@ def trace_process_event(
     manager = get_tracer_manager()
     return manager.start_span(
         "mlsdm.process_event",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes={
             "mlsdm.event_type": event_type,
             "mlsdm.moral_value": moral_value,
@@ -746,7 +768,7 @@ def trace_memory_retrieval(
     manager = get_tracer_manager()
     return manager.start_span(
         "mlsdm.memory_retrieval",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes={
             "mlsdm.query_type": query_type,
             "mlsdm.top_k": top_k,
@@ -774,7 +796,7 @@ def trace_moral_filter(
 
     return manager.start_span(
         "mlsdm.moral_filter",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes=attributes,
     )
 
@@ -797,7 +819,7 @@ def trace_aphasia_detection(
     manager = get_tracer_manager()
     return manager.start_span(
         "mlsdm.aphasia_detection",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes={
             "mlsdm.aphasia.detect_enabled": detect_enabled,
             "mlsdm.aphasia.repair_enabled": repair_enabled,
@@ -829,7 +851,7 @@ def trace_emergency_shutdown(
 
     return manager.start_span(
         "mlsdm.emergency_shutdown",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes=attributes,
     )
 
@@ -850,7 +872,7 @@ def trace_phase_transition(
     manager = get_tracer_manager()
     return manager.start_span(
         "mlsdm.phase_transition",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes={
             "mlsdm.phase.from": from_phase,
             "mlsdm.phase.to": to_phase,
@@ -879,7 +901,7 @@ def trace_full_pipeline(
     manager = get_tracer_manager()
     return manager.start_span(
         "mlsdm.full_pipeline",
-        kind=SpanKind.SERVER,
+        kind=_get_span_kind_server(),
         attributes={
             "mlsdm.prompt_length": prompt_length,
             "mlsdm.moral_value": moral_value,
@@ -932,7 +954,7 @@ def trace_aphasia_repair(
     manager = get_tracer_manager()
     return manager.start_span(
         "mlsdm.aphasia_repair",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes={
             "mlsdm.aphasia.detected": detected,
             "mlsdm.aphasia.severity": severity,
@@ -966,7 +988,7 @@ def trace_llm_call(
 
     return manager.start_span(
         "mlsdm.llm_call",
-        kind=SpanKind.CLIENT,
+        kind=_get_span_kind_client(),
         attributes=attributes,
     )
 
@@ -987,7 +1009,7 @@ def trace_speech_governance(
     manager = get_tracer_manager()
     return manager.start_span(
         "mlsdm.speech_governance",
-        kind=SpanKind.INTERNAL,
+        kind=_get_span_kind_internal(),
         attributes={
             "mlsdm.speech.governance_enabled": governance_enabled,
             "mlsdm.speech.aphasia_mode": aphasia_mode,
@@ -1015,7 +1037,7 @@ def trace_request(
     manager = get_tracer_manager()
     return manager.start_span(
         f"api.{endpoint.lstrip('/').replace('/', '_')}",
-        kind=SpanKind.SERVER,
+        kind=_get_span_kind_server(),
         attributes={
             "http.method": method,
             "http.route": endpoint,
