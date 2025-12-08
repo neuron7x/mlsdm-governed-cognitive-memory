@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from tenacity import retry, stop_after_attempt
@@ -14,7 +14,9 @@ def _save_data(data: dict[str, Any], filepath: str) -> None:
             json.dump(data, f, indent=2)
     elif ext == ".npz":
         processed = {k: np.asarray(v) for k, v in data.items()}
-        np.savez(filepath, **processed)
+        # Cast to Any to bypass mypy's overload confusion with **dict unpacking
+        savez_fn = cast(Any, np.savez)
+        savez_fn(filepath, **processed)
     else:
         raise ValueError(f"Unsupported format: {ext}")
 
