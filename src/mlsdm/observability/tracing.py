@@ -32,53 +32,28 @@ import os
 from contextlib import contextmanager
 from functools import wraps
 from threading import Lock
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 # Runtime imports and fallbacks for OpenTelemetry
-# Declare variables first to avoid "already defined" errors
-_trace_module: Any
-_ResourceClass: Any
-_SpanProcessorClass: Any
-_TracerProviderClass: Any
-_BatchSpanProcessorClass: Any
-_ConsoleSpanExporterClass: Any
-_SpanKindEnum: Any
-_StatusClass: Any
-_StatusCodeEnum: Any
-
 try:
-    from opentelemetry import trace as _trace_module
-    from opentelemetry.sdk.resources import Resource as _ResourceClass
-    from opentelemetry.sdk.trace import SpanProcessor as _SpanProcessorClass
-    from opentelemetry.sdk.trace import TracerProvider as _TracerProviderClass
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor as _BatchSpanProcessorClass
-    from opentelemetry.sdk.trace.export import ConsoleSpanExporter as _ConsoleSpanExporterClass
-    from opentelemetry.trace import SpanKind as _SpanKindEnum
-    from opentelemetry.trace import Status as _StatusClass
-    from opentelemetry.trace import StatusCode as _StatusCodeEnum
+    from opentelemetry import trace
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.trace import SpanProcessor, TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+    from opentelemetry.trace import SpanKind, Status, StatusCode
     OTEL_AVAILABLE = True
 except ImportError:
     OTEL_AVAILABLE = False
-    _trace_module = None
-    _ResourceClass = None
-    _SpanProcessorClass = None
-    _TracerProviderClass = None
-    _BatchSpanProcessorClass = None
-    _ConsoleSpanExporterClass = None
-    _SpanKindEnum = None
-    _StatusClass = None
-    _StatusCodeEnum = None
-
-# Public runtime API (these are the names used in the rest of the code)
-trace = _trace_module
-Resource = _ResourceClass
-SpanProcessor = _SpanProcessorClass
-TracerProvider = _TracerProviderClass
-BatchSpanProcessor = _BatchSpanProcessorClass
-ConsoleSpanExporter = _ConsoleSpanExporterClass
-SpanKind = _SpanKindEnum
-Status = _StatusClass
-StatusCode = _StatusCodeEnum
+    # When OTEL is not available, define fallback values
+    trace = None  # type: ignore
+    Resource = None  # type: ignore
+    SpanProcessor = None  # type: ignore
+    TracerProvider = None  # type: ignore
+    BatchSpanProcessor = None  # type: ignore
+    ConsoleSpanExporter = None  # type: ignore
+    SpanKind = None  # type: ignore
+    Status = None  # type: ignore
+    StatusCode = None  # type: ignore
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -176,9 +151,9 @@ class NoOpTracer:
 
 # Type alias for functions that return either a real tracer or NoOpTracer
 if TYPE_CHECKING:
-    TracerLike = Tracer | NoOpTracer
+    TracerLike: TypeAlias = Tracer | NoOpTracer
 else:
-    TracerLike = Any
+    TracerLike: TypeAlias = Any
 
 
 # ---------------------------------------------------------------------------
@@ -467,7 +442,7 @@ class TracerManager:
         if self._tracer is None:
             # Return a no-op tracer if not initialized
             if trace is not None:
-                return trace.get_tracer("mlsdm", MLSDM_VERSION)  # type: ignore[no-any-return]
+                return trace.get_tracer("mlsdm", MLSDM_VERSION)
             return NoOpTracer()
 
         return self._tracer

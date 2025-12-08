@@ -22,22 +22,16 @@ from threading import Lock
 from typing import Any
 
 # Try to import OpenTelemetry, but allow graceful degradation
-_trace_module: Any
-INVALID_SPAN_ID: int
-INVALID_TRACE_ID: int
-
 try:
-    from opentelemetry import trace as _trace_module
+    from opentelemetry import trace
     from opentelemetry.trace import INVALID_SPAN_ID, INVALID_TRACE_ID
     OTEL_AVAILABLE = True
 except ImportError:
     OTEL_AVAILABLE = False
-    _trace_module = None
+    # When OTEL is not available, define fallback values
+    trace = None  # type: ignore
     INVALID_SPAN_ID = 0
     INVALID_TRACE_ID = 0
-
-# Public API
-trace = _trace_module
 
 # ---------------------------------------------------------------------------
 # Trace Context Helpers
