@@ -17,7 +17,7 @@ try:
     OTEL_AVAILABLE = True
 except ImportError:
     OTEL_AVAILABLE = False
-    SpanKind = None  # type: ignore
+    SpanKind = None
 
 from mlsdm.api import health
 from mlsdm.api.lifecycle import cleanup_memory_manager, get_lifecycle_manager
