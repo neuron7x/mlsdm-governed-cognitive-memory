@@ -79,7 +79,7 @@ if TYPE_CHECKING:
     # Type checking imports - only used by mypy, not at runtime
     # When OTEL is not installed during type checking, these will be Any
     try:
-        from opentelemetry.context import Context
+        from opentelemetry.context import Context  # noqa: F401
         from opentelemetry.trace import Span, Tracer
     except ImportError:
         pass

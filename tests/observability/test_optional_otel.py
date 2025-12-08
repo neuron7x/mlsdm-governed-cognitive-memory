@@ -17,7 +17,7 @@ def test_import_without_otel():
     """
     # Block opentelemetry imports by removing them from sys.modules
     # and preventing future imports
-    otel_modules = [m for m in sys.modules.keys() if m.startswith("opentelemetry")]
+    otel_modules = [m for m in sys.modules if m.startswith("opentelemetry")]
     for module in otel_modules:
         sys.modules.pop(module, None)
 
@@ -25,8 +25,8 @@ def test_import_without_otel():
         # Force reload of observability modules
         import importlib
 
-        import mlsdm.observability.tracing
         import mlsdm.observability.logger
+        import mlsdm.observability.tracing
 
         importlib.reload(mlsdm.observability.tracing)
         importlib.reload(mlsdm.observability.logger)
@@ -67,10 +67,9 @@ def test_tracer_no_op_without_otel():
 
 def test_trace_context_empty_without_otel():
     """Test that trace context returns empty strings without OpenTelemetry."""
-    from mlsdm.observability.logger import get_current_trace_context
-
     # Mock OTEL as unavailable
     import mlsdm.observability.logger as logger_mod
+    from mlsdm.observability.logger import get_current_trace_context
 
     original_available = logger_mod.OTEL_AVAILABLE
 
@@ -87,10 +86,9 @@ def test_trace_context_empty_without_otel():
 
 def test_tracer_manager_initialization_without_otel():
     """Test that TracerManager initializes correctly without OpenTelemetry."""
-    from mlsdm.observability import TracingConfig, get_tracer_manager
-
     # Mock OTEL as unavailable
     import mlsdm.observability.tracing as tracing_mod
+    from mlsdm.observability import TracingConfig, get_tracer_manager
 
     original_available = tracing_mod.OTEL_AVAILABLE
 
@@ -117,10 +115,9 @@ def test_tracer_manager_initialization_without_otel():
 
 def test_span_context_manager_without_otel():
     """Test that span context manager works without OpenTelemetry."""
-    from mlsdm.observability import get_tracer_manager
-
     # Mock OTEL as unavailable
     import mlsdm.observability.tracing as tracing_mod
+    from mlsdm.observability import get_tracer_manager
 
     original_available = tracing_mod.OTEL_AVAILABLE
 
@@ -142,10 +139,9 @@ def test_trace_context_filter_without_otel():
     """Test that TraceContextFilter works without OpenTelemetry."""
     import logging
 
-    from mlsdm.observability.logger import TraceContextFilter
-
     # Mock OTEL as unavailable
     import mlsdm.observability.logger as logger_mod
+    from mlsdm.observability.logger import TraceContextFilter
 
     original_available = logger_mod.OTEL_AVAILABLE
 
