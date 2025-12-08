@@ -27,21 +27,24 @@ Requirements:
 
 from __future__ import annotations
 
-# Isolated torch import - fails gracefully if torch is not installed
-try:
+import importlib.util
+from typing import TYPE_CHECKING
+
+import numpy as np
+
+# Check if torch is available without importing it
+TORCH_AVAILABLE = importlib.util.find_spec("torch") is not None
+
+if TYPE_CHECKING:
     import torch
 
-    TORCH_AVAILABLE = True
-except ImportError as e:
-    TORCH_AVAILABLE = False
+if not TORCH_AVAILABLE:
     _IMPORT_ERROR_MSG = (
         "FractalPELMGPU requires PyTorch. "
-        "Install with 'pip install mlsdm[neurolang]' or 'pip install torch>=2.0.0'. "
-        f"Original error: {e}"
+        "Install with 'pip install mlsdm[neurolang]' or 'pip install torch>=2.0.0'."
     )
-
-# Runtime import for numpy (always available)
-import numpy as np
+else:
+    _IMPORT_ERROR_MSG = ""
 
 # Numerical stability constant
 _EPS = 1e-12
@@ -110,6 +113,9 @@ class FractalPELMGPU:
         if not TORCH_AVAILABLE:
             raise RuntimeError(_IMPORT_ERROR_MSG)
 
+        # Import torch at runtime when needed
+        import torch as _torch
+
         # Validate inputs
         if dimension <= 0:
             raise ValueError(f"dimension must be positive, got {dimension}")
@@ -123,22 +129,22 @@ class FractalPELMGPU:
 
         # Determine device
         if device is None:
-            self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            self._device = _torch.device("cuda" if _torch.cuda.is_available() else "cpu")
         else:
-            self._device = torch.device(device)
+            self._device = _torch.device(device)
 
         # AMP is only effective on CUDA
         self._amp_enabled = self.use_amp and self._device.type == "cuda"
 
         # Initialize storage tensors
         # Vectors stored in float16 for memory efficiency
-        self._vectors = torch.zeros(
-            (capacity, dimension), dtype=torch.float16, device=self._device
+        self._vectors = _torch.zeros(
+            (capacity, dimension), dtype=_torch.float16, device=self._device
         )
         # Phases stored in float32 for precision
-        self._phases = torch.zeros(capacity, dtype=torch.float32, device=self._device)
+        self._phases = _torch.zeros(capacity, dtype=_torch.float32, device=self._device)
         # Norms stored separately in float32 for cosine similarity computation
-        self._norms = torch.zeros(capacity, dtype=torch.float32, device=self._device)
+        self._norms = _torch.zeros(capacity, dtype=_torch.float32, device=self._device)
         # Metadata list
         self._metadata: list[dict | None] = [None] * capacity
 
@@ -151,11 +157,16 @@ class FractalPELMGPU:
         return str(self._device)
 
     def _to_tensor(
-        self, data: np.ndarray | torch.Tensor, dtype: torch.dtype = torch.float32
+        self, data: np.ndarray | torch.Tensor, dtype: torch.dtype | None = None
     ) -> torch.Tensor:
         """Convert numpy array or tensor to device tensor with specified dtype."""
+        import torch as _torch
+
+        if dtype is None:
+            dtype = _torch.float32
+
         if isinstance(data, np.ndarray):
-            tensor = torch.from_numpy(np.ascontiguousarray(data))
+            tensor = _torch.from_numpy(np.ascontiguousarray(data))
         else:
             tensor = data.clone()
         return tensor.to(device=self._device, dtype=dtype)
@@ -182,8 +193,10 @@ class FractalPELMGPU:
         Returns:
             Score tensor of shape (size,) with values in [0, 1].
         """
+        import torch as _torch
+
         if self.size == 0:
-            return torch.tensor([], device=self._device, dtype=torch.float32)
+            return _torch.tensor([], device=self._device, dtype=_torch.float32)
 
         # Get active portion of storage
         active_vectors = self._vectors[: self.size].float()  # (size, dim) -> float32
@@ -191,28 +204,28 @@ class FractalPELMGPU:
         active_norms = self._norms[: self.size]  # (size,)
 
         # Query norm with numerical stability
-        query_norm = torch.clamp(torch.norm(query_vec), min=_EPS)
+        query_norm = _torch.clamp(_torch.norm(query_vec), min=_EPS)
 
         # Cosine similarity: (q · v) / (||q|| * ||v|| + ε)
-        dot_products = torch.mv(active_vectors, query_vec)  # (size,)
+        dot_products = _torch.mv(active_vectors, query_vec)  # (size,)
         cos_sim = dot_products / (query_norm * active_norms + _EPS)
 
         # Phase similarity: exp(-|φ_q - φ_v|)
-        phase_diff = torch.abs(active_phases - query_phase)
-        phase_sim = torch.exp(-phase_diff)
+        phase_diff = _torch.abs(active_phases - query_phase)
+        phase_sim = _torch.exp(-phase_diff)
 
         # Distance term: log1p(||q - v||)
         # Compute L2 distances: ||q - v_i||
         diff = active_vectors - query_vec.unsqueeze(0)  # (size, dim)
-        distances = torch.norm(diff, dim=1)  # (size,)
-        log_dist = torch.log1p(distances)
+        distances = _torch.norm(diff, dim=1)  # (size,)
+        log_dist = _torch.log1p(distances)
 
         # Distance factor: clamp(1 - fractal_weight * log1p(dist), 0, 1)
-        distance_factor = torch.clamp(1.0 - self.fractal_weight * log_dist, min=0.0, max=1.0)
+        distance_factor = _torch.clamp(1.0 - self.fractal_weight * log_dist, min=0.0, max=1.0)
 
         # Combined score: cos_sim * phase_sim * distance_factor
         # Clamp final result to [0, 1]
-        scores = torch.clamp(cos_sim * phase_sim * distance_factor, min=0.0, max=1.0)
+        scores = _torch.clamp(cos_sim * phase_sim * distance_factor, min=0.0, max=1.0)
 
         return scores
 
@@ -237,8 +250,10 @@ class FractalPELMGPU:
             ValueError: If shapes don't match or dimensions are incorrect.
             RuntimeError: If adding this batch would exceed capacity.
         """
-        vec_tensor = self._to_tensor(vectors, dtype=torch.float32)
-        phase_tensor = self._to_tensor(phases, dtype=torch.float32)
+        import torch as _torch
+
+        vec_tensor = self._to_tensor(vectors, dtype=_torch.float32)
+        phase_tensor = self._to_tensor(phases, dtype=_torch.float32)
 
         # Validate shapes
         if vec_tensor.dim() != 2:
@@ -272,9 +287,9 @@ class FractalPELMGPU:
             )
 
         # Compute norms for each vector
-        norms = torch.norm(vec_tensor, dim=1)  # (batch,)
+        norms = _torch.norm(vec_tensor, dim=1)  # (batch,)
         # Clamp norms to avoid division by zero
-        norms = torch.clamp(norms, min=_EPS)
+        norms = _torch.clamp(norms, min=_EPS)
 
         # Store vectors (converted to float16), phases, and norms
         start_idx = self.size
@@ -316,11 +331,13 @@ class FractalPELMGPU:
         Raises:
             ValueError: If query_vector shape is invalid.
         """
+        import torch as _torch
+
         if self.size == 0:
             return []
 
         # Convert and validate query vector
-        q_tensor = self._to_tensor(query_vector, dtype=torch.float32)
+        q_tensor = self._to_tensor(query_vector, dtype=_torch.float32)
 
         # Handle (1, dim) shape
         if q_tensor.dim() == 2 and q_tensor.shape[0] == 1:
@@ -339,12 +356,12 @@ class FractalPELMGPU:
             )
 
         # Use AMP context if enabled
-        with torch.autocast(device_type=self._device.type, enabled=self._amp_enabled):
+        with _torch.autocast(device_type=self._device.type, enabled=self._amp_enabled):
             scores = self._score_single(q_tensor, current_phase)
 
         # Get top-k
         effective_k = min(top_k, self.size)
-        top_scores, top_indices = torch.topk(scores, k=effective_k)
+        top_scores, top_indices = _torch.topk(scores, k=effective_k)
 
         # Convert to numpy and build results
         top_scores_np = top_scores.cpu().numpy()
@@ -382,8 +399,10 @@ class FractalPELMGPU:
         Raises:
             ValueError: If shapes don't match or dimensions are incorrect.
         """
-        q_tensor = self._to_tensor(query_vectors, dtype=torch.float32)
-        phase_tensor = self._to_tensor(current_phases, dtype=torch.float32)
+        import torch as _torch
+
+        q_tensor = self._to_tensor(query_vectors, dtype=_torch.float32)
+        phase_tensor = self._to_tensor(current_phases, dtype=_torch.float32)
 
         # Validate shapes
         if q_tensor.dim() != 2:
@@ -409,12 +428,12 @@ class FractalPELMGPU:
             return [[] for _ in range(batch_size)]
 
         # Vectorized batch scoring for GPU parallelization
-        with torch.autocast(device_type=self._device.type, enabled=self._amp_enabled):
+        with _torch.autocast(device_type=self._device.type, enabled=self._amp_enabled):
             scores = self._score_batch(q_tensor, phase_tensor)  # (batch, size)
 
         # Get top-k for each query
         effective_k = min(top_k, self.size)
-        top_scores, top_indices = torch.topk(scores, k=effective_k, dim=1)  # (batch, k)
+        top_scores, top_indices = _torch.topk(scores, k=effective_k, dim=1)  # (batch, k)
 
         # Convert to numpy
         top_scores_np = top_scores.cpu().numpy()
@@ -451,10 +470,12 @@ class FractalPELMGPU:
         Returns:
             Score tensor of shape (batch, size) with values in [0, 1].
         """
+        import torch as _torch
+
         batch_size = query_vecs.shape[0]
 
         if self.size == 0:
-            return torch.zeros((batch_size, 0), device=self._device, dtype=torch.float32)
+            return _torch.zeros((batch_size, 0), device=self._device, dtype=_torch.float32)
 
         # Get active portion of storage
         active_vectors = self._vectors[: self.size].float()  # (size, dim)
@@ -462,29 +483,29 @@ class FractalPELMGPU:
         active_norms = self._norms[: self.size]  # (size,)
 
         # Query norms with numerical stability: (batch,)
-        query_norms = torch.clamp(torch.norm(query_vecs, dim=1), min=_EPS)
+        query_norms = _torch.clamp(_torch.norm(query_vecs, dim=1), min=_EPS)
 
         # Cosine similarity: (batch, dim) @ (dim, size) -> (batch, size)
-        dot_products = torch.mm(query_vecs, active_vectors.t())
+        dot_products = _torch.mm(query_vecs, active_vectors.t())
         # Outer product of norms: (batch, 1) * (1, size) -> (batch, size)
         norm_products = query_norms.unsqueeze(1) * active_norms.unsqueeze(0) + _EPS
         cos_sim = dot_products / norm_products
 
         # Phase similarity: exp(-|φ_q - φ_v|)
         # (batch, 1) - (1, size) -> (batch, size)
-        phase_diff = torch.abs(query_phases.unsqueeze(1) - active_phases.unsqueeze(0))
-        phase_sim = torch.exp(-phase_diff)
+        phase_diff = _torch.abs(query_phases.unsqueeze(1) - active_phases.unsqueeze(0))
+        phase_sim = _torch.exp(-phase_diff)
 
         # Distance term: log1p(||q - v||) using cdist for efficiency
         # cdist computes pairwise distances: (batch, dim), (size, dim) -> (batch, size)
-        distances = torch.cdist(query_vecs, active_vectors, p=2.0)
-        log_dist = torch.log1p(distances)
+        distances = _torch.cdist(query_vecs, active_vectors, p=2.0)
+        log_dist = _torch.log1p(distances)
 
         # Distance factor: clamp(1 - fractal_weight * log1p(dist), 0, 1)
-        distance_factor = torch.clamp(1.0 - self.fractal_weight * log_dist, min=0.0, max=1.0)
+        distance_factor = _torch.clamp(1.0 - self.fractal_weight * log_dist, min=0.0, max=1.0)
 
         # Combined score: cos_sim * phase_sim * distance_factor
-        scores = torch.clamp(cos_sim * phase_sim * distance_factor, min=0.0, max=1.0)
+        scores = _torch.clamp(cos_sim * phase_sim * distance_factor, min=0.0, max=1.0)
 
         return scores
 
