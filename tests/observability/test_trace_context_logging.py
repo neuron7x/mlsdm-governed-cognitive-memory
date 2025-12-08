@@ -14,8 +14,14 @@ import logging
 from io import StringIO
 
 import pytest
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
+
+# Check if opentelemetry is available
+try:
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    OTEL_AVAILABLE = True
+except ImportError:
+    OTEL_AVAILABLE = False
 
 from mlsdm.observability import (
     JSONFormatter,
@@ -25,6 +31,11 @@ from mlsdm.observability import (
     TracingConfig,
     get_current_trace_context,
     span,
+)
+
+pytestmark = pytest.mark.skipif(
+    not OTEL_AVAILABLE,
+    reason="OpenTelemetry not installed - install with: pip install mlsdm[observability]"
 )
 
 

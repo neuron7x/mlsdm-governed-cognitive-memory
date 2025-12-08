@@ -13,16 +13,27 @@ Coverage:
 from __future__ import annotations
 
 import pytest
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
+# Check if opentelemetry is available
+try:
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+    OTEL_AVAILABLE = True
+except ImportError:
+    OTEL_AVAILABLE = False
 
 from mlsdm.observability.metrics import MetricsExporter
 from mlsdm.security.guardrails import (
     GuardrailContext,
     enforce_llm_guardrails,
     enforce_request_guardrails,
+)
+
+pytestmark = pytest.mark.skipif(
+    not OTEL_AVAILABLE,
+    reason="OpenTelemetry not installed - install with: pip install mlsdm[observability]"
 )
 
 
