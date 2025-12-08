@@ -478,7 +478,8 @@ class TracerManager:
 
         Args:
             name: Name of the span
-            kind: Kind of span (INTERNAL, SERVER, CLIENT, PRODUCER, CONSUMER)
+            kind: Kind of span (INTERNAL, SERVER, CLIENT, PRODUCER, CONSUMER).
+                  When OTEL is not available, this is ignored by the no-op tracer.
             attributes: Initial span attributes
             context: Parent context (optional)
 
@@ -490,6 +491,8 @@ class TracerManager:
             ...     span.set_attribute("event_type", "cognitive")
             ...     process_event()
         """
+        # Use INTERNAL as default kind. When OTEL not available, SpanKind.INTERNAL
+        # is 0 from our stub, but the no-op tracer ignores it anyway.
         if kind is None:
             kind = SpanKind.INTERNAL
 
