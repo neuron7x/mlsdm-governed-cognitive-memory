@@ -8,6 +8,8 @@ this module provides no-op implementations that allow the code to run without
 tracing functionality. This ensures that `import mlsdm` never fails due to
 missing OTEL packages.
 
+Note: mypy type checking is relaxed for this module due to conditional OTEL imports.
+
 Features:
 - Span creation for key operations (API handlers, generate, process_event)
 - Trace context propagation
@@ -21,6 +23,8 @@ Configuration:
 - OTEL_TRACES_SAMPLER: Sampling strategy (always_on, always_off, traceidratio)
 - OTEL_TRACES_SAMPLER_ARG: Sampler argument (e.g., 0.1 for 10% sampling)
 """
+# Relax mypy checking for conditional imports
+# mypy: disable-error-code="assignment,misc,no-redef,unused-ignore"
 
 from __future__ import annotations
 
@@ -38,17 +42,17 @@ try:
     from opentelemetry.sdk.trace import SpanProcessor, TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
     from opentelemetry.trace import SpanKind, Status, StatusCode
-    
+
     OTEL_AVAILABLE = True
 except ImportError:
     # When OTEL is not installed, provide no-op stubs
-    trace = None  # type: ignore[assignment]
-    Resource = None  # type: ignore[assignment,misc]
-    SpanProcessor = object  # type: ignore[assignment,misc]
-    TracerProvider = object  # type: ignore[assignment,misc]
-    BatchSpanProcessor = object  # type: ignore[assignment,misc]
-    ConsoleSpanExporter = object  # type: ignore[assignment,misc]
-    
+    trace = None  # type: ignore
+    Resource = None  # type: ignore
+    SpanProcessor = object  # type: ignore
+    TracerProvider = object  # type: ignore
+    BatchSpanProcessor = object  # type: ignore
+    ConsoleSpanExporter = object  # type: ignore
+
     # Create minimal stub classes for SpanKind, Status, StatusCode
     class SpanKind:  # type: ignore[no-redef]
         INTERNAL = 0
@@ -56,30 +60,29 @@ except ImportError:
         CLIENT = 2
         PRODUCER = 3
         CONSUMER = 4
-    
+
     class StatusCode:  # type: ignore[no-redef]
         UNSET = 0
         OK = 1
         ERROR = 2
-    
+
     class Status:  # type: ignore[no-redef]
         def __init__(self, status_code: int, description: str = "") -> None:
             self.status_code = status_code
             self.description = description
-    
+
     OTEL_AVAILABLE = False
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
-    if OTEL_AVAILABLE:
+    # Type checking imports - only used by mypy, not at runtime
+    # When OTEL is not installed during type checking, these will be Any
+    try:
         from opentelemetry.context import Context
         from opentelemetry.trace import Span, Tracer
-    else:
-        # Type stubs for when OTEL is not available
-        Context = Any  # type: ignore[misc]
-        Span = Any  # type: ignore[misc]
-        Tracer = Any  # type: ignore[misc]
+    except ImportError:
+        pass
 
 logger = logging.getLogger(__name__)
 
@@ -310,7 +313,7 @@ class TracerManager:
 
         This method sets up the tracer provider with the configured exporter
         and registers it as the global tracer provider.
-        
+
         If OpenTelemetry is not available, this method does nothing and
         the tracer manager will provide no-op implementations.
         """
@@ -328,7 +331,7 @@ class TracerManager:
 
         try:
             # Create resource with service information
-            resource = Resource.create(  # type: ignore[misc]
+            resource = Resource.create(
                 {
                     "service.name": self._config.service_name,
                     "service.version": MLSDM_VERSION,
@@ -337,12 +340,12 @@ class TracerManager:
             )
 
             # Create tracer provider
-            self._provider = TracerProvider(resource=resource)  # type: ignore[misc]
+            self._provider = TracerProvider(resource=resource)
 
             # Create exporter based on configuration
             exporter = self._create_exporter()
             if exporter is not None:
-                self._processor = BatchSpanProcessor(  # type: ignore[misc]
+                self._processor = BatchSpanProcessor(
                     exporter,
                     max_queue_size=self._config.batch_max_queue_size,
                     max_export_batch_size=self._config.batch_max_export_batch_size,
@@ -351,10 +354,10 @@ class TracerManager:
                 self._provider.add_span_processor(self._processor)
 
             # Register as global provider
-            trace.set_tracer_provider(self._provider)  # type: ignore[union-attr]
+            trace.set_tracer_provider(self._provider)
 
             # Get tracer
-            self._tracer = trace.get_tracer(  # type: ignore[union-attr]
+            self._tracer = trace.get_tracer(
                 self._config.service_name,
                 MLSDM_VERSION,
             )
@@ -380,12 +383,12 @@ class TracerManager:
         """
         if not OTEL_AVAILABLE:
             return None
-            
+
         if self._config.exporter_type == "none":
             return None
 
         if self._config.exporter_type == "console":
-            return ConsoleSpanExporter()  # type: ignore[misc]
+            return ConsoleSpanExporter()
 
         if self._config.exporter_type == "otlp":
             try:
@@ -405,7 +408,7 @@ class TracerManager:
                 logger.warning(
                     "OTLP exporter not available, falling back to console exporter"
                 )
-                return ConsoleSpanExporter()  # type: ignore[misc]
+                return ConsoleSpanExporter()
 
         if self._config.exporter_type == "jaeger":
             try:
@@ -416,9 +419,9 @@ class TracerManager:
                 logger.warning(
                     "Jaeger exporter not available, falling back to console exporter"
                 )
-                return ConsoleSpanExporter()  # type: ignore[misc]
+                return ConsoleSpanExporter()
 
-        return ConsoleSpanExporter()  # type: ignore[misc]
+        return ConsoleSpanExporter()
 
     def shutdown(self) -> None:
         """Shutdown the tracer provider and flush pending spans."""
@@ -479,7 +482,7 @@ class TracerManager:
         """
         if kind is None:
             kind = SpanKind.INTERNAL
-            
+
         with self.tracer.start_as_current_span(
             name,
             kind=kind,
@@ -894,7 +897,7 @@ def trace_full_pipeline(
     """Create a context manager for tracing the full cognitive pipeline.
 
     This is a root span that encompasses the entire request path:
-    input → validation → controller → memory → moral → aphasia → output
+    input -> validation -> controller -> memory -> moral -> aphasia -> output
 
     Args:
         prompt_length: Length of the input prompt (NOT the prompt itself, to avoid PII)

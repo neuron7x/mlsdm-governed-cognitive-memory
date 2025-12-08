@@ -13,6 +13,8 @@ Key features:
 - Thread-safe singleton pattern
 - Trace context correlation (trace_id, span_id) from OpenTelemetry (when available)
 """
+# Relax mypy checking for conditional imports and dynamic attributes
+# mypy: disable-error-code="unused-ignore"
 
 import json
 import logging
@@ -33,9 +35,9 @@ try:
     OTEL_AVAILABLE = True
 except ImportError:
     # When OTEL is not installed, provide no-op stubs
-    trace = None  # type: ignore[assignment]
-    INVALID_SPAN_ID = 0  # type: ignore[assignment]
-    INVALID_TRACE_ID = 0  # type: ignore[assignment]
+    trace = None  # type: ignore
+    INVALID_SPAN_ID = 0
+    INVALID_TRACE_ID = 0
     OTEL_AVAILABLE = False
 
 # ---------------------------------------------------------------------------
@@ -48,7 +50,7 @@ def get_current_trace_context() -> dict[str, str]:
 
     Returns a dictionary with trace_id and span_id if a span is active,
     otherwise returns empty strings for both fields.
-    
+
     When OpenTelemetry is not available, always returns empty strings.
 
     Returns:
@@ -82,7 +84,7 @@ class TraceContextFilter(logging.Filter):
 
     This filter adds trace_id and span_id attributes to every log record,
     enabling correlation between logs and distributed traces.
-    
+
     When OpenTelemetry is not available, this filter still works but
     adds empty strings for trace_id and span_id.
 
@@ -104,8 +106,8 @@ class TraceContextFilter(logging.Filter):
             Always True (all records pass through)
         """
         ctx = get_current_trace_context()
-        record.trace_id = ctx["trace_id"]  # type: ignore[attr-defined]
-        record.span_id = ctx["span_id"]  # type: ignore[attr-defined]
+        record.trace_id = ctx["trace_id"]  # type: ignore
+        record.span_id = ctx["span_id"]  # type: ignore
         return True
 
 
@@ -243,7 +245,7 @@ class JSONFormatter(logging.Formatter):
 
     Includes trace_id and span_id from OpenTelemetry when available,
     enabling correlation between logs and distributed traces.
-    
+
     When OpenTelemetry is not available, trace fields are omitted or empty.
     """
 
