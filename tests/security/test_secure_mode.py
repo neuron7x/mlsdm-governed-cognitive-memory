@@ -16,7 +16,7 @@ import pytest
 
 # Check if torch is available
 try:
-    import torch
+    import torch  # noqa: F401
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
@@ -27,15 +27,17 @@ pytestmark = pytest.mark.skipif(
     reason="torch not installed - install with 'pip install mlsdm[neurolang]'"
 )
 
-from mlsdm.extensions.neuro_lang_extension import (
-    NeuroLangWrapper,
-    is_secure_mode_enabled,
-)
-from mlsdm.security.payload_scrubber import (
-    is_secure_mode,
-    scrub_log_record,
-    scrub_request_payload,
-)
+# Imports after pytestmark to avoid E402 linting error
+if TORCH_AVAILABLE:  # pragma: no cover
+    from mlsdm.extensions.neuro_lang_extension import (
+        NeuroLangWrapper,
+        is_secure_mode_enabled,
+    )
+    from mlsdm.security.payload_scrubber import (
+        is_secure_mode,
+        scrub_log_record,
+        scrub_request_payload,
+    )
 
 
 def dummy_llm(prompt: str, max_tokens: int) -> str:

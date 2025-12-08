@@ -5,10 +5,25 @@ Tests for scripts/smoke_neurolang_wrapper.py
 import sys
 from pathlib import Path
 
+import pytest
+
 # Add scripts to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
 
 import smoke_neurolang_wrapper
+
+# Check if torch is available
+try:
+    import torch  # noqa: F401
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+
+# Skip entire module if torch is not available
+pytestmark = pytest.mark.skipif(
+    not TORCH_AVAILABLE,
+    reason="torch not installed - install with 'pip install mlsdm[neurolang]'"
+)
 
 
 def test_smoke_neurolang_main_runs(capsys):

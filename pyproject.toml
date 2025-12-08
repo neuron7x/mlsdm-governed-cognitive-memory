@@ -321,6 +321,7 @@ DEP002 = [
     "jupyter",
     "opentelemetry-api",  # Optional observability
     "opentelemetry-sdk",  # Optional observability
+    "sentence-transformers",  # Optional embeddings - not directly imported, checked for availability
 ]
 
 # Ignore optional dependencies that are intentionally conditional imports

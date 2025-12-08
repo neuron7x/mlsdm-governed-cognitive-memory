@@ -23,10 +23,12 @@ pytestmark = pytest.mark.skipif(
     reason="torch not installed - install with 'pip install mlsdm[neurolang]'"
 )
 
-from mlsdm.extensions.neuro_lang_extension import (
-    ALLOWED_CHECKPOINT_DIR,
-    safe_load_neurolang_checkpoint,
-)
+# Imports after pytestmark to avoid E402 linting error
+if TORCH_AVAILABLE:  # pragma: no cover
+    from mlsdm.extensions.neuro_lang_extension import (
+        ALLOWED_CHECKPOINT_DIR,
+        safe_load_neurolang_checkpoint,
+    )
 
 
 @pytest.mark.security
