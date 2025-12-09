@@ -296,17 +296,11 @@ def _check_aphasia_health() -> tuple[bool, str | None]:
     return True, "not_configured_or_ok"
 
 
-@router.get("/ready", response_model=ReadinessStatus)
-async def ready(response: Response) -> ReadinessStatus:
-    """Readiness probe endpoint with aggregated component health.
+async def _compute_readiness(response: Response) -> ReadinessStatus:
+    """Internal function to compute readiness status.
 
-    Checks:
-    - cognitive_controller: not in emergency_shutdown
-    - memory_bounds: global memory usage within limit
-    - moral_filter: initialized without critical errors
-    - system_resources: CPU and memory available
-
-    Returns 200 if all critical components healthy, 503 otherwise.
+    This is the single source of truth for readiness logic.
+    Both /health/ready and /health/readiness use this function.
 
     Args:
         response: FastAPI response object to set status code
@@ -414,9 +408,37 @@ async def ready(response: Response) -> ReadinessStatus:
     )
 
 
+@router.get("/ready", response_model=ReadinessStatus)
+async def ready(response: Response) -> ReadinessStatus:
+    """Readiness probe endpoint with aggregated component health.
+
+    Checks:
+    - cognitive_controller: not in emergency_shutdown
+    - memory_bounds: global memory usage within limit
+    - moral_filter: initialized without critical errors
+    - system_resources: CPU and memory available
+
+    Returns 200 if all critical components healthy, 503 otherwise.
+
+    Args:
+        response: FastAPI response object to set status code
+
+    Returns:
+        ReadinessStatus with status, components, and details
+    """
+    return await _compute_readiness(response)
+
+
 @router.get("/readiness", response_model=ReadinessStatus)
 async def readiness(response: Response) -> ReadinessStatus:
     """Readiness probe endpoint (legacy alias for /health/ready).
+
+    DEPRECATED: This endpoint is maintained for backward compatibility only.
+    Use /health/ready instead.
+
+    This endpoint is a true alias of /health/ready and returns identical
+    status codes and JSON structure. Both endpoints share the same readiness
+    logic to ensure consistent behavior for all consumers.
 
     Indicates whether the system can accept traffic.
     Returns 200 if ready, 503 if not ready.
@@ -425,9 +447,9 @@ async def readiness(response: Response) -> ReadinessStatus:
         response: FastAPI response object to set status code
 
     Returns:
-        ReadinessStatus with appropriate status code
+        ReadinessStatus with appropriate status code (identical to /health/ready)
     """
-    return await ready(response)
+    return await _compute_readiness(response)
 
 
 @router.get("/detailed", response_model=DetailedHealthStatus)
