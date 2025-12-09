@@ -105,7 +105,8 @@ class MLSDMChatbot:
         # Initialize MLSDM engine with LLM and embedding functions
         self.engine = create_neuro_engine(
             config=NeuroEngineConfig(
-                dim=1536,                    # OpenAI embedding size
+                dim=1536,                    # OpenAI ada-002 embedding dimension
+                                             # Note: Use 384 for all-MiniLM-L6-v2 or other models
                 capacity=20_000,             # Memory capacity
                 wake_duration=8,             # 8 cycles before consolidation
                 sleep_duration=3,            # 3 cycle rest period
@@ -619,12 +620,15 @@ MLSDM: 1.2.0
 OpenAI API: gpt-4-turbo-preview
 Embeddings: text-embedding-ada-002
 
-# Configuration
-export MLSDM_DIM=1536
+# Configuration (for OpenAI embeddings)
+export MLSDM_DIM=1536              # OpenAI ada-002 dimension
 export MLSDM_CAPACITY=20000
 export MLSDM_WAKE_DURATION=8
 export MLSDM_SLEEP_DURATION=3
 export MLSDM_INITIAL_THRESHOLD=0.50
+
+# For the demo script (uses stub embeddings):
+# Set MLSDM_DIM=384 instead
 ```
 
 ### Running the A/B Test
