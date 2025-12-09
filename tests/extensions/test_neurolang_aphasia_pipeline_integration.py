@@ -3,9 +3,15 @@ Integration tests for NeuroLangWrapper with PipelineSpeechGovernor.
 
 Tests that NeuroLangWrapper correctly uses PipelineSpeechGovernor
 and exposes the proper metadata structure.
+
+Requires PyTorch (torch). Tests are skipped if torch is not installed.
 """
 
 import numpy as np
+import pytest
+
+# Skip all tests in this module if torch is not available
+pytest.importorskip("torch")
 
 from mlsdm.extensions import NeuroLangWrapper
 
