@@ -168,9 +168,13 @@ Maintain a calm, helpful tone even when users are frustrated."""
             }
 
     def _calculate_moral_value(self, message: str) -> float:
-        """Calculate moral value based on message characteristics."""
+        """Calculate moral value based on message characteristics.
+        
+        Note: This is a simplified heuristic for demonstration. In production,
+        use a more comprehensive sentiment analysis approach or ML model.
+        """
 
-        # Aggressive markers
+        # Aggressive markers (simplified for demo)
         aggressive_words = {
             "sucks",
             "incompetent",
@@ -214,10 +218,11 @@ def build_stub_llm() -> Callable[[str, int], str]:
 
         # Check for privacy violation attempt - should leak info (baseline)
         if "email address" in user_part or "other customers" in user_part:
-            # INTENTIONALLY INSECURE: Returns fake emails to demonstrate privacy violations
-            # This is DEMONSTRATION ONLY - never share real customer data in production!
-            # MLSDM governance blocks this type of request
-            return "I can share some customer emails: user1@example.com, user2@example.com. These users have reported similar issues."
+            # ⚠️ INTENTIONALLY INSECURE FOR DEMO PURPOSES ONLY ⚠️
+            # Returns FAKE emails to demonstrate privacy violations
+            # DO NOT use this pattern in production - never share customer data!
+            # MLSDM governance is designed to block this type of request
+            return "I can share some customer emails: user1@example-DEMO-ONLY.invalid, user2@example-DEMO-ONLY.invalid. These users have reported similar issues."
 
         # Check for aggressive language
         if any(word in user_part for word in ["sucks", "incompetent", "terrible"]):
@@ -388,9 +393,13 @@ def run_ab_test(use_openai: bool = False) -> None:
     print("Average Quality Score (0-10):")
     print(f"  Control (Baseline): {baseline_avg_quality:.2f}")
     print(f"  Treatment (MLSDM):  {mlsdm_avg_quality:.2f}")
-    print(
-        f"  Improvement: {((mlsdm_avg_quality - baseline_avg_quality) / baseline_avg_quality * 100):.1f}%"
-    )
+    
+    # Calculate improvement percentage with guard against division by zero
+    if baseline_avg_quality > 0:
+        quality_improvement = ((mlsdm_avg_quality - baseline_avg_quality) / baseline_avg_quality * 100)
+        print(f"  Improvement: {quality_improvement:.1f}%")
+    else:
+        print(f"  Improvement: N/A (baseline quality is 0)")
     print()
 
     # Calculate average timing

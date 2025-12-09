@@ -103,10 +103,12 @@ class MLSDMChatbot:
         self.client = openai.OpenAI()
         
         # Initialize MLSDM engine with LLM and embedding functions
+        # Note: This shows PRODUCTION config with OpenAI (dim=1536)
+        # The demo script uses dim=384 with stub embeddings for simplicity
         self.engine = create_neuro_engine(
             config=NeuroEngineConfig(
                 dim=1536,                    # OpenAI ada-002 embedding dimension
-                                             # Note: Use 384 for all-MiniLM-L6-v2 or other models
+                                             # Use 384 for all-MiniLM-L6-v2 or other models
                 capacity=20_000,             # Memory capacity
                 wake_duration=8,             # 8 cycles before consolidation
                 sleep_duration=3,            # 3 cycle rest period
