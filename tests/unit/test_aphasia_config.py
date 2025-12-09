@@ -44,6 +44,7 @@ class TestAphasiaDetectionDisable:
             sleep_duration=3,
             aphasia_detect_enabled=False,
             aphasia_repair_enabled=True,  # Should have no effect if detection is off
+            neurolang_mode="disabled",
         )
 
         result = wrapper.generate(
@@ -65,6 +66,7 @@ class TestAphasiaDetectionDisable:
             embedding_fn=mock_embedding,
             dim=384,
             capacity=100,
+            neurolang_mode="disabled",
         )
 
         # Default should have detection enabled
@@ -85,6 +87,7 @@ class TestAphasiaRepairDisable:
             capacity=100,
             aphasia_detect_enabled=True,
             aphasia_repair_enabled=False,
+            neurolang_mode="disabled",
         )
 
         result = wrapper.generate(
@@ -112,6 +115,7 @@ class TestAphasiaRepairDisable:
             capacity=100,
             aphasia_detect_enabled=True,
             aphasia_repair_enabled=True,
+            neurolang_mode="disabled",
         )
 
         result = wrapper.generate(
@@ -142,6 +146,7 @@ class TestAphasiaSeverityThreshold:
             aphasia_detect_enabled=True,
             aphasia_repair_enabled=True,
             aphasia_severity_threshold=0.01,  # Very low threshold
+            neurolang_mode="disabled",
         )
 
         result = wrapper.generate(
@@ -164,6 +169,7 @@ class TestAphasiaSeverityThreshold:
             aphasia_detect_enabled=True,
             aphasia_repair_enabled=True,
             aphasia_severity_threshold=0.99,  # Very high threshold
+            neurolang_mode="disabled",
         )
 
         result = wrapper.generate(
@@ -188,6 +194,7 @@ class TestAphasiaSeverityThreshold:
             aphasia_detect_enabled=True,
             aphasia_repair_enabled=True,
             aphasia_severity_threshold=0.5,  # Mid-range threshold
+            neurolang_mode="disabled",
         )
 
         result = wrapper.generate(
@@ -219,6 +226,7 @@ class TestBackwardCompatibility:
             embedding_fn=mock_embedding,
             dim=384,
             capacity=100,
+            neurolang_mode="disabled",
         )
 
         # Defaults should be: detection=True, repair=True, threshold=0.3
@@ -247,6 +255,7 @@ class TestBackwardCompatibility:
             capacity=100,
             aphasia_detect_enabled=True,
             aphasia_repair_enabled=True,
+            neurolang_mode="disabled",
         )
 
         result = wrapper.generate(
@@ -273,6 +282,7 @@ class TestConfigurationValidation:
             capacity=100,
             aphasia_detect_enabled=1,  # Non-boolean but truthy
             aphasia_repair_enabled=0,  # Non-boolean but falsy
+            neurolang_mode="disabled",
         )
 
         assert wrapper.aphasia_detect_enabled is True
@@ -286,6 +296,7 @@ class TestConfigurationValidation:
             dim=384,
             capacity=100,
             aphasia_severity_threshold=1,  # Integer
+            neurolang_mode="disabled",
         )
 
         assert isinstance(wrapper.aphasia_severity_threshold, float)
@@ -304,6 +315,7 @@ class TestMonitoringMode:
             capacity=100,
             aphasia_detect_enabled=True,
             aphasia_repair_enabled=False,  # Monitoring only
+            neurolang_mode="disabled",
         )
 
         result = wrapper.generate(
