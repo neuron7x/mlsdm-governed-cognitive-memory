@@ -10,7 +10,7 @@
   <img src="assets/mlsdm-hero.svg" alt="MLSDM Neural Architecture diagram with core components" width="1200" height="600" style="max-width: 100%; height: auto; display: block; margin: 0 auto; image-rendering: crisp-edges;">
 </picture>
 
-**Production-ready neurobiologically-inspired cognitive governance for LLMs**
+**Beta-stage neurobiologically-inspired cognitive governance for LLMs**
 
 *Phase-based memory • Adaptive moral filtering • Aphasia detection & repair*
 
@@ -19,7 +19,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/ci-neuro-cognitive-engine.yml?style=for-the-badge&logo=github-actions&logoColor=white&label=CI)](https://github.com/neuron7x/mlsdm/actions/workflows/ci-neuro-cognitive-engine.yml)
 [![Tests](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/property-tests.yml?style=for-the-badge&logo=pytest&logoColor=white&label=Tests)](https://github.com/neuron7x/mlsdm/actions/workflows/property-tests.yml)
 [![Security](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/sast-scan.yml?style=for-the-badge&logo=shield&logoColor=white&label=Security)](https://github.com/neuron7x/mlsdm/actions/workflows/sast-scan.yml)
-[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen?style=for-the-badge)](COVERAGE_REPORT_2025.md)
+[![Coverage](https://img.shields.io/badge/coverage-71%25-yellowgreen?style=for-the-badge)](COVERAGE_REPORT_2025.md)
 [![Python](https://img.shields.io/badge/python-3.10+-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://github.com/neuron7x/mlsdm/pkgs/container/mlsdm-neuro-engine)
@@ -133,7 +133,7 @@ MLSDM wraps **any LLM** with a neurobiologically-grounded cognitive layer that p
 | **PELM Memory** | Phase-entangled lattice with 20k vector capacity | 29.37 MB fixed |
 | **Wake/Sleep Cycles** | 8 wake + 3 sleep steps with memory consolidation | 89.5% resource savings |
 | **Aphasia Detection** | Broca-model for telegraphic speech detection | 100% TPR, 80% TNR |
-| **Thread Safety** | Lock-based synchronization for concurrent requests | 5,500 ops/sec |
+| **Thread Safety** | Lock-based synchronization for concurrent requests | 1,000+ RPS verified |
 | **Observability** | Prometheus metrics + structured JSON logging | Full pipeline visibility |
 
 <details>
@@ -558,7 +558,7 @@ All metrics are backed by reproducible tests with full traceability.
 
 | Metric | Value | Test Location |
 |:-------|:------|:--------------|
-| Throughput | 5,500 ops/sec | `tests/load/` |
+| Throughput | 1,000+ RPS* | `tests/load/` (requires server) |
 | P50 Latency | ~2ms | `benchmarks/` |
 | P95 Latency | ~10ms | `benchmarks/` |
 | Memory | 29.37 MB fixed | `tests/unit/` |
@@ -571,6 +571,8 @@ All metrics are backed by reproducible tests with full traceability.
 | Coherence Improvement | 5.5% | `tests/validation/test_wake_sleep_effectiveness.py` |
 | Aphasia TPR | 100% | `tests/eval/aphasia_eval_suite.py` |
 | Aphasia TNR | 80% | `tests/eval/aphasia_eval_suite.py` |
+
+**\*Performance Note**: Throughput tested with Locust load tests. The 5,500 ops/sec estimate from earlier documentation requires server deployment and is marked as "Partial" in [CLAIMS_TRACEABILITY.md](CLAIMS_TRACEABILITY.md). The 1,000+ RPS figure represents the verified SLO target.
 
 For detailed validation results, see:
 - [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md)
@@ -587,13 +589,15 @@ For detailed validation results, see:
 
 | Dimension | Status | Implementation | Key References |
 |:----------|:-------|:---------------|:---------------|
-| **Test Coverage** | 90.26% | `pytest`, `pytest-cov`, unit/integration/e2e/property | [TESTING_GUIDE.md](TESTING_GUIDE.md), [COVERAGE_REPORT_2025.md](COVERAGE_REPORT_2025.md) |
+| **Test Coverage** | 70.85%* | `pytest`, `pytest-cov`, unit/integration/e2e/property | [TESTING_GUIDE.md](TESTING_GUIDE.md), [COVERAGE_REPORT_2025.md](COVERAGE_REPORT_2025.md) |
 | **Test Types** | Unit, Integration, E2E, Property, Load, Security | `tests/unit/`, `tests/integration/`, `tests/e2e/`, `tests/property/`, `tests/load/`, `tests/security/` | [tests/](tests/) |
 | **Type Safety** | Strict mypy | Configured in `pyproject.toml` with strict mode | [pyproject.toml](pyproject.toml) |
 | **Static Analysis** | ruff, bandit | Pre-commit hooks and CI checks | [.pre-commit-config.yaml](.pre-commit-config.yaml) |
 | **CI/CD** | GitHub Actions | Multi-workflow pipeline (CI, property tests, release) | [.github/workflows/](.github/workflows/) |
 | **Security** | Policy + Implementation | Rate limiting, input validation, audit logging, threat model | [SECURITY_POLICY.md](SECURITY_POLICY.md), [THREAT_MODEL.md](THREAT_MODEL.md) |
 | **Observability** | Prometheus + OpenTelemetry | Metrics, structured logging, distributed tracing | [OBSERVABILITY_GUIDE.md](OBSERVABILITY_GUIDE.md), [SLO_SPEC.md](SLO_SPEC.md) |
+
+**\*Coverage Note**: Full codebase coverage is 70.85% (measured on `tests/unit/` + `tests/state/`). Core cognitive modules achieve 90%+ coverage. See [COVERAGE_REPORT_2025.md](COVERAGE_REPORT_2025.md) for detailed breakdown.
 
 ### 🚀 Deployment Topologies
 
