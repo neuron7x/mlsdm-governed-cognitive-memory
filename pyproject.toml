@@ -133,6 +133,11 @@ module = "mlsdm.extensions.neuro_lang_extension"
 disallow_untyped_defs = false
 disallow_untyped_calls = false
 check_untyped_defs = false
+warn_unused_ignores = false
+disallow_any_generics = false
+# Disable strict checking for torch module subclassing since torch is optional
+# and nn.Module may be None when torch is not installed
+disable_error_code = ["misc"]
 # Note: This is explicitly an optional extension and does not affect core functionality
 
 # Experimental modules are not part of the stable API
@@ -242,6 +247,8 @@ where = ["src"]
 [tool.deptry]
 # Exclude dev/test/docs dependencies from being treated as main dependencies
 exclude = ["tests", "docs"]
+# Tell deptry to only check dependencies against src/ code, not test/docs code
+pep621_dev_dependency_groups = ["dev", "test", "docs", "visualization"]
 
 [tool.deptry.per_rule_ignores]
 # Allow certain missing imports that are optional/conditional

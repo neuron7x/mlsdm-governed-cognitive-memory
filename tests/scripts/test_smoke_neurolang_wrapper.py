@@ -1,9 +1,16 @@
 """
 Tests for scripts/smoke_neurolang_wrapper.py
+
+Requires PyTorch (torch). Tests are skipped if torch is not installed.
 """
 
 import sys
 from pathlib import Path
+
+import pytest
+
+# Skip all tests in this module if torch is not available
+pytest.importorskip("torch")
 
 # Add scripts to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))

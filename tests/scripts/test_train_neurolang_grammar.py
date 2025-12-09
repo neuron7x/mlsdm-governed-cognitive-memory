@@ -1,19 +1,16 @@
 """
 Tests for scripts/train_neurolang_grammar.py
+
+Requires PyTorch (torch). Tests are skipped if torch is not installed.
 """
 
-import importlib.util
 import sys
 from pathlib import Path
 
 import pytest
 
 # Skip all tests in this module if torch is not available
-TORCH_AVAILABLE = importlib.util.find_spec("torch") is not None
-pytestmark = pytest.mark.skipif(
-    not TORCH_AVAILABLE,
-    reason="optional dependency 'torch' is not installed; skipping NeuroLang training script tests."
-)
+pytest.importorskip("torch")
 
 # Add scripts to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))

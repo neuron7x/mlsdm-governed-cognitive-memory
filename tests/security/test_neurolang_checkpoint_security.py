@@ -3,20 +3,17 @@ Security tests for NeuroLang checkpoint loading.
 
 This test suite validates that checkpoint loading is restricted to allowed directories
 and properly validates checkpoint structure to prevent loading malicious files.
+
+Requires PyTorch (torch). Tests are skipped if torch is not installed.
 """
 
-import importlib.util
 import tempfile
 from pathlib import Path
 
 import pytest
 
 # Skip all tests in this module if torch is not available
-TORCH_AVAILABLE = importlib.util.find_spec("torch") is not None
-pytestmark = pytest.mark.skipif(
-    not TORCH_AVAILABLE,
-    reason="optional dependency 'torch' is not installed; skipping NeuroLang checkpoint security tests."
-)
+pytest.importorskip("torch")
 
 from mlsdm.extensions.neuro_lang_extension import (  # noqa: E402
     ALLOWED_CHECKPOINT_DIR,

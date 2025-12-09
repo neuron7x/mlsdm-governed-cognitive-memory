@@ -2,10 +2,15 @@
 
 These tests run on CPU without requiring GPU hardware.
 They validate the experimental GPU/CPU backend for phase-aware retrieval.
+
+Requires PyTorch (torch). Tests are skipped if torch is not installed.
 """
 
 import numpy as np
 import pytest
+
+# Skip all tests in this module if torch is not available
+pytest.importorskip("torch")
 
 from mlsdm.memory.experimental import FractalPELMGPU
 

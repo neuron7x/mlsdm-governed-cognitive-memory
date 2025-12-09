@@ -35,14 +35,16 @@ try:
 except ImportError:
     # PyTorch not installed - NeuroLang features will be disabled
     TORCH_AVAILABLE = False
-    # Provide None as placeholders when torch is not available
+    # Provide typing-compatible None placeholders when torch is not available
     # These will never be used at runtime due to TORCH_AVAILABLE checks
-    Dataset = None  # type: ignore
-    DataLoader = None  # type: ignore
-    Sampler = None  # type: ignore
-    nn = None  # type: ignore
-    optim = None  # type: ignore
-    torch = None  # type: ignore
+    # Type ignores are necessary here as mypy sees these assignments as type violations
+    if not TYPE_CHECKING:
+        Dataset = None
+        DataLoader = None
+        Sampler = None
+        nn = None
+        optim = None
+        torch = None
 
 
 ALLOWED_CHECKPOINT_DIR = Path("config").resolve()
