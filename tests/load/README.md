@@ -1,6 +1,82 @@
 # Load Tests
 
-This directory contains load testing scripts for the MLSDM system using Locust.
+This directory contains load testing scripts for the MLSDM system.
+
+## Available Load Tests
+
+| Script | Description | Dependencies |
+|--------|-------------|--------------|
+| `standalone_server_load_test.py` | **Self-contained server load test** | httpx |
+| `locust_load_test.py` | Locust-based load testing | locust, psutil, numpy |
+| `test_concurrency_core.py` | Core concurrency tests | pytest |
+
+---
+
+## standalone_server_load_test.py (Recommended)
+
+**Self-contained load test that starts a server, runs tests, and generates a report.**
+
+### Quick Start
+
+```bash
+# Basic test (10 users, 30 seconds)
+python tests/load/standalone_server_load_test.py
+
+# Custom configuration
+python tests/load/standalone_server_load_test.py --users 50 --duration 60
+
+# Test against existing server
+python tests/load/standalone_server_load_test.py --host http://localhost:8000 --no-server
+
+# Save JSON report
+python tests/load/standalone_server_load_test.py --output load_report.json
+```
+
+### Features
+
+- ✅ **Self-contained**: Automatically starts/stops MLSDM server
+- ✅ **No external dependencies**: Uses only httpx (already in requirements)
+- ✅ **Comprehensive metrics**: P50/P95/P99 latency, RPS, memory tracking
+- ✅ **Pass/Fail criteria**: Automatic validation (>95% success, P95<500ms)
+- ✅ **JSON reports**: Machine-readable output for CI integration
+
+### Sample Output
+
+```
+======================================================================
+MLSDM STANDALONE LOAD TEST REPORT
+======================================================================
+
+Test Duration: 15.2 seconds
+Timestamp: 2025-12-10T12:45:48.030138
+
+--- Request Metrics ---
+Total Requests:      585
+Successful Requests: 585
+Failed Requests:     0
+Success Rate:        100.0%
+Requests/Second:     38.6
+
+--- Latency Metrics (ms) ---
+P50:  3.22
+P95:  5.09
+P99:  20.56
+Avg:  3.43
+Min:  2.00
+Max:  26.26
+Std:  2.29
+
+--- Memory Metrics (MB) ---
+Initial: 67.4
+Final:   71.0
+Growth:  3.6
+
+--- Status ---
+✅ LOAD TEST PASSED
+======================================================================
+```
+
+---
 
 ## locust_load_test.py
 

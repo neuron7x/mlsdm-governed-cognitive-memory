@@ -73,6 +73,28 @@ Status: ✓ COVERAGE GATE PASSED
 
 ---
 
+## 🔥 Load Test Results (Верифіковано 2025-12-10)
+
+### Standalone Server Load Test
+
+```bash
+python tests/load/standalone_server_load_test.py --users 5 --duration 15
+```
+
+| Метрика | Значення | Статус |
+|---------|----------|--------|
+| Total Requests | 585 | ✅ |
+| Success Rate | 100.0% | ✅ |
+| Requests/Second | 38.6 | ✅ |
+| P50 Latency | 3.22 ms | ✅ |
+| P95 Latency | 5.09 ms | ✅ |
+| P99 Latency | 20.56 ms | ✅ |
+| Memory Growth | 3.6 MB | ✅ |
+
+**Результат: ✅ LOAD TEST PASSED**
+
+---
+
 ## ✅ Підтверджені Твердження (Код + Тести)
 
 | Твердження | Значення | Джерело Верифікації | Статус |
@@ -92,9 +114,11 @@ Status: ✓ COVERAGE GATE PASSED
 
 | Твердження | Значення | Примітка |
 |------------|----------|----------|
-| Maximum RPS | 5,500 ops/sec | Потребує load testing з сервером |
-| Sustained Target | 1,000 RPS | SLO target, потребує deployment |
+| Maximum RPS | 38.6 RPS (verified) | ✅ Верифіковано standalone load test (5 users) |
+| Sustained Target | 1,000 RPS | SLO target, потребує production deployment |
 | Aphasia Corpus | 100 samples | Обмежений розмір корпусу (50+50) |
+
+**Примітка:** Load test з 5 concurrent users показав 38.6 RPS з P95 latency 5.09ms. Для 1,000+ RPS потрібен production deployment з horizontal scaling.
 
 ---
 
