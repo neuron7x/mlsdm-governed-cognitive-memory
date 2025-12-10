@@ -5,6 +5,8 @@ Validates the claim that PELM memory does not grow after reaching capacity,
 as it uses fixed pre-allocated buffers with eviction-based updates.
 """
 
+import gc
+
 import numpy as np
 import psutil
 import pytest
@@ -37,7 +39,6 @@ def test_pelm_zero_growth_after_init():
         pelm.entangle(vec, phase=float(i % 11) / 10.0)
     
     # Force garbage collection to stabilize memory baseline
-    import gc
     gc.collect()
     
     # Measure baseline memory after reaching capacity
@@ -101,7 +102,6 @@ def test_pelm_zero_growth_after_init_large_capacity():
         print(f"  Filled {batch_end}/{capacity} vectors...")
     
     # Force garbage collection
-    import gc
     gc.collect()
     
     # Measure baseline

@@ -148,7 +148,7 @@ pytest tests/validation/test_moral_filter_effectiveness.py::test_comprehensive_s
 # Expected: 97.8% aggregated safety score
 ```
 
-**Note**: This metric aggregates multiple safety dimensions. See P2-5 in this guide for the exact calculation formula.
+**Note**: This metric aggregates multiple safety dimensions. The formula is: (toxic_rejection_rate + (1 - moral_drift) + threshold_convergence + (1 - false_positive_rate)) / 4. See CLAIMS_TRACEABILITY.md for detailed explanation.
 
 ## Test Structure
 
