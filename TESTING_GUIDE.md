@@ -301,7 +301,7 @@ For TRL 5-6 compliance:
 1. **Run full test suite before releases**
 2. **Ensure ≥90% coverage on all PRs**
 3. **Document any coverage regressions**
-4. **Review COVERAGE_REPORT.md quarterly**
+4. **Review COVERAGE_REPORT_2025.md quarterly**
 5. **Update tests when adding new features**
 
 ## E2E Test Suite
@@ -365,5 +365,5 @@ E2E tests are mandatory for release:
 
 - [pytest Documentation](https://docs.pytest.org/)
 - [pytest-cov Documentation](https://pytest-cov.readthedocs.io/)
-- [ESA Standards 2025](../COVERAGE_REPORT.md)
-- [MLSDM Coverage Report](../COVERAGE_REPORT.md)
+- [ESA Standards 2025](../COVERAGE_REPORT_2025.md)
+- [MLSDM Coverage Report](../COVERAGE_REPORT_2025.md)

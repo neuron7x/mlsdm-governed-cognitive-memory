@@ -273,5 +273,5 @@ pytest tests/unit/test_cognitive_controller.py::TestCognitiveControllerMemoryLea
 
 ## Next Steps
 
-See `PROD_GAPS.md` for remaining tasks and `PRE_RELEASE_CHECKLIST.md` for verification commands.
+See `PROD_GAPS.md` for remaining tasks and `RELEASE_CHECKLIST.md` for verification commands.
 
