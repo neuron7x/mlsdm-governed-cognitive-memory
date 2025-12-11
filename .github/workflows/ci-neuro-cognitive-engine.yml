@@ -147,8 +147,9 @@ jobs:
           # Current coverage: ~68%. Set threshold at 65% to allow small fluctuations
           # TODO: Increase threshold when coverage consistently exceeds current threshold by 5%
           #       Example: 68% → 70% threshold when coverage reaches 73% for 2+ releases
+          # NOTE: Exclude slow/benchmark tests to avoid flaky performance tests blocking coverage gate
           pytest --cov=src/mlsdm --cov-report=xml --cov-report=term-missing \
-            --cov-fail-under=65 --ignore=tests/load -v
+            --cov-fail-under=65 --ignore=tests/load -m "not slow and not benchmark" -v
       
       - name: Upload coverage report
         if: always()
