@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+import psutil
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
@@ -90,6 +91,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Register cleanup tasks
     lifecycle.register_cleanup(lambda: cleanup_memory_manager(_manager))
+
+    # Initialize psutil CPU monitoring to ensure consistent readings
+    # WHY: First call to cpu_percent(interval=0) returns unreliable value (often 0.0)
+    #      Priming with interval=0.1 ensures subsequent interval=0 calls return actual CPU usage
+    #      Fixes Python 3.11 test flakiness in test_ready_legacy_readiness_alias_works
+    try:
+        psutil.cpu_percent(interval=0.1)
+    except Exception as e:
+        logger.warning(f"Failed to initialize CPU monitoring: {e}")
 
     # Log system startup
     security_logger.log_system_event(
