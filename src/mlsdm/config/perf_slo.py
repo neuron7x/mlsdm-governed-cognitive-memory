@@ -83,6 +83,7 @@ class LoadProfile:
 # SLO multipliers for different load conditions
 MODERATE_LOAD_SLO_MULTIPLIER = 1.2  # 20% relaxation under moderate load
 MODERATE_LOAD_ERROR_MULTIPLIER = 1.5  # 50% relaxation for error rate
+READINESS_CHECK_SLO_MULTIPLIER = 2.0  # 100% relaxation for readiness (CI overhead)
 
 # Standard load profiles for testing
 LOAD_PROFILES: dict[str, LoadProfile] = {
