@@ -128,19 +128,34 @@ class TestReadinessEndpoint:
 
     def test_ready_legacy_readiness_alias_works(self, client):
         """GET /health/readiness (legacy) returns same structure as /health/ready."""
-        response_new = client.get("/health/ready")
-        response_legacy = client.get("/health/readiness")
+        from mlsdm.api import health
 
-        # Both should have same status code
-        assert response_new.status_code == response_legacy.status_code
+        # Mock controller in healthy state to ensure deterministic behavior
+        mock_controller = MagicMock()
+        mock_controller.emergency_shutdown = False
+        mock_controller.is_emergency_shutdown.return_value = False
+        mock_controller.memory_usage_bytes.return_value = 100_000_000  # 100 MB
+        mock_controller.max_memory_bytes = 1_400_000_000  # 1.4 GB
 
-        data_new = response_new.json()
-        data_legacy = response_legacy.json()
+        original_controller = health.get_cognitive_controller()
+        health.set_cognitive_controller(mock_controller)
 
-        # Same structure
-        assert set(data_new.keys()) == set(data_legacy.keys())
-        # Both should have components
-        assert "components" in data_legacy
+        try:
+            response_new = client.get("/health/ready")
+            response_legacy = client.get("/health/readiness")
+
+            # Both should have same status code
+            assert response_new.status_code == response_legacy.status_code
+
+            data_new = response_new.json()
+            data_legacy = response_legacy.json()
+
+            # Same structure
+            assert set(data_new.keys()) == set(data_legacy.keys())
+            # Both should have components
+            assert "components" in data_legacy
+        finally:
+            health.set_cognitive_controller(original_controller)
 
 
 class TestReadinessWithEmergencyShutdown:
