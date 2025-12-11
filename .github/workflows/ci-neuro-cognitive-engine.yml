@@ -27,6 +27,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
       
       - name: Install dependencies
         run: |
@@ -55,6 +59,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
       
       - name: Install dependencies
         run: |
@@ -64,7 +72,8 @@ jobs:
       
       - name: Run pip-audit for vulnerability scanning
         run: |
-          pip-audit --strict --progress-spinner=off
+          # WHY: Audit only requirements.txt dependencies to avoid false positives from system packages
+          pip-audit --requirement requirements.txt --progress-spinner=off
       
       - name: Report status
         if: failure()
@@ -89,6 +98,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
       
       - name: Install dependencies
         run: |
@@ -116,6 +129,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
       
       - name: Install dependencies
         run: |
@@ -143,6 +160,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
       
       - name: Install dependencies
         run: |
@@ -180,6 +201,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
       
       - name: Install dependencies
         run: |
@@ -196,16 +221,18 @@ jobs:
             --junitxml=benchmark-results.xml 2>&1 | tee benchmark-output.txt
           
           # Extract P95 latencies from output for tracking
+          # WHY: Use Python datetime for accurate timestamps instead of shell command
           python3 << 'EOF'
           import re
           import json
           import os
+          from datetime import datetime, timezone
           
           with open("benchmark-output.txt", "r") as f:
               content = f.read()
           
           metrics = {
-              "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+              "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
               "commit": os.environ.get("GITHUB_SHA", "unknown")[:8],
               "metrics": {}
           }
@@ -311,6 +338,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
       
       - name: Install dependencies
         run: |
