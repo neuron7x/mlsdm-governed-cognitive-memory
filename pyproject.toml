@@ -152,12 +152,13 @@ check_untyped_defs = false
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = [
-    # Note: pytest.ini takes precedence, but keep this for reference
+    # Note: pytest.ini exists and configures testpaths/markers
     # Coverage threshold controlled by CI workflow, not default test runs
+    # The following are commented out to avoid conflicts and unrealistic defaults:
     # "--cov=src",
     # "--cov-report=html",
     # "--cov-report=term-missing",
-    # "--cov-fail-under=90",  # Commented out - actual coverage is ~68%
+    # "--cov-fail-under=90",  # Unrealistic - actual coverage is ~68%
     "--strict-markers",
     "--strict-config",
     "-v",

@@ -145,7 +145,8 @@ jobs:
         run: |
           # WHY: Generate coverage report for src/mlsdm with realistic threshold
           # Current coverage: ~68%. Set threshold at 65% to allow small fluctuations
-          # TODO: Incrementally increase threshold as test coverage improves
+          # TODO: Increase threshold when coverage consistently exceeds current threshold by 5%
+          #       Example: 68% → 70% threshold when coverage reaches 73% for 2+ releases
           pytest --cov=src/mlsdm --cov-report=xml --cov-report=term-missing \
             --cov-fail-under=65 --ignore=tests/load -v
       

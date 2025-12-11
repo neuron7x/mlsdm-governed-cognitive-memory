@@ -127,7 +127,9 @@ DISABLE_RATE_LIMIT=1 LLM_BACKEND=local_stub \
 - Coverage ≥ 65% on src/mlsdm (current: ~68%)
 - Exit code 0
 
-**Note**: Threshold set at 65% to match current coverage (~68%). This provides a quality gate while allowing for minor fluctuations. As test coverage improves, this threshold should be incrementally increased.
+**Note**: Threshold set at 65% to match current coverage (~68%). This provides a quality gate while allowing for minor fluctuations. 
+
+**Threshold Increase Criteria**: When actual coverage consistently exceeds the current threshold by 5% for 2+ releases, increase threshold to (current_coverage - 3%). Example: If coverage reaches 73% consistently → increase threshold to 70%.
 
 **Artifacts**:
 - `coverage.xml` (90 day retention)
