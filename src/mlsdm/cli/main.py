@@ -6,9 +6,9 @@ from mlsdm.core.memory_manager import MemoryManager
 from mlsdm.utils.config_loader import ConfigLoader
 
 try:
-    import uvicorn  # type: ignore[import-not-found]
+    import uvicorn
 except ImportError:  # pragma: no cover - handled in runtime logic
-    uvicorn = None  # type: ignore[assignment]
+    uvicorn = None
 
 
 class JSONFormatter(logging.Formatter):
@@ -55,4 +55,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
