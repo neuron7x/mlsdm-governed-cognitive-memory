@@ -177,8 +177,8 @@ Learning about:
 
 ❌ **Not a Good Fit:**
 - You need hallucination prevention (MLSDM wraps but doesn't improve factual accuracy)
-- You have zero tolerance for false positives (37.5% FP rate)
-- You require certified compliance tools (beta status, requires domain audit)
+- You have zero tolerance for false positives (37.5% FP rate in moral filtering - see [Validated Metrics](#-validated-metrics))
+- You require certified compliance tools (beta status, requires domain-specific security audit before production use)
 
 ---
 
