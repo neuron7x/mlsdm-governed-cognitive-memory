@@ -17,7 +17,7 @@ Exit codes:
 import argparse
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 try:
     import yaml
@@ -65,13 +65,19 @@ class PolicyValidator:
         """Load and parse YAML file."""
         try:
             with open(path, encoding="utf-8") as f:
-                return yaml.safe_load(f)
+                result = yaml.safe_load(f)
         except FileNotFoundError:
             self.errors.append(f"Policy file not found: {path}")
             return None
         except yaml.YAMLError as e:
             self.errors.append(f"YAML parsing error in {path}: {e}")
             return None
+
+        if not isinstance(result, dict):
+            self.errors.append(f"Policy file must contain a mapping: {path}")
+            return None
+
+        return cast(dict[str, Any], result)
 
     def _validate_security_workflows(self, policy: dict[str, Any]) -> None:
         """Validate that required CI workflows exist."""
@@ -240,7 +246,7 @@ class PolicyValidator:
             print(f"✗ Validation failed with {len(self.errors)} error(s)")
 
 
-def main():
+def main() -> int:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Validate MLSDM policy configuration files")
     parser.add_argument(
