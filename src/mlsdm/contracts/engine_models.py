@@ -320,9 +320,13 @@ class EngineResult(BaseModel):
         """Check if the result represents a successful generation.
 
         Returns:
-            True if no error and response is not empty.
+            True if no error, not rejected, and response is not empty.
         """
-        return self.error is None and self.rejected_at is None
+        return (
+            self.error is None
+            and self.rejected_at is None
+            and bool(self.response)
+        )
 
     @property
     def is_rejected(self) -> bool:

@@ -5,6 +5,11 @@ import logging
 from mlsdm.core.memory_manager import MemoryManager
 from mlsdm.utils.config_loader import ConfigLoader
 
+try:
+    import uvicorn  # type: ignore[import-not-found]
+except ImportError:  # pragma: no cover - handled in runtime logic
+    uvicorn = None  # type: ignore[assignment]
+
 
 class JSONFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
@@ -32,18 +37,21 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.api:
-        import uvicorn
+        if uvicorn is None:
+            logger.error("uvicorn is required to run the API server")
+            return 1
 
         from mlsdm.api.app import app
 
         uvicorn.run(app, host="0.0.0.0", port=8000)
-        return
+        return 0
 
     config = ConfigLoader.load_config(args.config)
     manager = MemoryManager(config)
     logger.info("Running simulation...")
     manager.run_simulation(args.steps)
     logger.info("Done.")
+    return 0
 
 
 if __name__ == "__main__":

@@ -240,6 +240,26 @@ class TestEngineResult:
         assert result.error is not None
         assert result.error.type == "moral_precheck"
 
+    @pytest.mark.parametrize(
+        "response,error,rejected_at",
+        [
+            ("", None, None),
+            ("Hello", EngineErrorInfo(type="internal_error"), None),
+            ("Hello", None, "pre_flight"),
+        ],
+    )
+    def test_result_is_success_edge_cases(
+        self, response: str, error: EngineErrorInfo | None, rejected_at: str | None
+    ) -> None:
+        """EngineResult.is_success requires non-empty response and no errors/rejections."""
+        result = EngineResult(
+            response=response,
+            error=error,
+            rejected_at=rejected_at,  # type: ignore[arg-type]
+        )
+
+        assert result.is_success is False
+
     def test_result_rejected_at_enum(self) -> None:
         """EngineResult.rejected_at uses valid enum values."""
         # Valid values
