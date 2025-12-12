@@ -1,46 +1,51 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600">
   <defs>
-    <!-- Gradient definitions -->
+    <!-- Modern gradient background -->
     <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0a192f"/>
-      <stop offset="50%" style="stop-color:#112240"/>
-      <stop offset="100%" style="stop-color:#0d1b2a"/>
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="50%" style="stop-color:#1e293b"/>
+      <stop offset="100%" style="stop-color:#0f172a"/>
     </linearGradient>
     
-    <linearGradient id="glowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#64ffda;stop-opacity:0.3"/>
-      <stop offset="100%" style="stop-color:#00bcd4;stop-opacity:0.1"/>
+    <!-- Memory layer gradients -->
+    <linearGradient id="memoryL1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#60a5fa;stop-opacity:0.9"/>
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0.8"/>
     </linearGradient>
     
-    <linearGradient id="neuronGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#00d4ff"/>
-      <stop offset="100%" style="stop-color:#0099cc"/>
+    <linearGradient id="memoryL2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a78bfa;stop-opacity:0.9"/>
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0.8"/>
     </linearGradient>
     
-    <linearGradient id="neuronGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#a855f7"/>
-      <stop offset="100%" style="stop-color:#7c3aed"/>
+    <linearGradient id="memoryL3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f472b6;stop-opacity:0.9"/>
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:0.8"/>
     </linearGradient>
     
-    <linearGradient id="neuronGradient3" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#f472b6"/>
-      <stop offset="100%" style="stop-color:#ec4899"/>
-    </linearGradient>
-    
-    <linearGradient id="neuronGradient4" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Moral filter gradient -->
+    <linearGradient id="moralGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#34d399"/>
       <stop offset="100%" style="stop-color:#10b981"/>
     </linearGradient>
     
+    <!-- LLM core gradient -->
+    <linearGradient id="llmGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24"/>
+      <stop offset="100%" style="stop-color:#f59e0b"/>
+    </linearGradient>
+    
+    <!-- Title gradient -->
     <linearGradient id="titleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#64ffda"/>
-      <stop offset="50%" style="stop-color:#00d4ff"/>
-      <stop offset="100%" style="stop-color:#a855f7"/>
+      <stop offset="0%" style="stop-color:#60a5fa"/>
+      <stop offset="30%" style="stop-color:#a78bfa"/>
+      <stop offset="60%" style="stop-color:#f472b6"/>
+      <stop offset="100%" style="stop-color:#34d399"/>
     </linearGradient>
     
     <!-- Glow filters -->
     <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
       <feMerge>
         <feMergeNode in="coloredBlur"/>
         <feMergeNode in="SourceGraphic"/>
@@ -48,249 +53,176 @@
     </filter>
     
     <filter id="glowStrong" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
       <feMerge>
         <feMergeNode in="coloredBlur"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
     
-    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="20" result="coloredBlur"/>
-      <feMerge>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    
-    <!-- Neuron symbol -->
-    <symbol id="neuron" viewBox="0 0 40 40">
-      <circle cx="20" cy="20" r="15" fill="currentColor" opacity="0.9"/>
-      <circle cx="20" cy="20" r="8" fill="#0a192f" opacity="0.7"/>
-      <circle cx="20" cy="20" r="4" fill="currentColor" opacity="0.8"/>
-    </symbol>
-    
-    <!-- Small neuron -->
-    <symbol id="neuronSmall" viewBox="0 0 20 20">
-      <circle cx="10" cy="10" r="8" fill="currentColor" opacity="0.8"/>
-      <circle cx="10" cy="10" r="4" fill="#0a192f" opacity="0.6"/>
-    </symbol>
+    <!-- Connection pulse animation -->
+    <animate id="pulse" attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
   </defs>
   
   <!-- Background -->
   <rect width="1200" height="600" fill="url(#bgGradient)"/>
   
-  <!-- Background glow effects -->
-  <ellipse cx="300" cy="300" rx="200" ry="200" fill="#00d4ff" opacity="0.05" filter="url(#softGlow)"/>
-  <ellipse cx="900" cy="300" rx="200" ry="200" fill="#a855f7" opacity="0.05" filter="url(#softGlow)"/>
-  <ellipse cx="600" cy="500" rx="300" ry="150" fill="#64ffda" opacity="0.03" filter="url(#softGlow)"/>
-  
-  <!-- Grid pattern background -->
-  <g opacity="0.03" stroke="#64ffda" stroke-width="0.5">
-    <line x1="0" y1="100" x2="1200" y2="100"/>
-    <line x1="0" y1="200" x2="1200" y2="200"/>
+  <!-- Subtle grid pattern -->
+  <g opacity="0.03" stroke="#60a5fa" stroke-width="0.5">
+    <line x1="0" y1="150" x2="1200" y2="150"/>
     <line x1="0" y1="300" x2="1200" y2="300"/>
-    <line x1="0" y1="400" x2="1200" y2="400"/>
-    <line x1="0" y1="500" x2="1200" y2="500"/>
-    <line x1="200" y1="0" x2="200" y2="600"/>
-    <line x1="400" y1="0" x2="400" y2="600"/>
+    <line x1="0" y1="450" x2="1200" y2="450"/>
+    <line x1="300" y1="0" x2="300" y2="600"/>
     <line x1="600" y1="0" x2="600" y2="600"/>
-    <line x1="800" y1="0" x2="800" y2="600"/>
-    <line x1="1000" y1="0" x2="1000" y2="600"/>
+    <line x1="900" y1="0" x2="900" y2="600"/>
   </g>
   
-  <!-- Neural connections - Layer 1 (background) -->
-  <g stroke="#00d4ff" stroke-width="1" opacity="0.2">
-    <line x1="100" y1="150" x2="200" y2="200"/>
-    <line x1="200" y1="200" x2="150" y2="300"/>
-    <line x1="150" y1="300" x2="250" y2="350"/>
-    <line x1="250" y1="350" x2="180" y2="450"/>
-    <line x1="180" y1="450" x2="280" y2="500"/>
-    
-    <line x1="1100" y1="100" x2="1000" y2="180"/>
-    <line x1="1000" y1="180" x2="1050" y2="280"/>
-    <line x1="1050" y1="280" x2="950" y2="350"/>
-    <line x1="950" y1="350" x2="1020" y2="450"/>
-    <line x1="1020" y1="450" x2="920" y2="520"/>
-  </g>
-  
-  <!-- Neural connections - Layer 2 -->
-  <g stroke="#a855f7" stroke-width="1.5" opacity="0.3" filter="url(#glow)">
-    <line x1="80" y1="250" x2="180" y2="180"/>
-    <line x1="180" y1="180" x2="300" y2="250"/>
-    <line x1="300" y1="250" x2="280" y2="380"/>
-    <line x1="280" y1="380" x2="350" y2="480"/>
-    
-    <line x1="1120" y1="250" x2="1020" y2="180"/>
-    <line x1="1020" y1="180" x2="900" y2="250"/>
-    <line x1="900" y1="250" x2="920" y2="380"/>
-    <line x1="920" y1="380" x2="850" y2="480"/>
-  </g>
-  
-  <!-- Central neural network visualization -->
-  <g>
-    <!-- Central hub connections -->
-    <g stroke="#00d4ff" stroke-width="2" opacity="0.4" filter="url(#glow)">
-      <!-- Left side connections -->
-      <line x1="350" y1="200" x2="450" y2="280"/>
-      <line x1="350" y1="400" x2="450" y2="320"/>
-      <line x1="400" y1="300" x2="450" y2="300"/>
-      
-      <!-- Right side connections -->
-      <line x1="850" y1="200" x2="750" y2="280"/>
-      <line x1="850" y1="400" x2="750" y2="320"/>
-      <line x1="800" y1="300" x2="750" y2="300"/>
-      
-      <!-- Central connections -->
-      <line x1="500" y1="250" x2="550" y2="270"/>
-      <line x1="500" y1="350" x2="550" y2="330"/>
-      <line x1="700" y1="250" x2="650" y2="270"/>
-      <line x1="700" y1="350" x2="650" y2="330"/>
-    </g>
-    
-    <!-- Memory layer connections -->
-    <g stroke="#34d399" stroke-width="1.5" opacity="0.5" filter="url(#glow)">
-      <path d="M 450 280 Q 500 300 450 320" fill="none"/>
-      <path d="M 750 280 Q 700 300 750 320" fill="none"/>
-    </g>
-  </g>
-  
-  <!-- Left side neurons -->
-  <g filter="url(#glow)">
-    <use href="#neuron" x="70" y="130" width="40" height="40" color="#00d4ff"/>
-    <use href="#neuron" x="160" y="175" width="35" height="35" color="#00d4ff"/>
-    <use href="#neuron" x="120" y="275" width="35" height="35" color="#a855f7"/>
-    <use href="#neuron" x="220" y="325" width="40" height="40" color="#00d4ff"/>
-    <use href="#neuron" x="150" y="425" width="35" height="35" color="#a855f7"/>
-    <use href="#neuron" x="250" y="475" width="30" height="30" color="#f472b6"/>
-    
-    <use href="#neuronSmall" x="50" y="225" width="20" height="20" color="#00d4ff"/>
-    <use href="#neuronSmall" x="280" y="200" width="20" height="20" color="#34d399"/>
-    <use href="#neuronSmall" x="320" y="380" width="20" height="20" color="#00d4ff"/>
-  </g>
-  
-  <!-- Right side neurons -->
-  <g filter="url(#glow)">
-    <use href="#neuron" x="1080" y="80" width="40" height="40" color="#00d4ff"/>
-    <use href="#neuron" x="980" y="155" width="35" height="35" color="#a855f7"/>
-    <use href="#neuron" x="1020" y="255" width="35" height="35" color="#00d4ff"/>
-    <use href="#neuron" x="920" y="325" width="40" height="40" color="#a855f7"/>
-    <use href="#neuron" x="990" y="425" width="35" height="35" color="#00d4ff"/>
-    <use href="#neuron" x="890" y="495" width="30" height="30" color="#f472b6"/>
-    
-    <use href="#neuronSmall" x="1120" y="225" width="20" height="20" color="#a855f7"/>
-    <use href="#neuronSmall" x="870" y="180" width="20" height="20" color="#34d399"/>
-    <use href="#neuronSmall" x="830" y="400" width="20" height="20" color="#00d4ff"/>
-  </g>
-  
-  <!-- Central feature neurons -->
-  <g filter="url(#glowStrong)">
-    <!-- Memory neuron (green) -->
-    <use href="#neuron" x="330" y="180" width="45" height="45" color="#34d399"/>
-    <use href="#neuron" x="330" y="375" width="45" height="45" color="#34d399"/>
-    
-    <!-- Moral filter neuron (purple) -->
-    <use href="#neuron" x="825" y="180" width="45" height="45" color="#a855f7"/>
-    <use href="#neuron" x="825" y="375" width="45" height="45" color="#a855f7"/>
-    
-    <!-- Central processing neurons (cyan) -->
-    <use href="#neuron" x="430" y="260" width="50" height="50" color="#00d4ff"/>
-    <use href="#neuron" x="430" y="295" width="50" height="50" color="#00d4ff"/>
-    <use href="#neuron" x="720" y="260" width="50" height="50" color="#00d4ff"/>
-    <use href="#neuron" x="720" y="295" width="50" height="50" color="#00d4ff"/>
-    
-    <!-- Active highlight neurons (pink) -->
-    <use href="#neuron" x="480" y="225" width="35" height="35" color="#f472b6"/>
-    <use href="#neuron" x="685" y="225" width="35" height="35" color="#f472b6"/>
-  </g>
+  <!-- Background ambient glow -->
+  <ellipse cx="600" cy="300" rx="400" ry="300" fill="#60a5fa" opacity="0.02"/>
+  <ellipse cx="300" cy="300" rx="250" ry="250" fill="#a78bfa" opacity="0.03"/>
+  <ellipse cx="900" cy="300" rx="250" ry="250" fill="#34d399" opacity="0.03"/>
   
   <!-- Main title -->
-  <text x="600" y="290" text-anchor="middle" font-family="'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="72" font-weight="800" fill="url(#titleGradient)" filter="url(#glowStrong)">
+  <text x="600" y="80" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="56" font-weight="700" fill="url(#titleGradient)" text-anchor="middle" letter-spacing="1">
     MLSDM
   </text>
-  
-  <!-- Subtitle -->
-  <text x="600" y="340" text-anchor="middle" font-family="'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="300" fill="#8892b0" letter-spacing="4">
+  <text x="600" y="115" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" fill="#94a3b8" text-anchor="middle" font-weight="400" letter-spacing="2">
     Multi-Level Synaptic Dynamic Memory
   </text>
   
-  <!-- Decorative lines around title -->
-  <g stroke="url(#titleGradient)" stroke-width="2" opacity="0.6">
-    <line x1="380" y1="365" x2="520" y2="365"/>
-    <line x1="680" y1="365" x2="820" y2="365"/>
+  <!-- Central LLM Core -->
+  <g filter="url(#glowStrong)">
+    <circle cx="600" cy="300" r="50" fill="url(#llmGradient)" opacity="0.95"/>
+    <circle cx="600" cy="300" r="38" fill="#0f172a" opacity="0.6"/>
+    <text x="600" y="305" font-family="'SF Mono', 'Monaco', 'Consolas', monospace" font-size="16" fill="#fbbf24" text-anchor="middle" font-weight="600">LLM</text>
   </g>
   
-  <!-- Feature icons at bottom -->
-  <g transform="translate(0, 430)">
-    <!-- Memory icon -->
-    <g transform="translate(200, 0)">
-      <circle cx="40" cy="40" r="35" fill="#112240" stroke="#34d399" stroke-width="2" filter="url(#glow)"/>
-      <text x="40" y="48" text-anchor="middle" font-size="28" fill="#34d399">💾</text>
-      <text x="40" y="95" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="11" fill="#64ffda" font-weight="600">MEMORY</text>
-      <text x="40" y="110" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="9" fill="#8892b0">29.37 MB</text>
-    </g>
-    
-    <!-- Moral Filter icon -->
-    <g transform="translate(400, 0)">
-      <circle cx="40" cy="40" r="35" fill="#112240" stroke="#a855f7" stroke-width="2" filter="url(#glow)"/>
-      <text x="40" y="48" text-anchor="middle" font-size="28" fill="#a855f7">🛡️</text>
-      <text x="40" y="95" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="11" fill="#a855f7" font-weight="600">MORAL FILTER</text>
-      <text x="40" y="110" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="9" fill="#8892b0">93.3% Safe</text>
-    </g>
-    
-    <!-- Wake/Sleep icon -->
-    <g transform="translate(600, 0)">
-      <circle cx="40" cy="40" r="35" fill="#112240" stroke="#00d4ff" stroke-width="2" filter="url(#glow)"/>
-      <text x="40" y="48" text-anchor="middle" font-size="28" fill="#00d4ff">🌙</text>
-      <text x="40" y="95" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="11" fill="#00d4ff" font-weight="600">WAKE/SLEEP</text>
-      <text x="40" y="110" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="9" fill="#8892b0">89.5% Savings</text>
-    </g>
-    
-    <!-- Aphasia Detection icon -->
-    <g transform="translate(800, 0)">
-      <circle cx="40" cy="40" r="35" fill="#112240" stroke="#f472b6" stroke-width="2" filter="url(#glow)"/>
-      <text x="40" y="48" text-anchor="middle" font-size="28" fill="#f472b6">🗣️</text>
-      <text x="40" y="95" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="11" fill="#f472b6" font-weight="600">SPEECH</text>
-      <text x="40" y="110" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="9" fill="#8892b0">100% TPR</text>
-    </g>
+  <!-- Multi-Level Memory Layers (3 concentric rings) -->
+  <!-- L3 (Long-term) - Outermost -->
+  <g opacity="0.85" filter="url(#glow)">
+    <circle cx="600" cy="300" r="180" fill="none" stroke="url(#memoryL3)" stroke-width="3" stroke-dasharray="8,4"/>
+    <text x="780" y="305" font-family="'SF Pro Display', sans-serif" font-size="13" fill="#f472b6" font-weight="600">L3</text>
+    <text x="782" y="322" font-family="'SF Pro Display', sans-serif" font-size="10" fill="#f472b6" opacity="0.8">Long-term</text>
+    <text x="782" y="334" font-family="'SF Pro Display', sans-serif" font-size="9" fill="#f472b6" opacity="0.6">λ=0.99</text>
   </g>
   
-  <!-- Tagline -->
-  <text x="600" y="580" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="14" fill="#64ffda" font-weight="500" letter-spacing="1">
-    Neurobiologically-Inspired Cognitive Governance for LLMs
-  </text>
+  <!-- L2 (Medium-term) - Middle -->
+  <g opacity="0.9" filter="url(#glow)">
+    <circle cx="600" cy="300" r="130" fill="none" stroke="url(#memoryL2)" stroke-width="3" stroke-dasharray="6,3"/>
+    <text x="730" y="305" font-family="'SF Pro Display', sans-serif" font-size="13" fill="#a78bfa" font-weight="600">L2</text>
+    <text x="732" y="322" font-family="'SF Pro Display', sans-serif" font-size="10" fill="#a78bfa" opacity="0.8">Medium-term</text>
+    <text x="732" y="334" font-family="'SF Pro Display', sans-serif" font-size="9" fill="#a78bfa" opacity="0.6">λ=0.98</text>
+  </g>
   
-  <!-- Floating particles -->
+  <!-- L1 (Short-term) - Innermost -->
+  <g opacity="0.95" filter="url(#glow)">
+    <circle cx="600" cy="300" r="80" fill="none" stroke="url(#memoryL1)" stroke-width="3" stroke-dasharray="4,2"/>
+    <text x="680" y="305" font-family="'SF Pro Display', sans-serif" font-size="13" fill="#60a5fa" font-weight="600">L1</text>
+    <text x="682" y="322" font-family="'SF Pro Display', sans-serif" font-size="10" fill="#60a5fa" opacity="0.8">Short-term</text>
+    <text x="682" y="334" font-family="'SF Pro Display', sans-serif" font-size="9" fill="#60a5fa" opacity="0.6">λ=0.95</text>
+  </g>
+  
+  <!-- Governance Layer Components -->
+  
+  <!-- Moral Filter (top) -->
+  <g transform="translate(600, 160)">
+    <g filter="url(#glow)">
+      <rect x="-60" y="-20" width="120" height="40" rx="8" fill="url(#moralGradient)" opacity="0.9"/>
+      <path d="M -25,-5 L -15,5 L -5,-10" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="10" cy="-2" r="8" stroke="#0f172a" stroke-width="2.5" fill="none"/>
+      <line x1="18" y1="-10" x2="28" y2="-15" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
+    </g>
+    <text x="0" y="-28" font-family="'SF Pro Display', sans-serif" font-size="12" fill="#34d399" text-anchor="middle" font-weight="600">Moral Filter</text>
+    <text x="0" y="-16" font-family="'SF Pro Display', sans-serif" font-size="8" fill="#34d399" text-anchor="middle" opacity="0.7">93.3% toxic rejection</text>
+  </g>
+  
+  <!-- Wake/Sleep Rhythm (bottom) -->
+  <g transform="translate(600, 440)">
+    <g filter="url(#glow)">
+      <rect x="-60" y="-20" width="120" height="40" rx="8" fill="#475569" opacity="0.9"/>
+      <!-- Moon icon for sleep -->
+      <path d="M -22,-2 C -22,-10 -14,-10 -10,-5 C -14,-6 -18,-4 -18,-2 C -18,2 -14,4 -10,3 C -14,8 -22,8 -22,-2" fill="#fbbf24"/>
+      <!-- Sun icon for wake -->
+      <circle cx="15" cy="-2" r="6" fill="#fbbf24"/>
+      <line x1="15" y1="-12" x2="15" y2="-14" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="15" y1="8" x2="15" y2="10" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="25" y1="-2" x2="27" y2="-2" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="5" y1="-2" x2="3" y2="-2" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
+    </g>
+    <text x="0" y="35" font-family="'SF Pro Display', sans-serif" font-size="12" fill="#94a3b8" text-anchor="middle" font-weight="600">Cognitive Rhythm</text>
+    <text x="0" y="47" font-family="'SF Pro Display', sans-serif" font-size="8" fill="#94a3b8" text-anchor="middle" opacity="0.7">89.5% resource reduction</text>
+  </g>
+  
+  <!-- Aphasia Detection (left) -->
+  <g transform="translate(300, 300)">
+    <g filter="url(#glow)">
+      <rect x="-60" y="-20" width="120" height="40" rx="8" fill="#475569" opacity="0.9"/>
+      <!-- Speech bubble icon -->
+      <path d="M -25,-10 L -25,5 L -18,5 L -15,10 L -15,5 L 25,5 L 25,-10 Z" fill="#60a5fa" opacity="0.9"/>
+      <text x="0" y="1" font-family="'SF Mono', monospace" font-size="10" fill="#0f172a" text-anchor="middle" font-weight="600">A</text>
+    </g>
+    <text x="0" y="-28" font-family="'SF Pro Display', sans-serif" font-size="12" fill="#60a5fa" text-anchor="middle" font-weight="600">Aphasia Guard</text>
+    <text x="0" y="-16" font-family="'SF Pro Display', sans-serif" font-size="8" fill="#60a5fa" text-anchor="middle" opacity="0.7">Speech quality</text>
+  </g>
+  
+  <!-- PELM Memory (right) -->
+  <g transform="translate(900, 300)">
+    <g filter="url(#glow)">
+      <rect x="-60" y="-20" width="120" height="40" rx="8" fill="#475569" opacity="0.9"/>
+      <!-- Memory grid icon -->
+      <g opacity="0.9">
+        <rect x="-20" y="-8" width="8" height="8" fill="#f472b6" opacity="0.8"/>
+        <rect x="-10" y="-8" width="8" height="8" fill="#f472b6" opacity="0.6"/>
+        <rect x="0" y="-8" width="8" height="8" fill="#f472b6" opacity="0.4"/>
+        <rect x="10" y="-8" width="8" height="8" fill="#f472b6" opacity="0.7"/>
+        <rect x="-20" y="2" width="8" height="8" fill="#f472b6" opacity="0.5"/>
+        <rect x="-10" y="2" width="8" height="8" fill="#f472b6" opacity="0.9"/>
+        <rect x="0" y="2" width="8" height="8" fill="#f472b6" opacity="0.6"/>
+        <rect x="10" y="2" width="8" height="8" fill="#f472b6" opacity="0.4"/>
+      </g>
+    </g>
+    <text x="0" y="-28" font-family="'SF Pro Display', sans-serif" font-size="12" fill="#f472b6" text-anchor="middle" font-weight="600">PELM</text>
+    <text x="0" y="-16" font-family="'SF Pro Display', sans-serif" font-size="8" fill="#f472b6" text-anchor="middle" opacity="0.7">20K capacity</text>
+  </g>
+  
+  <!-- Connection lines from LLM to components (subtle) -->
+  <g opacity="0.2" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-dasharray="4,4">
+    <line x1="600" y1="250" x2="600" y2="180"/>
+    <line x1="600" y1="350" x2="600" y2="420"/>
+    <line x1="550" y1="300" x2="360" y2="300"/>
+    <line x1="650" y1="300" x2="840" y2="300"/>
+  </g>
+  
+  <!-- Data flow indicators (animated) -->
   <g opacity="0.4">
-    <circle cx="50" cy="50" r="2" fill="#64ffda">
-      <animate attributeName="opacity" values="0.2;0.8;0.2" dur="3s" repeatCount="indefinite"/>
+    <circle cx="600" cy="220" r="3" fill="#34d399">
+      <animate attributeName="cy" values="220;180;220" dur="2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2s" repeatCount="indefinite"/>
     </circle>
-    <circle cx="1150" cy="80" r="2" fill="#a855f7">
-      <animate attributeName="opacity" values="0.8;0.2;0.8" dur="4s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="100" cy="550" r="2" fill="#00d4ff">
-      <animate attributeName="opacity" values="0.5;1;0.5" dur="2.5s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="1100" cy="520" r="2" fill="#f472b6">
-      <animate attributeName="opacity" values="0.3;0.9;0.3" dur="3.5s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="600" cy="50" r="2" fill="#34d399">
-      <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="300" cy="100" r="1.5" fill="#64ffda">
-      <animate attributeName="opacity" values="0.2;0.7;0.2" dur="4s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="900" cy="550" r="1.5" fill="#a855f7">
-      <animate attributeName="opacity" values="0.6;0.2;0.6" dur="3s" repeatCount="indefinite"/>
+    <circle cx="600" cy="380" r="3" fill="#94a3b8">
+      <animate attributeName="cy" values="380;420;380" dur="2.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2.5s" repeatCount="indefinite"/>
     </circle>
   </g>
   
-  <!-- Version badge -->
-  <g transform="translate(1080, 20)">
-    <rect x="0" y="0" width="70" height="24" rx="12" fill="#112240" stroke="#64ffda" stroke-width="1" opacity="0.8"/>
-    <text x="35" y="16" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="11" fill="#64ffda" font-weight="600">v1.x β</text>
+  <!-- Key feature labels at bottom -->
+  <g transform="translate(600, 560)" opacity="0.7">
+    <text x="0" y="0" font-family="'SF Pro Display', sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle" font-weight="500" letter-spacing="1">
+      <tspan fill="#60a5fa">29.37 MB Fixed Memory</tspan>
+      <tspan dx="20">•</tspan>
+      <tspan dx="20" fill="#34d399">Adaptive Safety</tspan>
+      <tspan dx="20">•</tspan>
+      <tspan dx="20" fill="#a78bfa">Neurobiologically-Inspired</tspan>
+      <tspan dx="20">•</tspan>
+      <tspan dx="20" fill="#f472b6">Production-Ready</tspan>
+    </text>
   </g>
   
-  <!-- Brain icon decoration -->
-  <text x="50" y="35" font-size="30" opacity="0.8">🧠</text>
+  <!-- Corner accent decorations -->
+  <g opacity="0.15">
+    <circle cx="50" cy="50" r="3" fill="#60a5fa"/>
+    <circle cx="1150" cy="50" r="3" fill="#f472b6"/>
+    <circle cx="50" cy="550" r="3" fill="#34d399"/>
+    <circle cx="1150" cy="550" r="3" fill="#a78bfa"/>
+  </g>
 </svg>
