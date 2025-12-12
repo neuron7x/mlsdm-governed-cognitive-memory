@@ -1,0 +1,78 @@
+name: CI Gate Check
+# Optional workflow demonstrating CI Performance & Resilience Gate integration
+# Rename to ci-gate-check.yml to enable
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+permissions:
+  contents: read
+  pull-requests: write  # For posting comments
+
+jobs:
+  ci-gate-analysis:
+    name: CI Performance & Resilience Gate
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install requests
+      
+      - name: Run CI Gate Analysis
+        id: gate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/ci_perf_resilience_gate.py \
+            --pr-number ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --output markdown > gate-report.md
+          
+          # Capture exit code
+          EXIT_CODE=$?
+          echo "exit_code=${EXIT_CODE}" >> $GITHUB_OUTPUT
+          
+          # Show report in workflow log
+          echo "=== CI Gate Report ==="
+          cat gate-report.md
+          
+          # Exit with gate's exit code (0=safe, 1=not ready, 2=risk)
+          exit ${EXIT_CODE}
+      
+      - name: Upload Gate Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-gate-report
+          path: gate-report.md
+          retention-days: 30
+      
+      - name: Post Report as Comment (Optional)
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('gate-report.md', 'utf8');
+            const exitCode = '${{ steps.gate.outputs.exit_code }}';
+            
+            const verdict = exitCode === '0' ? '✅ SAFE TO MERGE' : 
+                           exitCode === '1' ? '❌ DO NOT MERGE YET' : 
+                           '⚠️ MERGE WITH CAUTION';
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## ${verdict}\n\n${report}`
+            });

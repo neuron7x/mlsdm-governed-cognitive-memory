@@ -273,6 +273,62 @@ python scripts/test_security_features.py
 
 ---
 
+### `scripts/ci_perf_resilience_gate.py`
+
+**NEW**: CI Performance & Resilience Gate for automated PR risk assessment.
+
+Analyzes Pull Requests to classify risk and determine if performance/resilience tests are required before merge.
+
+**Usage:**
+```bash
+# Analyze a PR by URL
+python scripts/ci_perf_resilience_gate.py --pr-url https://github.com/neuron7x/mlsdm/pull/231
+
+# Analyze by PR number
+python scripts/ci_perf_resilience_gate.py --pr-number 231 --repo neuron7x/mlsdm
+
+# With authentication (higher API rate limits)
+export GITHUB_TOKEN=your_token
+python scripts/ci_perf_resilience_gate.py --pr-number 231 --repo neuron7x/mlsdm
+
+# JSON output for CI integration
+python scripts/ci_perf_resilience_gate.py --pr-url <url> --output json
+```
+
+**Features:**
+- **Risk Classification**: Automatically classifies PRs as GREEN/YELLOW/RED based on changed files
+- **CI Status Inspection**: Verifies that appropriate performance and resilience tests have run
+- **Merge Verdicts**: Provides clear SAFE_TO_MERGE_NOW or DO_NOT_MERGE_YET verdicts
+- **Concrete Actions**: Lists specific steps needed before merge (e.g., "Add 'perf' label to trigger tests")
+- **SLO Improvements**: Suggests up to 3 improvements for CI workflows
+
+**Risk Modes:**
+- **GREEN_LIGHT**: Documentation or non-core changes (base jobs sufficient)
+- **YELLOW_CRITICAL_PATH**: Moderate critical changes (requires Fast Resilience + Performance & SLO)
+- **RED_HIGH_RISK_OR_RELEASE**: High risk or release PRs (requires all three resilience/performance jobs)
+
+**Exit Codes:**
+- `0`: SAFE_TO_MERGE_NOW
+- `1`: DO_NOT_MERGE_YET
+- `2`: MERGE_ONLY_IF_YOU_CONSCIOUSLY_ACCEPT_RISK
+
+**Documentation:** See [docs/CI_PERF_RESILIENCE_GATE.md](docs/CI_PERF_RESILIENCE_GATE.md) for full details.
+
+**Example Output:**
+```markdown
+## Section 1: MODE_CLASSIFICATION
+Mode: YELLOW_CRITICAL_PATH
+- Moderate core critical changes detected (2 critical, 1 non-core)
+
+## Section 4: MERGE_VERDICT
+❌ DO_NOT_MERGE_YET
+Required Actions:
+1. Add 'perf' or 'resilience' label to PR to trigger required tests
+2. OR manually run 'perf-resilience' workflow via workflow_dispatch
+```
+
+---
+
 ## Benchmarks
 
 ### `benchmarks/benchmark_fractal_pelm_gpu.py`
