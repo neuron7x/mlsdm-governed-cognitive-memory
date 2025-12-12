@@ -500,6 +500,35 @@ Look for:
 - ⚠️ Warning signs for flaky tests
 - ❌ Red X's for failures
 
+## CI Performance & Resilience Gate
+
+**New Tool:** Automated PR risk assessment and merge verdict system.
+
+The CI Performance & Resilience Gate (`scripts/ci_perf_resilience_gate.py`) analyzes PRs to ensure critical performance and resilience tests run before merge.
+
+**Features:**
+- Automatic risk classification (GREEN/YELLOW/RED)
+- CI status verification
+- Clear merge verdicts with required actions
+- SLO/CI improvement suggestions
+
+**Usage:**
+```bash
+# Analyze a PR
+python scripts/ci_perf_resilience_gate.py --pr-url https://github.com/neuron7x/mlsdm/pull/231
+
+# With authentication (higher rate limits)
+export GITHUB_TOKEN=your_token
+python scripts/ci_perf_resilience_gate.py --pr-number 231 --repo neuron7x/mlsdm
+```
+
+**When to Use:**
+- Before merging any PR that touches core code
+- For release PRs (requires full validation)
+- When unsure if perf/resilience tests are needed
+
+**Documentation:** [docs/CI_PERF_RESILIENCE_GATE.md](docs/CI_PERF_RESILIENCE_GATE.md)
+
 ## Support
 
 - **CI Issues**: [GitHub Issues](https://github.com/neuron7x/mlsdm/issues)
