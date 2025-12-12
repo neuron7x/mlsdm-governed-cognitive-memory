@@ -66,9 +66,10 @@ jobs:
             const report = fs.readFileSync('gate-report.md', 'utf8');
             const exitCode = '${{ steps.gate.outputs.exit_code }}';
 
-            const verdict = exitCode === '0' ? '✅ SAFE TO MERGE' :
-                           exitCode === '1' ? '❌ DO NOT MERGE YET' :
-                           '⚠️ MERGE WITH CAUTION';
+            const verdict =
+              exitCode === '0' ? '✅ SAFE TO MERGE' :
+              exitCode === '1' ? '❌ DO NOT MERGE YET' :
+              '⚠️ MERGE WITH CAUTION';
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
