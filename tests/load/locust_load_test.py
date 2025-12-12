@@ -17,6 +17,9 @@ from typing import Any
 
 import numpy as np
 import psutil
+import pytest
+
+pytest.importorskip("locust", reason="locust (and zope.event dependency) required for load tests")
 from locust import HttpUser, TaskSet, between, events, task
 from locust.runners import MasterRunner
 
