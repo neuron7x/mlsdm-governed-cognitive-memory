@@ -14,6 +14,10 @@ import logging
 from io import StringIO
 
 import pytest
+
+# Skip all tests in this module if opentelemetry is not available
+pytest.importorskip("opentelemetry")
+
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 

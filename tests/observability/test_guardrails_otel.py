@@ -13,6 +13,10 @@ Coverage:
 from __future__ import annotations
 
 import pytest
+
+# Skip all tests in this module if opentelemetry is not available
+pytest.importorskip("opentelemetry")
+
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
