@@ -17,6 +17,10 @@ on:
       - "scripts/run_aphasia_eval.py"
       - ".github/workflows/aphasia-ci.yml"
 
+# Least privilege: read-only access (Invariant A, STRIDE: Elevation of Privilege)
+permissions:
+  contents: read
+
 jobs:
   aphasia-neurolang:
     runs-on: ubuntu-latest
