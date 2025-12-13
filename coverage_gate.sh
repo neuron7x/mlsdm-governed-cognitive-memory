@@ -23,8 +23,9 @@
 set -euo pipefail
 
 # Default coverage threshold (can be overridden via environment variable)
-# Current baseline with unit+state tests is ~71%, set to 68% for headroom
-COVERAGE_MIN="${COVERAGE_MIN:-68}"
+# Set to match CI gate threshold for consistency
+# CI workflow uses --cov-fail-under=65 in ci-neuro-cognitive-engine.yml
+COVERAGE_MIN="${COVERAGE_MIN:-65}"
 
 # Additional pytest arguments (can be extended via environment variable)
 PYTEST_ARGS="${PYTEST_ARGS:-}"

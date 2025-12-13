@@ -28,7 +28,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -73,6 +72,7 @@ dev = [
     "httpx>=0.27.0",
     "types-PyYAML>=6.0.0",
     "types-requests>=2.31.0",
+    "sentence-transformers>=3.0.0",  # Include embeddings in dev for full testing
 ]
 docs = [
     "sphinx>=7.0.0",
@@ -91,10 +91,10 @@ visualization = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/neuron7x/mlsdm-governed-cognitive-memory"
-Repository = "https://github.com/neuron7x/mlsdm-governed-cognitive-memory"
-Documentation = "https://github.com/neuron7x/mlsdm-governed-cognitive-memory/blob/main/DOCUMENTATION_INDEX.md"
-"Bug Tracker" = "https://github.com/neuron7x/mlsdm-governed-cognitive-memory/issues"
+Homepage = "https://github.com/neuron7x/mlsdm"
+Repository = "https://github.com/neuron7x/mlsdm"
+Documentation = "https://github.com/neuron7x/mlsdm/blob/main/DOCUMENTATION_INDEX.md"
+Issues = "https://github.com/neuron7x/mlsdm/issues"
 
 [project.scripts]
 mlsdm = "mlsdm.cli:main"

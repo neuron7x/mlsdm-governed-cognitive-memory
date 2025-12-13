@@ -35,12 +35,25 @@ pip-audit --requirement requirements.txt --strict
 - `lint`: Code linting (ruff) and type checking (mypy)
 - `security`: Dependency vulnerability scanning (pip-audit) - **BLOCKING GATE**
 - `test`: Unit and integration tests (Python 3.10, 3.11)
-- `coverage`: Code coverage gate with 65% threshold (current coverage: ~68%)
+- `coverage`: Code coverage gate with **65% threshold** (current coverage: ~71%)
 - `e2e-tests`: End-to-end integration tests
 - `effectiveness-validation`: Validate cognitive system metrics
 - `benchmarks`: Performance benchmarks with SLO validation
 - `neuro-engine-eval`: Sapolsky cognitive safety evaluation (informational, non-blocking)
 - `all-ci-passed`: Gate job requiring all critical checks (excludes neuro-engine-eval)
+
+**Reproduce coverage locally:**
+```bash
+# Run tests with coverage (matches CI gate)
+pytest --cov=src/mlsdm --cov-report=xml --cov-report=term-missing \
+  --cov-fail-under=65 --ignore=tests/load -m "not slow and not benchmark" -v
+
+# Or use the coverage script
+./coverage_gate.sh
+
+# Or use Make
+make cov
+```
 
 **When to modify:**
 - Adding new test suites

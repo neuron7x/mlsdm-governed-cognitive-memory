@@ -3,7 +3,7 @@
 **Document Version:** 1.0.0
 **Project Version:** 1.0.0
 **Last Updated:** November 2025
-**Minimum Coverage:** 90%
+**Minimum Coverage:** 65% (CI gate threshold)
 
 Thank you for your interest in contributing to MLSDM Governed Cognitive Memory! This document provides comprehensive guidelines and instructions for contributors.
 
@@ -109,9 +109,13 @@ make type
 bandit -r src/mlsdm --severity-level high --confidence-level high
 pip-audit --requirement requirements.txt --strict
 
-# Run tests with coverage
+# Run tests with coverage (matches CI gate)
 make cov
-# Or: pytest --ignore=tests/load --cov=src --cov-report=html --cov-report=term-missing
+# Or: pytest --cov=src/mlsdm --cov-report=xml --cov-report=term-missing \
+#     --cov-fail-under=65 --ignore=tests/load -m "not slow and not benchmark" -v
+
+# Or use coverage script
+./coverage_gate.sh
 
 # Show all available commands
 make help
