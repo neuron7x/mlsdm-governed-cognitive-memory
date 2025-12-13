@@ -119,8 +119,6 @@ make help
 
 **⚠️ Security Note:** Security checks are **BLOCKING GATES** in CI. Your PR will be blocked if security issues are found. See [docs/CI_SECURITY_GATING.md](docs/CI_SECURITY_GATING.md) for details.
 
-**⚠️ Security Note:** Security checks are **BLOCKING GATES** in CI. Your PR will be blocked if security issues are found. See [docs/CI_SECURITY_GATING.md](docs/CI_SECURITY_GATING.md) for details.
-
 ## Development Workflow
 
 ### 1. Create a Feature Branch
