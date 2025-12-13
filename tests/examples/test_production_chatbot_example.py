@@ -19,11 +19,12 @@ def test_production_chatbot_demo_mode():
     assert example_path.exists(), f"Example not found: {example_path}"
 
     # Run the example in demo mode with a timeout
+    # 30 second timeout is sufficient for smoke test
     result = subprocess.run(
         [sys.executable, str(example_path)],
         capture_output=True,
         text=True,
-        timeout=60,
+        timeout=30,
     )
 
     # Check that it ran successfully

@@ -108,7 +108,7 @@ def main() -> int:
     parser.add_argument(
         "--baseline",
         type=Path,
-        default=Path(__file__).parent / "baseline.json",
+        default=Path(__file__).parent.parent / "benchmarks" / "baseline.json",
         help="Path to baseline JSON file (default: benchmarks/baseline.json)",
     )
     parser.add_argument(
