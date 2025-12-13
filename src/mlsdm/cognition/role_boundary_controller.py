@@ -58,7 +58,7 @@ class BoundaryViolationType(str, Enum):
 
 class TaskPriority(str, Enum):
     """Priority levels for decision conflicts.
-    
+
     Note: These priorities are currently documented for reference and enforced
     implicitly in the controller logic. Future versions may use these explicitly
     for configurable priority-based decision making.
