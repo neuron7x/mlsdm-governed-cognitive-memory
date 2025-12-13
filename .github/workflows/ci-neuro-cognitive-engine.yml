@@ -371,6 +371,9 @@ jobs:
     name: Cognitive Safety Evaluation
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # INFORMATIONAL: Sapolsky evaluation suite is research/exploratory
+    # This validates cognitive safety but is not a hard gate for CI
+    # Failures here indicate areas for research/improvement, not blocking issues
     continue-on-error: true
     env:
       DISABLE_RATE_LIMIT: "1"
@@ -402,6 +405,8 @@ jobs:
       - name: Run Sapolsky Validation Suite evaluation
         run: |
           python examples/run_sapolsky_eval.py --output sapolsky_eval_results.json --verbose
+        # INFORMATIONAL: Evaluation script may fail for research/experimental features
+        # Does not impact core functionality
         continue-on-error: true
 
       - name: Upload evaluation results

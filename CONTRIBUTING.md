@@ -105,6 +105,10 @@ make lint
 make type
 # Or: mypy src/mlsdm
 
+# Run security checks (CRITICAL - these are blocking gates in CI)
+bandit -r src/mlsdm --severity-level high --confidence-level high
+pip-audit --requirement requirements.txt --strict
+
 # Run tests with coverage
 make cov
 # Or: pytest --ignore=tests/load --cov=src --cov-report=html --cov-report=term-missing
@@ -112,6 +116,8 @@ make cov
 # Show all available commands
 make help
 ```
+
+**⚠️ Security Note:** Security checks are **BLOCKING GATES** in CI. Your PR will be blocked if security issues are found. See [docs/CI_SECURITY_GATING.md](docs/CI_SECURITY_GATING.md) for details.
 
 ## Development Workflow
 

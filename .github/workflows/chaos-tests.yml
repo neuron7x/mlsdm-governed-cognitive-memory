@@ -49,18 +49,24 @@ jobs:
         if: ${{ github.event.inputs.test_category == 'all' || github.event.inputs.test_category == 'memory' || github.event_name == 'schedule' }}
         run: |
           pytest tests/chaos/test_memory_pressure.py -v -m chaos --tb=short --junitxml=chaos-memory-results.xml
+        # INFORMATIONAL: Chaos tests are exploratory and validate resilience, not correctness
+        # Failures indicate areas for improvement but should not block deployment
         continue-on-error: true
 
       - name: Run chaos tests - Slow LLM
         if: ${{ github.event.inputs.test_category == 'all' || github.event.inputs.test_category == 'llm' || github.event_name == 'schedule' }}
         run: |
           pytest tests/chaos/test_slow_llm.py -v -m chaos --tb=short --junitxml=chaos-llm-results.xml
+        # INFORMATIONAL: Chaos tests are exploratory and validate resilience, not correctness
+        # Failures indicate areas for improvement but should not block deployment
         continue-on-error: true
 
       - name: Run chaos tests - Network Timeout
         if: ${{ github.event.inputs.test_category == 'all' || github.event.inputs.test_category == 'network' || github.event_name == 'schedule' }}
         run: |
           pytest tests/chaos/test_network_timeout.py -v -m chaos --tb=short --junitxml=chaos-network-results.xml
+        # INFORMATIONAL: Chaos tests are exploratory and validate resilience, not correctness
+        # Failures indicate areas for improvement but should not block deployment
         continue-on-error: true
 
       - name: Upload test results

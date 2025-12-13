@@ -525,6 +525,8 @@ jobs:
           else
             echo "TEST_PYPI_API_TOKEN not configured, skipping TestPyPI upload"
           fi
+        # INFORMATIONAL: TestPyPI publishing is optional and should not block releases
+        # The package has already passed all security and quality gates
         continue-on-error: true
 
   # Security Scan (after Docker build)
@@ -544,10 +546,15 @@ jobs:
           image-ref: ghcr.io/${{ github.repository_owner }}/mlsdm-neuro-engine:latest
           format: 'sarif'
           output: 'trivy-results.sarif'
-        continue-on-error: true
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'  # Fail on vulnerabilities
+        # SECURITY GATE: This scan blocks releases if critical/high vulnerabilities found
+        # exit-code: '1' + severity filter ensures non-zero exit on CRITICAL/HIGH findings only
 
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
+        # INFORMATIONAL: Upload failures should not block the workflow
+        # The actual security scan already passed/failed above
         continue-on-error: true
