@@ -6,6 +6,22 @@
 
 MLSDM uses GitHub Actions for continuous integration and deployment. The CI pipeline is designed to ensure code quality, security, and reliability before changes are merged or released.
 
+## ⚠️ Security Gates
+
+**CRITICAL:** MLSDM implements strict security gating. Security checks are **BLOCKING** and will prevent merges/releases if they fail.
+
+See **[docs/CI_SECURITY_GATING.md](docs/CI_SECURITY_GATING.md)** for complete security gate policy, including:
+- Which security checks block CI
+- How to run security checks locally
+- What to do when a security gate fails
+- Justification for informational checks
+
+**Quick security check before pushing:**
+```bash
+bandit -r src/mlsdm --severity-level high --confidence-level high
+pip-audit --requirement requirements.txt --strict
+```
+
 ## CI Workflows
 
 ### Core CI Workflows (Run on Every PR/Push)
@@ -17,13 +33,13 @@ MLSDM uses GitHub Actions for continuous integration and deployment. The CI pipe
 
 **Jobs:**
 - `lint`: Code linting (ruff) and type checking (mypy)
-- `security`: Dependency vulnerability scanning (pip-audit)
+- `security`: Dependency vulnerability scanning (pip-audit) - **BLOCKING GATE**
 - `test`: Unit and integration tests (Python 3.10, 3.11)
 - `coverage`: Code coverage gate with 65% threshold (current coverage: ~68%)
 - `e2e-tests`: End-to-end integration tests
 - `effectiveness-validation`: Validate cognitive system metrics
 - `benchmarks`: Performance benchmarks with SLO validation
-- `neuro-engine-eval`: Sapolsky cognitive safety evaluation (continue-on-error)
+- `neuro-engine-eval`: Sapolsky cognitive safety evaluation (informational, non-blocking)
 - `all-ci-passed`: Gate job requiring all critical checks (excludes neuro-engine-eval)
 
 **When to modify:**
@@ -61,13 +77,16 @@ MLSDM uses GitHub Actions for continuous integration and deployment. The CI pipe
 
 #### 4. **SAST Security Scan** (`sast-scan.yml`)
 **Purpose:** Static Application Security Testing
-**Triggers:** Push to main/feature branches, PRs
+**Triggers:** Push to main, PRs
 **Duration:** ~5-10 minutes
 
 **Jobs:**
-- Bandit security scanning
+- Bandit security scanning (BLOCKING GATE)
+- Semgrep SAST with security rulesets (BLOCKING GATE)
 - Dependency audits
 - Secret detection
+
+**Security Gate Policy:** This workflow implements critical security gates. See [docs/CI_SECURITY_GATING.md](docs/CI_SECURITY_GATING.md) for details.
 
 **When to modify:**
 - Adding new security checks

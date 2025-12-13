@@ -154,7 +154,9 @@ jobs:
             -v \
             --tb=short \
             --junit-xml=resilience-comprehensive-results.xml
-        continue-on-error: true  # Don't block on slow tests
+        # INFORMATIONAL: Comprehensive/slow tests run only nightly
+        # These are for long-term monitoring and should not block CI
+        continue-on-error: true
 
       - name: Run comprehensive performance tests
         run: |
@@ -165,7 +167,9 @@ jobs:
             --junit-xml=perf-comprehensive-results.xml
         env:
           DISABLE_RATE_LIMIT: "1"
-        continue-on-error: true  # Don't block on slow tests
+        # INFORMATIONAL: Comprehensive/slow tests run only nightly
+        # These are for long-term monitoring and should not block CI
+        continue-on-error: true
 
       - name: Upload comprehensive results
         if: always()
