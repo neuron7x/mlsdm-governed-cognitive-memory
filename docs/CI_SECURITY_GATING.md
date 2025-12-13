@@ -20,6 +20,16 @@ This document defines the security gating policy for MLSDM's CI/CD pipeline. Sec
 
 These jobs **BLOCK** merges and releases if they fail:
 
+### Summary Table
+
+| Tool | Workflow | Job/Step | Gate Type | Status |
+|------|----------|----------|-----------|--------|
+| **Bandit (HIGH)** | `sast-scan.yml` | `bandit` / Check for high severity issues | BLOCKING | ✅ No `continue-on-error` |
+| **Semgrep** | `sast-scan.yml` | `semgrep` / Run Semgrep | BLOCKING | ✅ No `continue-on-error` |
+| **pip-audit** | `ci-neuro-cognitive-engine.yml` | `security` / Run pip-audit | BLOCKING | ✅ No `continue-on-error` |
+| **pip-audit** | `prod-gate.yml` | `preflight` / Security vulnerability scan | BLOCKING | ✅ No `continue-on-error` |
+| **Trivy** | `release.yml` | `security-scan` / Run Trivy | BLOCKING | ✅ No `continue-on-error` |
+
 ### 1. SAST (Static Application Security Testing)
 
 **Workflow:** `.github/workflows/sast-scan.yml`
@@ -73,6 +83,16 @@ These jobs **BLOCK** merges and releases if they fail:
 ## Informational Checks
 
 These checks run but **DO NOT BLOCK** CI (with justification):
+
+### Summary Table
+
+| Check | Workflow | Job/Step | Justification | Status |
+|-------|----------|----------|---------------|--------|
+| **Chaos Tests** | `chaos-tests.yml` | All chaos test steps | Exploratory resilience testing | ✅ `continue-on-error: true` |
+| **Cognitive Safety Eval** | `ci-neuro-cognitive-engine.yml` | `neuro-engine-eval` | Research-grade validation | ✅ `continue-on-error: true` |
+| **Nightly Comprehensive Tests** | `perf-resilience.yml` | `resilience-comprehensive` | Long-running monitoring | ✅ `continue-on-error: true` |
+| **TestPyPI Publishing** | `release.yml` | `publish-to-testpypi` | Optional publishing step | ✅ `continue-on-error: true` |
+| **SARIF Uploads** | All workflows | Upload SARIF steps | Reporting after scan completes | ✅ `continue-on-error: true` |
 
 ### 1. Chaos Engineering Tests
 **Workflow:** `.github/workflows/chaos-tests.yml`
