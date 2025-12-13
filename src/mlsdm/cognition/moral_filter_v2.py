@@ -37,7 +37,7 @@ class MoralFilterV2:
             initial_threshold = MORAL_FILTER_DEFAULTS.threshold if MORAL_FILTER_DEFAULTS else 0.50
 
         # Validate input
-        if not isinstance(initial_threshold, (int, float)):
+        if not isinstance(initial_threshold, int | float):
             raise TypeError(
                 f"initial_threshold must be a number, got {type(initial_threshold).__name__}"
             )

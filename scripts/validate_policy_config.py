@@ -77,7 +77,7 @@ class PolicyValidator:
             self.errors.append(f"Policy file must contain a mapping: {path}")
             return None
 
-        return cast(dict[str, Any], result)
+        return cast("dict[str, Any]", result)
 
     def _validate_security_workflows(self, policy: dict[str, Any]) -> None:
         """Validate that required CI workflows exist."""

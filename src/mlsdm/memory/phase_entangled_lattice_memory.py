@@ -167,7 +167,7 @@ class PhaseEntangledLatticeMemory:
 
             # Validate vector values (check for NaN/inf)
             for i, val in enumerate(vector):
-                if not isinstance(val, (int, float)):
+                if not isinstance(val, int | float):
                     raise TypeError(
                         f"vector element at index {i} must be numeric, got {type(val).__name__}"
                     )
@@ -178,7 +178,7 @@ class PhaseEntangledLatticeMemory:
                     )
 
             # Validate phase type and range
-            if not isinstance(phase, (int, float)):
+            if not isinstance(phase, int | float):
                 raise TypeError(f"phase must be numeric, got {type(phase).__name__}")
             if math.isnan(phase) or math.isinf(phase):
                 raise ValueError(
@@ -285,7 +285,7 @@ class PhaseEntangledLatticeMemory:
                     )
 
                 # Validate phase type and range
-                if not isinstance(phase, (int, float)):
+                if not isinstance(phase, int | float):
                     raise TypeError(
                         f"phase at index {i} must be numeric, got {type(phase).__name__}"
                     )

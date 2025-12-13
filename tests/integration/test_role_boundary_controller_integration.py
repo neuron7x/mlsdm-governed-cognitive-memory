@@ -151,9 +151,7 @@ class TestControllerIntegration:
         result = controller.interpret_and_bound(request)
 
         # Should have resource constraint mentioning the limit
-        resource_constraints = [
-            c for c in result.constraints if c.constraint_type == "resource"
-        ]
+        resource_constraints = [c for c in result.constraints if c.constraint_type == "resource"]
         assert len(resource_constraints) > 0
         assert str(max_items) in resource_constraints[0].description
 

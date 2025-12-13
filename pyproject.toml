@@ -119,6 +119,8 @@ check_untyped_defs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 no_implicit_optional = true
+# Exclude sdk and examples directories which are separate modules
+exclude = ["sdk", "examples"]
 
 # Tests in src/mlsdm/tests should be allowed to have untyped definitions
 [[tool.mypy.overrides]]

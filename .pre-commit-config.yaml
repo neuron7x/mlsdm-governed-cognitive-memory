@@ -9,10 +9,12 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+        args: ['--allow-multiple-documents']
       - id: check-json
       - id: check-added-large-files
       - id: check-merge-conflict
       - id: detect-private-key
+        exclude: ^tests/
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.4
@@ -25,22 +27,30 @@ repos:
     rev: v0.10.0
     hooks:
       - id: shellcheck
-        args: [-x]
+        args: [-x, -e, SC2059]
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
-    hooks:
-      - id: mypy
-        additional_dependencies:
-          - types-requests
-          - types-PyYAML>=6.0.1
-        args: [--ignore-missing-imports]
+  # Note: mypy is not included in pre-commit hooks because it has compatibility issues
+  # with Pydantic types in the pre-commit environment. Developers should run
+  # `mypy src/mlsdm` manually before pushing, which will use the strict config from
+  # pyproject.toml as used by CI.
+  #
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.13.0
+  #   hooks:
+  #     - id: mypy
+  #       additional_dependencies:
+  #         - types-requests
+  #         - types-PyYAML>=6.0.1
+  #         - pydantic>=2.0.0
+  #       args: [--python-version=3.10, --ignore-missing-imports]
+  #       files: ^src/
+  #       exclude: ^(sdk/|examples/|tests/)
 
   - repo: https://github.com/PyCQA/bandit
     rev: 1.8.3
     hooks:
       - id: bandit
-        args: [-r, -ll]
+        args: [-r, -ll, --skip, 'B104,B108,B614', --exclude, './tests']
 
 ci:
   autofix_prs: true

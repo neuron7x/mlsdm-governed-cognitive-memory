@@ -212,7 +212,10 @@ class TestRoleBoundaryController:
         result = controller.interpret_and_bound(request)
 
         assert result.rejected is True
-        assert "ethical" in result.rejection_reason.lower() or "violate" in result.rejection_reason.lower()
+        assert (
+            "ethical" in result.rejection_reason.lower()
+            or "violate" in result.rejection_reason.lower()
+        )
 
     def test_scope_too_broad_detection(self) -> None:
         """Test detection of overly broad scope."""
@@ -238,7 +241,10 @@ class TestRoleBoundaryController:
         result = controller.interpret_and_bound(request)
 
         assert result.rejected is True
-        assert "ambiguity" in result.rejection_reason.lower() or "technical" in result.rejection_reason.lower()
+        assert (
+            "ambiguity" in result.rejection_reason.lower()
+            or "technical" in result.rejection_reason.lower()
+        )
 
     def test_constraint_generation(self) -> None:
         """Test that appropriate constraints are generated."""
@@ -479,9 +485,7 @@ class TestControllerEdgeCases:
         result = controller.interpret_and_bound(request)
 
         # Should have resource constraint mentioning the limit
-        resource_constraints = [
-            c for c in result.constraints if c.constraint_type == "resource"
-        ]
+        resource_constraints = [c for c in result.constraints if c.constraint_type == "resource"]
         assert len(resource_constraints) > 0
         assert "3" in resource_constraints[0].description
 

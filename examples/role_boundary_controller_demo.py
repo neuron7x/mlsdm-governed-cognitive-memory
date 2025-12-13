@@ -37,7 +37,7 @@ def example_valid_request() -> None:
     print("INPUT REQUEST:")
     print(f"  {request.raw_request}")
     print(f"\nRESULT: {'✓ ACCEPTED' if not result.rejected else '✗ REJECTED'}")
-    print(f"\nInterpreted Task:")
+    print("\nInterpreted Task:")
     print(f"  {result.interpreted_task}")
     print(f"\nConstraints ({len(result.constraints)}):")
     for constraint in result.constraints[:3]:  # Show first 3
@@ -66,12 +66,12 @@ def example_security_violation() -> None:
     print(f"\nRESULT: {'✓ ACCEPTED' if not result.rejected else '✗ REJECTED'}")
 
     if result.rejected:
-        print(f"\nRejection Reason:")
+        print("\nRejection Reason:")
         print(f"  {result.rejection_reason}")
-        print(f"\nViolations Detected:")
+        print("\nViolations Detected:")
         for violation in result.metadata.get("violations", []):
             print(f"  - {violation}")
-        print(f"\nAlternative Actions:")
+        print("\nAlternative Actions:")
         for step in result.execution_plan:
             print(f"  {step.step_number}. {step.description}")
 
@@ -94,7 +94,7 @@ def example_scope_too_broad() -> None:
     print(f"\nRESULT: {'✓ ACCEPTED' if not result.rejected else '✗ REJECTED'}")
 
     if result.rejected:
-        print(f"\nRejection Reason:")
+        print("\nRejection Reason:")
         print(f"  {result.rejection_reason}")
 
 
@@ -116,7 +116,7 @@ def example_technical_ambiguity() -> None:
     print(f"\nRESULT: {'✓ ACCEPTED' if not result.rejected else '✗ REJECTED'}")
 
     if result.rejected:
-        print(f"\nRejection Reason:")
+        print("\nRejection Reason:")
         print(f"  {result.rejection_reason}")
 
 
@@ -140,9 +140,9 @@ def example_production_mode() -> None:
     print("INPUT REQUEST:")
     print(f"  {request.raw_request}")
     print(f"\nRESULT: {'✓ ACCEPTED' if not result.rejected else '✗ REJECTED'}")
-    print(f"\nInterpreted Task:")
+    print("\nInterpreted Task:")
     print(f"  {result.interpreted_task}")
-    print(f"\nProduction Mode Constraints:")
+    print("\nProduction Mode Constraints:")
     for constraint in result.constraints:
         if constraint.constraint_type == "operational":
             print(f"  - [{constraint.severity.upper()}] {constraint.description}")
@@ -187,7 +187,7 @@ def example_with_clarifications() -> None:
     print(f"\nRESULT: {'✓ ACCEPTED' if not result.rejected else '✗ REJECTED'}")
 
     if result.clarifications_required:
-        print(f"\nClarifications Required:")
+        print("\nClarifications Required:")
         for clarification in result.clarifications_required:
             print(f"  ? {clarification}")
 
