@@ -783,10 +783,10 @@ For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE
 
 | Control | Status | Reference |
 |:--------|:-------|:----------|
-| No secrets in logs | ✅ Implemented | [SECURITY_POLICY.md](SECURITY_POLICY.md) |
-| Least-privilege CI | ✅ Implemented | [.github/workflows/](.github/workflows/) |
-| Rate limiting | ✅ 5 RPS per client | [SECURITY_IMPLEMENTATION.md](SECURITY_IMPLEMENTATION.md) |
-| Input validation | ✅ Type/range/sanitization | [SECURITY_POLICY.md](SECURITY_POLICY.md) |
+| Log sanitization | ✅ PII scrubbing | [SECURITY_GUARDRAILS.md](SECURITY_GUARDRAILS.md) |
+| Least-privilege CI | ✅ `contents: read` | [docs/CI_SECURITY_GATING.md](docs/CI_SECURITY_GATING.md) |
+| Rate limiting | ✅ 5 RPS default | [SECURITY_IMPLEMENTATION.md](SECURITY_IMPLEMENTATION.md) |
+| Input validation | ✅ Type/range/sanitization | [SECURITY_GUARDRAILS.md](SECURITY_GUARDRAILS.md) |
 | Threat model | ✅ STRIDE analysis | [THREAT_MODEL.md](THREAT_MODEL.md) |
 
 **Limitations:**
