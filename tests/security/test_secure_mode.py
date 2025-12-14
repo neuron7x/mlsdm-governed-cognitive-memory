@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 
 from mlsdm.extensions.neuro_lang_extension import (
+    TORCH_AVAILABLE,
     NeuroLangWrapper,
     is_secure_mode_enabled,
 )
@@ -171,6 +172,7 @@ def test_secure_mode_preserves_explicit_detect_disabled():
 
 
 @pytest.mark.security
+@pytest.mark.skipif(not TORCH_AVAILABLE, reason="NeuroLang training requires PyTorch")
 def test_without_secure_mode_training_works_normally():
     """Test that without secure mode, normal training/checkpoint loading works."""
     with patch.dict(os.environ, {"MLSDM_SECURE_MODE": "0"}):

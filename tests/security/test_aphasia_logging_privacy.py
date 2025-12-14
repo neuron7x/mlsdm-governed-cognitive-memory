@@ -46,6 +46,7 @@ def test_aphasia_logs_do_not_contain_prompt_text(caplog):
         dim=384,
         capacity=256,
         aphasia_detect_enabled=True,
+        neurolang_mode="disabled",
     )
 
     # Generate with a prompt containing a secret token
@@ -67,6 +68,7 @@ def test_aphasia_logs_do_not_contain_response_text(caplog):
         dim=384,
         capacity=256,
         aphasia_detect_enabled=True,
+        neurolang_mode="disabled",
     )
 
     # Generate - the response will contain SECRET_RESPONSE_TOKEN
@@ -88,6 +90,7 @@ def test_aphasia_logs_only_contain_metadata(caplog):
         capacity=256,
         aphasia_detect_enabled=True,
         aphasia_repair_enabled=True,
+        neurolang_mode="disabled",
     )
 
     _ = wrapper.generate(
@@ -132,6 +135,7 @@ def test_aphasia_logs_with_repair_do_not_leak_content(caplog):
         aphasia_detect_enabled=True,
         aphasia_repair_enabled=True,
         aphasia_severity_threshold=0.1,  # Low threshold to trigger repair
+        neurolang_mode="disabled",
     )
 
     _ = wrapper.generate(prompt=f"Explain {SECRET_PROMPT_TOKEN}", moral_value=0.7, max_tokens=50)
@@ -152,6 +156,7 @@ def test_aphasia_logs_do_not_leak_even_with_disabled_detection(caplog):
         dim=384,
         capacity=256,
         aphasia_detect_enabled=False,  # Detection disabled
+        neurolang_mode="disabled",
     )
 
     _ = wrapper.generate(
@@ -178,6 +183,7 @@ def test_multiple_generations_do_not_leak_any_secrets(caplog):
         dim=384,
         capacity=256,
         aphasia_detect_enabled=True,
+        neurolang_mode="disabled",
     )
 
     # Perform multiple generations with different secret tokens
