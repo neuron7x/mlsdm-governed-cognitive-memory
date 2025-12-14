@@ -234,6 +234,7 @@ def test_metrics_integrated_with_neurolang_wrapper(caplog):
         initial_moral_threshold=0.5,
         aphasia_detect_enabled=True,
         aphasia_repair_enabled=True,
+        neurolang_mode="disabled",
     )
 
     # Generate response (will be aphasic and repaired)
@@ -258,6 +259,7 @@ def test_no_metrics_when_detection_disabled(caplog):
         sleep_duration=1,
         initial_moral_threshold=0.5,
         aphasia_detect_enabled=False,  # Detection disabled
+        neurolang_mode="disabled",
     )
 
     _ = wrapper.generate(prompt="Test disabled detection.", moral_value=0.8, max_tokens=64)

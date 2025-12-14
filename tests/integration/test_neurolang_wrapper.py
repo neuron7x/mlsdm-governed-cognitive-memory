@@ -9,6 +9,12 @@ import numpy as np
 import pytest
 
 from mlsdm.extensions import NeuroLangWrapper
+from mlsdm.extensions.neuro_lang_extension import TORCH_AVAILABLE
+
+pytestmark = pytest.mark.skipif(
+    not TORCH_AVAILABLE,
+    reason="NeuroLang integration tests require PyTorch (mlsdm[neurolang])",
+)
 
 
 def dummy_llm(prompt: str, max_tokens: int) -> str:
