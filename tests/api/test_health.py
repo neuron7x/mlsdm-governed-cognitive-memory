@@ -9,7 +9,7 @@ Tests validate:
 """
 
 import os
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -138,15 +138,40 @@ class TestReadinessEndpoint:
         mock_controller.memory_usage_bytes.return_value = 100_000_000  # 100 MB
         mock_controller.max_memory_bytes = 1_400_000_000  # 1.4 GB
 
+        # Mock neuro engine with moral filter
+        mock_moral = MagicMock()
+        mock_moral.threshold = 0.5
+        mock_llm_wrapper = MagicMock()
+        mock_llm_wrapper.moral = mock_moral
+        mock_engine = MagicMock()
+        mock_engine._mlsdm = mock_llm_wrapper
+
         original_controller = health.get_cognitive_controller()
+        original_engine = health.get_neuro_engine()
+
         health.set_cognitive_controller(mock_controller)
+        health.set_neuro_engine(mock_engine)
 
         try:
-            response_new = client.get("/health/ready")
-            response_legacy = client.get("/health/readiness")
+            # CRITICAL FIX: Mock psutil to ensure deterministic system checks
+            with patch('psutil.virtual_memory') as mock_memory, \
+                 patch('psutil.cpu_percent') as mock_cpu:
 
-            # Both should have same status code
-            assert response_new.status_code == response_legacy.status_code
+                # Set stable, healthy values
+                mock_memory.return_value.percent = 50.0  # 50% memory usage
+                mock_memory.return_value.available = 8_000_000_000  # 8GB available
+                mock_cpu.return_value = 10.0  # 10% CPU usage
+
+                response_new = client.get("/health/ready")
+                response_legacy = client.get("/health/readiness")
+
+            # Verify identical behavior
+            assert response_new.status_code == response_legacy.status_code, \
+                f"Endpoints return different status codes: " \
+                f"/health/ready={response_new.status_code}, " \
+                f"/health/readiness={response_legacy.status_code}"
+
+            assert response_new.status_code == 200, "Both should be healthy"
 
             data_new = response_new.json()
             data_legacy = response_legacy.json()
@@ -157,6 +182,7 @@ class TestReadinessEndpoint:
             assert "components" in data_legacy
         finally:
             health.set_cognitive_controller(original_controller)
+            health.set_neuro_engine(original_engine)
 
 
 class TestReadinessWithEmergencyShutdown:

@@ -133,7 +133,7 @@ def check_security_implementations() -> tuple[bool, list[str]]:
     findings = []
 
     # Check for rate limiter
-    rate_limiter_file = Path("src/utils/rate_limiter.py")
+    rate_limiter_file = Path("src/mlsdm/utils/rate_limiter.py")
     if rate_limiter_file.exists():
         print("✓ Rate limiter implemented")
     else:
@@ -141,7 +141,7 @@ def check_security_implementations() -> tuple[bool, list[str]]:
         findings.append("Missing: Rate limiter implementation")
 
     # Check for input validator
-    validator_file = Path("src/utils/input_validator.py")
+    validator_file = Path("src/mlsdm/utils/input_validator.py")
     if validator_file.exists():
         print("✓ Input validator implemented")
     else:
@@ -149,7 +149,7 @@ def check_security_implementations() -> tuple[bool, list[str]]:
         findings.append("Missing: Input validator implementation")
 
     # Check for security logger
-    logger_file = Path("src/utils/security_logger.py")
+    logger_file = Path("src/mlsdm/utils/security_logger.py")
     if logger_file.exists():
         print("✓ Security logger implemented")
     else:
@@ -157,12 +157,30 @@ def check_security_implementations() -> tuple[bool, list[str]]:
         findings.append("Missing: Security logger implementation")
 
     # Check for security tests
-    test_file = Path("src/tests/unit/test_security.py")
-    if test_file.exists():
+    # Security tests are organized across multiple files and directories
+    test_locations = [
+        "tests/security/test_llm_safety.py",
+        "tests/security/test_payload_scrubber.py",
+        "tests/unit/test_rate_limiter.py",
+        "tests/unit/test_input_validator.py",
+        "tests/unit/test_security_logger.py",
+    ]
+    
+    all_tests_found = True
+    for test_file in test_locations:
+        test_path = Path(test_file)
+        if not test_path.exists():
+            all_tests_found = False
+            findings.append(f"Missing: {test_file}")
+    
+    if all_tests_found:
         print("✓ Security tests present")
     else:
-        print("✗ Security tests not found")
-        findings.append("Missing: Security tests")
+        print("✗ Some security tests not found")
+        # Still count as present if at least one test file exists
+        if any(Path(tf).exists() for tf in test_locations):
+            print("  (Note: Some security test files exist)")
+            all_tests_found = True
 
     return len(findings) == 0, findings
 

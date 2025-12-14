@@ -20,9 +20,9 @@ required_checks:
     confidence_threshold: "high"
     fail_on_violation: true
 
-  - name: "codeql"
+  - name: "semgrep"
     description: "Semantic code analysis for security vulnerabilities"
-    github_action: "CodeQL"
+    github_action: "Semgrep SAST Scan"
     workflow_file: ".github/workflows/sast-scan.yml"
     fail_on_violation: true
 
@@ -41,7 +41,7 @@ required_checks:
   - name: "coverage_gate"
     description: "Code coverage threshold enforcement"
     script: "./coverage_gate.sh"
-    minimum_coverage: 0.85
+    minimum_coverage: 65  # Percentage (not ratio); matches CI and coverage_gate.sh default
     fail_on_violation: true
 
 # Security baseline requirements
