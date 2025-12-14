@@ -200,3 +200,120 @@ class TestPolicyWorkflowAlignment:
                 assert check_name.lower() in job_names, (
                     f"{check_name}: Job not found in {workflow_file}"
                 )
+
+    def test_dependency_audit_workflow_exists(
+        self, repo_root: Path, security_policy: dict
+    ) -> None:
+        """Verify dependency audit workflow exists and is properly configured."""
+        required_checks = security_policy.get("required_checks", [])
+
+        # Find dependency-audit check
+        dep_audit_check = next(
+            (c for c in required_checks if c.get("name") == "dependency-audit"),
+            None
+        )
+        assert dep_audit_check is not None, "dependency-audit check not found in policy"
+
+        workflow_file = dep_audit_check.get("workflow_file")
+        assert workflow_file is not None, "dependency-audit check missing workflow_file"
+
+        workflow_path = repo_root / workflow_file
+        assert workflow_path.exists(), f"Workflow file not found: {workflow_file}"
+
+        # Verify job exists in workflow
+        with open(workflow_path, encoding="utf-8") as f:
+            workflow_content = yaml.safe_load(f)
+
+        jobs = workflow_content.get("jobs", {})
+        assert "dependency-audit" in jobs, "dependency-audit job not found in workflow"
+
+    def test_secrets_scan_workflow_exists(
+        self, repo_root: Path, security_policy: dict
+    ) -> None:
+        """Verify secrets scanning workflow exists and is properly configured."""
+        required_checks = security_policy.get("required_checks", [])
+
+        # Find secrets-scan check
+        secrets_check = next(
+            (c for c in required_checks if c.get("name") == "secrets-scan"),
+            None
+        )
+        assert secrets_check is not None, "secrets-scan check not found in policy"
+
+        workflow_file = secrets_check.get("workflow_file")
+        assert workflow_file is not None, "secrets-scan check missing workflow_file"
+
+        workflow_path = repo_root / workflow_file
+        assert workflow_path.exists(), f"Workflow file not found: {workflow_file}"
+
+        # Verify job exists in workflow
+        with open(workflow_path, encoding="utf-8") as f:
+            workflow_content = yaml.safe_load(f)
+
+        jobs = workflow_content.get("jobs", {})
+        assert "secrets-scan" in jobs, "secrets-scan job not found in workflow"
+
+    def test_workflow_permissions_are_least_privilege(self, repo_root: Path) -> None:
+        """Verify CI workflows use least-privilege permissions (no write-all)."""
+        workflows_dir = repo_root / ".github" / "workflows"
+        assert workflows_dir.exists(), "Workflows directory not found"
+
+        # Check all workflow files
+        for workflow_file in workflows_dir.glob("*.yml"):
+            with open(workflow_file, encoding="utf-8") as f:
+                content = yaml.safe_load(f)
+
+            if content is None:
+                continue
+
+            # Check top-level permissions
+            top_permissions = content.get("permissions")
+            assert top_permissions != "write-all", (
+                f"{workflow_file.name}: Workflow has write-all permissions (security risk)"
+            )
+
+            # Check job-level permissions
+            jobs = content.get("jobs", {})
+            for job_name, job_config in jobs.items():
+                if not isinstance(job_config, dict):
+                    continue
+
+                job_permissions = job_config.get("permissions")
+                assert job_permissions != "write-all", (
+                    f"{workflow_file.name}: Job '{job_name}' has write-all permissions"
+                )
+
+    def test_third_party_actions_in_sast_are_pinned(self, repo_root: Path) -> None:
+        """Verify third-party actions in sast-scan.yml are pinned to SHA."""
+        sast_workflow = repo_root / ".github" / "workflows" / "sast-scan.yml"
+        assert sast_workflow.exists(), "sast-scan.yml not found"
+
+        with open(sast_workflow, encoding="utf-8") as f:
+            content = yaml.safe_load(f)
+
+        jobs = content.get("jobs", {})
+        sha_pattern = re.compile(r"@[a-f0-9]{40}$")
+
+        third_party_actions = []
+        for job_name, job_config in jobs.items():
+            if not isinstance(job_config, dict):
+                continue
+
+            steps = job_config.get("steps", [])
+            for step in steps:
+                uses = step.get("uses", "")
+                if not uses:
+                    continue
+
+                # Skip GitHub-owned actions (actions/* and github/*)
+                if uses.startswith("actions/") or uses.startswith("github/"):
+                    continue
+
+                third_party_actions.append((job_name, uses))
+
+        # Verify each third-party action is pinned to SHA
+        for job_name, action in third_party_actions:
+            assert sha_pattern.search(action), (
+                f"Job '{job_name}': Third-party action '{action}' should be pinned to SHA "
+                "for supply-chain security"
+            )
