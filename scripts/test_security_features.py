@@ -85,77 +85,80 @@ def main(argv: list[str] | None = None) -> int:
 
     results: list[tuple[str, bool]] = []
 
-    # Test 1: Security unit tests
+    # Test 1: Rate limiter tests
     success, _ = run_command(
         [
             "python",
             "-m",
             "pytest",
-            "src/tests/unit/test_security.py",
+            "tests/unit/test_rate_limiter.py",
             "-v",
             "--tb=short",
-            "--no-cov",
-        ],
-        "Security Unit Tests",
-    )
-    results.append(("Security Unit Tests", success))
-
-    # Test 2: API tests with security features
-    success, _ = run_command(
-        [
-            "python",
-            "-m",
-            "pytest",
-            "src/tests/unit/test_api.py",
-            "-v",
-            "--tb=short",
-            "--no-cov",
-        ],
-        "API Tests with Security",
-    )
-    results.append(("API Tests", success))
-
-    # Test 3: Rate limiter tests
-    success, _ = run_command(
-        [
-            "python",
-            "-m",
-            "pytest",
-            "src/tests/unit/test_security.py::TestRateLimiter",
-            "-v",
             "--no-cov",
         ],
         "Rate Limiter Tests",
     )
-    results.append(("Rate Limiter", success))
+    results.append(("Rate Limiter Tests", success))
 
-    # Test 4: Input validator tests
+    # Test 2: Input validator tests
     success, _ = run_command(
         [
             "python",
             "-m",
             "pytest",
-            "src/tests/unit/test_security.py::TestInputValidator",
+            "tests/unit/test_input_validator.py",
             "-v",
+            "--tb=short",
             "--no-cov",
         ],
         "Input Validator Tests",
     )
-    results.append(("Input Validator", success))
+    results.append(("Input Validator Tests", success))
 
-    # Test 5: Security logger tests
+    # Test 3: Security logger tests
     success, _ = run_command(
         [
             "python",
             "-m",
             "pytest",
-            "src/tests/unit/test_security.py::TestSecurityLogger",
+            "tests/unit/test_security_logger.py",
             "-v",
+            "--tb=short",
             "--no-cov",
         ],
         "Security Logger Tests",
     )
-    results.append(("Security Logger", success))
+    results.append(("Security Logger Tests", success))
+
+    # Test 4: LLM safety gateway tests
+    success, _ = run_command(
+        [
+            "python",
+            "-m",
+            "pytest",
+            "tests/security/test_llm_safety.py",
+            "-v",
+            "--tb=short",
+            "--no-cov",
+        ],
+        "LLM Safety Tests",
+    )
+    results.append(("LLM Safety Tests", success))
+
+    # Test 5: Payload scrubber tests
+    success, _ = run_command(
+        [
+            "python",
+            "-m",
+            "pytest",
+            "tests/security/test_payload_scrubber.py",
+            "-v",
+            "--tb=short",
+            "--no-cov",
+        ],
+        "Payload Scrubber Tests",
+    )
+    results.append(("Payload Scrubber Tests", success))
 
     # Test 6: Check security files exist
     print(f"\n{'=' * 60}")
@@ -163,10 +166,14 @@ def main(argv: list[str] | None = None) -> int:
     print(f"{'=' * 60}")
 
     required_files = [
-        "src/utils/rate_limiter.py",
-        "src/utils/input_validator.py",
-        "src/utils/security_logger.py",
-        "src/tests/unit/test_security.py",
+        "src/mlsdm/utils/rate_limiter.py",
+        "src/mlsdm/utils/input_validator.py",
+        "src/mlsdm/utils/security_logger.py",
+        "tests/unit/test_rate_limiter.py",
+        "tests/unit/test_input_validator.py",
+        "tests/unit/test_security_logger.py",
+        "tests/security/test_llm_safety.py",
+        "tests/security/test_payload_scrubber.py",
         "scripts/security_audit.py",
         "SECURITY_IMPLEMENTATION.md",
         "SECURITY_POLICY.md",
