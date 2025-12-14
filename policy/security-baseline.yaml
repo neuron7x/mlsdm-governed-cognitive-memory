@@ -2,11 +2,11 @@
 # ==================================
 # Machine-readable security requirements enforced in CI/CD
 #
-# Version: 1.0.0
+# Version: 1.1.0
 # Last Updated: December 2025
 # Status: ACTIVE
 
-version: "1.0"
+version: "1.1"
 policy_name: "MLSDM Security Baseline"
 enforcement_level: "blocking"  # CI must fail if any check fails
 
@@ -23,6 +23,18 @@ required_checks:
   - name: "semgrep"
     description: "Semantic code analysis for security vulnerabilities"
     github_action: "Semgrep SAST Scan"
+    workflow_file: ".github/workflows/sast-scan.yml"
+    fail_on_violation: true
+
+  - name: "dependency-audit"
+    description: "Dependency vulnerability scanning with pip-audit"
+    github_action: "Dependency Vulnerability Scan"
+    workflow_file: ".github/workflows/sast-scan.yml"
+    fail_on_violation: true
+
+  - name: "secrets-scan"
+    description: "Secrets detection to prevent credential leakage"
+    github_action: "Secrets Scanning"
     workflow_file: ".github/workflows/sast-scan.yml"
     fail_on_violation: true
 
@@ -108,6 +120,9 @@ audit_requirements:
 integrations:
   github_required_checks:
     - "Bandit SAST Scan"
+    - "Semgrep SAST Scan"
+    - "Dependency Vulnerability Scan"
+    - "Secrets Scanning"
     - "Type Check"
     - "Lint with Ruff"
 

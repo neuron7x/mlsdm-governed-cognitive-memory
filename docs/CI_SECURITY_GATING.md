@@ -1,7 +1,7 @@
 # CI Security Gating Policy
 
-**Document Version:** 1.0.0  
-**Last Updated:** December 13, 2025  
+**Document Version:** 1.1.0  
+**Last Updated:** December 14, 2025  
 **Security Level:** Production-Grade
 
 ## Overview
@@ -25,7 +25,9 @@ These jobs **BLOCK** merges and releases if they fail:
 | Tool | Workflow | Job/Step | Gate Type | Status |
 |------|----------|----------|-----------|--------|
 | **Bandit (HIGH)** | `sast-scan.yml` | `bandit` / Check for high severity issues | BLOCKING | ✅ No `continue-on-error` |
-| **Semgrep** | `sast-scan.yml` | `semgrep` / Run Semgrep | BLOCKING | ✅ No `continue-on-error` |
+| **Semgrep (container)** | `sast-scan.yml` | `semgrep` / Run Semgrep | BLOCKING | ✅ No `continue-on-error` |
+| **pip-audit** | `sast-scan.yml` | `dependency-audit` / Run pip-audit | BLOCKING | ✅ No `continue-on-error` |
+| **Gitleaks (container)** | `sast-scan.yml` | `secrets-scan` / Run Gitleaks | BLOCKING | ✅ No `continue-on-error` |
 | **pip-audit** | `ci-neuro-cognitive-engine.yml` | `security` / Run pip-audit | BLOCKING | ✅ No `continue-on-error` |
 | **pip-audit** | `prod-gate.yml` | `preflight` / Security vulnerability scan | BLOCKING | ✅ No `continue-on-error` |
 | **Trivy** | `release.yml` | `security-scan` / Run Trivy | BLOCKING | ✅ No `continue-on-error` |
@@ -45,30 +47,45 @@ These jobs **BLOCK** merges and releases if they fail:
 
 #### Semgrep SAST Scan (CRITICAL GATE)
 - **Job:** `semgrep`
-- **Tool:** Semgrep with security rulesets
+- **Tool:** Semgrep CLI via container image (pinned by digest)
+- **Container:** `returntocorp/semgrep:1.102.0@sha256:cef085245254d15c66d96be413c730f0b458823a1d0c39afbc12f705b664ce8f`
 - **Rulesets:** `p/python`, `p/security-audit`, `p/owasp-top-ten`
 - **Blocks on:** Any security finding from configured rulesets
-- **Exit behavior:** semgrep-action exits with non-zero code when findings are detected
+- **Exit behavior:** `--error` flag ensures non-zero exit code on findings
 - **Status:** ✅ BLOCKING (no `continue-on-error`)
-- **Note:** Semgrep blocking behavior is default for semgrep-action@v1
+- **Note:** Uses native CLI via container image for better supply-chain control
 
 ### 2. Dependency Vulnerability Scanning (CRITICAL GATE)
 
-**Workflow:** `.github/workflows/ci-neuro-cognitive-engine.yml`
+**Workflow:** `.github/workflows/sast-scan.yml`
 
-#### pip-audit Dependency Scan
-- **Job:** `security`
-- **Tool:** pip-audit
+#### pip-audit Dependency Scan (Primary)
+- **Job:** `dependency-audit`
+- **Tool:** pip-audit with `--strict` flag
 - **Threshold:** Any known vulnerability
 - **Blocks on:** CVEs in dependencies
 - **Exit behavior:** Non-zero exit code on vulnerabilities
 - **Status:** ✅ BLOCKING (no `continue-on-error`)
 
-**Production Gate Workflow:** `.github/workflows/prod-gate.yml`
-- Same pip-audit check with `--strict` flag
-- Part of pre-flight checks before production deployment
+**Additional Locations:**
+- `.github/workflows/ci-neuro-cognitive-engine.yml` - Security job
+- `.github/workflows/prod-gate.yml` - Pre-flight checks
 
-### 3. Container Image Vulnerability Scanning (CRITICAL GATE)
+### 3. Secrets Scanning (CRITICAL GATE)
+
+**Workflow:** `.github/workflows/sast-scan.yml`
+
+#### Gitleaks Secrets Scan
+- **Job:** `secrets-scan`
+- **Tool:** Gitleaks CLI via container image (pinned by digest)
+- **Container:** `zricethezav/gitleaks:v8.21.2@sha256:0e99e8821643ea5b235718642b93bb32486af9c8162c8b8731f7cbdc951a7f46`
+- **Threshold:** Any detected secret
+- **Blocks on:** Committed secrets, API keys, tokens
+- **Exit behavior:** `--exit-code=1` ensures non-zero exit when secrets are detected
+- **Status:** ✅ BLOCKING (no `continue-on-error`)
+- **Note:** Uses native CLI via container image; `--redact` prevents secret values from appearing in logs
+
+### 4. Container Image Vulnerability Scanning (CRITICAL GATE)
 
 **Workflow:** `.github/workflows/release.yml`
 
@@ -185,6 +202,10 @@ pytest --ignore=tests/load
 # 4. Run linting and type checking
 ruff check src tests
 mypy src/mlsdm
+
+# 5. Run secrets scanning (optional - CI runs this)
+# Install gitleaks: https://github.com/gitleaks/gitleaks#installing
+gitleaks detect --source . --verbose
 ```
 
 ### Quick Security Validation
@@ -192,7 +213,16 @@ mypy src/mlsdm
 # Run all security checks before pushing (exits on first failure):
 bandit -r src/mlsdm --severity-level high --confidence-level high && \
   pip-audit --requirement requirements.txt --strict && \
-  pytest tests/security/ -v
+  pytest tests/security/ tests/contracts/test_no_secrets_in_logs.py -v
+```
+
+### Policy Validation
+```bash
+# Verify policy-workflow alignment
+python scripts/validate_policy_config.py
+
+# Run contract tests for policy alignment
+pytest tests/contracts/test_policy_workflow_alignment.py -v
 ```
 
 ## Incident Response

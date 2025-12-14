@@ -986,7 +986,7 @@ OIDC tokens should be passed as Bearer tokens:
 
 ```bash
 curl -X POST http://localhost:8000/generate \
-  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
+  -H "Authorization: Bearer YOUR_OIDC_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Hello"}'
 ```

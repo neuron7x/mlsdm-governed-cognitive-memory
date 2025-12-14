@@ -104,24 +104,32 @@ jobs:
     name: Semgrep SAST Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # SECURITY GATE: Semgrep is now a blocking check
-    # Bandit remains the primary SAST tool, but Semgrep provides additional coverage
-    # Note: semgrep-action exits with non-zero code on findings by default
+    # SECURITY GATE: Semgrep is a blocking check
+    # Uses native CLI via official container image (supply-chain secure)
+    # Container image pinned by digest for reproducibility
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Semgrep
-        uses: semgrep/semgrep-action@v1
-        with:
-          config: >-
-            p/python
-            p/security-audit
-            p/owasp-top-ten
-          generateSarif: "1"
-        # This action fails by default when security findings are detected
-        # No need for explicit exit-code handling
+      - name: Run Semgrep (SECURITY GATE)
+        # Uses official Semgrep container image pinned by digest
+        # Replaces third-party action for better supply-chain control
+        run: |
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/src" \
+            -w /src \
+            returntocorp/semgrep:1.102.0@sha256:cef085245254d15c66d96be413c730f0b458823a1d0c39afbc12f705b664ce8f \
+            semgrep scan \
+              --config p/python \
+              --config p/security-audit \
+              --config p/owasp-top-ten \
+              --sarif \
+              --sarif-output semgrep.sarif \
+              --error \
+              .
+        # --error flag makes semgrep exit with non-zero if findings detected
+        # This is the SECURITY GATE - findings block the build
 
       - name: Upload Semgrep SARIF
         if: always()
@@ -131,4 +139,107 @@ jobs:
           category: semgrep
         # INFORMATIONAL: Upload failures should not block the workflow
         # The actual security scan already passed/failed above
+        continue-on-error: true
+
+  dependency-audit:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # SECURITY GATE: Blocks CI on known vulnerabilities in dependencies
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies and pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+          pip install -r requirements.txt
+
+      - name: Run pip-audit (SECURITY GATE)
+        run: |
+          # SECURITY GATE: Fail on any known vulnerabilities
+          # Uses --strict to fail on any vulnerability found
+          pip-audit --strict --progress-spinner=off
+
+      - name: Generate dependency report
+        if: always()
+        run: |
+          echo "## Dependency Vulnerability Report" > dep-audit-summary.md
+          echo "" >> dep-audit-summary.md
+          echo "Generated at: $(date -u)" >> dep-audit-summary.md
+          echo "" >> dep-audit-summary.md
+          pip-audit --format json > pip-audit-results.json 2>&1 || true
+          pip-audit >> dep-audit-summary.md 2>&1 || true
+
+      - name: Upload dependency report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit-report
+          path: |
+            dep-audit-summary.md
+            pip-audit-results.json
+          retention-days: 30
+
+  secrets-scan:
+    name: Secrets Scanning
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # SECURITY GATE: Detects committed secrets before merge
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for secret detection
+
+      - name: Run Gitleaks (SECURITY GATE)
+        # Uses official Gitleaks container image pinned by digest
+        # Replaces third-party action for better supply-chain control
+        run: |
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/src" \
+            -w /src \
+            zricethezav/gitleaks:v8.21.2@sha256:0e99e8821643ea5b235718642b93bb32486af9c8162c8b8731f7cbdc951a7f46 \
+            detect \
+              --source=/src \
+              --config=/src/.gitleaks.toml \
+              --verbose \
+              --redact \
+              --report-format=sarif \
+              --report-path=/src/gitleaks-results.sarif \
+              --exit-code=1
+        # --exit-code=1 ensures non-zero exit on findings (SECURITY GATE)
+        # --redact prevents secret values from appearing in logs
+        # --config points to repo-specific allowlist for test fixtures
+
+      - name: Generate secrets scan summary
+        if: always()
+        run: |
+          echo "## Secrets Scan Summary" > secrets-scan-summary.md
+          echo "" >> secrets-scan-summary.md
+          echo "Gitleaks scan completed at: $(date -u)" >> secrets-scan-summary.md
+          echo "" >> secrets-scan-summary.md
+          if [ -f "gitleaks-results.sarif" ]; then
+            echo "Results file generated - check SARIF for details" >> secrets-scan-summary.md
+          else
+            echo "No SARIF output file found (this may be normal if no secrets detected)" >> secrets-scan-summary.md
+          fi
+
+      - name: Upload secrets scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: secrets-scan-report
+          path: |
+            secrets-scan-summary.md
+            gitleaks-results.sarif
+          retention-days: 30
         continue-on-error: true
