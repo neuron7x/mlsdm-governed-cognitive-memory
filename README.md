@@ -19,7 +19,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/ci-neuro-cognitive-engine.yml?style=for-the-badge&logo=github-actions&logoColor=white&label=CI)](https://github.com/neuron7x/mlsdm/actions/workflows/ci-neuro-cognitive-engine.yml)
 [![Tests](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/property-tests.yml?style=for-the-badge&logo=pytest&logoColor=white&label=Tests)](https://github.com/neuron7x/mlsdm/actions/workflows/property-tests.yml)
 [![Security](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/sast-scan.yml?style=for-the-badge&logo=shield&logoColor=white&label=Security)](https://github.com/neuron7x/mlsdm/actions/workflows/sast-scan.yml)
-[![Coverage](https://img.shields.io/badge/coverage-71%25%20(gate:%2065%25)-green?style=for-the-badge)](COVERAGE_REPORT_2025.md)
+[![Coverage](https://img.shields.io/badge/coverage-70.85%25%20(gate:%2065%25)-green?style=for-the-badge)](COVERAGE_REPORT_2025.md)
 [![Python](https://img.shields.io/badge/python-3.10+-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://github.com/neuron7x/mlsdm/pkgs/container/mlsdm-neuro-engine)
@@ -703,7 +703,7 @@ For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE
 |:---------|:------------|
 | [Implementation Summary](IMPLEMENTATION_SUMMARY.md) | What was built and how |
 | [Effectiveness Report](EFFECTIVENESS_VALIDATION_REPORT.md) | Quantitative validation results |
-| [Coverage Report](COVERAGE_REPORT_2025.md) | 90.26% test coverage details |
+| [Coverage Report](COVERAGE_REPORT_2025.md) | 70.85% test coverage details |
 | [Testing Guide](TESTING_GUIDE.md) | How to run and write tests |
 
 ### Scientific Foundation
@@ -737,7 +737,7 @@ For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE
 - [x] Wake/sleep cognitive rhythm
 - [x] Aphasia-Broca detection and repair
 - [x] Prometheus metrics and structured logging
-- [x] 90%+ test coverage with property-based tests
+- [x] 70%+ test coverage (core modules 90%+) with property-based tests
 - [x] Thread-safe concurrent access
 
 ### Recent Improvements (v1.2+)
@@ -760,6 +760,39 @@ For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE
 | Chaos engineering suite | Staging environment |
 | TLA+/Coq formal verification | Formal methods expertise |
 | RAG hallucination testing | Retrieval setup with ragas |
+
+### 📁 Repository Map
+
+| Directory | Purpose |
+|:----------|:--------|
+| `src/mlsdm/` | Core library code |
+| `src/mlsdm/core/` | LLMWrapper, cognitive controller, memory manager |
+| `src/mlsdm/cognition/` | Moral filter, cognitive components |
+| `src/mlsdm/memory/` | Multi-level memory, PELM |
+| `src/mlsdm/security/` | Rate limiting, RBAC, guardrails |
+| `tests/` | Unit, integration, property, load, validation tests |
+| `deploy/k8s/` | Kubernetes manifests |
+| `policies/ci/` | OPA/Rego policy checks |
+| `scripts/` | Build, benchmark, deployment scripts |
+| `.github/workflows/` | CI/CD pipelines |
+
+### 🔐 Security Model & Limitations
+
+> [!IMPORTANT]
+> MLSDM is designed with defense-in-depth but is **not audited** for production security compliance.
+
+| Control | Status | Reference |
+|:--------|:-------|:----------|
+| Log sanitization | ✅ PII scrubbing | [SECURITY_GUARDRAILS.md](SECURITY_GUARDRAILS.md) |
+| Least-privilege CI | ✅ `contents: read` | [docs/CI_SECURITY_GATING.md](docs/CI_SECURITY_GATING.md) |
+| Rate limiting | ✅ 5 RPS default | [SECURITY_IMPLEMENTATION.md](SECURITY_IMPLEMENTATION.md) |
+| Input validation | ✅ Type/range/sanitization | [SECURITY_GUARDRAILS.md](SECURITY_GUARDRAILS.md) |
+| Threat model | ✅ STRIDE analysis | [THREAT_MODEL.md](THREAT_MODEL.md) |
+
+**Limitations:**
+- Not a substitute for domain-specific security audit
+- Moral filter is heuristic-based (not guaranteed)
+- Beta status; additional hardening may be needed for mission-critical use
 
 ### Known Limitations
 
