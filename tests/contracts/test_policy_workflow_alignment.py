@@ -7,6 +7,7 @@ to prevent truth-alignment drift.
 
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -84,7 +85,6 @@ class TestPolicyWorkflowAlignment:
 
         # Look for COVERAGE_MIN default value
         # Format: COVERAGE_MIN="${COVERAGE_MIN:-65}"
-        import re
         match = re.search(r'COVERAGE_MIN="\$\{COVERAGE_MIN:-(\d+)\}"', content)
         assert match is not None, "COVERAGE_MIN default not found in coverage_gate.sh"
 
@@ -118,7 +118,7 @@ class TestPolicyWorkflowAlignment:
             # e.g., mlsdm.security.llm_safety -> src/mlsdm/security/llm_safety.py
             parts = module_path.split(".")
             if parts[0] == "mlsdm":
-                file_path = repo_root / "src" / "/".join(parts)
+                file_path = repo_root / "src" / Path(*parts)
                 py_path = file_path.parent / f"{file_path.name}.py"
                 init_path = file_path / "__init__.py"
 
@@ -138,7 +138,7 @@ class TestPolicyWorkflowAlignment:
         # Convert to file path
         parts = scrubber_module.split(".")
         if parts[0] == "mlsdm":
-            file_path = repo_root / "src" / "/".join(parts)
+            file_path = repo_root / "src" / Path(*parts)
             py_path = file_path.parent / f"{file_path.name}.py"
             init_path = file_path / "__init__.py"
 
