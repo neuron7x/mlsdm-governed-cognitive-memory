@@ -14,11 +14,13 @@ from unittest.mock import MagicMock
 import pytest
 
 from mlsdm.adapters import (
+    AnthropicProvider,
     LLMProvider,
     LLMProviderError,
     LLMTimeoutError,
     LocalStubProvider,
     OpenAIProvider,
+    build_anthropic_llm_adapter,
     build_local_stub_llm_adapter,
     build_openai_llm_adapter,
     build_provider_from_env,
@@ -216,6 +218,99 @@ class TestOpenAIAdapterContract:
                 sys.modules["openai"] = original_openai
             else:
                 del sys.modules["openai"]
+
+
+class TestAnthropicAdapterContract:
+    """Contract tests for Anthropic adapter with mocks."""
+
+    def test_build_anthropic_requires_api_key(self):
+        """Test that build_anthropic_llm_adapter requires API key."""
+        if "ANTHROPIC_API_KEY" in os.environ:
+            del os.environ["ANTHROPIC_API_KEY"]
+
+        with pytest.raises(ValueError, match="ANTHROPIC_API_KEY"):
+            build_anthropic_llm_adapter()
+
+    def test_anthropic_provider_requires_api_key(self):
+        """Test that AnthropicProvider requires API key."""
+        if "ANTHROPIC_API_KEY" in os.environ:
+            del os.environ["ANTHROPIC_API_KEY"]
+
+        with pytest.raises(ValueError, match="api_key"):
+            AnthropicProvider()
+
+    def test_anthropic_adapter_with_mock_client(self):
+        """Test that Anthropic adapter makes correct API call (with mock)."""
+        import sys
+
+        # Create a mock anthropic module
+        mock_anthropic = MagicMock()
+        mock_client = MagicMock()
+        mock_anthropic.Anthropic.return_value = mock_client
+        mock_response = MagicMock()
+        mock_content = MagicMock()
+        mock_content.text = "Test response"
+        mock_response.content = [mock_content]
+        mock_client.messages.create.return_value = mock_response
+
+        # Temporarily replace anthropic in sys.modules
+        original_anthropic = sys.modules.get("anthropic")
+        sys.modules["anthropic"] = mock_anthropic
+
+        try:
+            os.environ["ANTHROPIC_API_KEY"] = "sk-ant-test-key"
+
+            # Need to reimport to pick up the mock
+            import importlib
+
+            import mlsdm.adapters.anthropic_adapter as aa_module
+
+            importlib.reload(aa_module)
+
+            adapter = aa_module.build_anthropic_llm_adapter()
+            result = adapter("Test prompt", 100)
+
+            # Verify API was called
+            mock_client.messages.create.assert_called_once()
+            call_kwargs = mock_client.messages.create.call_args[1]
+            assert call_kwargs["messages"][0]["content"] == "Test prompt"
+            assert call_kwargs["max_tokens"] == 100
+            assert result == "Test response"
+        finally:
+            # Restore original
+            if original_anthropic:
+                sys.modules["anthropic"] = original_anthropic
+            else:
+                del sys.modules["anthropic"]
+
+    def test_anthropic_provider_id_format(self):
+        """Test that Anthropic provider_id format is correct (with mock)."""
+        import sys
+
+        mock_anthropic = MagicMock()
+        mock_anthropic.Anthropic.return_value = MagicMock()
+
+        original_anthropic = sys.modules.get("anthropic")
+        sys.modules["anthropic"] = mock_anthropic
+
+        try:
+            os.environ["ANTHROPIC_API_KEY"] = "sk-ant-test-key"
+
+            import importlib
+
+            import mlsdm.adapters.llm_provider as lp_module
+
+            importlib.reload(lp_module)
+
+            provider = lp_module.AnthropicProvider(api_key="sk-ant-test-key", model="claude-3-sonnet-20240229")
+            # Provider ID should contain anthropic and model name (sanitized)
+            assert "anthropic" in provider.provider_id
+            assert "claude" in provider.provider_id
+        finally:
+            if original_anthropic:
+                sys.modules["anthropic"] = original_anthropic
+            else:
+                del sys.modules["anthropic"]
 
 
 class TestProviderFactory:

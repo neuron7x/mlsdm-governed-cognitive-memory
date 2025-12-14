@@ -7,6 +7,7 @@ This module provides adapters for different LLM backends:
 - Local stub (deterministic mock for testing)
 """
 
+from .anthropic_adapter import build_anthropic_llm_adapter
 from .llm_provider import (
     AnthropicProvider,
     LLMProvider,
@@ -21,6 +22,7 @@ from .provider_factory import build_multiple_providers_from_env, build_provider_
 
 __all__ = [
     "build_openai_llm_adapter",
+    "build_anthropic_llm_adapter",
     "build_local_stub_llm_adapter",
     "LLMProvider",
     "LLMProviderError",

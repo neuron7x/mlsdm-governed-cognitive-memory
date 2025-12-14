@@ -139,6 +139,13 @@ client = NeuroCognitiveClient(backend="local_stub")
 #     model="gpt-4"
 # )
 
+# Or with Anthropic
+# client = NeuroCognitiveClient(
+#     backend="anthropic",
+#     api_key="sk-ant-...",
+#     model="claude-3-sonnet-20240229"
+# )
+
 result = client.generate(
     prompt="What is consciousness?",
     max_tokens=256,
@@ -415,9 +422,11 @@ print(result["speech_governance"])
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `LLM_BACKEND` | `local_stub` | Backend: `local_stub`, `openai` |
+| `LLM_BACKEND` | `local_stub` | Backend: `local_stub`, `openai`, `anthropic` |
 | `OPENAI_API_KEY` | - | Required for OpenAI backend |
 | `OPENAI_MODEL` | `gpt-3.5-turbo` | OpenAI model name |
+| `ANTHROPIC_API_KEY` | - | Required for Anthropic backend |
+| `ANTHROPIC_MODEL` | `claude-3-sonnet-20240229` | Anthropic model name |
 | `CONFIG_PATH` | `config/default_config.yaml` | Configuration file path |
 | `DISABLE_RATE_LIMIT` | - | Set to `1` to disable rate limiting |
 

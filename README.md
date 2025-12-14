@@ -453,6 +453,41 @@ wrapper = LLMWrapper(
 </details>
 
 <details>
+<summary><strong>Anthropic Integration</strong></summary>
+
+```python
+from anthropic import Anthropic
+import numpy as np
+from mlsdm.core.llm_wrapper import LLMWrapper
+
+# Initialize Anthropic client
+client = Anthropic(api_key="your-api-key")
+
+def anthropic_generate(prompt: str, max_tokens: int) -> str:
+    response = client.messages.create(
+        model="claude-3-sonnet-20240229",
+        max_tokens=max_tokens,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.content[0].text
+
+def anthropic_embed(text: str) -> np.ndarray:
+    # Use a separate embedding model (Anthropic doesn't provide embeddings)
+    from sentence_transformers import SentenceTransformer
+    embedder = SentenceTransformer("all-MiniLM-L6-v2")
+    return embedder.encode(text).astype(np.float32)
+
+# Create governed wrapper
+wrapper = LLMWrapper(
+    llm_generate_fn=anthropic_generate,
+    embedding_fn=anthropic_embed,
+    dim=384  # MiniLM embedding dimension
+)
+```
+
+</details>
+
+<details>
 <summary><strong>Local Model Integration</strong></summary>
 
 ```python
