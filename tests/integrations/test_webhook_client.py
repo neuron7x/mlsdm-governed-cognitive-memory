@@ -2,10 +2,10 @@
 Tests for webhook client integration.
 """
 
+import hashlib
+import hmac
 import time
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from mlsdm.integrations import WebhookClient, WebhookEvent, WebhookEventType
 
@@ -61,7 +61,7 @@ class TestWebhookClient:
         with patch("requests.post") as mock_post:
             mock_post.return_value.raise_for_status = MagicMock()
 
-            result = client.send_event(event)
+            client.send_event(event)
 
             # Verify signature header was included
             call_args = mock_post.call_args
@@ -100,9 +100,7 @@ class TestWebhookClient:
         payload = '{"test": "data"}'
 
         # Generate valid signature
-        import hashlib
-        import hmac
-
+        
         expected_sig = hmac.new(
             secret.encode(), payload.encode(), hashlib.sha256
         ).hexdigest()

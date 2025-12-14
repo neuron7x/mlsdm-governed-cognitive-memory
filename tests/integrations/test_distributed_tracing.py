@@ -2,10 +2,6 @@
 Tests for distributed tracing integration.
 """
 
-from unittest.mock import MagicMock, patch
-
-import pytest
-
 from mlsdm.integrations import DistributedTracer
 
 

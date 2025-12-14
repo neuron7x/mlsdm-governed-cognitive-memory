@@ -2,8 +2,6 @@
 Integration tests for all 7 critical integrations.
 """
 
-import pytest
-
 from mlsdm.integrations import (
     CIHealthMonitor,
     DistributedTracer,

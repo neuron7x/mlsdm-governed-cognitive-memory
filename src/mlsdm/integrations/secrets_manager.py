@@ -93,7 +93,11 @@ class SecretsManager:
         # Disallow path traversal (..), shell special chars, etc.
         if not re.match(r'^[\w\-/]+(?:\.[\w\-/]+)*$', key) or '..' in key:
             self.logger.error(f"Invalid secret name format: {key}")
-            raise ValueError(f"Invalid secret name format: {key}. Only alphanumeric, underscore, hyphen, forward slash, and dot characters are allowed (no path traversal).")
+            raise ValueError(
+                f"Invalid secret name format: {key}. Only alphanumeric, "
+                "underscore, hyphen, forward slash, and dot characters are "
+                "allowed (no path traversal)."
+            )
         
         # Check cache first and validate TTL (with thread-safety)
         with self._cache_lock:
@@ -211,7 +215,8 @@ class SecretsManager:
 
         except ImportError:
             self.logger.error(
-                "Azure SDK not installed. Install with: pip install azure-keyvault-secrets azure-identity"
+                "Azure SDK not installed. Install with: "
+                "pip install azure-keyvault-secrets azure-identity"
             )
             return None
         except Exception as e:

@@ -5,9 +5,10 @@ Provides unified interface for external embedding APIs including OpenAI,
 Cohere, HuggingFace, and others.
 """
 
+import hashlib
 import logging
 from enum import Enum
-from typing import List, Optional, Union
+from typing import List, Optional
 
 import numpy as np
 import requests
@@ -112,7 +113,6 @@ class EmbeddingServiceClient:
         """Generate deterministic pseudo-embedding from text hash."""
         # Create deterministic embedding based on text hash for reproducibility
         # This replaces random embedding to ensure consistent results
-        import hashlib
         
         # Hash text to get deterministic seed
         text_bytes = text.encode('utf-8')

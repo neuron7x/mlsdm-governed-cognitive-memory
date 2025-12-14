@@ -2,10 +2,7 @@
 Tests for CI Health Monitor integration.
 """
 
-import time
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from mlsdm.integrations import CIHealthMonitor, CIStatus
 

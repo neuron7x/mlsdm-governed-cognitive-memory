@@ -63,7 +63,8 @@ class DistributedTracer:
         """Initialize OpenTelemetry tracer."""
         if not OTEL_AVAILABLE:
             self.logger.warning(
-                "OpenTelemetry not available. Install with: pip install opentelemetry-api opentelemetry-sdk"
+                "OpenTelemetry not available. Install with: "
+                "pip install opentelemetry-api opentelemetry-sdk"
             )
             return
 

@@ -67,9 +67,10 @@ class RedisCache:
 
         if self.dangerously_allow_pickle:
             warnings.warn(
-                "RedisCache: pickle serialization enabled. This is UNSAFE for untrusted data "
-                "and can lead to arbitrary code execution. Use only if you fully control the data source.",
-                SecurityWarning,
+                "RedisCache: pickle serialization enabled. This is UNSAFE for "
+                "untrusted data and can lead to arbitrary code execution. "
+                "Use only if you fully control the data source.",
+                UserWarning,
                 stacklevel=2,
             )
 
@@ -129,7 +130,10 @@ class RedisCache:
         elif isinstance(value, str):
             return json.dumps({"_type": "str", "value": value}).encode("utf-8")
         elif isinstance(value, bytes):
-            return json.dumps({"_type": "bytes", "value": base64.b64encode(value).decode("ascii")}).encode("utf-8")
+            encoded = base64.b64encode(value).decode("ascii")
+            return json.dumps({"_type": "bytes", "value": encoded}).encode(
+                "utf-8"
+            )
         elif isinstance(value, (list, tuple)):
             # Recursively serialize list elements (must be primitive types)
             return json.dumps({"_type": "list", "value": value}).encode("utf-8")
