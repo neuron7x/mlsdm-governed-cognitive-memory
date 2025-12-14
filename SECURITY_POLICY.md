@@ -1103,9 +1103,9 @@ All PRs must pass the following security checks before merge:
    - SARIF validation: JSON schema validation before upload
    - Failure: Blocks PR merge
 
-2. **CodeQL Semantic Analysis** (`.github/workflows/sast-scan.yml`)
-   - Automated semantic code analysis
-   - Security-focused queries
+2. **Semgrep SAST** (`.github/workflows/sast-scan.yml`)
+   - Semantic code analysis using community rulesets
+   - Security-focused queries (OWASP Top 10, security-audit)
    - Failure: Blocks PR merge
 
 3. **Ruff Linter**
@@ -1119,7 +1119,7 @@ All PRs must pass the following security checks before merge:
    - Failure: Blocks PR merge
 
 5. **Coverage Gate** (`./coverage_gate.sh`)
-   - Minimum: 85% code coverage
+   - Minimum: 65% code coverage (matches CI and policy/security-baseline.yaml)
    - Ensures security-critical paths are tested
    - Failure: Blocks PR merge
 

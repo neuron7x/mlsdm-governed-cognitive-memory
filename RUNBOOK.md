@@ -217,7 +217,7 @@ Use this table for quick diagnosis and resolution of common issues.
 | **High error rate** | `curl http://localhost:8000/health/detailed` | `error_rate < 0.5%` | Check LLM backend status, review logs for exceptions |
 | **Pod crashlooping** | `kubectl logs -n mlsdm-production -l app=mlsdm-api --tail=100` | No OOM errors, no panics | Check memory limits, review startup configuration |
 | **SAST scan failing** | `bandit -r src/mlsdm --severity-level high --confidence-level high` | No HIGH/CRITICAL issues | Fix vulnerabilities or justify with `# nosec` |
-| **Coverage gate failing** | `./coverage_gate.sh` | Coverage ≥ 85% | Add tests for uncovered code, verify test configuration |
+| **Coverage gate failing** | `./coverage_gate.sh` | Coverage ≥ 65% | Add tests for uncovered code, verify test configuration |
 | **Moral filter drifting** | `pytest tests/property/test_moral_filter_properties.py -v` | Threshold ∈ [0.30, 0.90] | Review toxic input patterns, check EMA parameters |
 | **Deployment validation failing** | `./deploy/scripts/validate-manifests.sh` | All manifests valid | Fix YAML syntax, check resource limits, verify image tags |
 | **Core implementation check failing** | `./scripts/verify_core_implementation.sh` | 0 TODOs in core modules | Remove or implement TODOs, verify test collection |
@@ -232,7 +232,7 @@ All operational scripts with their locations and usage:
 
 | Script | Location | Purpose | Command |
 |--------|----------|---------|---------|
-| **Coverage Gate** | `./coverage_gate.sh` | Enforce 85% code coverage | `./coverage_gate.sh` |
+| **Coverage Gate** | `./coverage_gate.sh` | Enforce 65% code coverage | `./coverage_gate.sh` |
 | **Validate Manifests** | `./deploy/scripts/validate-manifests.sh` | Validate K8s YAML syntax | `./deploy/scripts/validate-manifests.sh [--strict]` |
 | **Verify Core** | `./scripts/verify_core_implementation.sh` | Check core modules complete | `./scripts/verify_core_implementation.sh` |
 | **Validate Policy** | `./scripts/validate_policy_config.py` | Verify policy consistency | `python scripts/validate_policy_config.py` |

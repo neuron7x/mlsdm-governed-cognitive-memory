@@ -219,7 +219,7 @@ mlsdm/
 | PII Scrubbing | 30+ patterns | ✅ |
 | Secure Mode | `MLSDM_SECURE_MODE=1` | ✅ |
 | STRIDE Analysis | THREAT_MODEL.md | ✅ |
-| SAST Scanning | Bandit, CodeQL | ✅ |
+| SAST Scanning | Bandit, Semgrep | ✅ |
 
 ---
 
@@ -232,7 +232,7 @@ mlsdm/
 | CI - Neuro Cognitive Engine | Main CI pipeline | ✅ Active |
 | Property-Based Tests | Hypothesis tests | ✅ Active |
 | SAST Security Scan | Security scanning | ✅ Active |
-| CodeQL Security Scan | Semantic analysis | ✅ Active |
+| Semgrep Security Scan | Semantic analysis | ✅ Active |
 | Chaos Engineering Tests | Chaos testing | ✅ Active |
 | Performance & Resilience | Performance validation | ✅ Active |
 | Release | Release automation | ✅ Active |
@@ -261,7 +261,7 @@ mlsdm/
 - ✅ Ruff Linting
 - ✅ Mypy Type Checking
 - ✅ Bandit Security Scan
-- ✅ CodeQL Analysis
+- ✅ Semgrep Analysis
 - ✅ Property-based tests (hypothesis profile: ci)
 
 ---

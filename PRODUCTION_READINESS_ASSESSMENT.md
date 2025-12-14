@@ -203,7 +203,7 @@ make docker-smoke-neuro-engine
 All critical security and observability requirements are now machine-readable and automatically enforced:
 
 **Security Baseline (`policy/security-baseline.yaml`):**
-- Required CI checks: Bandit, CodeQL, Ruff, Mypy, Coverage Gate
+- Required CI checks: Bandit, Semgrep, Ruff, Mypy, Coverage Gate
 - Vulnerability severity thresholds (CRITICAL: 0 allowed, must fix in 7 days)
 - Authentication requirements (API keys from env only, never hardcoded)
 - PII scrubbing rules (always scrub: password, api_key, secret, token, etc.)
@@ -251,7 +251,7 @@ pytest tests/unit/test_cognitive_controller.py::TestCognitiveControllerMemoryLea
 - SAST Scanning section with exact Bandit commands
 - SARIF validation procedure with Python code example
 - False positive handling with `# nosec` guidance
-- CodeQL semantic analysis features
+- Semgrep semantic analysis features
 - Version history tracking enhancements
 
 ### Updated Readiness Scores

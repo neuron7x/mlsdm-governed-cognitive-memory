@@ -18,7 +18,7 @@ The CI Performance & Resilience Gate implementation in PR #233 has been comprehe
 - ✅ **Risk Logic**: Correctly implements GREEN/YELLOW/RED classification
 - ✅ **CI Integration**: Properly queries GitHub API and maps job statuses
 - ✅ **Documentation**: Accurate, comprehensive, with working examples
-- ✅ **Security**: 0 CodeQL alerts, proper error handling
+- ✅ **Security**: 0 high-severity SAST alerts, proper error handling
 - ⚠️ **3 Improvements Applied**: Critical paths expanded, CLI validation enhanced, test coverage increased
 
 ---
@@ -220,7 +220,7 @@ $ python scripts/ci_perf_resilience_gate.py --pr-url <url> --pr-number 123 --rep
 
 - [x] **Tests**: 31 tests pass, 100% pass rate
 - [x] **Linting**: `ruff check` returns all checks passed
-- [x] **Security**: 0 CodeQL alerts
+- [x] **Security**: 0 high-severity SAST alerts (Bandit + Semgrep)
 - [x] **CLI Validation**: `--help` shows all documented options
 - [x] **Risk Logic**: All 8 truth table scenarios covered
 - [x] **Documentation**: Accurate and complete

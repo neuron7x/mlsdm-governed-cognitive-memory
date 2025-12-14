@@ -509,27 +509,21 @@ Example:
 api_key = os.environ.get("API_KEY")  # nosec B108
 ```
 
-### CodeQL Semantic Analysis
+### Semgrep Security Analysis
 
-**Purpose**: Advanced semantic code analysis for security patterns.
+**Purpose**: Semantic code analysis for security patterns using community rulesets.
 
 **Workflow**: `.github/workflows/sast-scan.yml`
 
 **Features**:
-- Data flow analysis
-- Taint tracking
-- SQL injection detection
-- Path traversal detection
+- OWASP Top 10 vulnerability detection
+- Security audit patterns
+- Python-specific security rules
+- Taint tracking and data flow analysis
 
-**CI Integration**: Runs automatically on all PRs.
+**CI Integration**: Runs automatically on all PRs and blocks on findings.
 
-### Semgrep (Optional)
-
-**Status**: Advisory (does not block PRs)
-
-**Purpose**: Additional SAST with custom rules.
-
-**Usage**: Can be enabled for deeper analysis, but currently optional to minimize false positives.
+**Note**: Semgrep complements Bandit by providing additional semantic analysis capabilities.
 
 ## Version History
 

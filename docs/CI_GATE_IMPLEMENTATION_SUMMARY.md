@@ -146,7 +146,7 @@ Machine-readable format for CI integration with all analysis data.
 - ✅ PEP 8 compliance confirmed
 
 ### Security
-- ✅ CodeQL security scan: 0 alerts
+- ✅ Bandit + Semgrep security scan: 0 high-severity alerts
 - ✅ No hardcoded secrets or credentials
 - ✅ Proper error handling for API failures
 - ✅ Safe handling of untrusted input

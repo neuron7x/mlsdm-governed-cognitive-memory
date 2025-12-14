@@ -21,7 +21,7 @@ flowchart TB
         direction TB
         Lint["🔍 Lint<br/>ruff + shellcheck"]
         TypeCheck["🔎 Type Check<br/>mypy --strict"]
-        Security["🔒 Security<br/>bandit + CodeQL"]
+        Security["🔒 Security<br/>bandit + semgrep"]
         Tests["✅ Tests<br/>pytest + bats"]
         Coverage["📊 Coverage<br/>pytest-cov"]
     end
@@ -528,7 +528,7 @@ All scripts are validated in CI via GitHub Actions:
 |----------|--------|
 | **Lint** | ruff, shellcheck, shfmt |
 | **Type Check** | mypy --strict |
-| **Security** | bandit, CodeQL |
+| **Security** | bandit, semgrep |
 | **Tests** | pytest, bats-core |
 | **Coverage** | pytest-cov with badge |
 

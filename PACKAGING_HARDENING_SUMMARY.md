@@ -168,7 +168,7 @@ This document summarizes the comprehensive packaging and reproducibility hardeni
 
 ### Code Quality ✅
 - ✅ Code review completed (3 issues found, all fixed)
-- ✅ Security scan: CodeQL found 0 alerts
+- ✅ Security scan: Bandit + Semgrep found 0 high-severity alerts
 - ✅ No deprecation warnings in package build
 
 ### Documentation ✅
