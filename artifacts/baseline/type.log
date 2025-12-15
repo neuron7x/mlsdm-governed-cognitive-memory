@@ -1,0 +1,2 @@
+mypy src/mlsdm
+Success: no issues found in 107 source files

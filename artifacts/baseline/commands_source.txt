@@ -1,0 +1,5 @@
+Makefile (lines 43-50):
+- test: pytest --ignore=tests/load
+- lint: ruff check src tests
+- type: mypy src/mlsdm
+Source: Makefile
