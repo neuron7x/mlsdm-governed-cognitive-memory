@@ -1,0 +1,8 @@
+Lint (artifacts/baseline/lint.log):
+- None. Command succeeded with no errors.
+
+Type (artifacts/baseline/type.log):
+- None. Command succeeded with no errors.
+
+Test (artifacts/baseline/test.log):
+- RuntimeWarning in numpy/linalg/_linalg.py:2792 (triggered by tests/safety/test_memory_leakage.py::TestMemoryContentSafety::test_extreme_magnitude_vectors): overflow encountered in dot.
