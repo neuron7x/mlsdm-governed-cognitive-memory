@@ -2,6 +2,8 @@
         build-package test-package docker-build-neuro-engine docker-run-neuro-engine docker-smoke-neuro-engine \
         docker-compose-up docker-compose-down
 
+export PYTHONPATH := $(PYTHONPATH):$(CURDIR)/src
+
 help:
 	@echo "MLSDM Governed Cognitive Memory - Development Commands"
 	@echo ""
