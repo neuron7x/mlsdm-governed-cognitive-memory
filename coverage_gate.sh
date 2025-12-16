@@ -65,6 +65,16 @@ echo "Running tests with coverage..."
 echo "========================================================================"
 echo ""
 
+# Prefer parallel execution when pytest-xdist is available to keep CI under time limits.
+PYTEST_PARALLEL_FLAG=""
+if python - <<'PY' 2>/dev/null
+import importlib.util, sys
+sys.exit(0 if importlib.util.find_spec("xdist") else 1)
+PY
+then
+    PYTEST_PARALLEL_FLAG="-n auto"
+fi
+
 # shellcheck disable=SC2086
 python -m pytest tests \
     --ignore=tests/load \
@@ -73,9 +83,15 @@ python -m pytest tests \
     --cov-report=term-missing \
     --cov-fail-under="${COVERAGE_MIN}" \
     -m "not slow and not benchmark" \
-    -v \
+    ${PYTEST_PARALLEL_FLAG} \
     --tb=short \
     $PYTEST_ARGS
+
+# Ensure coverage artifact exists for upload
+if [ ! -f coverage.xml ]; then
+    printf "${RED}ERROR: coverage.xml was not generated${NC}\n"
+    exit 1
+fi
 
 echo ""
 echo "========================================================================"

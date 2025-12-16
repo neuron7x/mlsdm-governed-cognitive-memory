@@ -281,7 +281,7 @@ bandit -r src/
 ### Run Coverage Tests
 
 ```bash
-# Run coverage gate (65% threshold, matching CI)
+# Run coverage gate (65% threshold, matching CI). If pytest-xdist is available, it will use -n auto for speed.
 DISABLE_RATE_LIMIT=1 LLM_BACKEND=local_stub make coverage-gate
 ```
 
