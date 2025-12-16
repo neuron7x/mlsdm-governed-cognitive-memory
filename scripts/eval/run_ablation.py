@@ -294,9 +294,9 @@ class AblationRunner:
         embedding = embedding / np.linalg.norm(embedding)
 
         if category == "memory_store":
-            # Store operation
+            # Store operation using memory.update()
             try:
-                memory.encode(embedding, importance=0.8)
+                memory.update(embedding)
                 result["operation"] = "store"
                 result["success"] = True
             except Exception:
@@ -308,9 +308,9 @@ class AblationRunner:
             try:
                 # Try to retrieve based on the embedding
                 result["operation"] = "recall"
-                # Check L1 layer has content
-                l1_norm = np.linalg.norm(memory.L1)
-                result["success"] = l1_norm > 0.01
+                # Check l1 layer has content
+                l1_norm = float(np.linalg.norm(memory.l1))
+                result["success"] = bool(l1_norm > 0.01)
             except Exception:
                 result["operation"] = "recall"
                 result["success"] = False
