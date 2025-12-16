@@ -5,8 +5,6 @@ Verifies that wake/sleep phase transitions follow expected state machine
 and that the rhythm cannot be bypassed or corrupted.
 """
 
-from typing import Any
-
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st

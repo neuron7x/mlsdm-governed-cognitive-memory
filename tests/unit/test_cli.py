@@ -11,7 +11,7 @@ Tests cover:
 import argparse
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 if TYPE_CHECKING:

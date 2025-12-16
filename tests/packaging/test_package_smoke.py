@@ -8,8 +8,6 @@ Run with:
     pytest tests/packaging/test_package_smoke.py -v
 """
 
-from typing import Any
-
 
 class TestPackageSmoke:
     """Smoke tests for package installation verification."""
