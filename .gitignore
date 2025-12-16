@@ -32,6 +32,10 @@ load_test_report.json
 reports/effectiveness_snapshot.json
 reports/EFFECTIVENESS_SNAPSHOT.md
 
+# Ablation evaluation generated reports
+reports/ablation/*.json
+!reports/ablation/.gitkeep
+
 # Eval suite generated reports
 evals/*_report.json
 
