@@ -23,6 +23,7 @@ from mlsdm.utils.math_constants import (
     safe_entropy,
     safe_log,
     safe_log2,
+    safe_norm,
     safe_normalize,
     validate_finite,
 )
@@ -177,6 +178,89 @@ class TestSafeDivide:
         result = safe_divide(num, denom)
         assert result[0] > 1e8  # First element divided by epsilon
         assert result[1] == 2.0  # Second element normal
+
+
+class TestSafeNorm:
+    """Test safe_norm function for overflow-safe L2 norm computation."""
+
+    def test_normal_vector(self) -> None:
+        """Normal vectors should compute correctly."""
+        vec = np.array([3.0, 4.0])
+        result = safe_norm(vec)
+        assert abs(result - 5.0) < 1e-10
+
+    def test_zero_vector(self) -> None:
+        """Zero vector should return 0."""
+        vec = np.array([0.0, 0.0, 0.0])
+        result = safe_norm(vec)
+        assert result == 0.0
+
+    def test_unit_vector(self) -> None:
+        """Unit vector should return 1."""
+        vec = np.array([1.0, 0.0, 0.0])
+        result = safe_norm(vec)
+        assert abs(result - 1.0) < 1e-10
+
+    def test_extreme_large_magnitude(self) -> None:
+        """Extremely large vectors should not overflow."""
+        vec = np.array([1e30, 1e30])
+        result = safe_norm(vec)
+        # Expected: sqrt(2) * 1e30 ≈ 1.414e30
+        expected = np.sqrt(2.0) * 1e30
+        assert np.isfinite(result)
+        assert abs(result - expected) / expected < 1e-6
+
+    def test_extreme_small_magnitude(self) -> None:
+        """Extremely small vectors should work correctly."""
+        vec = np.array([1e-30, 1e-30])
+        result = safe_norm(vec)
+        expected = np.sqrt(2.0) * 1e-30
+        assert np.isfinite(result)
+        assert abs(result - expected) / expected < 1e-6
+
+    def test_mixed_magnitude(self) -> None:
+        """Mixed magnitude vectors should work correctly."""
+        vec = np.array([1e20, 1e-20])
+        result = safe_norm(vec)
+        # The large component dominates
+        assert np.isfinite(result)
+        assert abs(result - 1e20) / 1e20 < 1e-6
+
+    def test_negative_values(self) -> None:
+        """Negative values should work correctly."""
+        vec = np.array([-3.0, -4.0])
+        result = safe_norm(vec)
+        assert abs(result - 5.0) < 1e-10
+
+    def test_single_element(self) -> None:
+        """Single element vectors should work."""
+        vec = np.array([5.0])
+        result = safe_norm(vec)
+        assert abs(result - 5.0) < 1e-10
+
+    def test_large_dimension(self) -> None:
+        """High-dimensional vectors should work."""
+        dim = 1000
+        vec = np.ones(dim) * 1e20
+        result = safe_norm(vec)
+        expected = np.sqrt(dim) * 1e20
+        assert np.isfinite(result)
+        assert abs(result - expected) / expected < 1e-6
+
+    def test_inf_vector(self) -> None:
+        """Vector containing inf should return inf."""
+        vec = np.array([np.inf, 1.0])
+        result = safe_norm(vec)
+        assert result == float("inf")
+
+    def test_consistency_with_numpy(self) -> None:
+        """For normal values, should match np.linalg.norm closely."""
+        np.random.seed(42)
+        for _ in range(10):
+            vec = np.random.randn(100)
+            result = safe_norm(vec)
+            expected = np.linalg.norm(vec)
+            assert abs(result - expected) / max(expected, 1e-10) < 1e-10
 
 
 class TestSafeNormalize:

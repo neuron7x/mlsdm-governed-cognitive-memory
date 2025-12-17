@@ -9,8 +9,11 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from mlsdm.utils.math_constants import safe_norm
+
 if TYPE_CHECKING:
     from mlsdm.config import PELMCalibration
+
 
 # Import calibration defaults - these can be overridden via config
 # Type hints use Optional to allow None when calibration module unavailable
@@ -192,7 +195,7 @@ class PhaseEntangledLatticeMemory:
                 )
 
             vec_np = np.array(vector, dtype=np.float32)
-            norm = float(np.linalg.norm(vec_np) or self.MIN_NORM_THRESHOLD)
+            norm = safe_norm(vec_np) or self.MIN_NORM_THRESHOLD
             idx = self.pointer
             self.memory_bank[idx] = vec_np
             self.phase_bank[idx] = phase
@@ -299,7 +302,7 @@ class PhaseEntangledLatticeMemory:
                 if not np.all(np.isfinite(vec_np)):
                     raise ValueError(f"vector at index {i} contains NaN or infinity values")
 
-                norm = float(np.linalg.norm(vec_np) or self.MIN_NORM_THRESHOLD)
+                norm = safe_norm(vec_np) or self.MIN_NORM_THRESHOLD
                 idx = self.pointer
                 self.memory_bank[idx] = vec_np
                 self.phase_bank[idx] = phase
@@ -379,7 +382,7 @@ class PhaseEntangledLatticeMemory:
                 )
             self._query_buffer[:] = query_vector
             q_vec = self._query_buffer
-            q_norm = float(np.linalg.norm(q_vec))
+            q_norm = safe_norm(q_vec)
             if q_norm < self.MIN_NORM_THRESHOLD:
                 q_norm = self.MIN_NORM_THRESHOLD
 
@@ -540,7 +543,7 @@ class PhaseEntangledLatticeMemory:
         # Recompute norms for all stored vectors (now safe to iterate)
         for i in range(self.size):
             vec = self.memory_bank[i]
-            self.norms[i] = float(np.linalg.norm(vec) or 1e-9)
+            self.norms[i] = safe_norm(vec) or 1e-9
 
     def _auto_recover_unsafe(self) -> bool:
         """

@@ -14,6 +14,7 @@ Usage:
     from mlsdm.utils.math_constants import (
         EPSILON_NORM,
         EPSILON_DIV,
+        safe_norm,
         safe_divide,
         safe_normalize,
         validate_finite,
@@ -166,6 +167,54 @@ def validate_finite(
 # =============================================================================
 
 
+def safe_norm(vector: np.ndarray) -> float:
+    """Compute L2 norm safely, avoiding overflow for extreme magnitude vectors.
+
+    Uses scaled norm computation to prevent overflow when vector elements
+    have very large magnitudes (e.g., 1e30 or greater). This is particularly
+    important when processing external input vectors that may have extreme values.
+
+    The algorithm works by:
+    1. Finding the maximum absolute value in the vector
+    2. Scaling all elements by this maximum value
+    3. Computing the norm of the scaled vector
+    4. Scaling the result back up
+
+    This ensures that intermediate squared values don't overflow, since
+    (x/max)^2 will always be <= 1.0.
+
+    Args:
+        vector: Input numpy array of any dimension.
+
+    Returns:
+        L2 norm of the vector (always finite and non-negative).
+        Returns 0.0 for zero vectors, inf for vectors containing inf.
+
+    Examples:
+        >>> safe_norm(np.array([3.0, 4.0]))
+        5.0
+        >>> safe_norm(np.array([1e30, 1e30]))  # No overflow
+        1.4142135623730951e+30
+        >>> safe_norm(np.array([0.0, 0.0]))
+        0.0
+    """
+    # Find maximum absolute value for scaling
+    max_abs = np.max(np.abs(vector))
+
+    if max_abs == 0.0:
+        return 0.0
+
+    # Handle extreme cases where max_abs itself might be inf
+    if not np.isfinite(max_abs):
+        return float("inf")
+
+    # Scale down to prevent overflow, compute norm, scale back up
+    scaled_vec = vector / max_abs
+    scaled_norm = np.sqrt(np.sum(scaled_vec * scaled_vec))
+
+    return float(max_abs * scaled_norm)
+
+
 @overload
 def safe_divide(
     numerator: float,
@@ -218,7 +267,9 @@ def safe_normalize(
     vector: np.ndarray,
     epsilon: float = EPSILON_NORM,
 ) -> np.ndarray:
-    """Safely normalize a vector to unit length, handling zero-norm vectors.
+    """Safely normalize a vector to unit length, handling zero-norm and extreme vectors.
+
+    Uses safe_norm internally to prevent overflow with extreme magnitude vectors.
 
     Args:
         vector: Input vector to normalize.
@@ -234,7 +285,7 @@ def safe_normalize(
         >>> safe_normalize(np.array([0.0, 0.0]))
         array([0., 0.])
     """
-    norm = float(np.linalg.norm(vector))
+    norm = safe_norm(vector)
     if norm < epsilon:
         return vector
     return vector / norm

@@ -3,8 +3,11 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 
+from mlsdm.utils.math_constants import safe_norm
+
 if TYPE_CHECKING:
     from mlsdm.config import SynapticMemoryCalibration
+
 
 # Import calibration defaults for consistent parameter values
 # Type annotation uses Optional since module may not be available
@@ -146,9 +149,9 @@ class MultiLevelSynapticMemory:
         # Record observability metrics
         if _OBSERVABILITY_AVAILABLE and start_time is not None:
             latency_ms = (time.perf_counter() - start_time) * 1000
-            l1_norm = float(np.linalg.norm(self.l1))
-            l2_norm = float(np.linalg.norm(self.l2))
-            l3_norm = float(np.linalg.norm(self.l3))
+            l1_norm = safe_norm(self.l1)
+            l2_norm = safe_norm(self.l2)
+            l3_norm = safe_norm(self.l3)
 
             # Detect consolidation by checking if transfers occurred
             # Transfer happened if L2 increased more than from decay alone
