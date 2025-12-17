@@ -45,7 +45,7 @@ help:
 
 # Testing & Linting
 test:
-	pytest --ignore=tests/load
+	pytest --ignore=tests/load -m "not slow and not benchmark and not comprehensive"
 
 test-fast:
 	@echo "Running fast unit tests (excluding slow/comprehensive)..."

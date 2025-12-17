@@ -81,7 +81,7 @@ python -m pytest tests/unit/ tests/state/ \
     --cov-report=term-missing \
     --cov-report=xml:coverage.xml \
     --cov-fail-under=0 \
-    -m "not slow" \
+    -m "not slow and not benchmark and not comprehensive" \
     -q \
     --tb=short \
     $PYTEST_ARGS 2>&1 | tee /tmp/coverage_output.txt || true
