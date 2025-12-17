@@ -11,6 +11,7 @@ Provides common utilities for the MLSDM framework including:
 - Input validation
 - Security logging
 - Mathematical constants and safe operations
+- Time provider abstraction for deterministic testing
 """
 
 from .array_pool import (
@@ -57,6 +58,14 @@ from .math_constants import (
     validate_finite,
 )
 from .rate_limiter import RateLimiter
+from .time_provider import (
+    DefaultTimeProvider,
+    FakeTimeProvider,
+    TimeProvider,
+    get_default_time_provider,
+    reset_default_time_provider,
+    set_default_time_provider,
+)
 
 __all__ = [
     # Array pool
@@ -83,6 +92,13 @@ __all__ = [
     "clear_default_cache",
     # Rate limiting
     "RateLimiter",
+    # Time provider
+    "TimeProvider",
+    "DefaultTimeProvider",
+    "FakeTimeProvider",
+    "get_default_time_provider",
+    "set_default_time_provider",
+    "reset_default_time_provider",
     # Math constants and utilities
     "EPSILON_NORM",
     "EPSILON_DIV",

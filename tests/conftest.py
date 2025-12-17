@@ -5,7 +5,10 @@ This module provides common fixtures, marks, and configuration
 for deterministic, reproducible testing across the test suite.
 """
 
+from __future__ import annotations
+
 import os
+from typing import TYPE_CHECKING, Any
 
 # CRITICAL: Set environment variables BEFORE any imports that might load mlsdm.api.app
 # This ensures rate limiting is disabled before FastAPI middleware is initialized
@@ -13,11 +16,14 @@ os.environ["DISABLE_RATE_LIMIT"] = "1"
 os.environ["LLM_BACKEND"] = "local_stub"
 
 import random
-from collections.abc import Callable
-from typing import Any
 
 import numpy as np
 import pytest
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from mlsdm.utils.time_provider import FakeTimeProvider
 
 # ============================================================
 # Pytest Hooks and Configuration
@@ -393,3 +399,37 @@ def safe_prompt_samples() -> list[str]:
         "Describe the water cycle in nature.",
         "How do computers process information?",
     ]
+
+
+# ============================================================
+# Time Provider Fixtures
+# ============================================================
+
+
+@pytest.fixture
+def fake_time() -> FakeTimeProvider:
+    """
+    Provide a FakeTimeProvider for deterministic time testing.
+
+    Returns:
+        A FakeTimeProvider starting at time 0.
+    """
+    from mlsdm.utils.time_provider import FakeTimeProvider
+
+    return FakeTimeProvider(start_time=0.0)
+
+
+@pytest.fixture
+def fake_time_with_start() -> Callable[[float], FakeTimeProvider]:
+    """
+    Factory fixture for creating FakeTimeProvider with custom start time.
+
+    Returns:
+        A function that creates a FakeTimeProvider with the specified start time.
+    """
+    from mlsdm.utils.time_provider import FakeTimeProvider
+
+    def _create(start_time: float) -> FakeTimeProvider:
+        return FakeTimeProvider(start_time=start_time)
+
+    return _create

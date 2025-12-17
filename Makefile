@@ -1,4 +1,4 @@
-.PHONY: test lint type cov bench bench-drift help run-dev run-cloud-local run-agent health-check eval-moral_filter test-memory-obs \
+.PHONY: test test-fast coverage-gate lint type cov bench bench-drift help run-dev run-cloud-local run-agent health-check eval-moral_filter test-memory-obs \
         build-package test-package docker-build-neuro-engine docker-run-neuro-engine docker-smoke-neuro-engine \
         docker-compose-up docker-compose-down
 
@@ -8,12 +8,14 @@ help:
 	@echo "MLSDM Governed Cognitive Memory - Development Commands"
 	@echo ""
 	@echo "Testing & Linting:"
-	@echo "  make test     - Run all tests (uses pytest.ini config)"
-	@echo "  make lint     - Run ruff linter on src and tests"
-	@echo "  make type     - Run mypy type checker on src/mlsdm"
-	@echo "  make cov      - Run tests with coverage report"
-	@echo "  make bench    - Run performance benchmarks (matches CI)"
-	@echo "  make bench-drift - Check benchmark results against baseline"
+	@echo "  make test          - Run all tests (uses pytest.ini config)"
+	@echo "  make test-fast     - Run fast unit tests (excludes slow/comprehensive)"
+	@echo "  make coverage-gate - Run coverage gate with threshold check"
+	@echo "  make lint          - Run ruff linter on src and tests"
+	@echo "  make type          - Run mypy type checker on src/mlsdm"
+	@echo "  make cov           - Run tests with coverage report"
+	@echo "  make bench         - Run performance benchmarks (matches CI)"
+	@echo "  make bench-drift   - Check benchmark results against baseline"
 	@echo ""
 	@echo "Package Building:"
 	@echo "  make build-package  - Build wheel and sdist distributions"
@@ -43,6 +45,19 @@ help:
 # Testing & Linting
 test:
 	pytest --ignore=tests/load
+
+test-fast:
+	@echo "Running fast unit tests (excluding slow/comprehensive)..."
+	pytest tests/unit tests/state -m "not slow and not comprehensive" -q --tb=short
+
+coverage-gate:
+	@echo "Running coverage gate..."
+	./coverage_gate.sh
+	@if [ ! -f coverage.xml ]; then \
+		echo "ERROR: coverage.xml was not generated"; \
+		exit 1; \
+	fi
+	@echo "✓ coverage.xml generated successfully"
 
 lint:
 	ruff check src tests

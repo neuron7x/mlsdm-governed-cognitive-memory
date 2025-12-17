@@ -39,12 +39,10 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Run ruff linter
-        run: |
-          ruff check src tests
+        run: make lint
 
       - name: Run mypy type checker
-        run: |
-          mypy src/mlsdm
+        run: make type
 
   security:
     name: Security Vulnerability Scan
