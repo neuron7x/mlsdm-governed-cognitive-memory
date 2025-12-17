@@ -450,8 +450,6 @@ def fast_time(monkeypatch: pytest.MonkeyPatch) -> FakeTimeProvider:
     provider = FakeTimeProvider(start_time=time.time())
     real_sleep = time.sleep
     real_async_sleep = asyncio.sleep
-    real_perf_counter = time.perf_counter
-
     def _fast_sleep(seconds: float = 0.0) -> None:
         delta = max(float(seconds), 0.0)
         provider.advance(delta + 1e-6)
