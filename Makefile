@@ -1,4 +1,5 @@
 .PHONY: test test-fast coverage-gate lint type cov bench bench-drift help run-dev run-cloud-local run-agent health-check eval-moral_filter test-memory-obs \
+        test-e2e test-effectiveness coverage-full ci-verify \
         build-package test-package docker-build-neuro-engine docker-run-neuro-engine docker-smoke-neuro-engine \
         docker-compose-up docker-compose-down
 
@@ -50,6 +51,14 @@ test-fast:
 	@echo "Running fast unit tests (excluding slow/comprehensive)..."
 	pytest tests/unit tests/state -m "not slow and not comprehensive" -q --tb=short
 
+test-e2e:
+	@echo "Running end-to-end tests..."
+	pytest tests/e2e -v -m "not slow" --tb=short
+
+test-effectiveness:
+	@echo "Running effectiveness validation suite..."
+	python scripts/run_effectiveness_suite.py --validate-slo
+
 coverage-gate:
 	@echo "Running coverage gate..."
 	./coverage_gate.sh
@@ -68,9 +77,15 @@ type:
 cov:
 	pytest --ignore=tests/load --cov=src --cov-report=html --cov-report=term-missing
 
+coverage-full:
+	@echo "Running full coverage (includes slow tests, excludes load)..."
+	pytest --ignore=tests/load --cov=src/mlsdm --cov-report=xml --cov-report=term-missing \
+		--cov-fail-under=65 -m "not benchmark" -v
+
 bench:
 	@echo "Running performance benchmarks..."
-	pytest benchmarks/test_neuro_engine_performance.py -v -s --tb=short
+	pytest benchmarks/test_neuro_engine_performance.py -v -s --tb=short \
+		--junitxml=benchmark-results.xml 2>&1 | tee benchmark-output.txt
 
 bench-drift:
 	@echo "Checking benchmark drift against baseline..."
@@ -152,3 +167,7 @@ health-check:
 # Evaluation Suites
 eval-moral_filter:
 	python -m evals.moral_filter_runner
+
+ci-verify:
+	@echo "Verifying CI workflow alignment with Makefile targets..."
+	python scripts/verify_workflow_alignment.py

@@ -10,6 +10,9 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING, Any
 
+import asyncio
+import time
+
 # CRITICAL: Set environment variables BEFORE any imports that might load mlsdm.api.app
 # This ensures rate limiting is disabled before FastAPI middleware is initialized
 os.environ["DISABLE_RATE_LIMIT"] = "1"
@@ -20,10 +23,10 @@ import random
 import numpy as np
 import pytest
 
+from mlsdm.utils.time_provider import FakeTimeProvider
+
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-    from mlsdm.utils.time_provider import FakeTimeProvider
 
 # ============================================================
 # Pytest Hooks and Configuration
@@ -433,3 +436,38 @@ def fake_time_with_start() -> Callable[[float], FakeTimeProvider]:
         return FakeTimeProvider(start_time=start_time)
 
     return _create
+
+
+@pytest.fixture
+def fast_time(monkeypatch: pytest.MonkeyPatch) -> FakeTimeProvider:
+    """
+    Use a FakeTimeProvider to make time-based tests deterministic and fast.
+
+    This fixture replaces time.time/monotonic/sleep and asyncio.sleep so tests
+    no longer rely on real wall-clock delays while still advancing logical time.
+    """
+
+    provider = FakeTimeProvider(start_time=time.time())
+    real_sleep = time.sleep
+    real_async_sleep = asyncio.sleep
+    real_perf_counter = time.perf_counter
+
+    def _fast_sleep(seconds: float = 0.0) -> None:
+        delta = max(float(seconds), 0.0)
+        provider.advance(delta + 1e-6)
+        # Allow minimal real delay for filesystem timestamps/event loop progression
+        real_sleep(min(delta, 0.01))
+
+    async def _fast_async_sleep(delay: float, result: Any | None = None) -> Any | None:
+        delta = max(float(delay), 0.0)
+        provider.advance(delta + 1e-6)
+        await real_async_sleep(min(delta, 0.01))
+        return result
+
+    monkeypatch.setattr(time, "time", provider.now)
+    monkeypatch.setattr(time, "monotonic", provider.monotonic)
+    monkeypatch.setattr(time, "perf_counter", provider.monotonic)
+    monkeypatch.setattr(time, "sleep", _fast_sleep)
+    monkeypatch.setattr(asyncio, "sleep", _fast_async_sleep)
+
+    return provider

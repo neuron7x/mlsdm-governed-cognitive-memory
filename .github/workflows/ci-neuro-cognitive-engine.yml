@@ -14,10 +14,29 @@ permissions:
   contents: read
 
 jobs:
+  workflow-consistency:
+    name: Workflow Make Alignment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install check dependency
+        run: python -m pip install --upgrade pip pyyaml
+
+      - name: Verify workflow uses make targets
+        run: make ci-verify
+
   lint:
     name: Lint and Type Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: [workflow-consistency]
 
     steps:
       - name: Checkout code
@@ -109,8 +128,7 @@ jobs:
           pip install -e ".[test]"
 
       - name: Run tests
-        run: |
-          pytest -q --ignore=tests/load
+        run: make test
 
   coverage:
     name: Code Coverage Gate
@@ -140,20 +158,52 @@ jobs:
           pip install -e ".[test]"
 
       - name: Run tests with coverage
-        run: |
-          # WHY: Generate coverage report for src/mlsdm with realistic threshold
-          # Current coverage: ~68%. Set threshold at 65% to allow small fluctuations
-          # TODO: Increase threshold when coverage consistently exceeds current threshold by 5%
-          #       Example: 68% → 70% threshold when coverage reaches 73% for 2+ releases
-          # NOTE: Exclude slow/benchmark tests to avoid flaky performance tests blocking coverage gate
-          pytest --cov=src/mlsdm --cov-report=xml --cov-report=term-missing \
-            --cov-fail-under=65 --ignore=tests/load -m "not slow and not benchmark" -v
+        run: make coverage-gate
 
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
+          path: coverage.xml
+          retention-days: 90
+
+  coverage-full:
+    name: Code Coverage (Full)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    if: github.event_name != 'pull_request'
+    env:
+      DISABLE_RATE_LIMIT: "1"
+      LLM_BACKEND: "local_stub"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e ".[test]"
+
+      - name: Run full coverage suite
+        run: make coverage-full
+
+      - name: Upload full coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-full
           path: coverage.xml
           retention-days: 90
 
@@ -185,8 +235,7 @@ jobs:
           pip install -e ".[test]"
 
       - name: Run E2E tests
-        run: |
-          pytest tests/e2e -v -m "not slow" --tb=short
+        run: make test-e2e
 
   effectiveness-validation:
     name: Effectiveness Validation
@@ -216,8 +265,7 @@ jobs:
           pip install -e ".[test]"
 
       - name: Run effectiveness suite with SLO validation
-        run: |
-          python scripts/run_effectiveness_suite.py --validate-slo
+        run: make test-effectiveness
 
       - name: Upload effectiveness snapshot
         if: always()
@@ -259,10 +307,8 @@ jobs:
       - name: Run benchmarks with SLO assertions
         id: benchmarks
         run: |
-          # Run benchmarks and capture output
-          echo "Running SLO-based performance benchmarks..."
-          pytest benchmarks/test_neuro_engine_performance.py -v -s --tb=short \
-            --junitxml=benchmark-results.xml 2>&1 | tee benchmark-output.txt
+          # Run benchmarks and capture output using canonical target
+          make bench
 
           # Extract P95 latencies from output for tracking
           # WHY: Use Python datetime for accurate timestamps instead of shell command
