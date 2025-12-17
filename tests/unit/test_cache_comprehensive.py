@@ -19,7 +19,6 @@ from mlsdm.utils.cache import (
     CacheStats,
     MemoryCache,
     cached_llm_response,
-    hash_text,
 )
 
 
@@ -173,7 +172,7 @@ class TestCacheManagerDisabledOperations:
 
 class TestRedisCacheMocked:
     """Tests for RedisCache using mocked Redis client.
-    
+
     These tests mock the redis module at import time to test RedisCache behavior.
     """
 
@@ -442,7 +441,7 @@ class TestCacheManagerWithRedis:
                 backend="redis",
                 redis_url="redis://localhost:6379",
             )
-            manager = CacheManager(config)
+            CacheManager(config)
 
             MockRedisCache.assert_called_once_with(
                 redis_url="redis://localhost:6379",

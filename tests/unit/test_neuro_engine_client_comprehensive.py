@@ -13,7 +13,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from mlsdm.engine import NeuroEngineConfig
 from mlsdm.sdk import NeuroCognitiveClient
 from mlsdm.sdk.neuro_engine_client import (
     GENERATE_RESPONSE_DTO_KEYS,
@@ -188,7 +187,7 @@ class TestGenerateResponseDTOKeys:
             "error",
             "rejected_at",
         }
-        assert GENERATE_RESPONSE_DTO_KEYS == expected_keys
+        assert expected_keys == GENERATE_RESPONSE_DTO_KEYS
 
     def test_generate_response_dto_keys_is_frozenset(self) -> None:
         """Test GENERATE_RESPONSE_DTO_KEYS is immutable."""

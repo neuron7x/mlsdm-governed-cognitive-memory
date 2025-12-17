@@ -12,12 +12,10 @@ This test module expands coverage to include:
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
 import pytest
 
 from mlsdm.adapters import LocalStubProvider
-from mlsdm.router import ABTestRouter, RouterError, RuleBasedRouter
+from mlsdm.router import ABTestRouter, RuleBasedRouter
 
 
 class TestLLMRouterBaseClass:
