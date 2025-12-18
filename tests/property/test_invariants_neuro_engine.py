@@ -96,18 +96,41 @@ def create_test_engine(config=None):
 
 
 def get_moral_score_estimate(response_text, prompt):
-    """Estimate moral score from response (simplified)."""
-    # In real system, this would use actual moral filter
-    # Here we use heuristic: reject harmful patterns
-    prompt_lower = prompt.lower()
-    response_lower = response_text.lower()
+    """Estimate moral score from response using same logic as MoralFilterV2.compute_moral_value.
 
-    if any(word in prompt_lower for word in HARMFUL_CONTENT_PATTERNS):
-        return 0.2  # Low moral score for harmful prompts
-    elif "cannot respond" in response_lower:
-        return 0.3  # Rejection response gets moderate score
-    else:
-        return 0.8  # Neutral responses get high score
+    Uses the actual scoring logic:
+    - Base score 0.8 ("innocent until proven guilty")
+    - Harmful patterns reduce by 0.15 each
+    - Positive patterns increase by 0.05 each
+    """
+    import re
+
+    text = prompt.lower()
+
+    # Same patterns as compute_moral_value
+    harmful_patterns = [
+        "hate", "violence", "attack", "kill", "destroy", "harm",
+        "abuse", "exploit", "discriminate", "racist", "sexist",
+        "terrorist", "weapon", "bomb", "murder",
+    ]
+    positive_patterns = [
+        "help", "support", "care", "love", "kind", "respect",
+        "ethical", "fair", "honest", "trust", "safe", "protect",
+        "collaborate", "peace", "understanding",
+    ]
+
+    # Count pattern matches with word boundary
+    harmful_regex = re.compile(r"\b(" + "|".join(harmful_patterns) + r")\b", re.IGNORECASE)
+    positive_regex = re.compile(r"\b(" + "|".join(positive_patterns) + r")\b", re.IGNORECASE)
+
+    harmful_count = len(harmful_regex.findall(text))
+    positive_count = len(positive_regex.findall(text))
+
+    # Same scoring as compute_moral_value
+    base_score = 0.8
+    adjusted_score = base_score - (harmful_count * 0.15) + (positive_count * 0.05)
+
+    return max(0.0, min(1.0, adjusted_score))
 
 
 # ============================================================================
