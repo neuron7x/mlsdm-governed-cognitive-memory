@@ -51,6 +51,20 @@ def pytest_configure(config: Any) -> None:
 # ============================================================
 
 
+@pytest.fixture(autouse=True, scope="function")
+def _ensure_deterministic_random_state() -> None:
+    """
+    Autouse fixture to ensure reproducible random state for all tests.
+
+    This runs before every test function to reset random seeds, ensuring
+    tests are not affected by random state from previous tests.
+    This is critical for CI reproducibility (TEST-DET-001).
+    """
+    seed = 42
+    random.seed(seed)
+    np.random.seed(seed)
+
+
 @pytest.fixture
 def deterministic_seed() -> int:
     """
