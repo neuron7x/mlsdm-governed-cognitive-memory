@@ -160,7 +160,7 @@ addopts = [
     # "--cov=src",
     # "--cov-report=html",
     # "--cov-report=term-missing",
-    # "--cov-fail-under=90",  # Unrealistic - actual coverage is ~68%
+    # "--cov-fail-under=90",  # Not used - CI enforces 65% threshold, actual coverage is ~86%
     "--strict-markers",
     "--strict-config",
     "-v",

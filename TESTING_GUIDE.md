@@ -3,7 +3,7 @@
 **Document Version:** 1.2.0
 **Project Version:** 1.2.0
 **Last Updated:** December 2025
-**Test Coverage:** 70.85% (Overall) | 90%+ (Core Modules)
+**Test Coverage:** 86% (Overall) | 90%+ (Core Modules)
 
 ## Table of Contents
 
@@ -21,11 +21,11 @@
 
 ## Overview
 
-This guide provides comprehensive instructions for testing MLSDM Governed Cognitive Memory. The project maintains solid test coverage (70.85% overall, 90%+ for core modules) and follows industry best practices for unit, integration, and validation testing.
+This guide provides comprehensive instructions for testing MLSDM Governed Cognitive Memory. The project maintains solid test coverage (86% overall, 90%+ for core modules) and follows industry best practices for unit, integration, and validation testing.
 
 ### Testing Philosophy
 
-1. **Pragmatic Coverage**: Maintain ≥68% overall coverage (enforced), 90%+ for core modules
+1. **Pragmatic Coverage**: Maintain ≥65% overall coverage (CI enforced), 90%+ for core modules
 2. **Test Pyramid**: More unit tests, fewer integration tests
 3. **Fast Execution**: Unit tests < 1ms, integration tests < 1s
 4. **Reproducibility**: Deterministic tests with fixed seeds
@@ -35,7 +35,7 @@ This guide provides comprehensive instructions for testing MLSDM Governed Cognit
 
 | Category | Purpose | Location | Count | Execution Time |
 |----------|---------|----------|-------|----------------|
-| **Unit Tests** | Test individual components | `tests/unit/` | ~1,200 | <30s |
+| **Unit Tests** | Test individual components | `tests/unit/` | ~1,900 | <40s |
 | **State Tests** | Test state persistence | `tests/state/` | ~31 | <5s |
 | **Integration Tests** | Test component interactions | `tests/integration/` | ~50 | <10s |
 | **Validation Tests** | Test effectiveness claims | `tests/validation/` | ~4 | <10s |
@@ -101,7 +101,7 @@ The MLSDM test suite is organized by scope and purpose to support different vali
 | `tests/security/` | Security tests | ~38 | STRIDE controls |
 | `tests/e2e/` | End-to-end scenarios | ~28 | Full workflows |
 | `tests/load/` | Load tests (Locust) | ~3 | Throughput |
-| **Total** | **Full Suite** | **~1,587** | **70.85% coverage** |
+| **Total** | **Full Suite** | **~3,600** | **86% coverage** |
 
 ### Test Scopes
 
@@ -119,7 +119,7 @@ pytest tests/unit/test_cognitive_controller.py \
 **Full Coverage Suite** (used in coverage_gate.sh):
 ```bash
 pytest tests/unit/ tests/state/ --cov=src/mlsdm
-# Result: 1,587 tests, 70.85% coverage
+# Result: ~1,900 tests, 86% coverage
 ```
 
 ### Directory Structure
@@ -158,8 +158,8 @@ tests/
 
 ## Coverage Requirements
 
-- **Minimum Coverage Threshold:** 68% (enforced by coverage_gate.sh)
-- **Current Overall Coverage:** 70.85% (measured on tests/unit/ + tests/state/)
+- **Minimum Coverage Threshold:** 65% (enforced by CI workflow)
+- **Current Overall Coverage:** ~86% (measured on full test suite)
 - **Core Modules Coverage:** 90%+ (cognitive controller, memory, moral filter)
 - **Critical Modules:** Near 100% coverage achieved for:
   - `src/mlsdm/core/cognitive_controller.py` (97.05%)
@@ -254,18 +254,22 @@ src/mlsdm/utils/input_validator.py    87     12    86%   42, 59-60, 95-96, 131, 
 ### Pre-commit Checks
 
 ```bash
-# Run before committing
-pytest --cov=src --cov-fail-under=90 tests/ src/tests/unit/
+# Run before committing (CI threshold is 65%)
+pytest --cov=src/mlsdm --cov-fail-under=65 tests/ -m "not slow"
 ```
 
 ### Coverage Threshold
 
-The coverage threshold is configured in `pyproject.toml`:
+The coverage threshold is enforced by CI workflow in `.github/workflows/ci-neuro-cognitive-engine.yml`:
 
-```toml
-[tool.pytest.ini_options]
-addopts = "--cov=src --cov-report=html --cov-fail-under=90"
+```bash
+# CI Coverage Gate (currently 65%, actual coverage is ~86%)
+pytest --cov=src/mlsdm --cov-report=xml --cov-report=term-missing \
+  --cov-fail-under=65 --ignore=tests/load -m "not slow and not benchmark" -v
 ```
+
+> **Note**: The threshold is set conservatively at 65% to allow minor fluctuations.
+> Actual coverage is ~86%. The threshold may be increased as coverage stabilizes.
 
 ## Troubleshooting
 

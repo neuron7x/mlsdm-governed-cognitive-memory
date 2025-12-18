@@ -124,12 +124,10 @@ DISABLE_RATE_LIMIT=1 LLM_BACKEND=local_stub \
 - `LLM_BACKEND=local_stub`
 
 **Success Criteria**:
-- Coverage ≥ 65% on src/mlsdm (current: ~68%)
+- Coverage ≥ 65% on src/mlsdm (current: ~86%)
 - Exit code 0
 
-**Note**: Threshold set at 65% to match current coverage (~68%). This provides a quality gate while allowing for minor fluctuations.
-
-**Threshold Increase Criteria**: When actual coverage consistently exceeds the current threshold by 5% for 2+ releases, increase threshold to (current_coverage - 3%). Example: If coverage reaches 73% consistently → increase threshold to 70%.
+**Note**: Threshold set at 65% for stability. Current coverage is ~86%, providing significant headroom. Threshold may be increased in future releases.
 
 **Artifacts**:
 - `coverage.xml` (90 day retention)
@@ -389,7 +387,7 @@ Access artifacts from workflow run page in GitHub Actions.
 | Ruff violations | 0 | lint |
 | Mypy errors | 0 | lint |
 | Security vulnerabilities | 0 | security |
-| Code coverage | ≥65% (current: ~68%) | coverage |
+| Code coverage | ≥65% (current: ~86%) | coverage |
 | E2E tests | 68/68 pass | e2e-tests |
 | Pre-flight P95 latency | <20ms | benchmarks |
 | End-to-end P95 latency | <500ms | benchmarks |

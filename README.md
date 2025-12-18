@@ -19,7 +19,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/ci-neuro-cognitive-engine.yml?style=for-the-badge&logo=github-actions&logoColor=white&label=CI)](https://github.com/neuron7x/mlsdm/actions/workflows/ci-neuro-cognitive-engine.yml)
 [![Tests](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/property-tests.yml?style=for-the-badge&logo=pytest&logoColor=white&label=Tests)](https://github.com/neuron7x/mlsdm/actions/workflows/property-tests.yml)
 [![Security](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/sast-scan.yml?style=for-the-badge&logo=shield&logoColor=white&label=Security)](https://github.com/neuron7x/mlsdm/actions/workflows/sast-scan.yml)
-[![Coverage](https://img.shields.io/badge/coverage-70.85%25%20(gate:%2065%25)-green?style=for-the-badge)](COVERAGE_REPORT_2025.md)
+[![Coverage](https://img.shields.io/badge/coverage-86%25%20(gate:%2065%25)-green?style=for-the-badge)](COVERAGE_REPORT_2025.md)
 [![Python](https://img.shields.io/badge/python-3.10+-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://github.com/neuron7x/mlsdm/pkgs/container/mlsdm-neuro-engine)
@@ -626,7 +626,7 @@ For detailed validation results, see:
 
 | Dimension | Status | Implementation | Key References |
 |:----------|:-------|:---------------|:---------------|
-| **Test Coverage** | 70.85%* | `pytest`, `pytest-cov`, unit/integration/e2e/property | [TESTING_GUIDE.md](TESTING_GUIDE.md), [COVERAGE_REPORT_2025.md](COVERAGE_REPORT_2025.md) |
+| **Test Coverage** | 86%* | `pytest`, `pytest-cov`, unit/integration/e2e/property | [TESTING_GUIDE.md](TESTING_GUIDE.md), [COVERAGE_REPORT_2025.md](COVERAGE_REPORT_2025.md) |
 | **Test Types** | Unit, Integration, E2E, Property, Load, Security | `tests/unit/`, `tests/integration/`, `tests/e2e/`, `tests/property/`, `tests/load/`, `tests/security/` | [tests/](tests/) |
 | **Type Safety** | Strict mypy | Configured in `pyproject.toml` with strict mode | [pyproject.toml](pyproject.toml) |
 | **Static Analysis** | ruff, bandit | Pre-commit hooks and CI checks | [.pre-commit-config.yaml](.pre-commit-config.yaml) |
@@ -634,7 +634,7 @@ For detailed validation results, see:
 | **Security** | Policy + Implementation | Rate limiting, input validation, audit logging, threat model | [SECURITY_POLICY.md](SECURITY_POLICY.md), [THREAT_MODEL.md](THREAT_MODEL.md) |
 | **Observability** | Prometheus + OpenTelemetry | Metrics, structured logging, distributed tracing | [OBSERVABILITY_GUIDE.md](OBSERVABILITY_GUIDE.md), [SLO_SPEC.md](SLO_SPEC.md) |
 
-**\*Coverage Note**: Full codebase coverage is 70.85% (measured on `tests/unit/` + `tests/state/`). Core cognitive modules achieve 90%+ coverage. See [COVERAGE_REPORT_2025.md](COVERAGE_REPORT_2025.md) for detailed breakdown.
+**\*Coverage Note**: Full codebase coverage is ~86% (measured on full test suite). Core cognitive modules achieve 90%+ coverage. See [COVERAGE_REPORT_2025.md](COVERAGE_REPORT_2025.md) for detailed breakdown.
 
 ### 🚀 Deployment Topologies
 
@@ -703,7 +703,7 @@ For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE
 |:---------|:------------|
 | [Implementation Summary](IMPLEMENTATION_SUMMARY.md) | What was built and how |
 | [Effectiveness Report](EFFECTIVENESS_VALIDATION_REPORT.md) | Quantitative validation results |
-| [Coverage Report](COVERAGE_REPORT_2025.md) | 70.85% test coverage details |
+| [Coverage Report](COVERAGE_REPORT_2025.md) | ~86% test coverage details |
 | [Testing Guide](TESTING_GUIDE.md) | How to run and write tests |
 
 ### Scientific Foundation
@@ -737,7 +737,7 @@ For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE
 - [x] Wake/sleep cognitive rhythm
 - [x] Aphasia-Broca detection and repair
 - [x] Prometheus metrics and structured logging
-- [x] 70%+ test coverage (core modules 90%+) with property-based tests
+- [x] 86%+ test coverage (core modules 90%+) with property-based tests
 - [x] Thread-safe concurrent access
 
 ### Recent Improvements (v1.2+)

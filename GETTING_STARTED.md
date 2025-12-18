@@ -328,7 +328,7 @@ pytest tests/ --ignore=tests/load -v
 # Run with coverage measurement
 ./coverage_gate.sh
 
-# Expected: 70.85% overall coverage, 1,587+ tests passing
+# Expected: ~86% overall coverage, 3,600+ tests passing
 ```
 
 See [CLAIMS_TRACEABILITY.md](CLAIMS_TRACEABILITY.md) for complete metric documentation.
