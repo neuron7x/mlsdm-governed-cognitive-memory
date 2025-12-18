@@ -7,6 +7,7 @@ for deterministic, reproducible testing across the test suite.
 
 from __future__ import annotations
 
+import importlib.util
 import os
 from typing import TYPE_CHECKING, Any
 
@@ -60,8 +61,6 @@ def _set_random_seeds(seed: int) -> None:
     Args:
         seed: The seed value to use for all random number generators.
     """
-    import importlib.util
-
     random.seed(seed)
     np.random.seed(seed)
 
@@ -85,7 +84,7 @@ def _ensure_deterministic_random_state() -> None:
 
     This runs before every test function to reset random seeds, ensuring
     tests are not affected by random state from previous tests.
-    This is critical for CI reproducibility (TEST-DET-001).
+    This prevents test flakiness from order-dependent random behavior.
     """
     _set_random_seeds(_DEFAULT_SEED)
 
