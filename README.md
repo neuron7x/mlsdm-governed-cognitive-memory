@@ -306,6 +306,26 @@ pip install -r requirements-neurolang.txt  # Add Aphasia/NeuroLang support
 
 **Note:** OpenTelemetry is now optional. MLSDM works perfectly without it if you don't need distributed tracing.
 
+### Dependency Management
+
+This project uses [`uv`](https://github.com/astral-sh/uv) for deterministic dependency locking. The `uv.lock` file pins all dependencies with cryptographic hashes for supply-chain security.
+
+```bash
+# Development install (uses uv.lock for reproducible installs)
+uv sync
+
+# Or with pip (still uses pyproject.toml)
+pip install -e ".[dev]"
+
+# Update dependencies and regenerate lock file
+uv lock --upgrade
+
+# Production install with hash verification
+uv sync --frozen
+```
+
+> **Automated Updates:** Dependabot is configured to raise PRs weekly for dependency updates, ensuring auditable changes instead of silent drift.
+
 ### Basic Usage
 
 ```python

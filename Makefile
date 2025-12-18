@@ -1,6 +1,6 @@
 .PHONY: test test-fast coverage-gate lint type cov bench bench-drift help run-dev run-cloud-local run-agent health-check eval-moral_filter test-memory-obs \
         build-package test-package docker-build-neuro-engine docker-run-neuro-engine docker-smoke-neuro-engine \
-        docker-compose-up docker-compose-down
+        docker-compose-up docker-compose-down lock sync
 
 export PYTHONPATH := $(PYTHONPATH):$(CURDIR)/src
 
@@ -20,6 +20,10 @@ help:
 	@echo "Package Building:"
 	@echo "  make build-package  - Build wheel and sdist distributions"
 	@echo "  make test-package   - Test package installation in fresh venv"
+	@echo ""
+	@echo "Dependency Management:"
+	@echo "  make sync           - Install dependencies from uv.lock"
+	@echo "  make lock           - Update uv.lock with latest compatible versions"
 	@echo ""
 	@echo "Docker:"
 	@echo "  make docker-build-neuro-engine  - Build neuro-engine Docker image"
@@ -94,6 +98,16 @@ test-package:
 	/tmp/mlsdm-test-venv/bin/python scripts/test_package_install.py
 	rm -rf /tmp/mlsdm-test-venv
 	@echo "✓ Package test passed"
+
+# Dependency Management
+sync:
+	@echo "Installing dependencies from uv.lock..."
+	uv sync
+
+lock:
+	@echo "Updating uv.lock with latest compatible versions..."
+	uv lock --upgrade
+	@echo "✓ uv.lock updated"
 
 # Docker
 DOCKER_IMAGE_NAME ?= ghcr.io/neuron7x/mlsdm-neuro-engine
