@@ -10,6 +10,7 @@ import pytest
 from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
+from mlsdm.cognition.moral_filter_v2 import _HARMFUL_PATTERNS, _POSITIVE_PATTERNS
 from mlsdm.engine import NeuroCognitiveEngine, NeuroEngineConfig
 
 # Test tolerances
@@ -96,32 +97,27 @@ def create_test_engine(config=None):
 
 
 def get_moral_score_estimate(response_text, prompt):
-    """Estimate moral score from response using same logic as MoralFilterV2.compute_moral_value.
+    """Estimate moral score for a prompt using same logic as MoralFilterV2.compute_moral_value.
+
+    Note: The pre-flight moral check analyzes the PROMPT (not response), so this function
+    primarily evaluates the prompt to match the behavior of compute_moral_value.
 
     Uses the actual scoring logic:
     - Base score 0.8 ("innocent until proven guilty")
     - Harmful patterns reduce by 0.15 each
     - Positive patterns increase by 0.05 each
+
+    Args:
+        response_text: The LLM response (kept for backward compatibility but not used)
+        prompt: The original prompt to analyze
     """
     import re
 
     text = prompt.lower()
 
-    # Same patterns as compute_moral_value
-    harmful_patterns = [
-        "hate", "violence", "attack", "kill", "destroy", "harm",
-        "abuse", "exploit", "discriminate", "racist", "sexist",
-        "terrorist", "weapon", "bomb", "murder",
-    ]
-    positive_patterns = [
-        "help", "support", "care", "love", "kind", "respect",
-        "ethical", "fair", "honest", "trust", "safe", "protect",
-        "collaborate", "peace", "understanding",
-    ]
-
-    # Count pattern matches with word boundary
-    harmful_regex = re.compile(r"\b(" + "|".join(harmful_patterns) + r")\b", re.IGNORECASE)
-    positive_regex = re.compile(r"\b(" + "|".join(positive_patterns) + r")\b", re.IGNORECASE)
+    # Use patterns from MoralFilterV2 module for consistency
+    harmful_regex = re.compile(r"\b(" + "|".join(_HARMFUL_PATTERNS) + r")\b", re.IGNORECASE)
+    positive_regex = re.compile(r"\b(" + "|".join(_POSITIVE_PATTERNS) + r")\b", re.IGNORECASE)
 
     harmful_count = len(harmful_regex.findall(text))
     positive_count = len(positive_regex.findall(text))
