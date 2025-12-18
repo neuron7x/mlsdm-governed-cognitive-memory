@@ -1,0 +1,33 @@
+# CODEOWNERS - Security Governance
+#
+# This file defines ownership for security-critical areas of the repository.
+# Owners are automatically requested for review when these paths are modified.
+#
+# Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for the entire repository
+* @neuron7x
+
+# GitHub Actions workflows - require review for CI/CD changes
+.github/workflows/** @neuron7x
+
+# Security infrastructure
+src/mlsdm/security/** @neuron7x
+
+# Container definitions
+Dockerfile* @neuron7x
+docker/** @neuron7x
+
+# Policy-as-code and security policies
+policies/** @neuron7x
+policy/** @neuron7x
+
+# Security documentation
+SECURITY.md @neuron7x
+SECURITY_POLICY.md @neuron7x
+SECURITY_IMPLEMENTATION.md @neuron7x
+SECURITY_GUARDRAILS.md @neuron7x
+THREAT_MODEL.md @neuron7x
+
+# Deployment configurations
+deploy/** @neuron7x
