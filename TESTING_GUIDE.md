@@ -3,7 +3,10 @@
 **Document Version:** 1.2.0
 **Project Version:** 1.2.0
 **Last Updated:** December 2025
-**Test Coverage:** 86% (Overall) | 90%+ (Core Modules)
+**Metrics Source:** [docs/METRICS_SOURCE.md](docs/METRICS_SOURCE.md)
+
+> **Coverage Summary**: CI Threshold: 65% | Actual: ~86% | Core Modules: 90%+
+> See [METRICS_SOURCE.md](docs/METRICS_SOURCE.md) for rationale and current figures.
 
 ## Table of Contents
 

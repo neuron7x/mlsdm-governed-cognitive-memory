@@ -51,9 +51,11 @@ Tests are organized by purpose and scope:
 
 ## Coverage Strategy
 
-### Coverage Target: **65% minimum, 86% baseline**
+### Coverage Target: **65% threshold, ~86% actual**
 
-The coverage gate enforces a minimum of **65%** to allow for minor fluctuations while maintaining high quality. Current baseline with full test suite is approximately **86%**.
+> See [docs/METRICS_SOURCE.md](docs/METRICS_SOURCE.md) for current metrics and threshold rationale.
+
+The coverage gate enforces a minimum of **65%** (threshold) to allow for minor fluctuations while maintaining high quality. Current actual coverage is approximately **86%**.
 
 ### Module Classification
 

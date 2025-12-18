@@ -366,7 +366,7 @@ The CI pipeline was hardened with the following improvements:
 Current CI pipeline ensures:
 - **Lint**: Zero ruff/mypy violations
 - **Security**: Zero known vulnerabilities in project dependencies
-- **Coverage**: ≥65% code coverage on src/mlsdm (current: ~86%)
+- **Coverage**: ≥65% threshold (actual: ~86%) - see [docs/METRICS_SOURCE.md](docs/METRICS_SOURCE.md)
 - **E2E**: 68 end-to-end tests passing
 - **Effectiveness**: SLO validation passing
 - **Benchmarks**: P95 latency within SLO (< 500ms)
