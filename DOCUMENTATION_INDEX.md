@@ -51,6 +51,7 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 | [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md) | Scientific references | Researchers | 15 min |
 | [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) | Implementation details | Technical | 15 min |
 | [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md) | Validation results | Technical | 20 min |
+| [DOCUMENTATION_FORMALIZATION_PROTOCOL.md](DOCUMENTATION_FORMALIZATION_PROTOCOL.md) | DFP-1.0 documentation standards | Writers/Technical | 25 min |
 
 ### 🛠️ Building & Integration
 
@@ -331,6 +332,7 @@ When improving documentation:
 - **Code examples**: Tested and working
 - **Cross-references**: Link to related docs
 - **Consistent formatting**: Follow existing style
+- **DFP-1.0 Compliance**: Follow [Documentation Formalization Protocol](DOCUMENTATION_FORMALIZATION_PROTOCOL.md) for formal documentation
 
 ---
 
