@@ -145,10 +145,14 @@ class ConfigCache:
             True if entry was removed, False if not found
         """
         with self._lock:
-            if path in self._cache:
-                del self._cache[path]
-                return True
-            return False
+            keys_to_remove = [
+                key for key in self._cache if key == path or key.startswith(f"{path}:")
+            ]
+
+            for key in keys_to_remove:
+                del self._cache[key]
+
+            return bool(keys_to_remove)
 
     def clear(self) -> None:
         """Clear all cached configurations."""

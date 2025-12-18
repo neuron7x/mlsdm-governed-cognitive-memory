@@ -109,6 +109,28 @@ class TestConfigCache:
         finally:
             os.unlink(path)
 
+    def test_invalidate_composite_keys(self) -> None:
+        """Invalidate entries stored with composite cache keys."""
+        cache = ConfigCache()
+        config = {"key": "value"}
+
+        with tempfile.NamedTemporaryFile(suffix=".yaml", delete=False, mode="w") as f:
+            yaml.dump(config, f)
+            path = f.name
+
+        try:
+            cache_key = f"{path}:True:False"
+            cache.put(cache_key, config, file_path=path)
+
+            # Ensure entry is present
+            assert cache.get(cache_key, file_path=path) == config
+
+            # Invalidate using the path portion of the key
+            assert cache.invalidate(path) is True
+            assert cache.get(cache_key, file_path=path) is None
+        finally:
+            os.unlink(path)
+
     def test_clear(self) -> None:
         """Test clear removes all entries."""
         cache = ConfigCache()
