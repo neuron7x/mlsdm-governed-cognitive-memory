@@ -15,7 +15,7 @@ This table provides the audit trail for every reference in the bibliography. Eac
 | hastings2018_circadian | neuroscience-memory | peer_reviewed | 10.1038/s41583-018-0026-z | https://doi.org/10.1038/s41583-018-0026-z | Crossref | 2025-12-19 | SCN circadian rhythm generation |
 | mendoza2009_clocks | neuroscience-memory | peer_reviewed | 10.1177/1073858408327808 | https://doi.org/10.1177/1073858408327808 | Crossref | 2025-12-19 | Brain clock network coordination |
 | olafsdottir2018_replay | neuroscience-memory | peer_reviewed | 10.1016/j.cub.2017.10.073 | https://doi.org/10.1016/j.cub.2017.10.073 | Crossref | 2025-12-19 | Hippocampal replay and planning |
-| hebb1949_organization | neuroscience-memory | peer_reviewed | N/A | https://archive.org/details/organizationofbe00hebb | Internet Archive | 2025-12-19 | Classic: Hebbian learning theory |
+| hebb1949_organization | neuroscience-memory | peer_reviewed | 9780471362728 | https://archive.org/details/organizationofbe00hebb | Internet Archive | 2025-12-19 | Classic: Hebbian learning theory (ISBN) |
 | hopfield1982_neural | neuroscience-memory | peer_reviewed | 10.1073/pnas.79.8.2554 | https://doi.org/10.1073/pnas.79.8.2554 | Crossref | 2025-12-19 | Classic: Hopfield networks |
 | masuyama2014_qibam | neuroscience-memory | peer_reviewed | 10.1142/S0219843614500066 | https://doi.org/10.1142/S0219843614500066 | Crossref | 2025-12-19 | Quantum-inspired BAM |
 | masuyama2018_qmam | neuroscience-memory | peer_reviewed | 10.1109/TNNLS.2017.2653114 | https://doi.org/10.1109/TNNLS.2017.2653114 | Crossref | 2025-12-19 | Quantum-inspired MAM |
@@ -42,11 +42,11 @@ This table provides the audit trail for every reference in the bibliography. Eac
 | nist2022_ssdf | safety/standards | standard | 10.6028/NIST.SP.800-218 | https://doi.org/10.6028/NIST.SP.800-218 | Crossref | 2025-12-19 | SSDF secure development |
 | ieee2020_7010 | safety/standards | standard | 10.1109/IEEESTD.2020.9084219 | https://doi.org/10.1109/IEEESTD.2020.9084219 | Crossref | 2025-12-19 | AI well-being impact standard |
 | openssf2023_slsa | safety/standards | standard | SLSA v1.0 | https://slsa.dev/spec/v1.0/ | Official org page | 2025-12-19 | Supply chain security levels |
-| torresarias2019_intoto | safety/standards | peer_reviewed | N/A | https://www.usenix.org/conference/usenixsecurity19/presentation/torres-arias | USENIX | 2025-12-19 | in-toto supply chain integrity |
+| torresarias2019_intoto | safety/standards | peer_reviewed | https://www.usenix.org/conference/usenixsecurity19/presentation/torres-arias | https://www.usenix.org/conference/usenixsecurity19/presentation/torres-arias | USENIX | 2025-12-19 | in-toto supply chain integrity |
 | elkishky2022_sigstore | safety/standards | peer_reviewed | 10.1145/3548606.3560596 | https://doi.org/10.1145/3548606.3560596 | Crossref | 2025-12-19 | Sigstore software signing |
 | brady2016_aphasia | aphasia/clinical | peer_reviewed | 10.1002/14651858.CD000425.pub4 | https://doi.org/10.1002/14651858.CD000425.pub4 | Crossref | 2025-12-19 | Cochrane review: aphasia therapy |
 | fedorenko2023_agrammatic | aphasia/clinical | peer_reviewed | 10.1080/02687038.2022.2143233 | https://doi.org/10.1080/02687038.2022.2143233 | Crossref | 2025-12-19 | Agrammatic output in Broca's aphasia |
-| asha_aphasia | aphasia/clinical | standard | N/A | https://www.asha.org/practice-portal/clinical-topics/aphasia/ | Official org page | 2025-12-19 | ASHA aphasia practice portal |
+| asha_aphasia | aphasia/clinical | standard | https://www.asha.org/practice-portal/clinical-topics/aphasia/ | https://www.asha.org/practice-portal/clinical-topics/aphasia/ | Official org page | 2025-12-19 | ASHA aphasia practice portal |
 
 **Legend:**
 - **category**: neuroscience-memory | LLM-memory/RAG | alignment/governance | safety/standards | aphasia/clinical

@@ -48,6 +48,9 @@ MAX_YEAR = 2026  # current_year + 1
 # Year regex (4 digits)
 YEAR_PATTERN = re.compile(r"^\d{4}$")
 
+ISO_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+ALLOWED_EVIDENCE_TYPES = {"peer_reviewed", "preprint", "standard"}
+
 
 def find_repo_root() -> Path:
     """Find repository root by looking for CITATION.cff or pyproject.toml."""
@@ -90,40 +93,139 @@ def check_citation_cff(repo_root: Path) -> list[str]:
     return errors
 
 
-def parse_bibtex_simple(content: str) -> tuple[list[dict], list[str]]:
+def _split_fields(fields_str: str) -> list[str]:
+    """Split a BibTeX fields block into individual field strings."""
+    parts: list[str] = []
+    current: list[str] = []
+    depth = 0
+    in_quotes = False
+
+    for ch in fields_str:
+        if ch == '"' and (not current or current[-1] != "\\"):
+            in_quotes = not in_quotes
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            if depth > 0:
+                depth -= 1
+        if ch == "," and depth == 0 and not in_quotes:
+            part = "".join(current).strip()
+            if part:
+                parts.append(part)
+            current = []
+            continue
+        current.append(ch)
+
+    if current and "".join(current).strip():
+        parts.append("".join(current).strip())
+    return parts
+
+
+def parse_bibtex_entries(content: str) -> tuple[list[dict], list[str]]:
     """
-    Simple BibTeX parser that extracts entries.
-    Returns (entries, errors) where entries is a list of dicts with key/fields.
+    Robust, dependency-free BibTeX parser that handles:
+    - nested braces (e.g., author={{OpenAI}})
+    - commas inside braced values
+    - last field without trailing comma
     """
     entries: list[dict] = []
     errors: list[str] = []
+    idx = 0
 
-    # Pattern to match BibTeX entries
-    entry_pattern = re.compile(
-        r"@(\w+)\s*\{\s*([^,\s]+)\s*,([^@]*?)(?=\n@|\Z)", re.DOTALL | re.MULTILINE
-    )
+    while True:
+        at_idx = content.find("@", idx)
+        if at_idx == -1:
+            break
 
-    for match in entry_pattern.finditer(content):
+        match = re.match(r"@(\w+)\s*\{", content[at_idx:])
+        if not match:
+            idx = at_idx + 1
+            continue
+
         entry_type = match.group(1).lower()
-        entry_key = match.group(2).strip()
-        fields_str = match.group(3)
+        cursor = at_idx + match.end()
 
-        entry = {
-            "type": entry_type,
-            "key": entry_key,
-            "fields": {},
-        }
+        while cursor < len(content) and content[cursor].isspace():
+            cursor += 1
 
-        # Parse fields: field = {value} or field = "value"
-        field_pattern = re.compile(r"(\w+)\s*=\s*[\{\"](.*?)[\}\"]", re.DOTALL)
-        for field_match in field_pattern.finditer(fields_str):
-            field_name = field_match.group(1).lower()
-            field_value = field_match.group(2).strip()
-            entry["fields"][field_name] = field_value
+        key_start = cursor
+        while cursor < len(content) and content[cursor] not in {",", "\n", " "}:
+            cursor += 1
+        entry_key = content[key_start:cursor].strip()
 
-        entries.append(entry)
+        # Move to start of fields (after first comma)
+        while cursor < len(content) and content[cursor] != ",":
+            cursor += 1
+        if cursor >= len(content):
+            errors.append(f"Malformed BibTeX entry near index {at_idx}: missing field list")
+            break
+        cursor += 1  # skip comma
+        body_start = cursor
+        brace_depth = 1
+        while cursor < len(content) and brace_depth > 0:
+            ch = content[cursor]
+            if ch == "{":
+                brace_depth += 1
+            elif ch == "}":
+                brace_depth -= 1
+            cursor += 1
+
+        if brace_depth != 0:
+            errors.append(f"Unbalanced braces while parsing entry '{entry_key or 'unknown'}'")
+            break
+
+        fields_block = content[body_start : cursor - 1]
+        fields: dict[str, str] = {}
+        for field_str in _split_fields(fields_block):
+            if "=" not in field_str:
+                errors.append(f"Entry '{entry_key}': could not parse field '{field_str}'")
+                continue
+            name_raw, value_raw = field_str.split("=", 1)
+            field_name = name_raw.strip().lower()
+            value = value_raw.strip().rstrip(",")
+            if (value.startswith("{") and value.endswith("}")) or (value.startswith('"') and value.endswith('"')):
+                value = value[1:-1]
+            fields[field_name] = value.strip()
+
+        entries.append({"type": entry_type, "key": entry_key, "fields": fields})
+        idx = cursor
 
     return entries, errors
+
+
+def run_parser_self_checks() -> list[str]:
+    """Internal self-checks to ensure parser robustness."""
+    errors: list[str] = []
+    sample = """
+@misc{selfcheck_one,
+  author={{OpenAI}},
+  title={ISO/IEC 42001:2023 — Artificial intelligence management system},
+  url={https://example.com/path?with=comma,inside}
+}
+
+@article{selfcheck_two,
+  author = {Example, Author},
+  title = {Nested {brace} sample},
+  year = {2024},
+  note = {Trailing field without comma}
+}
+"""
+    entries, parse_errors = parse_bibtex_entries(sample)
+    errors.extend(parse_errors)
+    if len(entries) != 2:
+        errors.append(f"Self-check expected 2 entries, found {len(entries)}")
+        return errors
+
+    first_fields = entries[0]["fields"]
+    if first_fields.get("author") != "{OpenAI}":
+        errors.append("Self-check failed: nested braces not preserved in author field")
+    if first_fields.get("url") != "https://example.com/path?with=comma,inside":
+        errors.append("Self-check failed: URL with comma not parsed correctly")
+
+    second_fields = entries[1]["fields"]
+    if second_fields.get("note") != "Trailing field without comma":
+        errors.append("Self-check failed: last field without trailing comma was not captured")
+    return errors
 
 
 def validate_doi(doi: str) -> bool:
@@ -187,25 +289,8 @@ def check_bibtex(repo_root: Path) -> tuple[list[str], set[str]]:
     # Check for forbidden patterns
     errors.extend(check_forbidden_content(content, "REFERENCES.bib"))
 
-    # Try to use bibtexparser if available, otherwise use simple parser
-    try:
-        import bibtexparser
-
-        parser = bibtexparser.bparser.BibTexParser(common_strings=True)
-        bib_database = bibtexparser.loads(content, parser=parser)
-        entries = []
-        for entry in bib_database.entries:
-            entries.append(
-                {
-                    "type": entry.get("ENTRYTYPE", "unknown"),
-                    "key": entry.get("ID", "unknown"),
-                    "fields": {k.lower(): v for k, v in entry.items()},
-                }
-            )
-    except ImportError:
-        # Fallback to simple parser
-        entries, parse_errors = parse_bibtex_simple(content)
-        errors.extend(parse_errors)
+    entries, parse_errors = parse_bibtex_entries(content)
+    errors.extend(parse_errors)
 
     if not entries:
         errors.append("No BibTeX entries found in REFERENCES.bib")
@@ -291,6 +376,90 @@ def extract_apa_keys(repo_root: Path) -> tuple[list[str], set[str]]:
     return errors, apa_keys
 
 
+def parse_verification_table(repo_root: Path) -> tuple[list[str], list[dict]]:
+    """Parse verification table rows from VERIFICATION.md."""
+    errors: list[str] = []
+    rows: list[dict] = []
+    verification_path = repo_root / "docs" / "bibliography" / "VERIFICATION.md"
+
+    if not verification_path.exists():
+        return [f"VERIFICATION.md not found at {verification_path}"], rows
+
+    content = verification_path.read_text(encoding="utf-8")
+    table_started = False
+    for line in content.splitlines():
+        if line.strip().startswith("| key"):
+            table_started = True
+            continue
+        if not table_started:
+            continue
+        if line.strip().startswith("|---"):
+            continue
+        if not line.strip().startswith("|"):
+            # stop when table section ends
+            if table_started:
+                break
+            continue
+
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) < 8:
+            continue
+        row = {
+            "key": cells[0],
+            "category": cells[1],
+            "evidence_type": cells[2],
+            "canonical_id": cells[3],
+            "canonical_url": cells[4],
+            "verification_method": cells[5],
+            "verified_on": cells[6],
+            "notes": cells[7],
+        }
+        rows.append(row)
+
+    if not rows:
+        errors.append("No rows parsed from VERIFICATION.md table")
+    return errors, rows
+
+
+def check_verification_table(repo_root: Path, bib_keys: set[str]) -> list[str]:
+    """Ensure verification table covers all BibTeX keys exactly once and is well-formed."""
+    errors: list[str] = []
+    parse_errors, rows = parse_verification_table(repo_root)
+    errors.extend(parse_errors)
+    if parse_errors:
+        return errors
+
+    table_keys: set[str] = set()
+    for row in rows:
+        key = row["key"]
+        if key in table_keys:
+            errors.append(f"Duplicate key in VERIFICATION.md: {key}")
+        table_keys.add(key)
+
+        if row["evidence_type"] not in ALLOWED_EVIDENCE_TYPES:
+            errors.append(
+                f"Row '{key}' has invalid evidence_type '{row['evidence_type']}' "
+                f"(allowed: {sorted(ALLOWED_EVIDENCE_TYPES)})"
+            )
+        if not row["canonical_url"].startswith("https://"):
+            errors.append(f"Row '{key}' canonical_url must use https: {row['canonical_url']}")
+        if not row["canonical_id"]:
+            errors.append(f"Row '{key}' missing canonical_id")
+        if not ISO_DATE_PATTERN.match(row["verified_on"]):
+            errors.append(f"Row '{key}' verified_on must be ISO date (YYYY-MM-DD)")
+
+    missing = bib_keys - table_keys
+    extra = table_keys - bib_keys
+    if missing:
+        for key in sorted(missing):
+            errors.append(f"BibTeX key '{key}' missing from VERIFICATION.md table")
+    if extra:
+        for key in sorted(extra):
+            errors.append(f"VERIFICATION.md contains key not present in BibTeX: {key}")
+
+    return errors
+
+
 def check_bib_apa_consistency(bib_keys: set[str], apa_keys: set[str]) -> list[str]:
     """Check 1:1 mapping between BibTeX and APA keys."""
     errors: list[str] = []
@@ -315,8 +484,17 @@ def main() -> int:
 
     all_errors: list[str] = []
 
+    print("\n[1/6] Running parser self-checks...")
+    parser_errors = run_parser_self_checks()
+    all_errors.extend(parser_errors)
+    if parser_errors:
+        for err in parser_errors:
+            print(f"  ERROR: {err}")
+    else:
+        print("  OK: parser self-checks passed")
+
     # Check CITATION.cff
-    print("\n[1/4] Checking CITATION.cff...")
+    print("\n[2/6] Checking CITATION.cff...")
     cff_errors = check_citation_cff(repo_root)
     all_errors.extend(cff_errors)
     if cff_errors:
@@ -326,7 +504,7 @@ def main() -> int:
         print("  OK: CITATION.cff is valid")
 
     # Check REFERENCES.bib
-    print("\n[2/4] Checking REFERENCES.bib...")
+    print("\n[3/6] Checking REFERENCES.bib...")
     bib_errors, bib_keys = check_bibtex(repo_root)
     all_errors.extend(bib_errors)
     if bib_errors:
@@ -336,7 +514,7 @@ def main() -> int:
         print("  OK: REFERENCES.bib is valid")
 
     # Check REFERENCES_APA7.md
-    print("\n[3/4] Checking REFERENCES_APA7.md...")
+    print("\n[4/6] Checking REFERENCES_APA7.md...")
     apa_errors, apa_keys = extract_apa_keys(repo_root)
     all_errors.extend(apa_errors)
     if apa_errors:
@@ -346,7 +524,7 @@ def main() -> int:
         print("  OK: REFERENCES_APA7.md is valid")
 
     # Check BibTeX-APA consistency
-    print("\n[4/4] Checking BibTeX-APA consistency...")
+    print("\n[5/6] Checking BibTeX-APA consistency...")
     consistency_errors = check_bib_apa_consistency(bib_keys, apa_keys)
     all_errors.extend(consistency_errors)
     if consistency_errors:
@@ -354,6 +532,15 @@ def main() -> int:
             print(f"  ERROR: {err}")
     else:
         print("  OK: BibTeX and APA files are consistent")
+
+    print("\n[6/6] Checking VERIFICATION.md coverage...")
+    verification_errors = check_verification_table(repo_root, bib_keys)
+    all_errors.extend(verification_errors)
+    if verification_errors:
+        for err in verification_errors:
+            print(f"  ERROR: {err}")
+    else:
+        print("  OK: VERIFICATION.md covers all BibTeX keys")
 
     # Summary
     print("\n" + "=" * 50)
