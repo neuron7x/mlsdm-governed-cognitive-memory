@@ -24,5 +24,4 @@ jobs:
           fail-on-scopes: runtime
           # Always summarize findings in PR comments
           comment-summary-in-pr: always
-          # License warnings only (no blocking) to avoid false positives on transitive GPL detection
-          fail-on-licenses: false
+          # Note: license checks are warnings-only; no explicit fail-on-licenses flag is set
