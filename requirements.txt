@@ -40,10 +40,7 @@ types-PyYAML==6.0.12.20250915
 types-requests==2.32.4.20250913
 
 # Visualization (optional, from pyproject.toml [project.optional-dependencies].visualization)
-matplotlib==3.10.8
-
-# Notebook tooling (optional, from pyproject.toml [project.optional-dependencies].visualization)
-jupyter==1.1.1
+matplotlib==3.10.8  # jupyter removed due to nbconvert CVE-2025-53000
 
 # Security: Pin minimum versions for indirect dependencies with known vulnerabilities
 certifi==2025.11.12

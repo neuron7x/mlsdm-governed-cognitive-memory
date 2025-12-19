@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No breaking changes: existing code using `QILM_v2` will continue to work via the deprecated alias
 - Users are encouraged to migrate to `PhaseEntangledLatticeMemory` in new code
 - The `QILM_v2` alias will be removed in v2.0.0
+- Removed optional `jupyter` dependency from visualization extras due to nbconvert CVE-2025-53000 (high severity)
 
 ## [1.1.0] - 2025-11-22
 
