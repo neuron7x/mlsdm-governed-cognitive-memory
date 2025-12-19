@@ -1,8 +1,8 @@
 # Architecture Specification
 
-**Document Version:** 1.1.0
-**Project Version:** 1.1.0
-**Last Updated:** November 2025
+**Document Version:** 1.2.0
+**Project Version:** 1.2.0
+**Last Updated:** December 2025
 **Status:** Beta
 
 ## Table of Contents
@@ -125,6 +125,24 @@ MLSDM is a multi-layered system spanning from low-level cognitive primitives to 
 │    • Production configs                                           │
 └───────────────────────────────────────────────────────────────────┘
 ```
+
+### Architecture Governance Manifest
+
+- **Source of truth:** `src/mlsdm/config/architecture_manifest.py`
+- **Enforcement:** `tests/contracts/test_architecture_manifest.py` validates paths, public interfaces, and dependency declarations.
+
+| Module | Layer | Responsibility Focus | Allowed Dependencies |
+| --- | --- | --- | --- |
+| api | interface | FastAPI surface, lifecycle, middleware | engine, core, router, security, observability, utils |
+| sdk | interface | Client SDK for embedding MLSDM | engine, utils |
+| engine | engine | Compose cognitive subsystems and factories | core, memory, router, security, observability, utils |
+| core | cognitive-core | Cognitive controller and pipeline | memory, security, observability, utils |
+| memory | memory | Multi-level memory and phase lattice | utils, observability |
+| router | service | Provider routing and failover | adapters, security, observability, utils |
+| adapters | integration | Provider-specific adapters | security, utils |
+| security | cross-cutting | Policy engine, guardrails, scrubbing | utils, observability |
+| observability | cross-cutting | Metrics, logging, tracing | utils |
+| utils | foundation | Config, primitives, shared helpers | — |
 
 ### Component Hierarchy
 
