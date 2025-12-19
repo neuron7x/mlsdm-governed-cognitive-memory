@@ -96,6 +96,7 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 
 | Document | Purpose | Audience | Time to Read |
 |----------|---------|----------|--------------|
+| [TECHNICAL_DEBT_REGISTER.md](TECHNICAL_DEBT_REGISTER.md) | **Unified technical debt register** - single source of truth | Everyone | 25 min |
 | [ENGINEERING_DEFICIENCIES_REGISTER.md](ENGINEERING_DEFICIENCIES_REGISTER.md) | Complete deficiency registry with all gaps | Engineers/Architects | 15 min |
 | [debt_ledger.md](debt_ledger.md) | Active technical debt items | Engineers | 5 min |
 | [PROD_GAPS.md](PROD_GAPS.md) | Production readiness gaps | DevOps | 20 min |
