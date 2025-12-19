@@ -327,17 +327,18 @@ class ConfigLoader:
             # Remove prefix and convert to lowercase
             config_key = env_key[len(prefix) :].lower()
 
-            # Handle nested keys (e.g., MORAL_FILTER__THRESHOLD)
-            if "__" in config_key:
-                parts = config_key.split("__")
-                if len(parts) == 2:
-                    section, key = parts
-                    if section not in config:
-                        config[section] = {}
-                    config[section][key] = ConfigLoader._parse_env_value(env_value)
-            else:
-                # Top-level key
-                config[config_key] = ConfigLoader._parse_env_value(env_value)
+            # Handle nested keys of arbitrary depth (e.g., API__PRIORITY__HIGH_WEIGHT)
+            parts = config_key.split("__")
+            target = config
+
+            # Traverse/create nested dictionaries except for the final key
+            for part in parts[:-1]:
+                if part not in target or not isinstance(target[part], dict):
+                    target[part] = {}
+                target = target[part]
+
+            # Set the final value
+            target[parts[-1]] = ConfigLoader._parse_env_value(env_value)
 
         return config
 

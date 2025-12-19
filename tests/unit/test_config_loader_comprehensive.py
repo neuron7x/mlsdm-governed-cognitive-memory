@@ -195,6 +195,23 @@ moral_filter:
             assert "new_section" in config
             assert config["new_section"]["new_key"] == "new_value"
 
+    def test_env_override_deeply_nested(self, tmp_path):
+        """Test environment variable override for deeper nested keys."""
+        config_file = tmp_path / "config.yaml"
+        config_file.write_text(
+            """
+api:
+  priority:
+    high_weight: 3
+    normal_weight: 2
+"""
+        )
+
+        with patch.dict(os.environ, {"MLSDM_API__PRIORITY__HIGH_WEIGHT": "5"}):
+            config = ConfigLoader.load_config(str(config_file), validate=False)
+            assert config["api"]["priority"]["high_weight"] == 5
+            assert config["api"]["priority"]["normal_weight"] == 2
+
 
 class TestParseEnvValue:
     """Tests for environment value parsing."""
