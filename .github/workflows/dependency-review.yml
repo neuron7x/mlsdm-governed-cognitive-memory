@@ -1,0 +1,29 @@
+name: Dependency Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@3c4e3dcb1aa7874d2c16be7d79418e9b7efd6261 # v4.8.2
+        with:
+          # Block only critical vulnerabilities (CVSS 9.0+)
+          fail-on-severity: critical
+          # Focus enforcement on runtime/production scopes
+          fail-on-scopes: runtime
+          # Always summarize findings in PR comments
+          comment-summary-in-pr: always
+          # Deny GPL copyleft; allow permissive and LGPL for scientific stack compatibility
+          deny-licenses: GPL-2.0, GPL-3.0
+          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, MPL-2.0, LGPL-2.0, LGPL-2.1, LGPL-3.0
