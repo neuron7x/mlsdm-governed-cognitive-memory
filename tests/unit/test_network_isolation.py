@@ -79,7 +79,7 @@ class TestNetworkIsolation:
 
         # Create a deterministic stub embedder
         def stub_embed(text: str) -> np.ndarray:
-            np.random.seed(hash(text) % (2**32))
+            np.random.seed(abs(hash(text)) % (2**32))
             vec = np.random.randn(384).astype(np.float32)
             return vec / (np.linalg.norm(vec) + 1e-9)
 
@@ -203,7 +203,7 @@ class TestDeterministicBehavior:
         import numpy as np
 
         def deterministic_embed(text: str) -> np.ndarray:
-            np.random.seed(hash(text) % (2**32))
+            np.random.seed(abs(hash(text)) % (2**32))
             vec = np.random.randn(10).astype(np.float32)
             return vec / (np.linalg.norm(vec) + 1e-9)
 
