@@ -1,7 +1,9 @@
 # Technical Debt Ledger
 
 **Last Updated:** December 2025
-**Related:** [ENGINEERING_DEFICIENCIES_REGISTER.md](ENGINEERING_DEFICIENCIES_REGISTER.md)
+**Related:**
+- [TECHNICAL_DEBT_REGISTER.md](TECHNICAL_DEBT_REGISTER.md) - **Єдиний реєстр технічного боргу (Unified Technical Debt Register)**
+- [ENGINEERING_DEFICIENCIES_REGISTER.md](ENGINEERING_DEFICIENCIES_REGISTER.md)
 
 ---
 
@@ -10,12 +12,16 @@
 | Status | Count |
 |--------|-------|
 | Resolved | 3 |
-| Open | 0 |
-| Total | 3 |
+| Open | 35 |
+| Total | 38 |
 
 ✅ **All critical technical debt items have been resolved.**
 
-See [ENGINEERING_DEFICIENCIES_REGISTER.md](ENGINEERING_DEFICIENCIES_REGISTER.md) for comprehensive analysis.
+⚠️ **35 open items remain** (0 Critical, 5 High, 13 Medium, 17 Low priority)
+
+See [TECHNICAL_DEBT_REGISTER.md](TECHNICAL_DEBT_REGISTER.md) for the **complete unified technical debt register** with all identified issues, classifications, and remediation plans.
+
+See [ENGINEERING_DEFICIENCIES_REGISTER.md](ENGINEERING_DEFICIENCIES_REGISTER.md) for detailed engineering deficiency analysis.
 
 ---
 
