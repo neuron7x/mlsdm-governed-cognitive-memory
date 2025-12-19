@@ -587,3 +587,267 @@ def filter_output(text: str) -> SafetyResult:
         SafetyResult with sanitized content if violations found
     """
     return get_llm_safety_analyzer().filter_output(text)
+
+
+# ============================================================================
+# Multi-Turn Attack Pattern Detection (R003)
+# ============================================================================
+
+
+@dataclass
+class ConversationAnalysisResult:
+    """Result of multi-turn conversation analysis.
+
+    Attributes:
+        is_suspicious: Whether the conversation shows suspicious patterns
+        attack_likelihood: Estimated likelihood of attack (0.0-1.0)
+        detected_patterns: List of detected attack patterns
+        recommended_action: Suggested action (continue, warn, reset_session)
+    """
+
+    is_suspicious: bool
+    attack_likelihood: float
+    detected_patterns: list[str]
+    recommended_action: str
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary representation."""
+        return {
+            "is_suspicious": self.is_suspicious,
+            "attack_likelihood": self.attack_likelihood,
+            "detected_patterns": self.detected_patterns,
+            "recommended_action": self.recommended_action,
+        }
+
+
+# Multi-turn attack indicators
+_MULTI_TURN_ATTACK_PATTERNS = [
+    # Gradual context shifting
+    re.compile(r"(?:let'?s?\s+)?(?:try|do)\s+something\s+different", re.IGNORECASE),
+    # Hypothetical framing to bypass filters
+    re.compile(
+        r"(?:in\s+a\s+)?(?:hypothetical|fictional|imaginary)\s+(?:scenario|situation|world)",
+        re.IGNORECASE,
+    ),
+    # Roleplay escalation
+    re.compile(r"(?:continue|keep)\s+(?:the\s+)?(?:roleplay|acting|pretending)", re.IGNORECASE),
+    # Testing boundaries
+    re.compile(r"(?:what\s+)?(?:if\s+)?I\s+(?:ask(?:ed)?|said|told\s+you)", re.IGNORECASE),
+    # Building trust for later exploitation
+    re.compile(r"(?:you'?ve\s+)?(?:been|are)\s+(?:so\s+)?helpful", re.IGNORECASE),
+    # Narrative manipulation
+    re.compile(r"(?:for\s+the\s+)?(?:story|narrative|plot)", re.IGNORECASE),
+    # Persistence after refusal
+    re.compile(r"(?:but\s+)?(?:why\s+)?(?:can'?t|won'?t)\s+you(?:\s+just)?", re.IGNORECASE),
+    # Claiming special permission
+    re.compile(r"(?:I\s+)?(?:have|got)\s+(?:special\s+)?permission", re.IGNORECASE),
+]
+
+
+def analyze_conversation_patterns(
+    messages: list[str],
+    threshold: float = 0.6,
+) -> ConversationAnalysisResult:
+    """Analyze a sequence of messages for multi-turn attack patterns.
+
+    Implements R003 mitigation: Detects gradual manipulation attempts
+    across multiple conversation turns.
+
+    Args:
+        messages: List of user messages in chronological order
+        threshold: Suspicion threshold (0.0-1.0)
+
+    Returns:
+        ConversationAnalysisResult with analysis details
+    """
+    if not messages:
+        return ConversationAnalysisResult(
+            is_suspicious=False,
+            attack_likelihood=0.0,
+            detected_patterns=[],
+            recommended_action="continue",
+        )
+
+    detected_patterns: list[str] = []
+    pattern_scores: list[float] = []
+
+    # Analyze each message for attack indicators
+    for msg in messages:
+        for pattern in _MULTI_TURN_ATTACK_PATTERNS:
+            if pattern.search(msg):
+                detected_patterns.append(pattern.pattern[:50])
+                pattern_scores.append(0.15)  # Each pattern adds to suspicion
+
+    # Analyze the overall conversation trajectory
+    # More suspicious if patterns appear later in conversation (escalation)
+    if len(messages) >= 3:
+        # Check for escalation in later messages
+        later_messages = messages[len(messages) // 2 :]
+        escalation_count = 0
+        for msg in later_messages:
+            for inj_pattern, _category, _severity, _desc in _PROMPT_INJECTION_PATTERNS:
+                if inj_pattern.search(msg):
+                    escalation_count += 1
+        if escalation_count > 0:
+            pattern_scores.append(0.25 * escalation_count)
+            detected_patterns.append("escalation_in_later_turns")
+
+    # Check for refusal-persistence pattern
+    refusal_keywords = ["can't", "cannot", "won't", "will not", "unable to", "not allowed"]
+    persistence_after_refusal = False
+    for i, msg in enumerate(messages[:-1]):
+        for keyword in refusal_keywords:
+            if keyword in msg.lower() and i + 1 < len(messages):
+                # Check if user persisted after potential refusal
+                persistence_after_refusal = True
+                break
+
+    if persistence_after_refusal:
+        pattern_scores.append(0.2)
+        detected_patterns.append("persistence_after_apparent_refusal")
+
+    # Calculate overall attack likelihood
+    attack_likelihood = min(1.0, sum(pattern_scores))
+
+    # Determine recommended action
+    if attack_likelihood >= 0.8:
+        recommended_action = "reset_session"
+    elif attack_likelihood >= threshold:
+        recommended_action = "warn"
+    else:
+        recommended_action = "continue"
+
+    return ConversationAnalysisResult(
+        is_suspicious=attack_likelihood >= threshold,
+        attack_likelihood=attack_likelihood,
+        detected_patterns=list(set(detected_patterns)),  # Deduplicate
+        recommended_action=recommended_action,
+    )
+
+
+# ============================================================================
+# Context Sanitization (R018)
+# ============================================================================
+
+
+@dataclass
+class SanitizedContext:
+    """Result of context sanitization.
+
+    Attributes:
+        sanitized_text: Text with embedded instructions removed
+        removed_instructions: List of removed instruction fragments
+        risk_score: Risk score of original context (0.0-1.0)
+        is_modified: Whether the text was modified
+    """
+
+    sanitized_text: str
+    removed_instructions: list[str]
+    risk_score: float
+    is_modified: bool
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary representation."""
+        return {
+            "sanitized_text": self.sanitized_text[:200] + "..." if len(self.sanitized_text) > 200 else self.sanitized_text,
+            "removed_count": len(self.removed_instructions),
+            "risk_score": self.risk_score,
+            "is_modified": self.is_modified,
+        }
+
+
+# Patterns for embedded instructions in context
+_EMBEDDED_INSTRUCTION_PATTERNS = [
+    # Direct instruction injection in context
+    (re.compile(r"\[INST(?:RUCTION)?\].*?\[/INST(?:RUCTION)?\]", re.IGNORECASE | re.DOTALL), 0.9),
+    (re.compile(r"<\|?(?:im_start|system|assistant)\|?>.*?<\|?(?:im_end|/system|/assistant)\|?>", re.IGNORECASE | re.DOTALL), 0.95),
+    # Hidden instructions in context
+    (re.compile(r"(?:hidden\s+)?(?:instruction|command)s?\s*:\s*[^\n]+", re.IGNORECASE), 0.8),
+    # Unicode/invisible character attacks
+    (re.compile(r"[\u200b-\u200f\u2028-\u202f\ufeff]+"), 0.7),
+    # Markdown comment injection
+    (re.compile(r"<!--.*?-->", re.DOTALL), 0.6),
+    # Escaped newlines with hidden text
+    (re.compile(r"\\n\s*(?:ignore|forget|disregard)", re.IGNORECASE), 0.85),
+    # Base64 encoded instructions (common attack vector)
+    (re.compile(r"(?:execute|run|eval)\s*:\s*[A-Za-z0-9+/=]{20,}"), 0.9),
+]
+
+
+def sanitize_context(
+    context: str,
+    preserve_formatting: bool = True,
+) -> SanitizedContext:
+    """Sanitize retrieved context to remove embedded instructions.
+
+    Implements R018 mitigation: Prevents indirect prompt injection
+    via malicious content in retrieved context.
+
+    Args:
+        context: Raw context text (from memory, RAG, etc.)
+        preserve_formatting: Whether to preserve basic formatting
+
+    Returns:
+        SanitizedContext with cleaned text and analysis
+    """
+    if not context or not context.strip():
+        return SanitizedContext(
+            sanitized_text="",
+            removed_instructions=[],
+            risk_score=0.0,
+            is_modified=False,
+        )
+
+    sanitized = context
+    removed_instructions: list[str] = []
+    max_risk = 0.0
+
+    # Apply each sanitization pattern
+    for pattern, risk_score in _EMBEDDED_INSTRUCTION_PATTERNS:
+        matches = pattern.findall(sanitized)
+        if matches:
+            for match in matches:
+                # Store what we're removing (truncated for safety)
+                removed_text = match if isinstance(match, str) else str(match)
+                removed_instructions.append(removed_text[:50] + "..." if len(removed_text) > 50 else removed_text)
+            sanitized = pattern.sub("", sanitized)
+            max_risk = max(max_risk, risk_score)
+
+    # Also run through prompt injection patterns
+    for inj_pattern, category, severity, _description in _PROMPT_INJECTION_PATTERNS:
+        if category in (SafetyCategory.INSTRUCTION_OVERRIDE, SafetyCategory.ROLE_HIJACK):
+            matches = inj_pattern.findall(sanitized)
+            if matches:
+                for match in matches:
+                    match_text = match if isinstance(match, str) else str(match)
+                    removed_instructions.append(f"[{category.value}] {match_text[:30]}...")
+                sanitized = inj_pattern.sub("[REMOVED]", sanitized)
+                max_risk = max(max_risk, severity)
+
+    # Clean up whitespace if modified
+    is_modified = sanitized != context
+    if is_modified and preserve_formatting:
+        # Normalize whitespace while preserving paragraph structure
+        sanitized = re.sub(r"\n{3,}", "\n\n", sanitized)
+        sanitized = re.sub(r" {2,}", " ", sanitized)
+        sanitized = sanitized.strip()
+
+    return SanitizedContext(
+        sanitized_text=sanitized,
+        removed_instructions=removed_instructions,
+        risk_score=max_risk,
+        is_modified=is_modified,
+    )
+
+
+def sanitize_context_for_llm(context: str) -> str:
+    """Convenience function to get sanitized context text.
+
+    Args:
+        context: Raw context text
+
+    Returns:
+        Sanitized context string (safe for LLM input)
+    """
+    result = sanitize_context(context)
+    return result.sanitized_text

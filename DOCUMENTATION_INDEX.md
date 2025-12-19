@@ -92,6 +92,16 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 | [OPTIMIZATION_SUMMARY.md](OPTIMIZATION_SUMMARY.md) | Optimization details | Engineers | 10 min |
 | [THREAT_MODEL.md](THREAT_MODEL.md) | Security threats | Security | 5 min |
 
+### 📋 Technical Debt & Project Status
+
+| Document | Purpose | Audience | Time to Read |
+|----------|---------|----------|--------------|
+| [ENGINEERING_DEFICIENCIES_REGISTER.md](ENGINEERING_DEFICIENCIES_REGISTER.md) | Complete deficiency registry with all gaps | Engineers/Architects | 15 min |
+| [debt_ledger.md](debt_ledger.md) | Active technical debt items | Engineers | 5 min |
+| [PROD_GAPS.md](PROD_GAPS.md) | Production readiness gaps | DevOps | 20 min |
+| [RISK_REGISTER.md](RISK_REGISTER.md) | AI safety risks | Security | 15 min |
+| [PRODUCTION_READINESS_ASSESSMENT.md](PRODUCTION_READINESS_ASSESSMENT.md) | Production readiness score | Leaders | 10 min |
+
 ---
 
 ## Documentation by Role
