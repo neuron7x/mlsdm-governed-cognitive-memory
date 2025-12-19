@@ -53,7 +53,7 @@ required_checks:
   - name: "coverage_gate"
     description: "Code coverage threshold enforcement"
     script: "./coverage_gate.sh"
-    minimum_coverage: 65  # Percentage (not ratio); matches CI and coverage_gate.sh default
+    minimum_coverage: 75  # Percentage; matches CI and coverage_gate.sh (staged: 75% → 85% → 90%)
     fail_on_violation: true
 
 # Security baseline requirements
