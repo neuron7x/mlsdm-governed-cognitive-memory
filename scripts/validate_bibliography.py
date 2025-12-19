@@ -93,6 +93,16 @@ def check_citation_cff(repo_root: Path) -> list[str]:
     return errors
 
 
+def _has_odd_trailing_backslashes(buffer: list[str]) -> bool:
+    """Return True if buffer ends with an odd number of backslashes."""
+    count = 0
+    idx = len(buffer) - 1
+    while idx >= 0 and buffer[idx] == "\\":
+        count += 1
+        idx -= 1
+    return count % 2 == 1
+
+
 def _split_fields(fields_str: str) -> list[str]:
     """Split a BibTeX fields block into individual field strings."""
     parts: list[str] = []
@@ -101,7 +111,7 @@ def _split_fields(fields_str: str) -> list[str]:
     in_quotes = False
 
     for ch in fields_str:
-        if ch == '"' and (not current or current[-1] != "\\"):
+        if ch == '"' and not _has_odd_trailing_backslashes(current):
             in_quotes = not in_quotes
         if ch == "{":
             depth += 1
