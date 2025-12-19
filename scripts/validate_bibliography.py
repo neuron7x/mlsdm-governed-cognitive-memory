@@ -41,8 +41,12 @@ FORBIDDEN_PATTERNS_CFF = FORBIDDEN_PATTERNS_STRICT + [
 # DOI format regex (basic validation - must have prefix and suffix)
 DOI_PATTERN = re.compile(r"^10\.\d{4,}/.+")
 
-# Year regex (4 digits, reasonable range)
-YEAR_PATTERN = re.compile(r"^(19|20)\d{2}$")
+# Year range for validation
+MIN_YEAR = 1850
+MAX_YEAR = 2026  # current_year + 1
+
+# Year regex (4 digits)
+YEAR_PATTERN = re.compile(r"^\d{4}$")
 
 
 def find_repo_root() -> Path:
@@ -127,12 +131,20 @@ def validate_doi(doi: str) -> bool:
     return bool(DOI_PATTERN.match(doi))
 
 
-def validate_year(year: str) -> bool:
-    """Validate year is 4 digits in reasonable range."""
+def validate_year(year: str) -> tuple[bool, str]:
+    """Validate year is 4 digits in reasonable range [1850..2026].
+    
+    Returns (is_valid, error_message).
+    """
     # Handle n.d. for "no date" entries
     if year.lower() == "n.d.":
-        return True
-    return bool(YEAR_PATTERN.match(year))
+        return True, ""
+    if not YEAR_PATTERN.match(year):
+        return False, f"year '{year}' is not a 4-digit integer"
+    year_int = int(year)
+    if year_int < MIN_YEAR or year_int > MAX_YEAR:
+        return False, f"year {year_int} outside valid range [{MIN_YEAR}..{MAX_YEAR}]"
+    return True, ""
 
 
 def validate_url(url: str) -> bool:
@@ -225,8 +237,10 @@ def check_bibtex(repo_root: Path) -> tuple[list[str], set[str]]:
         year = fields.get("year", "")
         if not year:
             errors.append(f"Entry '{key}' missing required field: year")
-        elif not validate_year(year):
-            errors.append(f"Entry '{key}' has invalid year format: {year} (expected 4 digits)")
+        else:
+            year_valid, year_error = validate_year(year)
+            if not year_valid:
+                errors.append(f"Entry '{key}' has invalid year: {year_error}")
 
         # Must have at least one of: doi, url, eprint
         has_identifier = any(fields.get(f) for f in ["doi", "url", "eprint"])
