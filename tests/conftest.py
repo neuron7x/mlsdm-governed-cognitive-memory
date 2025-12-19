@@ -7,6 +7,7 @@ for deterministic, reproducible testing across the test suite.
 
 from __future__ import annotations
 
+import importlib.util
 import os
 from typing import TYPE_CHECKING, Any
 
@@ -51,6 +52,43 @@ def pytest_configure(config: Any) -> None:
 # ============================================================
 
 
+def _set_random_seeds(seed: int) -> None:
+    """
+    Set random seeds for all supported random number generators.
+
+    This helper function centralizes seed setting logic to avoid duplication.
+
+    Args:
+        seed: The seed value to use for all random number generators.
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+
+    # Set torch seed if available
+    if importlib.util.find_spec("torch") is not None:
+        import torch
+
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+
+
+# Default seed value for deterministic tests
+_DEFAULT_SEED = 42
+
+
+@pytest.fixture(autouse=True, scope="function")
+def _ensure_deterministic_random_state() -> None:
+    """
+    Autouse fixture to ensure reproducible random state for all tests.
+
+    This runs before every test function to reset random seeds, ensuring
+    tests are not affected by random state from previous tests.
+    This prevents test flakiness from order-dependent random behavior.
+    """
+    _set_random_seeds(_DEFAULT_SEED)
+
+
 @pytest.fixture
 def deterministic_seed() -> int:
     """
@@ -59,21 +97,8 @@ def deterministic_seed() -> int:
     Returns:
         The seed value used (42).
     """
-    seed = 42
-    random.seed(seed)
-    np.random.seed(seed)
-
-    # Set torch seed if available
-    import importlib.util
-
-    if importlib.util.find_spec("torch") is not None:
-        import torch
-
-        torch.manual_seed(seed)
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(seed)
-
-    return seed
+    _set_random_seeds(_DEFAULT_SEED)
+    return _DEFAULT_SEED
 
 
 @pytest.fixture
@@ -84,20 +109,7 @@ def random_seed() -> Callable[[int], None]:
     Returns:
         A function that sets all random seeds to the given value.
     """
-
-    def _set_seed(seed: int) -> None:
-        import importlib.util
-
-        random.seed(seed)
-        np.random.seed(seed)
-        if importlib.util.find_spec("torch") is not None:
-            import torch
-
-            torch.manual_seed(seed)
-            if torch.cuda.is_available():
-                torch.cuda.manual_seed_all(seed)
-
-    return _set_seed
+    return _set_random_seeds
 
 
 # ============================================================
