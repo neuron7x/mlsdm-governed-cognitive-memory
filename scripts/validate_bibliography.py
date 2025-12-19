@@ -14,6 +14,7 @@ Exit code 0 on success, non-zero on failure.
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -63,8 +64,6 @@ def parse_bibtex_simple(content: str) -> tuple[list[dict], list[str]]:
     errors: list[str] = []
 
     # Find all entry blocks: @type{key, ... }
-    import re
-
     # Pattern to match BibTeX entries
     entry_pattern = re.compile(
         r"@(\w+)\s*\{\s*([^,\s]+)\s*,([^@]*?)(?=\n@|\Z)", re.DOTALL | re.MULTILINE
@@ -151,7 +150,7 @@ def check_bibtex(repo_root: Path) -> list[str]:
 
         # Must have at least one of: doi, url, eprint
         has_identifier = any(
-            fields.get(f) for f in ["doi", "url", "eprint", "howpublished"]
+            fields.get(f) for f in ["doi", "url", "eprint"]
         )
         if not has_identifier:
             errors.append(
