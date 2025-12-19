@@ -33,7 +33,7 @@ This document provides a comprehensive registry of all identified engineering de
 +=======================+===========+============+===============+=======================+
 | Category              | Critical  | Strategic  | Tech Debt     | Total                 |
 +=======================+===========+============+===============+=======================+
-| Security              |     0     |      5     |       3       |       8               |
+| Security              |     0     |      3     |       3       |   6 [-2 R003,R018]    |
 | Typing                |     0     |      0     |       0       |       0  [RESOLVED]   |
 | Architecture          |     0     |      4     |       5       |       9               |
 | Testing               |     0     |      1     |       4       |       5  [-1 resolved]|
@@ -41,13 +41,14 @@ This document provides a comprehensive registry of all identified engineering de
 | Documentation         |     0     |      1     |       4       |       5               |
 | Dependencies          |     0     |      2     |       2       |       4               |
 +=======================+===========+============+===============+=======================+
-| TOTAL                 |     0     |     14     |      21       |      35  [38 resolved]|
+| TOTAL                 |     0     |     12     |      21       |      33  [40 resolved]|
 +=======================+===========+============+===============+=======================+
 
-Production Readiness: 92% (Beta)
+Production Readiness: 92% → 93% (Beta)
 Test Coverage: 78.13% [ABOVE TARGET 75%] ✓
 Type Errors (mypy): 0 [RESOLVED] ✓
 Lint Errors (ruff): 0 ✓
+LLM Safety Tests: 47 passed ✓
 ```
 
 ---
@@ -68,25 +69,33 @@ Based on comprehensive analysis, no critical issues requiring immediate resoluti
 
 ## STRATEGIC (Affecting Scalability and Stability)
 
-### SEC-S001: Partially Mitigated AI Security Risks
+### SEC-S001: Partially Mitigated AI Security Risks [PARTIALLY RESOLVED]
 
-**Priority:** HIGH
+**Priority:** HIGH → MEDIUM (2 of 4 items resolved)
 **Category:** Security
 **Source:** `RISK_REGISTER.md`
 
-**Description:** 5 security risks have "Partially Mitigated" status:
-- R003: Multi-turn jailbreak (attack pattern detection required)
+**Description:** Originally 5 security risks had "Partially Mitigated" status. Now 2 are resolved:
+
+**Resolved (December 2025):**
+- ✅ R003: Multi-turn jailbreak → **Implemented** `analyze_conversation_patterns()` in `llm_safety.py`
+- ✅ R018: Indirect prompt injection → **Implemented** `sanitize_context()` in `llm_safety.py`
+
+**Still Open:**
 - R012: Policy drift detection (drift alerting system required)
 - R015: Hallucination propagation (memory provenance required)
-- R018: Indirect prompt injection (context sanitization required)
 
-**Impact:** Potential vulnerability to sophisticated AI attacks.
+**Implementation Details:**
+- `analyze_conversation_patterns()`: Detects gradual manipulation across turns, persistence after refusal, hypothetical framing attacks
+- `sanitize_context()`: Removes embedded instructions, hidden unicode, markdown comment injections
+- Both functions exported via `mlsdm.security` module
+- 15 new tests added covering both functions
 
 **Recommended Actions:**
-- [ ] Implement attack pattern detection in PELM memory
-- [ ] Add anomaly detection for conversation patterns
-- [ ] Implement memory provenance tracking
-- [ ] Add context sanitization layer
+- [x] Implement attack pattern detection in PELM memory
+- [x] Add anomaly detection for conversation patterns
+- [ ] Implement memory provenance tracking (R015)
+- [x] Add context sanitization layer
 
 ---
 

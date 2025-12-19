@@ -5,6 +5,21 @@ This module provides security features including rate limiting,
 payload scrubbing, OIDC authentication, RBAC, and logging controls.
 """
 
+from mlsdm.security.llm_safety import (
+    ConversationAnalysisResult,
+    LLMSafetyAnalyzer,
+    SafetyCategory,
+    SafetyResult,
+    SafetyRiskLevel,
+    SafetyViolation,
+    SanitizedContext,
+    analyze_conversation_patterns,
+    analyze_prompt,
+    filter_output,
+    get_llm_safety_analyzer,
+    sanitize_context,
+    sanitize_context_for_llm,
+)
 from mlsdm.security.oidc import (
     OIDCAuthenticator,
     OIDCAuthMiddleware,
@@ -51,4 +66,20 @@ __all__ = [
     "get_current_user",
     "get_optional_user",
     "require_oidc_auth",
+    # LLM Safety (R003, R018)
+    "LLMSafetyAnalyzer",
+    "SafetyCategory",
+    "SafetyResult",
+    "SafetyRiskLevel",
+    "SafetyViolation",
+    "analyze_prompt",
+    "filter_output",
+    "get_llm_safety_analyzer",
+    # Multi-turn attack detection (R003)
+    "ConversationAnalysisResult",
+    "analyze_conversation_patterns",
+    # Context sanitization (R018)
+    "SanitizedContext",
+    "sanitize_context",
+    "sanitize_context_for_llm",
 ]

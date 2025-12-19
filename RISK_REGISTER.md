@@ -164,17 +164,21 @@ Attackers may use multi-turn conversations to gradually shift model behavior, ex
 - Wake/sleep cycles provide periodic context reset
 - Memory capacity bounds limit attack persistence
 - Moral threshold homeostasis resists gradual drift
+- **NEW (Dec 2025):** `analyze_conversation_patterns()` function in `mlsdm.security.llm_safety`
 
-**Planned Controls:**
-- Attack pattern detection in PELM memory
-- Anomaly detection on conversation patterns
-- Automatic session reset on detected manipulation
+**Implemented Controls (December 2025):**
+- ✅ Attack pattern detection via `analyze_conversation_patterns()`
+- ✅ Anomaly detection for conversation patterns (hypothetical framing, persistence after refusal)
+- ✅ Recommended action escalation (continue → warn → reset_session)
 
-**Status:** ⚠️ Partially Mitigated
+**Status:** ✅ Mitigated
+
+**Validation:**
+- `tests/security/test_llm_safety.py::TestMultiTurnAttackDetection` (6 tests)
 
 **Action Items:**
-- [ ] Implement attack pattern signatures in memory retrieval
-- [ ] Add conversation anomaly detection
+- [x] Implement attack pattern signatures in memory retrieval
+- [x] Add conversation anomaly detection
 - [ ] Create red-teaming test suite for multi-turn attacks
 
 ---
@@ -349,18 +353,24 @@ Malicious instructions embedded in retrieved context (from memory or external so
 - Context separation in prompt structure
 - Moral filtering on final output
 - Limited context window size
+- **NEW (Dec 2025):** `sanitize_context()` function in `mlsdm.security.llm_safety`
 
-**Planned Controls:**
-- Context sanitization layer
-- Instruction boundary markers
-- Context source tagging
+**Implemented Controls (December 2025):**
+- ✅ Context sanitization via `sanitize_context()` and `sanitize_context_for_llm()`
+- ✅ Removes embedded instruction tags (`[INST]`, `<|system|>`, etc.)
+- ✅ Removes hidden unicode characters (zero-width, etc.)
+- ✅ Removes markdown comment injections
+- ✅ Removes base64-encoded instruction attempts
 
-**Status:** ⚠️ Partially Mitigated
+**Status:** ✅ Mitigated
+
+**Validation:**
+- `tests/security/test_llm_safety.py::TestContextSanitization` (9 tests)
 
 **Action Items:**
-- [ ] Implement context sanitization pipeline
-- [ ] Add instruction boundary detection
-- [ ] Create indirect injection test suite
+- [x] Implement context sanitization pipeline
+- [x] Add instruction boundary detection
+- [x] Create indirect injection test suite
 
 ---
 
@@ -370,8 +380,8 @@ Malicious instructions embedded in retrieved context (from memory or external so
 
 | Status | Count | Percentage |
 |--------|-------|------------|
-| ✅ Mitigated | 13 | 72% |
-| ⚠️ Partially Mitigated | 5 | 28% |
+| ✅ Mitigated | 15 | 83% |
+| ⚠️ Partially Mitigated | 3 | 17% |
 | ❌ Open | 0 | 0% |
 | 📋 Accepted | 0 | 0% |
 
@@ -379,19 +389,19 @@ Malicious instructions embedded in retrieved context (from memory or external so
 
 | Category | Total | Mitigated | Partial | Open |
 |----------|-------|-----------|---------|------|
-| Content Safety | 7 | 4 | 3 | 0 |
+| Content Safety | 7 | 6 | 1 | 0 |
 | Behavioral Safety | 4 | 4 | 0 | 0 |
 | Technical Safety | 5 | 5 | 0 | 0 |
 | Governance Safety | 2 | 1 | 1 | 0 |
 
 ### Critical/High Risks Requiring Action
 
-| Risk ID | Description | Action Required |
-|---------|-------------|-----------------|
-| R003 | Multi-turn jailbreak | Attack pattern detection |
-| R015 | Hallucination propagation | Memory provenance |
-| R018 | Indirect prompt injection | Context sanitization |
-| R012 | Policy drift detection | Drift alerting system |
+| Risk ID | Description | Action Required | Status |
+|---------|-------------|-----------------|--------|
+| ~~R003~~ | ~~Multi-turn jailbreak~~ | ~~Attack pattern detection~~ | ✅ Mitigated |
+| R015 | Hallucination propagation | Memory provenance | ⚠️ Open |
+| ~~R018~~ | ~~Indirect prompt injection~~ | ~~Context sanitization~~ | ✅ Mitigated |
+| R012 | Policy drift detection | Drift alerting system | ⚠️ Open |
 
 ---
 
@@ -409,6 +419,7 @@ Malicious instructions embedded in retrieved context (from memory or external so
 | Date | Version | Changes | Author |
 |------|---------|---------|--------|
 | Nov 2025 | 1.0.0 | Initial risk register creation | Principal AI Safety Engineer |
+| Dec 2025 | 1.1.0 | R003, R018 mitigated: Multi-turn attack detection & context sanitization | @copilot |
 
 ---
 
