@@ -141,7 +141,8 @@ def e2e_http_client():
 
     from mlsdm.api.app import app
 
-    yield TestClient(app)
+    with TestClient(app) as client:
+        yield client
 
 
 # ============================================================

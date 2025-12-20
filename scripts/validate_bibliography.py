@@ -22,7 +22,7 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
-
+from urllib.parse import urlparse
 
 # Forbidden patterns (applied to CITATION.cff and REFERENCES.bib only, not APA)
 FORBIDDEN_PATTERNS_STRICT = [
@@ -50,6 +50,14 @@ YEAR_PATTERN = re.compile(r"^\d{4}$")
 
 ISO_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 ALLOWED_EVIDENCE_TYPES = {"peer_reviewed", "preprint", "standard"}
+PLACEHOLDER_DOMAINS = {"example.com", "example.org"}
+
+
+def is_placeholder_domain(host: str) -> bool:
+    """Return True if host matches placeholder domains or their subdomains."""
+    return host in PLACEHOLDER_DOMAINS or any(
+        host.endswith(f".{domain}") for domain in PLACEHOLDER_DOMAINS
+    )
 
 
 def find_repo_root() -> Path:
@@ -245,7 +253,7 @@ def validate_doi(doi: str) -> bool:
 
 def validate_year(year: str) -> tuple[bool, str]:
     """Validate year is 4 digits in reasonable range [1850..2026].
-    
+
     Returns (is_valid, error_message).
     """
     # Handle n.d. for "no date" entries
@@ -263,11 +271,12 @@ def validate_url(url: str) -> bool:
     """Validate URL uses HTTPS and is not example.com."""
     if not url.startswith("https://"):
         return False
-    # Check for placeholder domains (intentional substring check for validation, not sanitization)
-    url_lower = url.lower()
-    if "example.com" in url_lower or "example.org" in url_lower:  # noqa: S105
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    if not host:
         return False
-    return True
+    # Reject placeholder domains exactly or as subdomains (e.g., foo.example.com)
+    return not is_placeholder_domain(host)
 
 
 def check_forbidden_content(content: str, context: str, patterns: list[str] | None = None) -> list[str]:
@@ -283,7 +292,7 @@ def check_forbidden_content(content: str, context: str, patterns: list[str] | No
 
 def check_bibtex(repo_root: Path) -> tuple[list[str], set[str]]:
     """Check that REFERENCES.bib is valid and entries meet requirements.
-    
+
     Returns (errors, bib_keys) where bib_keys is the set of all BibTeX keys.
     """
     errors: list[str] = []
@@ -358,7 +367,7 @@ def check_bibtex(repo_root: Path) -> tuple[list[str], set[str]]:
 
 def extract_apa_keys(repo_root: Path) -> tuple[list[str], set[str]]:
     """Extract BibTeX key comments from APA file.
-    
+
     Returns (errors, apa_keys) where apa_keys is the set of all keys found.
     """
     errors: list[str] = []

@@ -144,7 +144,7 @@ def main() -> int:
         with open(args.baseline, "w") as f:
             json.dump(baseline, f, indent=2)
 
-        print(f"✅ Baseline updated successfully")
+        print("✅ Baseline updated successfully")
         return 0
 
     # Check for drift

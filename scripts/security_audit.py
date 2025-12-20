@@ -165,14 +165,14 @@ def check_security_implementations() -> tuple[bool, list[str]]:
         "tests/unit/test_input_validator.py",
         "tests/unit/test_security_logger.py",
     ]
-    
+
     all_tests_found = True
     for test_file in test_locations:
         test_path = Path(test_file)
         if not test_path.exists():
             all_tests_found = False
             findings.append(f"Missing: {test_file}")
-    
+
     if all_tests_found:
         print("✓ Security tests present")
     else:

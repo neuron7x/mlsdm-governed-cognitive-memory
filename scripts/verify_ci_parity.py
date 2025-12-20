@@ -19,7 +19,6 @@ import re
 import sys
 from pathlib import Path
 
-
 # Canonical make targets that workflows should use
 CANONICAL_TARGETS = {
     "lint": ["make lint"],
@@ -80,15 +79,12 @@ def check_workflow_file(filepath: Path) -> list[tuple[int, str, str]]:
 
     in_run_block = False
     run_content = ""
-    run_start_line = 0
-
     for i, line in enumerate(lines, 1):
         stripped = line.strip()
 
         # Detect run: blocks
         if stripped.startswith("run:"):
             in_run_block = True
-            run_start_line = i
             # Check for inline run content
             if stripped != "run: |":
                 run_content = stripped[4:].strip()

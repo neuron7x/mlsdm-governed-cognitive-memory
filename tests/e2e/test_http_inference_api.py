@@ -38,7 +38,8 @@ def http_client() -> TestClient:
 
     from mlsdm.api.app import app
 
-    return TestClient(app)
+    with TestClient(app) as client:
+        yield client
 
 
 class TestHealthEndpoints:
