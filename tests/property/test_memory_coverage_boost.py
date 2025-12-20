@@ -5,11 +5,10 @@ This module contains comprehensive property tests using Hypothesis
 to test edge cases and error paths in PhaseEntangledLatticeMemory.
 """
 
-import math
-
 import numpy as np
 import pytest
-from hypothesis import given, settings, strategies as st
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from mlsdm.memory import PhaseEntangledLatticeMemory
 
