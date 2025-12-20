@@ -28,16 +28,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="mlsdm-governed-cognitive-memory CLI")
     parser.add_argument("--config", type=str, default="config/default_config.yaml")
     parser.add_argument("--steps", type=int, default=100)
-    parser.add_argument("--api", action="store_true")
     args = parser.parse_args()
-
-    if args.api:
-        import uvicorn
-
-        from mlsdm.api.app import app
-
-        uvicorn.run(app, host="0.0.0.0", port=8000)
-        return
 
     config = ConfigLoader.load_config(args.config)
     manager = MemoryManager(config)

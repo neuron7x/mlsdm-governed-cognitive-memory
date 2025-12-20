@@ -177,11 +177,7 @@ def cmd_demo(args: argparse.Namespace) -> int:
 
 def cmd_serve(args: argparse.Namespace) -> int:
     """Start the HTTP API server."""
-    try:
-        import uvicorn
-    except ImportError:
-        print("Error: uvicorn not installed. Install with: pip install uvicorn", file=sys.stderr)
-        return 1
+    from mlsdm.entrypoints.serve import serve
 
     # Set environment variables from args
     if args.config:
@@ -201,18 +197,12 @@ def cmd_serve(args: argparse.Namespace) -> int:
     print(f"Config: {os.environ.get('CONFIG_PATH', 'config/default_config.yaml')}")
     print()
 
-    # Import app here to pick up environment variables
-    from mlsdm.api.app import app
-
-    uvicorn.run(
-        app,
+    return serve(
         host=args.host,
         port=args.port,
         log_level=args.log_level,
         reload=args.reload,
     )
-
-    return 0
 
 
 def cmd_check(args: argparse.Namespace) -> int:

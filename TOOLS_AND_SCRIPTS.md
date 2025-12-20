@@ -74,7 +74,7 @@ pip install -e .
 | Command | Description |
 |---------|-------------|
 | `mlsdm demo` | Run interactive demo of the LLM wrapper |
-| `mlsdm serve` | Start the HTTP API server |
+| `mlsdm serve` | Start the HTTP API server (canonical entrypoint for all environments) |
 | `mlsdm check` | Check environment and configuration |
 
 **Examples:**

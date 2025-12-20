@@ -93,31 +93,21 @@ def main() -> int:
         print("   Set LLM_BACKEND=openai for production.")
         print()
 
-    # Import uvicorn and start server
-    try:
-        import uvicorn
-    except ImportError:
-        print("Error: uvicorn not installed. Install with: pip install uvicorn")
-        return 1
+    from mlsdm.entrypoints.serve import serve
 
-    # For multi-worker mode, uvicorn requires app path as string
     print(f"🚀 Starting cloud production server on {config.server.host}:{config.server.port}")
     print(f"   Workers: {config.server.workers}")
     print(f"   Secure Mode: {config.security.secure_mode}")
     print(f"   Tracing: {config.observability.tracing_enabled}")
     print()
 
-    # Use uvicorn with workers (for production, consider gunicorn with uvicorn workers)
-    uvicorn.run(
-        "mlsdm.api.app:app",
+    return serve(
         host=config.server.host,
         port=config.server.port,
         workers=config.server.workers,
         log_level=config.server.log_level,
         timeout_keep_alive=config.server.timeout_keep_alive,
     )
-
-    return 0
 
 
 if __name__ == "__main__":

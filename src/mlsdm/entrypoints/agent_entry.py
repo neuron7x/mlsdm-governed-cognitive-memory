@@ -108,29 +108,18 @@ def main() -> int:
         print("   Set API_KEY environment variable for production.")
         print()
 
-    # Import uvicorn and start server
-    try:
-        import uvicorn
-    except ImportError:
-        print("Error: uvicorn not installed. Install with: pip install uvicorn")
-        return 1
-
-    # Import app
-    from mlsdm.api.app import app
+    from mlsdm.entrypoints.serve import serve
 
     print(f"🤖 Starting agent/API server on {config.server.host}:{config.server.port}")
     print("   Press Ctrl+C to stop")
     print()
 
-    uvicorn.run(
-        app,
+    return serve(
         host=config.server.host,
         port=config.server.port,
         workers=config.server.workers,
         log_level=config.server.log_level,
     )
-
-    return 0
 
 
 if __name__ == "__main__":
