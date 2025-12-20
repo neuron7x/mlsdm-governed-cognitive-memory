@@ -198,7 +198,7 @@ class MoralFilterV2:
                     f"over last 10 operations for filter '{self._filter_id}'"
                 )
 
-    def get_drift_stats(self) -> dict:
+    def get_drift_stats(self) -> dict[str, float]:
         """Get drift statistics.
 
         Returns:
