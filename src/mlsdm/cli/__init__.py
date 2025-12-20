@@ -177,40 +177,37 @@ def cmd_demo(args: argparse.Namespace) -> int:
 
 def cmd_serve(args: argparse.Namespace) -> int:
     """Start the HTTP API server."""
-    try:
-        import uvicorn
-    except ImportError:
-        print("Error: uvicorn not installed. Install with: pip install uvicorn", file=sys.stderr)
-        return 1
+    from mlsdm import serve
 
-    # Set environment variables from args
-    if args.config:
-        os.environ["CONFIG_PATH"] = args.config
-
-    if args.backend:
-        os.environ["LLM_BACKEND"] = args.backend
-
-    if args.disable_rate_limit:
-        os.environ["DISABLE_RATE_LIMIT"] = "1"
+    mode = getattr(args, "mode", "api")
+    config_path = args.config or os.environ.get("CONFIG_PATH", "config/default_config.yaml")
+    backend = args.backend or os.environ.get("LLM_BACKEND", "local_stub")
+    disable_rate_limit = args.disable_rate_limit or os.environ.get("DISABLE_RATE_LIMIT") == "1"
 
     print("=" * 60)
     print("MLSDM HTTP API Server")
     print("=" * 60)
-    print(f"Starting server on {args.host}:{args.port}")
-    print(f"Backend: {os.environ.get('LLM_BACKEND', 'local_stub')}")
-    print(f"Config: {os.environ.get('CONFIG_PATH', 'config/default_config.yaml')}")
+    print(f"Starting server on {args.host}:{args.port} (mode: {mode})")
+    print(f"Backend: {backend}")
+    print(f"Config: {config_path}")
     print()
 
-    # Import app here to pick up environment variables
-    from mlsdm.api.app import app
-
-    uvicorn.run(
-        app,
-        host=args.host,
-        port=args.port,
-        log_level=args.log_level,
-        reload=args.reload,
-    )
+    try:
+        serve.run_server(
+            mode=mode,
+            host=args.host,
+            port=args.port,
+            log_level=args.log_level,
+            reload=args.reload,
+            config=args.config,
+            backend=args.backend,
+            disable_rate_limit=args.disable_rate_limit,
+        )
+    except ImportError as exc:
+        if getattr(exc, "name", None) == "uvicorn" or "uvicorn" in str(exc):
+            print("Error: uvicorn not installed. Install with: pip install uvicorn", file=sys.stderr)
+            return 1
+        raise
 
     return 0
 
@@ -496,6 +493,13 @@ def main() -> int:
 
     # Serve command
     serve_parser = subparsers.add_parser("serve", help="Start HTTP API server")
+    serve_parser.add_argument(
+        "--mode",
+        type=str,
+        choices=["api", "neuro"],
+        default="api",
+        help="Service mode to run (default: api)",
+    )
     serve_parser.add_argument(
         "--host",
         type=str,

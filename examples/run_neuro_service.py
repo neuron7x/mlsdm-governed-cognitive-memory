@@ -30,12 +30,20 @@ if __name__ == "__main__":
     # Add src to path only when running as script
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-    from mlsdm.service.neuro_engine_service import main
+    from mlsdm.serve import run_server
+
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", "8000"))
+    log_level = os.environ.get("LOG_LEVEL", "info")
+    reload = os.environ.get("RELOAD", "").lower() == "true"
+    backend = os.environ.get("LLM_BACKEND")
+    config_path = os.environ.get("CONFIG_PATH")
+    disable_rate_limit = os.environ.get("DISABLE_RATE_LIMIT") == "1"
 
     print("🚀 Starting NeuroCognitiveEngine HTTP API Service...")
-    print(f"   Backend: {os.environ.get('LLM_BACKEND', 'local_stub')}")
-    print(f"   Host: {os.environ.get('HOST', '0.0.0.0')}")
-    print(f"   Port: {os.environ.get('PORT', '8000')}")
+    print(f"   Backend: {backend or 'local_stub'}")
+    print(f"   Host: {host}")
+    print(f"   Port: {port}")
     print(f"   FSLGS: {os.environ.get('ENABLE_FSLGS', 'true')}")
     print(f"   Metrics: {os.environ.get('ENABLE_METRICS', 'true')}")
     print()
@@ -46,4 +54,13 @@ if __name__ == "__main__":
     print("  - GET  http://localhost:8000/docs (Swagger UI)")
     print()
 
-    main()
+    run_server(
+        mode="neuro",
+        host=host,
+        port=port,
+        log_level=log_level,
+        reload=reload,
+        config=config_path,
+        backend=backend,
+        disable_rate_limit=disable_rate_limit,
+    )
