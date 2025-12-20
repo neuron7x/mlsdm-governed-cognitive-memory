@@ -64,7 +64,8 @@ coverage-gate:
 	@echo "✓ coverage.xml generated successfully"
 
 lint:
-	ruff check src tests
+	@echo "Running ruff linter (src + tests)..."
+	@ruff check src tests --show-fixes || (echo "❌ Lint failed.  Run 'ruff check src tests --fix' to auto-fix" && exit 1)
 
 type:
 	mypy src/mlsdm

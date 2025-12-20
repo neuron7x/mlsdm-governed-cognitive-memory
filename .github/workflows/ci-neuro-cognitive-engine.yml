@@ -39,7 +39,9 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Run ruff linter
-        run: make lint
+        run: |
+          echo "Running ruff linter with detailed output..."
+          ruff check src tests --output-format=github --show-fixes
 
       - name: Run mypy type checker
         run: make type
