@@ -670,7 +670,8 @@ class PhaseEntangledLatticeMemory:
         """Evict the memory with the lowest confidence score.
         
         This is called when the memory is at capacity and a new high-confidence
-        memory needs to be stored. Removes the least confident memory to make room.
+        memory needs to be stored. Sets the pointer to the lowest confidence
+        memory slot so it will be overwritten.
         
         Should only be called from within a lock context.
         """
@@ -684,31 +685,9 @@ class PhaseEntangledLatticeMemory:
         ]
         min_idx = int(np.argmin(confidences))
         
-        # Shift all arrays to remove the element at min_idx
-        if min_idx < self.size - 1:
-            # Shift memory_bank, phase_bank, and norms
-            self.memory_bank[min_idx:-1] = self.memory_bank[min_idx+1:self.size]
-            self.phase_bank[min_idx:-1] = self.phase_bank[min_idx+1:self.size]
-            self.norms[min_idx:-1] = self.norms[min_idx+1:self.size]
-            
-            # Shift provenance lists
-            self._provenance[min_idx:self.size-1] = self._provenance[min_idx+1:self.size]
-            self._memory_ids[min_idx:self.size-1] = self._memory_ids[min_idx+1:self.size]
-        
-        # Remove the last element from lists
-        if len(self._provenance) > 0:
-            self._provenance.pop()
-        if len(self._memory_ids) > 0:
-            self._memory_ids.pop()
-        
-        # Decrease size
-        self.size -= 1
-        
-        # Adjust pointer if it was pointing beyond the evicted item
-        if self.pointer > min_idx:
-            self.pointer -= 1
-        if self.pointer >= self.size and self.size > 0:
-            self.pointer = self.size - 1
+        # Simply set pointer to overwrite the lowest confidence slot
+        # The normal entangle logic will handle the replacement
+        self.pointer = min_idx
 
     def _auto_recover_unsafe(self) -> bool:
         """
