@@ -15,6 +15,7 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 - 🏗️ **Architecture**: See [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md)
 - 🚀 **Deployment**: See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
 - 🤝 **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md)
+- 🛡️ **Audit & Readiness**: See [AUDIT_REGISTER.md](AUDIT_REGISTER.md)
 - ✅ **Testing**: See [TESTING_STRATEGY.md](TESTING_STRATEGY.md)
 
 ---
