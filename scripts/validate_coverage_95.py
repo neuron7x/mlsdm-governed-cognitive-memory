@@ -6,42 +6,24 @@ Validates that core modules (core, memory, cognition) achieve ≥95% coverage.
 Exits with code 0 if all modules meet threshold, 1 otherwise.
 
 Usage:
-    python scripts/validate_coverage_95.py
+    python scripts/validate_coverage_95.py [--coverage-file PATH]
 """
 
 import json
-import subprocess
 import sys
 from pathlib import Path
 
 
-def run_coverage() -> dict:
-    """Run pytest with coverage and return coverage data."""
-    print("Running coverage analysis...")
-    result = subprocess.run(
-        [
-            "pytest",
-            "tests/",
-            "--cov=src/mlsdm/core",
-            "--cov=src/mlsdm/memory",
-            "--cov=src/mlsdm/cognition",
-            "--cov-report=json",
-            "--cov-report=term",
-            "-v",
-        ],
-        capture_output=False,
-        check=False,
-    )
-
-    if result.returncode != 0:
-        print("\n⚠️  Warning: Some tests failed, but continuing with coverage check")
-
-    coverage_file = Path("coverage.json")
-    if not coverage_file.exists():
-        print("❌ Error: coverage.json not found")
+def load_coverage_data(coverage_file: str = "coverage.json") -> dict:
+    """Load existing coverage data from file."""
+    coverage_path = Path(coverage_file)
+    
+    if not coverage_path.exists():
+        print(f"❌ Error: {coverage_file} not found")
+        print("Make sure to run pytest with --cov-report=json first")
         sys.exit(1)
-
-    with open(coverage_file) as f:
+    
+    with open(coverage_path) as f:
         return json.load(f)
 
 
@@ -80,11 +62,16 @@ def check_module_coverage(coverage_data: dict, module_name: str) -> tuple[float,
 
 def main() -> None:
     """Main validation logic."""
+    # Check for custom coverage file path
+    coverage_file = "coverage.json"
+    if len(sys.argv) > 1 and sys.argv[1] == "--coverage-file":
+        coverage_file = sys.argv[2] if len(sys.argv) > 2 else coverage_file
+    
     print("=" * 70)
     print("Core Modules Coverage Validation (≥95% threshold)")
     print("=" * 70)
 
-    coverage_data = run_coverage()
+    coverage_data = load_coverage_data(coverage_file)
 
     modules_to_check = ["core", "memory", "cognition"]
     results = {}
