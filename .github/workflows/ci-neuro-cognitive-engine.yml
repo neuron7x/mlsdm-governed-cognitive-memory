@@ -43,6 +43,11 @@ jobs:
           echo "Running ruff linter with detailed output..."
           ruff check src tests --output-format=github --show-fixes
 
+      - name: Check for hidden Unicode characters
+        run: |
+          echo "Checking for hidden/bidirectional Unicode characters (Trojan Source protection)..."
+          python scripts/check_no_bidi_unicode.py
+
       - name: Run mypy type checker
         run: make type
 

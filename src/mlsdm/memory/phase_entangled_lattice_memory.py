@@ -7,7 +7,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from threading import Lock
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -113,7 +113,7 @@ class PhaseEntangledLatticeMemory:
         # Optimization: Pre-allocate query buffer to reduce allocations during retrieval
         self._query_buffer = np.zeros(dimension, dtype=np.float32)
         self._checksum = self._compute_checksum()
-        
+
         # Provenance tracking for AI safety (TD-003)
         self._provenance: list[MemoryProvenance] = []
         self._memory_ids: list[str] = []
@@ -150,7 +150,7 @@ class PhaseEntangledLatticeMemory:
         vector: list[float],
         phase: float,
         correlation_id: str | None = None,
-        provenance: Optional[MemoryProvenance] = None,
+        provenance: MemoryProvenance | None = None,
     ) -> int:
         """Store a vector with associated phase in memory.
 
@@ -173,18 +173,16 @@ class PhaseEntangledLatticeMemory:
         with self._lock:
             # Ensure integrity before operation
             self._ensure_integrity()
-            
+
             # Generate unique memory ID
             memory_id = str(uuid.uuid4())
-            
+
             # Create default provenance if not provided
             if provenance is None:
                 provenance = MemoryProvenance(
-                    source=MemorySource.SYSTEM_PROMPT,
-                    confidence=1.0,
-                    timestamp=datetime.now()
+                    source=MemorySource.SYSTEM_PROMPT, confidence=1.0, timestamp=datetime.now()
                 )
-            
+
             # Check confidence threshold - reject low-confidence memories
             if provenance.confidence < self._confidence_threshold:
                 # Log rejection for observability
@@ -227,8 +225,7 @@ class PhaseEntangledLatticeMemory:
                 raise TypeError(f"phase must be numeric, got {type(phase).__name__}")
             if math.isnan(phase) or math.isinf(phase):
                 raise ValueError(
-                    f"phase must be a finite number, got {phase}. "
-                    "NaN and infinity are not allowed."
+                    f"phase must be a finite number, got {phase}. NaN and infinity are not allowed."
                 )
             if not (0.0 <= phase <= 1.0):
                 raise ValueError(
@@ -238,16 +235,16 @@ class PhaseEntangledLatticeMemory:
 
             vec_np = np.array(vector, dtype=np.float32)
             norm = max(safe_norm(vec_np), self.MIN_NORM_THRESHOLD)
-            
+
             # Check capacity and evict if necessary
             if self.size >= self.capacity:
                 self._evict_lowest_confidence()
-            
+
             idx = self.pointer
             self.memory_bank[idx] = vec_np
             self.phase_bank[idx] = phase
             self.norms[idx] = norm
-            
+
             # Store provenance metadata
             if idx < len(self._provenance):
                 self._provenance[idx] = provenance
@@ -288,7 +285,7 @@ class PhaseEntangledLatticeMemory:
         vectors: list[list[float]],
         phases: list[float],
         correlation_id: str | None = None,
-        provenances: Optional[list[MemoryProvenance]] = None,
+        provenances: list[MemoryProvenance] | None = None,
     ) -> list[int]:
         """Store multiple vectors with associated phases in memory (batch operation).
 
@@ -322,7 +319,7 @@ class PhaseEntangledLatticeMemory:
                 f"vectors and phases must have same length: "
                 f"{len(vectors)} vectors, {len(phases)} phases"
             )
-        
+
         if provenances is not None and len(provenances) != len(vectors):
             raise ValueError(
                 f"provenances must match vectors length: "
@@ -344,16 +341,14 @@ class PhaseEntangledLatticeMemory:
                     provenance = provenances[i]
                 else:
                     provenance = MemoryProvenance(
-                        source=MemorySource.SYSTEM_PROMPT,
-                        confidence=1.0,
-                        timestamp=datetime.now()
+                        source=MemorySource.SYSTEM_PROMPT, confidence=1.0, timestamp=datetime.now()
                     )
-                
+
                 # Check confidence threshold
                 if provenance.confidence < self._confidence_threshold:
                     indices.append(-1)  # Reject
                     continue
-                
+
                 # Generate unique memory ID
                 memory_id = str(uuid.uuid4())
                 # Validate vector type
@@ -383,16 +378,16 @@ class PhaseEntangledLatticeMemory:
                     raise ValueError(f"vector at index {i} contains NaN or infinity values")
 
                 norm = max(safe_norm(vec_np), self.MIN_NORM_THRESHOLD)
-                
+
                 # Check capacity and evict if necessary
                 if self.size >= self.capacity:
                     self._evict_lowest_confidence()
-                
+
                 idx = self.pointer
                 self.memory_bank[idx] = vec_np
                 self.phase_bank[idx] = phase
                 self.norms[idx] = norm
-                
+
                 # Store provenance metadata
                 if idx < len(self._provenance):
                     self._provenance[idx] = provenance
@@ -485,16 +480,18 @@ class PhaseEntangledLatticeMemory:
             # Optimize: use in-place operations and avoid intermediate arrays
             phase_diff = np.abs(self.phase_bank[: self.size] - current_phase)
             phase_mask = phase_diff <= phase_tolerance
-            
+
             # Add confidence filtering
-            confidence_mask = np.array([
-                (i < len(self._provenance) and self._provenance[i].confidence >= min_confidence)
-                for i in range(self.size)
-            ])
-            
+            confidence_mask = np.array(
+                [
+                    (i < len(self._provenance) and self._provenance[i].confidence >= min_confidence)
+                    for i in range(self.size)
+                ]
+            )
+
             # Combine phase and confidence masks
             valid_mask = phase_mask & confidence_mask
-            
+
             if not np.any(valid_mask):
                 # Record empty result due to phase mismatch
                 if _OBSERVABILITY_AVAILABLE and start_time is not None:
@@ -539,12 +536,10 @@ class PhaseEntangledLatticeMemory:
                 else:
                     # Fallback for memories created before provenance was added
                     prov = MemoryProvenance(
-                        source=MemorySource.SYSTEM_PROMPT,
-                        confidence=1.0,
-                        timestamp=datetime.now()
+                        source=MemorySource.SYSTEM_PROMPT, confidence=1.0, timestamp=datetime.now()
                     )
                     mem_id = str(uuid.uuid4())
-                
+
                 results.append(
                     MemoryRetrieval(
                         vector=self.memory_bank[glob],
@@ -665,26 +660,26 @@ class PhaseEntangledLatticeMemory:
         for i in range(self.size):
             vec = self.memory_bank[i]
             self.norms[i] = max(safe_norm(vec), 1e-9)
-    
+
     def _evict_lowest_confidence(self) -> None:
         """Evict the memory with the lowest confidence score.
-        
+
         This is called when the memory is at capacity and a new high-confidence
         memory needs to be stored. Sets the pointer to the lowest confidence
         memory slot so it will be overwritten.
-        
+
         Should only be called from within a lock context.
         """
         if self.size == 0:
             return
-        
+
         # Find the index with lowest confidence
         confidences = [
             self._provenance[i].confidence if i < len(self._provenance) else 0.0
             for i in range(self.size)
         ]
         min_idx = int(np.argmin(confidences))
-        
+
         # Simply set pointer to overwrite the lowest confidence slot
         # The normal entangle logic will handle the replacement
         self.pointer = min_idx
