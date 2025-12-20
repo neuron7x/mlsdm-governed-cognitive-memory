@@ -847,33 +847,41 @@ class LLMWrapper:
         Returns:
             Confidence score in [0.0, 1.0] where 1.0 = highest confidence
         """
-        if not response or len(response.strip()) == 0:
-            return 0.1  # Empty responses have very low confidence
-        
-        confidence = 1.0
-        
-        # Factor 1: Uncertainty markers reduce confidence
-        uncertainty_markers = [
+        # Constants for confidence calculation
+        UNCERTAINTY_MARKERS = [
             "i think", "maybe", "probably", "might be",
             "i'm not sure", "possibly", "could be", "perhaps",
             "seems like", "appears to", "likely"
         ]
+        MIN_WORDS_THRESHOLD = 10
+        SHORT_RESPONSE_PENALTY = 0.2
+        UNCERTAINTY_PENALTY = 0.1
+        REPETITION_THRESHOLD = 0.3  # 30% repetition is concerning
+        REPETITION_PENALTY_FACTOR = 0.3
+        EMPTY_RESPONSE_CONFIDENCE = 0.1
+        
+        if not response or len(response.strip()) == 0:
+            return EMPTY_RESPONSE_CONFIDENCE
+        
+        confidence = 1.0
+        
+        # Factor 1: Uncertainty markers reduce confidence
         response_lower = response.lower()
-        for marker in uncertainty_markers:
+        for marker in UNCERTAINTY_MARKERS:
             if marker in response_lower:
-                confidence -= 0.1
+                confidence -= UNCERTAINTY_PENALTY
         
         # Factor 2: Very short responses have lower confidence
         words = response.split()
-        if len(words) < 10:
-            confidence -= 0.2
+        if len(words) < MIN_WORDS_THRESHOLD:
+            confidence -= SHORT_RESPONSE_PENALTY
         
         # Factor 3: High repetition can indicate hallucination
         if len(words) > 0:
             unique_words = len(set(words))
             repetition_ratio = 1.0 - (unique_words / len(words))
-            if repetition_ratio > 0.3:  # More than 30% repetition
-                confidence -= repetition_ratio * 0.3
+            if repetition_ratio > REPETITION_THRESHOLD:
+                confidence -= repetition_ratio * REPETITION_PENALTY_FACTOR
         
         # Ensure confidence stays in valid range
         return max(0.0, min(1.0, confidence))

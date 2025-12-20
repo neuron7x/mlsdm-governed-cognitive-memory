@@ -114,7 +114,7 @@ class PhaseEntangledLatticeMemory:
         self._query_buffer = np.zeros(dimension, dtype=np.float32)
         self._checksum = self._compute_checksum()
         
-        # Provenance tracking - NEW
+        # Provenance tracking for AI safety (TD-003)
         self._provenance: list[MemoryProvenance] = []
         self._memory_ids: list[str] = []
         self._confidence_threshold = 0.5  # Minimum confidence for storage
