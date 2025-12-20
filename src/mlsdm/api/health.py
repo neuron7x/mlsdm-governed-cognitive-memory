@@ -292,6 +292,47 @@ def _check_aphasia_health() -> tuple[bool, str | None]:
     return True, "not_configured_or_ok"
 
 
+def _check_cpu_health() -> tuple[bool, str | None]:
+    """Check CPU availability with warmup handling.
+
+    Handles the case where psutil.cpu_percent(interval=0) returns 0.0 when called
+    before proper initialization or after fixture teardown. This occurs when:
+    - First call to cpu_percent(interval=0) before any measurement with interval > 0
+    - After test fixture teardown in test environments
+    - During application startup before lifespan CPU warmup completes
+
+    In production, the lifespan startup warms up CPU monitoring with interval=0.1,
+    but readiness checks during startup or in tests may encounter uninitialized state.
+
+    Returns:
+        Tuple of (healthy, details) where:
+        - healthy: True if CPU is available (<98% usage) or initializing
+        - details: String describing CPU state (e.g., "usage: 45.2%", "initializing (0.0%)")
+    """
+    try:
+        # Use non-blocking CPU check (interval=0) for fast health checks
+        cpu_percent = psutil.cpu_percent(interval=0)
+
+        # Handle uninitialized state (cpu_percent == 0.0)
+        # This occurs when psutil.cpu_percent(interval=0) is called before
+        # the first measurement with a non-zero interval.
+        # In lifespan startup, we warm up with interval=0.1, but if readiness
+        # is checked during startup or after fixture teardown, we may get 0.0.
+        if cpu_percent == 0.0:
+            # Attempt a quick measurement to get real value
+            # Only do this in edge cases to avoid adding latency
+            cpu_percent = psutil.cpu_percent(interval=0.1)
+            if cpu_percent == 0.0:
+                # Still 0.0 means truly idle or initializing - both are healthy
+                return True, "initializing (0.0%)"
+
+        cpu_available = cpu_percent < 98.0
+        return cpu_available, f"usage: {cpu_percent:.1f}%"
+    except Exception as e:
+        logger.warning(f"Failed to check CPU availability: {e}")
+        return False, f"check_failed: {str(e)}"
+
+
 async def _compute_readiness(response: Response) -> ReadinessStatus:
     """Internal function to compute readiness status.
 
@@ -361,24 +402,19 @@ async def _compute_readiness(response: Response) -> ReadinessStatus:
         checks["memory_available"] = False
         all_ready = False
 
-    try:
-        # Use non-blocking CPU check (interval=0) for fast health checks
-        # This returns instantly using cached values from the last measurement
-        # Blocking interval=0.1 would add 100ms latency to every readiness check
-        cpu_percent = psutil.cpu_percent(interval=0)
-        cpu_available = cpu_percent < 98.0
-        components["system_cpu"] = ComponentStatus(
-            healthy=cpu_available, details=f"usage: {cpu_percent:.1f}%"
-        )
-        checks["cpu_available"] = cpu_available
-        if not cpu_available:
-            all_ready = False
-            details["system_cpu_percent"] = cpu_percent
-    except Exception as e:
-        logger.warning(f"Failed to check CPU availability: {e}")
-        components["system_cpu"] = ComponentStatus(healthy=False, details=str(e))
-        checks["cpu_available"] = False
+    # Check 7: CPU availability with warmup handling
+    cpu_healthy, cpu_details = _check_cpu_health()
+    components["system_cpu"] = ComponentStatus(healthy=cpu_healthy, details=cpu_details)
+    checks["cpu_available"] = cpu_healthy
+    if not cpu_healthy:
         all_ready = False
+        # Extract CPU percent from details if available
+        if cpu_details and "usage:" in cpu_details:
+            try:
+                pct_str = cpu_details.split("usage:")[1].strip().rstrip("%")
+                details["system_cpu_percent"] = float(pct_str)
+            except (IndexError, ValueError):
+                pass
 
     # Set response status code
     if all_ready:

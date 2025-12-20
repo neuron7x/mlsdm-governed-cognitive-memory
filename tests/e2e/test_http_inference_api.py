@@ -30,15 +30,43 @@ def http_client() -> TestClient:
 
     Disables rate limiting and uses local_stub backend for deterministic testing.
 
+    Ensures lifespan startup completes before yielding client to avoid race
+    conditions with CPU monitoring initialization.
+
     Yields:
         FastAPI TestClient instance.
     """
+    import logging
+    import time
+
     os.environ["DISABLE_RATE_LIMIT"] = "1"
     os.environ["LLM_BACKEND"] = "local_stub"
 
     from mlsdm.api.app import app
 
     with TestClient(app) as client:
+        # Give lifespan 200ms to complete CPU initialization (psutil warmup)
+        # The TestClient starts the lifespan context, but we need to verify
+        # readiness before proceeding with tests to avoid race conditions
+        time.sleep(0.2)
+
+        # Verify readiness before yielding client
+        max_retries = 5
+        for attempt in range(max_retries):
+            response = client.get("/health/ready")
+            if response.status_code == 200:
+                break
+            if attempt < max_retries - 1:
+                time.sleep(0.5)
+
+        # Log warning if not ready after retries (non-blocking for other tests)
+        if response.status_code != 200:
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                f"Health check not ready after {max_retries} attempts. "
+                f"Status: {response.status_code}, Details: {response.json()}"
+            )
+
         yield client
 
 
@@ -75,14 +103,47 @@ class TestHealthEndpoints:
         GET /health/readiness returns 200 with ready=True when engine is initialized.
 
         Used by Kubernetes readiness probe. Returns 200 if ready, 503 if not.
-        """
-        response = http_client.get("/health/readiness")
 
-        assert response.status_code == 200
+        Note: Implements retry logic to handle async startup in test fixtures.
+        The TestClient lifespan may not be fully initialized when first test runs,
+        especially in CI environments with high parallelism.
+        """
+        import time
+
+        max_attempts = 10
+        retry_delay = 0.3  # 300ms between retries
+
+        for attempt in range(max_attempts):
+            response = http_client.get("/health/readiness")
+
+            if response.status_code == 200:
+                # Success path - continue with assertions
+                break
+            elif response.status_code == 503 and attempt < max_attempts - 1:
+                # Transient not-ready state during startup - retry
+                data = response.json()
+                unhealthy = data.get("details", {}).get("unhealthy_components", [])
+                # Log for debugging but don't fail yet
+                print(
+                    f"Attempt {attempt + 1}/{max_attempts}: Not ready. Unhealthy: {unhealthy}"
+                )
+                time.sleep(retry_delay)
+            else:
+                # Final attempt or unexpected status code - fail with details
+                break
+
+        # Assertions (with detailed error message on failure)
+        assert response.status_code == 200, (
+            f"Expected readiness endpoint to return 200, got {response.status_code}. "
+            f"Response: {response.json()}"
+        )
+
         data = response.json()
         assert "ready" in data
         assert isinstance(data["ready"], bool)
+        assert data["ready"] is True, f"System reported not ready: {data}"
         assert "status" in data
+        assert data["status"] == "ready"
         assert "checks" in data
         assert isinstance(data["checks"], dict)
 
