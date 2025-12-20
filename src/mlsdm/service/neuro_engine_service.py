@@ -17,14 +17,17 @@ def create_app() -> FastAPI:
     """Return the canonical FastAPI application."""
     app = _create_canonical_app()
 
-    if not any(route.path == "/v1/neuro/generate" for route in app.router.routes):
-        router = APIRouter()
+    if getattr(app.state, "neuro_route_registered", False):
+        return app
 
-        @router.post("/v1/neuro/generate")
-        async def neuro_generate(request_body: GenerateRequest, request: Request):
-            return await generate(request_body, request)
+    router = APIRouter()
 
-        app.include_router(router)
+    @router.post("/v1/neuro/generate")
+    async def neuro_generate(request_body: GenerateRequest, request: Request):
+        return await generate(request_body, request)
+
+    app.include_router(router)
+    app.state.neuro_route_registered = True
 
     return app
 

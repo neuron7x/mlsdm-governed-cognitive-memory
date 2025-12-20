@@ -32,6 +32,8 @@ def serve(
         port=port,
         log_level=log_level,
         reload=reload,
+        workers=workers,
+        timeout_keep_alive=timeout_keep_alive,
         config=None,
         backend=None,
         disable_rate_limit=False,

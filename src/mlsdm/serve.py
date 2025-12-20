@@ -30,6 +30,8 @@ def run_server(
     config: str | None,
     backend: str | None,
     disable_rate_limit: bool,
+    workers: int | None = None,
+    timeout_keep_alive: int | None = None,
 ) -> None:
     """Configure environment and start uvicorn for the selected mode."""
     if config:
@@ -43,7 +45,18 @@ def run_server(
 
     import uvicorn
 
-    uvicorn.run(app, host=host, port=port, log_level=log_level, reload=reload)
+    uvicorn_kwargs: dict[str, object] = {
+        "host": host,
+        "port": port,
+        "log_level": log_level,
+        "reload": reload,
+    }
+    if workers is not None:
+        uvicorn_kwargs["workers"] = workers
+    if timeout_keep_alive is not None:
+        uvicorn_kwargs["timeout_keep_alive"] = timeout_keep_alive
+
+    uvicorn.run(app, **uvicorn_kwargs)
 
 
 def main() -> int:  # pragma: no cover - convenience entrypoint
