@@ -151,6 +151,12 @@ jobs:
           pytest --cov=src/mlsdm --cov-report=xml --cov-report=term-missing \
             --cov-branch --cov-fail-under=75 --ignore=tests/load -m "not slow and not benchmark" -v
 
+      - name: Validate Core Modules Coverage ≥95%
+        run: |
+          # WHY: Ensure core modules (core, memory, cognition) maintain ≥95% coverage
+          # These are critical production modules that require higher coverage standards
+          python scripts/validate_coverage_95.py
+
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
