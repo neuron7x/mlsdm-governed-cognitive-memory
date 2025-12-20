@@ -8,7 +8,7 @@ Tests the drift detection system for MoralFilterV2 including:
 """
 
 import logging
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -149,7 +149,7 @@ class TestPolicyDriftDetection:
         with patch(
             "mlsdm.cognition.moral_filter_v2.record_threshold_change"
         ) as mock_record:
-            mf = MoralFilterV2(initial_threshold=0.5, filter_id="production-filter")
+            _mf = MoralFilterV2(initial_threshold=0.5, filter_id="production-filter")
 
             # Check that __init__ called record_threshold_change with correct filter_id
             mock_record.assert_called()
@@ -188,7 +188,7 @@ class TestPolicyDriftDetection:
         with patch(
             "mlsdm.cognition.moral_filter_v2.record_threshold_change"
         ) as mock_record:
-            mf = MoralFilterV2(initial_threshold=0.6, filter_id="init-test")
+            _mf = MoralFilterV2(initial_threshold=0.6, filter_id="init-test")
 
             # Should have been called once in __init__
             assert mock_record.call_count == 1

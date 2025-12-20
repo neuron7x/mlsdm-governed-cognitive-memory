@@ -12,7 +12,7 @@ Metrics:
 
 Usage:
     from mlsdm.observability.policy_drift_telemetry import record_threshold_change
-    
+
     record_threshold_change(
         filter_id="production",
         old_threshold=0.5,
