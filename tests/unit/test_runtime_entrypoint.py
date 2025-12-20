@@ -1,7 +1,5 @@
 from types import SimpleNamespace
 
-import pytest
-
 from mlsdm.api.app import app as canonical_app
 from mlsdm.entrypoints import serve as serve_entrypoint
 from mlsdm.service.neuro_engine_service import create_app
