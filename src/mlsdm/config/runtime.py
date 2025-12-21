@@ -104,10 +104,16 @@ class RuntimeConfig:
             Dictionary of environment variable names and values.
         """
         env: dict[str, str] = {
+            "MLSDM_RUNTIME_MODE": self.mode.value,
             # Server
             "HOST": self.server.host,
             "PORT": str(self.server.port),
+            "MLSDM_WORKERS": str(self.server.workers),
+            "MLSDM_RELOAD": "1" if self.server.reload else "0",
+            "MLSDM_LOG_LEVEL": self.server.log_level,
+            "MLSDM_TIMEOUT_KEEP_ALIVE": str(self.server.timeout_keep_alive),
             # Security
+            "MLSDM_RATE_LIMIT_ENABLED": "1" if self.security.rate_limit_enabled else "0",
             "DISABLE_RATE_LIMIT": "0" if self.security.rate_limit_enabled else "1",
             "RATE_LIMIT_REQUESTS": str(self.security.rate_limit_requests),
             "RATE_LIMIT_WINDOW": str(self.security.rate_limit_window),
@@ -124,6 +130,8 @@ class RuntimeConfig:
             "EMBEDDING_DIM": str(self.engine.embedding_dim),
             "ENABLE_FSLGS": "true" if self.engine.enable_fslgs else "false",
             "CONFIG_PATH": self.engine.config_path,
+            # Debug
+            "MLSDM_DEBUG": "1" if self.debug else "0",
         }
         if self.security.api_key:
             env["API_KEY"] = self.security.api_key
