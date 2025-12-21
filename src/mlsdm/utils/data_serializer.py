@@ -13,7 +13,14 @@ def _save_data(data: dict[str, Any], filepath: str) -> None:
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
     elif ext == ".npz":
-        processed = {k: np.asarray(v) for k, v in data.items()}
+        processed = {}
+        for key, value in data.items():
+            if isinstance(value, np.ndarray):
+                processed[key] = value
+            elif isinstance(value, dict):
+                processed[key] = np.array(value, dtype=object)
+            else:
+                processed[key] = np.asarray(value)
         # Use cast to work around numpy's imprecise savez signature
         save_fn = cast("Any", np.savez)
         save_fn(filepath, **processed)
