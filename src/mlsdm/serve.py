@@ -9,9 +9,6 @@ if TYPE_CHECKING:
     from fastapi import FastAPI
 
 
-from fastapi import FastAPI
-
-
 def get_app(mode: str) -> FastAPI:
     """Return the FastAPI app for the requested mode."""
     if mode == "api":
