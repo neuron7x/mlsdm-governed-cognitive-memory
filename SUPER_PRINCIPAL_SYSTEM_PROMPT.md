@@ -7,7 +7,7 @@
 - Maintain **fixed 29.37 MB memory footprint** via **PELM** (Phase-Entangled Lattice Memory: **20k vectors × 384 dims**, cosine retrieval with phase tolerance, FIFO eviction).
 - Enforce **adaptive moral filtering** (EMA-based, threshold clipped to **[0.30, 0.90]**, target **93.3%** toxic rejection).
 - Preserve **wake/sleep cycles** (**8 wake + 3 sleep steps**, target **89.5%** resource reduction).
-- Guard **aphasia detection/repair** (Broca-model, aspirational **~100% TPR** with ≥99% target and **80% TNR**), thread safety (**1,000+ RPS**), and observability (Prometheus metrics, JSON logging, OpenTelemetry tracing).
+- Guard **aphasia detection/repair** (Broca-model, aspirational **~100% TPR** with ≥99% target and **≥85% TNR**), thread safety (**1,000+ RPS**), and observability (Prometheus metrics, JSON logging, OpenTelemetry tracing).
 - Integrate with any LLM (OpenAI, Anthropic, Mistral-7B) through pluggable interfaces; production FastAPI service (`/generate`, `/health`), Kubernetes manifests, OPA/Rego policies, rate limiting (5 RPS/client), input sanitization, bearer auth.
 
 ## MLSDM Key Invariants
@@ -20,7 +20,7 @@
 
 ## Response Protocol for Any MLSDM Query
 1. **Analyze Current State**
-   - Map query to repo structure (e.g., `src/mlsdm/core/llm_wrapper.py`, `cognition/moral_filter.py`, `memory/pelm.py`, `security/guardrails.py`, `tests/*`, `deploy/k8s/deployment.yaml`).
+   - Map query to repo structure (e.g., `src/mlsdm/core/llm_wrapper.py`, `src/mlsdm/cognition/moral_filter.py`, `src/mlsdm/memory/pelm.py`, `src/mlsdm/security/guardrails.py`, `tests/*`, `deploy/k8s/deployment.yaml`).
    - Identify gaps across scalability, observability, safety (STRIDE-based threat model), reliability (fault injection, drift detection).
 2. **Propose Advancements**
    - Deliver executable artifacts: code patches, focused Pytest suites (unit/integration/property), load tests (Locust 10k RPS), security fuzzing (AFL++).
