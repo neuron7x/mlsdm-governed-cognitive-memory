@@ -6,6 +6,7 @@ for dangerous threshold changes.
 
 Metrics:
     - moral_threshold_current: Current threshold value per filter
+    - moral_threshold_drift_rate: Rate of threshold change per operation
     - moral_threshold_violations: Boundary violations (MIN/MAX)
     - moral_ema_deviation: Deviation from target 0.5
     - moral_drift_events: Total drift events by severity
@@ -27,6 +28,12 @@ from prometheus_client import Counter, Gauge
 moral_threshold_gauge = Gauge(
     "mlsdm_moral_threshold_current",
     "Current moral filter threshold value",
+    ["filter_id"],
+)
+
+moral_threshold_drift_rate = Gauge(
+    "mlsdm_moral_threshold_drift_rate",
+    "Rate of threshold change per operation",
     ["filter_id"],
 )
 
@@ -70,6 +77,7 @@ def record_threshold_change(
 
     # Calculate drift magnitude
     drift = abs(new_threshold - old_threshold)
+    moral_threshold_drift_rate.labels(filter_id=filter_id).set(drift)
 
     # Check for boundary violations
     if new_threshold <= 0.30:

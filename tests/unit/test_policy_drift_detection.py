@@ -13,6 +13,10 @@ from unittest.mock import patch
 import pytest
 
 from mlsdm.cognition.moral_filter_v2 import MoralFilterV2
+from mlsdm.observability.policy_drift_telemetry import (
+    moral_threshold_drift_rate,
+    record_threshold_change,
+)
 
 
 class TestPolicyDriftDetection:
@@ -197,6 +201,24 @@ class TestPolicyDriftDetection:
             assert call_args.kwargs["new_threshold"] == 0.6
             assert call_args.kwargs["old_threshold"] == 0.6
             assert call_args.kwargs["ema_value"] == 0.5
+
+    def test_drift_rate_metric_set(self):
+        """Drift rate metric is calculated."""
+        record_threshold_change(
+            filter_id="drift-rate-test",
+            old_threshold=0.4,
+            new_threshold=0.55,
+            ema_value=0.5,
+        )
+
+        samples = moral_threshold_drift_rate.collect()[0].samples
+        value = next(
+            (s.value for s in samples if s.labels.get("filter_id") == "drift-rate-test"),
+            None,
+        )
+
+        assert value is not None
+        assert value == pytest.approx(0.15)
 
 
 if __name__ == "__main__":
