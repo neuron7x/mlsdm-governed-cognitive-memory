@@ -203,6 +203,12 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 
 ---
 
+### 🛰️ System Prompt Reference
+
+- ✅ [SUPER_PRINCIPAL_SYSTEM_PROMPT.md](SUPER_PRINCIPAL_SYSTEM_PROMPT.md) - System prompt for production-grade MLSDM advancement (safety, reliability, scalability)
+
+---
+
 ### 📊 Technical Leader / Architect
 
 **I want to evaluate MLSDM for my organization:**
