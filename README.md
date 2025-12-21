@@ -19,7 +19,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/ci-neuro-cognitive-engine.yml?style=for-the-badge&logo=github-actions&logoColor=white&label=CI)](https://github.com/neuron7x/mlsdm/actions/workflows/ci-neuro-cognitive-engine.yml)
 [![Tests](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/property-tests.yml?style=for-the-badge&logo=pytest&logoColor=white&label=Tests)](https://github.com/neuron7x/mlsdm/actions/workflows/property-tests.yml)
 [![Security](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/sast-scan.yml?style=for-the-badge&logo=shield&logoColor=white&label=Security)](https://github.com/neuron7x/mlsdm/actions/workflows/sast-scan.yml)
-[![Coverage](https://img.shields.io/badge/coverage-86%25%20(gate:%2065%25)-green?style=for-the-badge)](docs/METRICS_SOURCE.md)
+[![Coverage](https://img.shields.io/badge/coverage-88%25%20(gate:%2075%25)-green?style=for-the-badge)](docs/METRICS_SOURCE.md)
 [![Python](https://img.shields.io/badge/python-3.10+-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://github.com/neuron7x/mlsdm/pkgs/container/mlsdm-neuro-engine)
@@ -378,7 +378,7 @@ pytest tests/validation/ -v
 pytest tests/property/ -v
 
 # Coverage gate (enforces minimum coverage threshold)
-./coverage_gate.sh                 # Default threshold: 65%
+./coverage_gate.sh                 # Default threshold: 75%
 COVERAGE_MIN=80 ./coverage_gate.sh # Custom threshold
 ```
 
@@ -646,7 +646,7 @@ For detailed validation results, see:
 
 | Dimension | Status | Implementation | Key References |
 |:----------|:-------|:---------------|:---------------|
-| **Test Coverage** | 86%* | `pytest`, `pytest-cov`, unit/integration/e2e/property | [TESTING_GUIDE.md](TESTING_GUIDE.md), [COVERAGE_REPORT_2025.md](COVERAGE_REPORT_2025.md) |
+| **Test Coverage** | 88%* | `pytest`, `pytest-cov`, unit/integration/e2e/property | [TESTING_GUIDE.md](TESTING_GUIDE.md), [COVERAGE_REPORT_2025.md](COVERAGE_REPORT_2025.md) |
 | **Test Types** | Unit, Integration, E2E, Property, Load, Security | `tests/unit/`, `tests/integration/`, `tests/e2e/`, `tests/property/`, `tests/load/`, `tests/security/` | [tests/](tests/) |
 | **Type Safety** | Strict mypy | Configured in `pyproject.toml` with strict mode | [pyproject.toml](pyproject.toml) |
 | **Static Analysis** | ruff, bandit | Pre-commit hooks and CI checks | [.pre-commit-config.yaml](.pre-commit-config.yaml) |
@@ -654,7 +654,7 @@ For detailed validation results, see:
 | **Security** | Policy + Implementation | Rate limiting, input validation, audit logging, threat model | [SECURITY_POLICY.md](SECURITY_POLICY.md), [THREAT_MODEL.md](THREAT_MODEL.md) |
 | **Observability** | Prometheus + OpenTelemetry | Metrics, structured logging, distributed tracing | [OBSERVABILITY_GUIDE.md](OBSERVABILITY_GUIDE.md), [SLO_SPEC.md](SLO_SPEC.md) |
 
-**\*Coverage Note**: CI threshold is 65%, actual coverage is ~86%. Core cognitive modules achieve 90%+. See [docs/METRICS_SOURCE.md](docs/METRICS_SOURCE.md) for current metrics and threshold rationale.
+**\*Coverage Note**: CI threshold is 75%, actual coverage is ~88%. Core cognitive modules achieve 95%+. See [docs/METRICS_SOURCE.md](docs/METRICS_SOURCE.md) for current metrics and threshold rationale.
 
 ### 🚀 Deployment Topologies
 
