@@ -116,6 +116,7 @@ class RuntimeConfig:
             "LOG_LEVEL": self.observability.log_level,
             "JSON_LOGGING": "true" if self.observability.json_logging else "false",
             "ENABLE_METRICS": "true" if self.observability.metrics_enabled else "false",
+            "OTEL_TRACING_ENABLED": "true" if self.observability.tracing_enabled else "false",
             "OTEL_SDK_DISABLED": "false" if self.observability.tracing_enabled else "true",
             "OTEL_EXPORTER_TYPE": self.observability.otel_exporter_type,
             "OTEL_SERVICE_NAME": self.observability.otel_service_name,
