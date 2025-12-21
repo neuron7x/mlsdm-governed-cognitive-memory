@@ -977,7 +977,8 @@ class TestMigrationRegistry:
         assert _MIGRATION_REGISTRY[(100, 101)] is migrate_100_to_101
 
         # Cleanup
-        del _MIGRATION_REGISTRY[(100, 101)]
+        if (100, 101) in _MIGRATION_REGISTRY:
+            del _MIGRATION_REGISTRY[(100, 101)]
 
     def test_migrate_state_with_registered_migration(self):
         """Test _migrate_state applies registered migrations."""
