@@ -158,6 +158,8 @@ class MemoryCache(Generic[T]):
             max_size: Maximum number of entries
             default_ttl: Default TTL in seconds
         """
+        if max_size <= 0:
+            raise ValueError("max_size must be a positive integer")
         self._cache: OrderedDict[str, CacheEntry[T]] = OrderedDict()
         self._lock = threading.RLock()
         self._max_size = max_size
@@ -401,6 +403,12 @@ class CacheManager:
         if not config.enabled:
             self._cache: MemoryCache[Any] | RedisCache[Any] | None = None
             logger.info("Caching disabled")
+        elif config.backend == "memory" and config.max_size <= 0:
+            self._cache = None
+            self._enabled = False
+            logger.warning(
+                "Caching disabled: invalid max_size=%d (must be positive)", config.max_size
+            )
         elif config.backend == "redis" and config.redis_url:
             self._cache = RedisCache(
                 redis_url=config.redis_url,
