@@ -53,6 +53,8 @@ class InputValidator:
         """
         # Optimization: Fast path for numpy arrays
         if isinstance(vector, np.ndarray):
+            if vector.ndim != 1:
+                raise ValueError("Vector must be a 1-dimensional array")
             # Check dimension match first (cheapest operation)
             if vector.shape[0] != expected_dim:
                 raise ValueError(
@@ -106,6 +108,9 @@ class InputValidator:
             arr = np.array(vector, dtype=np.float32)
         except (ValueError, TypeError) as e:
             raise ValueError(f"Cannot convert vector to numpy array: {e}") from e
+
+        if arr.ndim != 1:
+            raise ValueError("Vector must be a 1-dimensional array")
 
         # Check for invalid values (NaN, Inf)
         if not np.all(np.isfinite(arr)):
