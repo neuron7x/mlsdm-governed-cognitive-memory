@@ -50,7 +50,7 @@ echo "========================================================================"
 echo ""
 echo "Configuration:"
 echo "  COVERAGE_MIN: ${COVERAGE_MIN}%"
-echo "  PYTEST_ARGS:  ${PYTEST_ARGS:-<none>}"
+echo "  PYTEST_ARGS:  ${PYTEST_ARGS: -(none)}"
 echo ""
 
 # Change to repository root (script location)
