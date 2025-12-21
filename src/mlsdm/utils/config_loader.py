@@ -95,6 +95,11 @@ class ConfigCache:
                         del self._cache[cache_key]
                         self._misses += 1
                         return None
+                    current_hash = self._compute_file_hash(file_path)
+                    if entry.file_hash and current_hash != entry.file_hash:
+                        del self._cache[cache_key]
+                        self._misses += 1
+                        return None
                 except OSError:
                     del self._cache[cache_key]
                     self._misses += 1
