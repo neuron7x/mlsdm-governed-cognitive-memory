@@ -7,7 +7,7 @@
 - Maintain **fixed 29.37 MB memory footprint** via **PELM** (Phase-Entangled Lattice Memory: **20k vectors × 384 dims**, cosine retrieval with phase tolerance, FIFO eviction).
 - Enforce **adaptive moral filtering** (EMA-based, threshold clipped to **[0.30, 0.90]**, target **93.3%** toxic rejection).
 - Preserve **wake/sleep cycles** (**8 wake + 3 sleep steps**, target **89.5%** resource reduction).
-- Guard **aphasia detection/repair** (Broca-model, aspirational **99.5% TPR** with ≥99% target and **≥85% TNR**), thread safety (**1,000+ RPS**), and observability (Prometheus metrics, JSON logging, OpenTelemetry tracing).
+- Guard **aphasia detection/repair** (Broca-model, **99.5% TPR target** with **≥99% floor** and **≥85% TNR**), thread safety (**1,000+ RPS**), and observability (Prometheus metrics, JSON logging, OpenTelemetry tracing).
 - Integrate with any LLM (OpenAI, Anthropic, Mistral-7B) through pluggable interfaces; production FastAPI service (`/generate`, `/health`), Kubernetes manifests, OPA/Rego policies, rate limiting (5 RPS/client), input sanitization, bearer auth.
 
 ## MLSDM Key Invariants
@@ -16,7 +16,7 @@
 - Output coherence: sentence length **≥6**, function words ratio **≥0.15**
 - Memory system: multi-level synaptic (**L1 λ=0.95**, **L2 λ=0.98**, **L3 λ=0.99**)
 - Cognitive rhythm: **8 wake + 3 sleep** cadence
-- Production SLOs: **99.9% availability**, **P95 < 120ms**, **mem ≤ 50MB** (includes overhead; core PELM footprint fixed at **29.37 MB**)
+- Production SLOs: **99.9% availability**, **P95 < 120ms**, **mem ≤ 50MB** (≈**29.37 MB** core PELM + **≤20MB** overhead budget)
 
 ## Response Protocol for Any MLSDM Query
 1. **Analyze Current State**
