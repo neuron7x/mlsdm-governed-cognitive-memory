@@ -316,6 +316,9 @@ def get_runtime_config(mode: RuntimeMode | None = None) -> RuntimeConfig:
     )
 
     # Observability config with env overrides
+    otel_sdk_disabled = _get_env_bool(
+        "OTEL_SDK_DISABLED", not defaults["observability"]["tracing_enabled"]
+    )
     observability = ObservabilityConfig(
         log_level=_get_env_str("LOG_LEVEL", defaults["observability"]["log_level"]),
         json_logging=_get_env_bool("JSON_LOGGING", defaults["observability"]["json_logging"]),
@@ -325,7 +328,7 @@ def get_runtime_config(mode: RuntimeMode | None = None) -> RuntimeConfig:
         tracing_enabled=_get_env_bool(
             "OTEL_TRACING_ENABLED", defaults["observability"]["tracing_enabled"]
         )
-        and os.environ.get("OTEL_SDK_DISABLED", "true").lower() != "true",
+        and not otel_sdk_disabled,
         otel_exporter_type=_get_env_str(
             "OTEL_EXPORTER_TYPE", defaults["observability"]["otel_exporter_type"]
         ),
