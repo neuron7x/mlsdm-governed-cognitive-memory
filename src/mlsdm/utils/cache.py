@@ -183,6 +183,7 @@ class MemoryCache(Generic[T]):
                 del self._cache[key]
                 self._stats.misses += 1
                 self._stats.evictions += 1
+                self._stats.size = len(self._cache)
                 return None
 
             # Move to end (LRU update)
