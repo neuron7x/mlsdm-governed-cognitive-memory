@@ -3,10 +3,21 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NotRequired, TypedDict
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
+
+
+class UvicornConfig(TypedDict):
+    """Type-safe configuration for uvicorn.run()."""
+
+    host: str
+    port: int
+    log_level: str
+    reload: bool
+    workers: NotRequired[int]
+    timeout_keep_alive: NotRequired[int]
 
 
 def get_app(mode: str) -> FastAPI:
@@ -53,7 +64,7 @@ def run_server(
 
     import uvicorn
 
-    uvicorn_kwargs: dict[str, object] = {
+    uvicorn_kwargs: UvicornConfig = {
         "host": host,
         "port": port,
         "log_level": log_level,
