@@ -334,6 +334,7 @@ class PhaseEntangledLatticeMemory:
             self._ensure_integrity()
 
             indices: list[int] = []
+            last_accepted: tuple[int, float, float] | None = None
 
             for i, (vector, phase) in enumerate(zip(vectors, phases, strict=True)):
                 # Get or create provenance for this vector
@@ -397,6 +398,7 @@ class PhaseEntangledLatticeMemory:
                     self._memory_ids.append(memory_id)
 
                 indices.append(idx)
+                last_accepted = (idx, float(phase), float(norm))
 
                 # Update pointer with wraparound check
                 new_pointer = self.pointer + 1
@@ -416,10 +418,14 @@ class PhaseEntangledLatticeMemory:
             if _OBSERVABILITY_AVAILABLE and start_time is not None:
                 latency_ms = (time.perf_counter() - start_time) * 1000
                 # Record as single batch operation
+                if last_accepted is not None:
+                    last_index, last_phase, last_norm = last_accepted
+                else:
+                    last_index, last_phase, last_norm = 0, 0.0, 0.0
                 record_pelm_store(
-                    index=indices[-1] if indices else 0,
-                    phase=phases[-1] if phases else 0.0,
-                    vector_norm=float(self.norms[indices[-1]]) if indices else 0.0,
+                    index=last_index,
+                    phase=last_phase,
+                    vector_norm=last_norm,
                     capacity_used=self.size,
                     capacity_total=self.capacity,
                     memory_bytes=self.memory_usage_bytes(),
