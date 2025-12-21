@@ -189,7 +189,8 @@ def save_system_state(
             # For NPZ, convert lists back to arrays
             processed = _convert_numpy_to_python(state_dict)
             # Create a temporary file for npz
-            temp_path = f"{filepath}.tmp"
+            base_path, ext = os.path.splitext(filepath)
+            temp_path = f"{base_path}.tmp{ext}"
             try:
                 np.savez(temp_path, state=processed)
                 os.replace(temp_path, filepath)
