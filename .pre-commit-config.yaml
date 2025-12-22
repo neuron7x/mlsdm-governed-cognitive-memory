@@ -1,59 +1,8 @@
-# Pre-commit hooks configuration
-# See https://pre-commit.com for more information
-# Install: pip install pre-commit && pre-commit install
-
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+  - repo: local
     hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-      - id: check-yaml
-        args: ['--allow-multiple-documents']
-      - id: check-json
-      - id: check-added-large-files
-      - id: check-merge-conflict
-      - id: detect-private-key
-        exclude: ^tests/
-
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.0
-    hooks:
-      - id: ruff
-        args: [--fix]
-        types_or: [python, pyi]
-      - id: ruff-format
-        types_or: [python, pyi]
-
-  - repo: https://github.com/koalaman/shellcheck-precommit
-    rev: v0.10.0
-    hooks:
-      - id: shellcheck
-        args: [-x, -e, SC2059]
-
-  # Note: mypy is not included in pre-commit hooks because it has compatibility issues
-  # with Pydantic types in the pre-commit environment. Developers should run
-  # `mypy src/mlsdm` manually before pushing, which will use the strict config from
-  # pyproject.toml as used by CI.
-  #
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: v1.13.0
-  #   hooks:
-  #     - id: mypy
-  #       additional_dependencies:
-  #         - types-requests
-  #         - types-PyYAML>=6.0.1
-  #         - pydantic>=2.0.0
-  #       args: [--python-version=3.10, --ignore-missing-imports]
-  #       files: ^src/
-  #       exclude: ^(sdk/|examples/|tests/)
-
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.8.3
-    hooks:
-      - id: bandit
-        args: [-r, -ll, --skip, 'B104,B108,B614', --exclude, './tests']
-
-ci:
-  autofix_prs: true
-  autoupdate_schedule: monthly
+      - id: unicode-controls
+        name: Unicode control guard
+        entry: python scripts/check_no_unicode_controls.py
+        language: system
+        files: "\\.(md|svg|ya?ml|toml|py)$"

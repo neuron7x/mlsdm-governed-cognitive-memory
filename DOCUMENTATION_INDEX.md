@@ -10,7 +10,7 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 ## Quick Links
 
 - 🚀 **New Users**: Start with [README.md](README.md) and [USAGE_GUIDE.md](USAGE_GUIDE.md)
-- 👩‍💻 **Core Developers**: See [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)
+- **Core Developers**: See [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)
 - 📚 **API Reference**: See [API_REFERENCE.md](API_REFERENCE.md)
 - 🏗️ **Architecture**: See [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md)
 - 🚀 **Deployment**: See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)

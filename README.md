@@ -350,6 +350,24 @@ For complete system design, see [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md).
 
 > **New to MLSDM?** Start with our [**Getting Started Guide**](GETTING_STARTED.md) for a streamlined introduction.
 
+### Quickstart Profiles
+
+- **Dev/Test (local, no external keys):**
+  ```bash
+  pip install -e ".[dev]"
+  cp env.dev.example .env
+  make run-dev
+  ```
+  Uses `config/default_config.yaml` and `env.dev.example` for defaults. Providers stay local unless you override them.
+
+- **Prod-like (no real keys in CI):**
+  ```bash
+  pip install -e ".[dev]"
+  cp env.cloud.example .env
+  make run-cloud-local
+  ```
+  Replace placeholders in `.env` with real endpoints/keys only outside CI. See [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) for the required fields.
+
 ### Prerequisites
 
 - Python 3.10+
@@ -502,6 +520,12 @@ python -m mlsdm.entrypoints.agent
 ```
 
 See [env.dev.example](env.dev.example), [env.cloud.example](env.cloud.example), and [env.agent.example](env.agent.example) for configuration options.
+
+### Configuration Source of Truth
+
+- **Precedence:** Environment variables (`MLSDM_*`) → Config file (`config/*.yaml`) → Defaults (schema). See [Configuration Guide](CONFIGURATION_GUIDE.md#overview).
+- **Validation:** Configs are schema-validated via `ConfigLoader` (examples in [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md#loading-configuration)).
+- **Runtime policy:** Stub/local providers are for dev/test only; production deployments must supply real endpoints and keys (never stored in CI).
 
 ---
 
