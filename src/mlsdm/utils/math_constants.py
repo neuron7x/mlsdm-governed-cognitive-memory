@@ -198,6 +198,9 @@ def safe_norm(vector: np.ndarray) -> float:
         >>> safe_norm(np.array([0.0, 0.0]))
         0.0
     """
+    if vector.size == 0:
+        return 0.0
+
     # Find maximum absolute value for scaling
     max_abs = np.max(np.abs(vector))
 
