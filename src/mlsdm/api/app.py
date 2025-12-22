@@ -56,7 +56,6 @@ _exporter_type_env = os.getenv("OTEL_EXPORTER_TYPE", "none")
 _valid_exporter_types = ("console", "otlp", "jaeger", "none")
 _exporter_type = _exporter_type_env if _exporter_type_env in _valid_exporter_types else "none"
 _tracing_config = TracingConfig(
-    enabled=os.getenv("OTEL_SDK_DISABLED", "false").lower() != "true",
     exporter_type=_exporter_type,  # type: ignore[arg-type]  # Validated above
 )
 initialize_tracing(_tracing_config)

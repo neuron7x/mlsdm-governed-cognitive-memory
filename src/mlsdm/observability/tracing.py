@@ -166,6 +166,16 @@ else:
 # ---------------------------------------------------------------------------
 
 
+_TRUE_VALUES = {"true", "1", "yes", "on"}
+
+
+def _is_truthy(value: str | None) -> bool:
+    """Return True when the value matches a truthy environment string."""
+    if value is None:
+        return False
+    return value.strip().lower() in _TRUE_VALUES
+
+
 class TracingConfig:
     """Configuration for OpenTelemetry tracing.
 
@@ -216,9 +226,9 @@ class TracingConfig:
         if enabled is not None:
             self.enabled = enabled
         elif mlsdm_enabled is not None:
-            self.enabled = mlsdm_enabled.lower() == "true"
+            self.enabled = _is_truthy(mlsdm_enabled)
         else:
-            self.enabled = os.getenv("OTEL_SDK_DISABLED", "false").lower() != "true"
+            self.enabled = not _is_truthy(os.getenv("OTEL_SDK_DISABLED", "false"))
 
         self.exporter_type = exporter_type or os.getenv("OTEL_EXPORTER_TYPE", "console")
 
