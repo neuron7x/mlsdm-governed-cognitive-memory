@@ -209,16 +209,19 @@ class MemoryCache(Generic[T]):
             ttl: TTL in seconds (uses default if None)
         """
         with self._lock:
-            # Evict oldest entries if at capacity
-            while len(self._cache) >= self._max_size:
-                self._cache.popitem(last=False)
-                self._stats.evictions += 1
+            # Avoid evicting when updating an existing entry.
+            if key not in self._cache:
+                # Evict oldest entries if at capacity.
+                while len(self._cache) >= self._max_size:
+                    self._cache.popitem(last=False)
+                    self._stats.evictions += 1
 
             self._cache[key] = CacheEntry(
                 value=value,
                 created_at=time.time(),
                 ttl=ttl or self._default_ttl,
             )
+            self._cache.move_to_end(key)
             self._stats.size = len(self._cache)
 
     def delete(self, key: str) -> bool:
