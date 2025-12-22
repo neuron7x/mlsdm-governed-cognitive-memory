@@ -113,7 +113,7 @@ def handle_request(user_input: str, moral_score: float) -> str:
 
 ### Pattern 2: FastAPI Microservice
 
-Production-ready REST API with async support.
+Hardened REST API with async support (readiness tracked in [status/READINESS.md](status/READINESS.md)).
 
 ```python
 # api_server.py
@@ -259,7 +259,7 @@ CMD ["uvicorn", "api_server:app", "--host", "0.0.0.0", "--port", "8000"]
 
 #### Local Docker Deployment
 
-The repository includes a production-ready docker-compose configuration:
+The repository includes a hardened docker-compose configuration (verify readiness in [status/READINESS.md](status/READINESS.md)):
 
 ```bash
 # Quick start (uses Dockerfile.neuro-engine-service)

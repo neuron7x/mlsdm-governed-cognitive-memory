@@ -639,7 +639,7 @@ The experimental design and validation methodology are grounded in:
 - Bai, Y., et al. (2022). Constitutional AI: Harmlessness from AI Feedback. *arXiv:2212.08073*. - Self-critiquing and adaptive safety
 - Ji, J., et al. (2023). AI Alignment: A Comprehensive Survey. *arXiv:2310.19852*. - Comprehensive alignment taxonomy
 
-For complete bibliography, see [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md).
+For complete bibliography, see [BIBLIOGRAPHY.md](bibliography/README.md).
 
 ### Technical Documentation
 

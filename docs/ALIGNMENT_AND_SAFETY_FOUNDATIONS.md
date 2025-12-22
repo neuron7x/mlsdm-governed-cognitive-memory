@@ -516,4 +516,4 @@ See `EFFECTIVENESS_VALIDATION_REPORT.md` for detailed results:
 - [ARCHITECTURE_SPEC.md](../ARCHITECTURE_SPEC.md) - Technical architecture
 - [FORMAL_INVARIANTS.md](FORMAL_INVARIANTS.md) - Formal properties and verification
 - [EFFECTIVENESS_VALIDATION_REPORT.md](../EFFECTIVENESS_VALIDATION_REPORT.md) - Empirical validation
-- [BIBLIOGRAPHY.md](../BIBLIOGRAPHY.md) - Complete bibliography
+- [BIBLIOGRAPHY.md](bibliography/README.md) - Complete bibliography

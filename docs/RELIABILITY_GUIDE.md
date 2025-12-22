@@ -1,6 +1,6 @@
 # MLSDM Reliability Guide
 
-**Status**: Production Ready
+**Status**: See [status/READINESS.md](status/READINESS.md) (not yet verified)
 **Last Updated**: November 2025
 **Maintainer**: neuron7x
 

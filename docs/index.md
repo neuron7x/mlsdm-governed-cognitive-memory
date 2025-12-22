@@ -5,16 +5,17 @@
 **Last Updated:** December 2025
 **Total Documents:** 25+
 
-Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
+Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0. Readiness claims are centralized in [status/READINESS.md](status/READINESS.md); statements elsewhere are historical unless backed by dated evidence.
 
 ## Quick Links
 
-- 🚀 **New Users**: Start with [README.md](README.md) and [USAGE_GUIDE.md](USAGE_GUIDE.md)
-- **Core Developers**: See [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)
+- 🚀 **New Users**: Start with [README.md](../README.md) and [USAGE_GUIDE.md](USAGE_GUIDE.md)
+- **Readiness Status**: See [status/READINESS.md](status/READINESS.md)
+- **Core Developers**: See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)
 - 📚 **API Reference**: See [API_REFERENCE.md](API_REFERENCE.md)
 - 🏗️ **Architecture**: See [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md)
 - 🚀 **Deployment**: See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
-- 🤝 **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md)
+- 🤝 **Contributing**: See [CONTRIBUTING.md](../CONTRIBUTING.md)
 - 🛡️ **Audit & Readiness**: See [AUDIT_REGISTER.md](AUDIT_REGISTER.md)
 - ✅ **Testing**: See [TESTING_STRATEGY.md](TESTING_STRATEGY.md)
 
@@ -25,12 +26,12 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 ### 🎯 Getting Started
 
 **For Users:**
-1. [README.md](README.md) - Project overview, features, quick start
+1. [README.md](../README.md) - Project overview, features, quick start
 2. [USAGE_GUIDE.md](USAGE_GUIDE.md) - Detailed usage examples and best practices
-3. [examples/](examples/) - Working code examples
+3. [../examples/](../examples/) - Working code examples
 
 **For Developers:**
-1. [CONTRIBUTING.md](CONTRIBUTING.md) - How to contribute to the project
+1. [CONTRIBUTING.md](../CONTRIBUTING.md) - How to contribute to the project
 2. [API_REFERENCE.md](API_REFERENCE.md) - Complete API documentation
 3. [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) - System architecture
 
@@ -41,17 +42,25 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 
 ---
 
+## Archive
+
+- [archive/checklists/](archive/checklists/) — legacy checklists and readiness templates
+- [archive/prompts/](archive/prompts/) — historical system/prompt artifacts
+- [archive/reports/](archive/reports/) — historical reports (coverage, readiness assessments, validation summaries)
+
+---
+
 ## Documentation by Purpose
 
 ### 📖 Learning & Understanding
 
 | Document | Purpose | Audience | Time to Read |
 |----------|---------|----------|--------------|
-| [README.md](README.md) | High-level overview | Everyone | 10 min |
+| [README.md](../README.md) | High-level overview | Everyone | 10 min |
 | [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) | System design | Technical | 5 min |
-| [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md) | Scientific references | Researchers | 15 min |
+| [BIBLIOGRAPHY.md](bibliography/README.md) | Scientific references | Researchers | 15 min |
 | [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) | Implementation details | Technical | 15 min |
-| [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md) | Validation results | Technical | 20 min |
+| [EFFECTIVENESS_VALIDATION_REPORT.md](archive/reports/EFFECTIVENESS_VALIDATION_REPORT.md) | Validation results | Technical | 20 min |
 | [DOCUMENTATION_FORMALIZATION_PROTOCOL.md](DOCUMENTATION_FORMALIZATION_PROTOCOL.md) | DFP-1.0 documentation standards | Writers/Technical | 25 min |
 
 ### 🛠️ Building & Integration
@@ -59,11 +68,11 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 | Document | Purpose | Audience | Time to Read |
 |----------|---------|----------|--------------|
 | [USAGE_GUIDE.md](USAGE_GUIDE.md) | How to use the system | Developers | 30 min |
-| [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) | Development workflow, patterns, debugging | Core Developers | 25 min |
+| [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Development workflow, patterns, debugging | Core Developers | 25 min |
 | [API_REFERENCE.md](API_REFERENCE.md) | API documentation | Developers | 20 min |
 | [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) | Configuration reference | Developers/DevOps | 25 min |
-| [examples/](examples/) | Code examples | Developers | 15 min |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Development guide | Contributors | 25 min |
+| [../examples/](../examples/) | Code examples | Developers | 15 min |
+| [CONTRIBUTING.md](../CONTRIBUTING.md) | Development guide | Contributors | 25 min |
 
 ### 🚀 Deployment & Operations
 
@@ -73,24 +82,24 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 | [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) | Configuration reference | DevOps | 25 min |
 | [SLO_SPEC.md](SLO_SPEC.md) | Service objectives | SRE/DevOps | 5 min |
 | [SECURITY_POLICY.md](SECURITY_POLICY.md) | Security practices | Security/DevOps | 5 min |
-| [docs/APHASIA_OBSERVABILITY.md](docs/APHASIA_OBSERVABILITY.md) | Aphasia monitoring | SRE/DevOps | 10 min |
+| [APHASIA_OBSERVABILITY.md](APHASIA_OBSERVABILITY.md) | Aphasia monitoring | SRE/DevOps | 10 min |
 
 ### 🧪 Testing & Validation
 
 | Document | Purpose | Audience | Time to Read |
 |----------|---------|----------|--------------|
 | [TESTING_STRATEGY.md](TESTING_STRATEGY.md) | Testing approach | Engineers | 15 min |
-| [VALIDATION_SUMMARY.md](VALIDATION_SUMMARY.md) | Validation results | Engineers | 10 min |
+| [VALIDATION_SUMMARY.md](archive/reports/VALIDATION_SUMMARY.md) | Validation results | Engineers | 10 min |
 | [CLAIMS_TRACEABILITY.md](CLAIMS_TRACEABILITY.md) | Metric → Test mapping | Reviewers | 10 min |
-| [OPTIMIZATION_SUMMARY.md](OPTIMIZATION_SUMMARY.md) | Performance tuning | Engineers | 10 min |
+| [OPTIMIZATION_SUMMARY.md](archive/reports/OPTIMIZATION_SUMMARY.md) | Performance tuning | Engineers | 10 min |
 
 ### 📊 Analysis & Reports
 
 | Document | Purpose | Audience | Time to Read |
 |----------|---------|----------|--------------|
-| [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md) | Effectiveness analysis | Researchers | 20 min |
-| [VALIDATION_SUMMARY.md](VALIDATION_SUMMARY.md) | Validation summary | Engineers | 10 min |
-| [OPTIMIZATION_SUMMARY.md](OPTIMIZATION_SUMMARY.md) | Optimization details | Engineers | 10 min |
+| [EFFECTIVENESS_VALIDATION_REPORT.md](archive/reports/EFFECTIVENESS_VALIDATION_REPORT.md) | Effectiveness analysis | Researchers | 20 min |
+| [VALIDATION_SUMMARY.md](archive/reports/VALIDATION_SUMMARY.md) | Validation summary | Engineers | 10 min |
+| [OPTIMIZATION_SUMMARY.md](archive/reports/OPTIMIZATION_SUMMARY.md) | Optimization details | Engineers | 10 min |
 | [THREAT_MODEL.md](THREAT_MODEL.md) | Security threats | Security | 5 min |
 
 ### 📋 Technical Debt & Project Status
@@ -100,9 +109,9 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 | [TECHNICAL_DEBT_REGISTER.md](TECHNICAL_DEBT_REGISTER.md) | **Unified technical debt register** - single source of truth | Everyone | 25 min |
 | [ENGINEERING_DEFICIENCIES_REGISTER.md](ENGINEERING_DEFICIENCIES_REGISTER.md) | Complete deficiency registry with all gaps | Engineers/Architects | 15 min |
 | [debt_ledger.md](debt_ledger.md) | Active technical debt items | Engineers | 5 min |
-| [PROD_GAPS.md](PROD_GAPS.md) | Production readiness gaps | DevOps | 20 min |
+| [PROD_GAPS.md](archive/reports/PROD_GAPS.md) | Production readiness gaps | DevOps | 20 min |
 | [RISK_REGISTER.md](RISK_REGISTER.md) | AI safety risks | Security | 15 min |
-| [PRODUCTION_READINESS_ASSESSMENT.md](PRODUCTION_READINESS_ASSESSMENT.md) | Production readiness score | Leaders | 10 min |
+| [PRODUCTION_READINESS_ASSESSMENT.md](archive/reports/PRODUCTION_READINESS_ASSESSMENT.md) | Production readiness score | Leaders | 10 min |
 
 ---
 
@@ -112,9 +121,9 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 
 **I want to integrate MLSDM into my application:**
 
-1. Start with [README.md](README.md) to understand what MLSDM does
+1. Start with [README.md](../README.md) to understand what MLSDM does
 2. Read [USAGE_GUIDE.md](USAGE_GUIDE.md) for integration examples
-3. Check [examples/llm_wrapper_example.py](examples/llm_wrapper_example.py) for code
+3. Check [../examples/llm_wrapper_example.py](../examples/llm_wrapper_example.py) for code
 4. Reference [API_REFERENCE.md](API_REFERENCE.md) as needed
 5. Configure your deployment with [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md)
 6. See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for deployment options
@@ -123,7 +132,7 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 - ✅ [USAGE_GUIDE.md](USAGE_GUIDE.md) - **Read First**
 - ✅ [API_REFERENCE.md](API_REFERENCE.md) - **Reference**
 - ✅ [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) - **Configuration**
-- ✅ [examples/](examples/) - **Code Examples**
+- ✅ [../examples/](../examples/) - **Code Examples**
 
 ---
 
@@ -131,14 +140,14 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 
 **I want to contribute code to MLSDM:**
 
-1. Read [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines
+1. Read [CONTRIBUTING.md](../CONTRIBUTING.md) for development guidelines
 2. Understand the architecture in [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md)
 3. Review [TESTING_STRATEGY.md](TESTING_STRATEGY.md) for testing requirements
 4. Check [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) for current state
 5. Reference [API_REFERENCE.md](API_REFERENCE.md) for API details
 
 **Key Documents:**
-- ✅ [CONTRIBUTING.md](CONTRIBUTING.md) - **Read First**
+- ✅ [CONTRIBUTING.md](../CONTRIBUTING.md) - **Read First**
 - ✅ [TESTING_STRATEGY.md](TESTING_STRATEGY.md) - **Follow Guidelines**
 - ✅ [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) - **Understand System**
 
@@ -165,16 +174,16 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 
 **I want to understand MLSDM's effectiveness and approach:**
 
-1. Read [README.md](README.md) for high-level overview
-2. Study [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md)
-3. Review [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md) for scientific foundations
+1. Read [README.md](../README.md) for high-level overview
+2. Study [EFFECTIVENESS_VALIDATION_REPORT.md](archive/reports/EFFECTIVENESS_VALIDATION_REPORT.md)
+3. Review [BIBLIOGRAPHY.md](bibliography/README.md) for scientific foundations
 4. Review [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) for design
 5. Check [TESTING_STRATEGY.md](TESTING_STRATEGY.md) for methodology
 6. See [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) for details
 
 **Key Documents:**
-- ✅ [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md) - **Research Results**
-- ✅ [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md) - **Scientific References**
+- ✅ [EFFECTIVENESS_VALIDATION_REPORT.md](archive/reports/EFFECTIVENESS_VALIDATION_REPORT.md) - **Research Results**
+- ✅ [BIBLIOGRAPHY.md](bibliography/README.md) - **Scientific References**
 - ✅ [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) - **System Design**
 - ✅ [TESTING_STRATEGY.md](TESTING_STRATEGY.md) - **Methodology**
 
@@ -205,7 +214,7 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 
 ### 🛰️ System Prompt Reference
 
-- ✅ [SUPER_PRINCIPAL_SYSTEM_PROMPT.md](SUPER_PRINCIPAL_SYSTEM_PROMPT.md) - System prompt for production-grade MLSDM advancement (safety, reliability, scalability)
+- ✅ [SUPER_PRINCIPAL_SYSTEM_PROMPT.md](archive/prompts/SUPER_PRINCIPAL_SYSTEM_PROMPT.md) - System prompt for production-grade MLSDM advancement (safety, reliability, scalability)
 
 ---
 
@@ -213,14 +222,14 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 
 **I want to evaluate MLSDM for my organization:**
 
-1. Read [README.md](README.md) for capabilities and claims
-2. Review [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md)
+1. Read [README.md](../README.md) for capabilities and claims
+2. Review [EFFECTIVENESS_VALIDATION_REPORT.md](archive/reports/EFFECTIVENESS_VALIDATION_REPORT.md)
 3. Study [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) for architecture
 4. Check [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for deployment options
 5. Review [TESTING_STRATEGY.md](TESTING_STRATEGY.md) for quality approach
 
 **Key Documents:**
-- ✅ [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md) - **Proof of Effectiveness**
+- ✅ [EFFECTIVENESS_VALIDATION_REPORT.md](archive/reports/EFFECTIVENESS_VALIDATION_REPORT.md) - **Proof of Effectiveness**
 - ✅ [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) - **Architecture Review**
 - ✅ [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - **Deployment Options**
 
@@ -233,7 +242,7 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 **Documents needed:**
 1. [USAGE_GUIDE.md](USAGE_GUIDE.md) - Integration examples
 2. [API_REFERENCE.md](API_REFERENCE.md) - API details
-3. [examples/llm_wrapper_example.py](examples/llm_wrapper_example.py) - Working code
+3. [../examples/llm_wrapper_example.py](../examples/llm_wrapper_example.py) - Working code
 
 **Estimated time:** 2-4 hours
 
@@ -253,7 +262,7 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 ### Task: Add New Feature to MLSDM
 
 **Documents needed:**
-1. [CONTRIBUTING.md](CONTRIBUTING.md) - Development guidelines
+1. [CONTRIBUTING.md](../CONTRIBUTING.md) - Development guidelines
 2. [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) - Architecture understanding
 3. [TESTING_STRATEGY.md](TESTING_STRATEGY.md) - Testing requirements
 4. [API_REFERENCE.md](API_REFERENCE.md) - API design patterns
@@ -265,9 +274,9 @@ Complete documentation guide for MLSDM Governed Cognitive Memory v1.2.0.
 ### Task: Validate MLSDM Performance
 
 **Documents needed:**
-1. [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md) - Validation methodology
+1. [EFFECTIVENESS_VALIDATION_REPORT.md](archive/reports/EFFECTIVENESS_VALIDATION_REPORT.md) - Validation methodology
 2. [TESTING_STRATEGY.md](TESTING_STRATEGY.md) - Testing approach
-3. [OPTIMIZATION_SUMMARY.md](OPTIMIZATION_SUMMARY.md) - Performance tuning
+3. [OPTIMIZATION_SUMMARY.md](archive/reports/OPTIMIZATION_SUMMARY.md) - Performance tuning
 
 **Estimated time:** 1-2 weeks
 
@@ -327,7 +336,7 @@ export VAR_NAME=value
 
 When adding new documentation:
 
-1. Create markdown file in root directory
+1. Create markdown file in the `docs/` directory (use `docs/archive/` for historical material)
 2. Add entry to this index
 3. Update related documents
 4. Add examples if applicable
@@ -358,11 +367,11 @@ When improving documentation:
 
 ### Q: Which document should I read first?
 
-**A:** Start with [README.md](README.md) for overview, then [USAGE_GUIDE.md](USAGE_GUIDE.md) for practical usage.
+**A:** Start with [README.md](../README.md) for overview, then [USAGE_GUIDE.md](USAGE_GUIDE.md) for practical usage.
 
 ### Q: Where can I find code examples?
 
-**A:** See [examples/](examples/) directory and [USAGE_GUIDE.md](USAGE_GUIDE.md).
+**A:** See [../examples/](../examples/) directory and [USAGE_GUIDE.md](USAGE_GUIDE.md).
 
 ### Q: How do I deploy to production?
 
@@ -370,7 +379,7 @@ When improving documentation:
 
 ### Q: How do I contribute?
 
-**A:** Read [CONTRIBUTING.md](CONTRIBUTING.md) for complete guidelines.
+**A:** Read [CONTRIBUTING.md](../CONTRIBUTING.md) for complete guidelines.
 
 ### Q: Where is the API documentation?
 
@@ -382,11 +391,11 @@ When improving documentation:
 
 ### Q: What are the performance characteristics?
 
-**A:** See [README.md](README.md) and [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md).
+**A:** See [README.md](../README.md) and [EFFECTIVENESS_VALIDATION_REPORT.md](archive/reports/EFFECTIVENESS_VALIDATION_REPORT.md).
 
-### Q: Is this production-ready?
+### Q: Where is readiness status tracked?
 
-**A:** Yes! See [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) and [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md) for proof.
+**A:** See [status/READINESS.md](status/READINESS.md) for the current evidence-based status. Historical claims remain in legacy reports until verified there.
 
 ---
 

@@ -338,7 +338,7 @@ See [CLAIMS_TRACEABILITY.md](CLAIMS_TRACEABILITY.md) for complete metric documen
 ## Getting Help
 
 - **Issues**: [GitHub Issues](https://github.com/neuron7x/mlsdm/issues)
-- **Documentation**: [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)
+- **Documentation**: [docs/index.md](index.md)
 - **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---

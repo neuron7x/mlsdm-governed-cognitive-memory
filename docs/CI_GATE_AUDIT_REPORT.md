@@ -10,7 +10,7 @@
 
 ## Executive Summary
 
-The CI Performance & Resilience Gate implementation in PR #233 has been comprehensively audited and is **production-ready**. All critical functionality is working correctly, test coverage is complete, and documentation is accurate.
+The CI Performance & Resilience Gate implementation in PR #233 has been comprehensively audited. Readiness evidence is recorded in [status/READINESS.md](status/READINESS.md); all critical functionality is working correctly, test coverage is complete, and documentation is accurate.
 
 ### Key Findings
 
@@ -262,7 +262,7 @@ All limitations are understood, documented, and have mitigations available.
 
 ## Conclusion
 
-The CI Performance & Resilience Gate for PR #233 is **production-ready** and provides significant value:
+The CI Performance & Resilience Gate for PR #233 provides significant value; readiness is recorded in [status/READINESS.md](status/READINESS.md):
 
 ✅ **Automates risk assessment** for every PR
 ✅ **Prevents critical issues** from reaching main without proper validation
@@ -279,4 +279,4 @@ The CI Performance & Resilience Gate for PR #233 is **production-ready** and pro
 **Tests**: 31/31 passing
 **Linting**: Clean
 **Security**: No alerts
-**Verdict**: ✅ READY FOR PRODUCTION
+**Verdict**: ✅ APPROVED (see [status/READINESS.md](status/READINESS.md) for readiness decisions)

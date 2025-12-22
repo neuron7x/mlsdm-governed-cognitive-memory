@@ -1048,9 +1048,9 @@ python scripts/run_aphasia_eval.py
 ```
 
 **Recommendation:**
-- **Core components:** Production-ready with excellent coverage (94%)
-- **System infrastructure:** Production-ready with good coverage (85-95%)
-- **Overall system:** Ready for production deployment
+- **Core components:** Tested with excellent coverage (94%); readiness tracked in [status/READINESS.md](status/READINESS.md)
+- **System infrastructure:** Tested with good coverage (85-95%); readiness tracked in [status/READINESS.md](status/READINESS.md)
+- **Overall system:** Deployment readiness is recorded in [status/READINESS.md](status/READINESS.md)
 - All claims in this document are supported by reproducible verification commands
 - All 14 system layers are implemented, tested, and documented
 

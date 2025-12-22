@@ -1,6 +1,6 @@
 # HTTP API Reference
 
-This document describes the production-ready HTTP API for MLSDM.
+This document describes the HTTP API for MLSDM; readiness is tracked in [status/READINESS.md](status/READINESS.md).
 
 ## Quick Start
 

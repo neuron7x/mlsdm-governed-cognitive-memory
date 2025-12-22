@@ -524,8 +524,8 @@ def test_threshold_recovers_after_attack():
 - [docs/ALIGNMENT_AND_SAFETY_FOUNDATIONS.md](docs/ALIGNMENT_AND_SAFETY_FOUNDATIONS.md) - Safety foundations
 - [RISK_REGISTER.md](RISK_REGISTER.md) - Related risks (R001, R002, R005)
 - [SAFETY_POLICY.yaml](SAFETY_POLICY.yaml) - Safety policy categories
-- [Gabriel, 2020](BIBLIOGRAPHY.md) - Value alignment theory
-- [Bai et al., 2022](BIBLIOGRAPHY.md) - Constitutional AI principles
+- [Gabriel, 2020](bibliography/README.md) - Value alignment theory
+- [Bai et al., 2022](bibliography/README.md) - Constitutional AI principles
 
 ---
 

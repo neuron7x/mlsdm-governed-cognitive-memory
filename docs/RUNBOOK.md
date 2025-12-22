@@ -1,6 +1,6 @@
 # MLSDM Production Runbook
 
-**Status**: Production Ready v1.2.0
+**Status**: See [status/READINESS.md](status/READINESS.md) (not yet verified)
 **Last Updated**: December 2025
 **Maintainer**: neuron7x
 
@@ -20,7 +20,7 @@
 
 ## Service Overview
 
-**Purpose**: Production-ready neurobiologically-grounded cognitive architecture with moral governance, phase-based memory, and cognitive rhythm.
+**Purpose**: Governed neurobiologically-grounded cognitive architecture with moral governance, phase-based memory, and cognitive rhythm (readiness tracked in [status/READINESS.md](status/READINESS.md)).
 
 **Architecture**:
 - FastAPI-based REST API

@@ -2,11 +2,11 @@
 
 ## Executive Summary
 
-This document summarizes the complete implementation of MLSDM Governed Cognitive Memory v1.2.0, a production-ready **neurobiologically-inspired cognitive architecture** for governing LLM memory and behavior with hard biological constraints.
+This document summarizes the complete implementation of MLSDM Governed Cognitive Memory v1.2.0, a governed **neurobiologically-inspired cognitive architecture** for managing LLM memory and behavior with hard biological constraints. Readiness is tracked in [status/READINESS.md](status/READINESS.md).
 
 > **Terminology Note:** MLSDM is not a neuro-symbolic system (which combines neural networks with symbolic reasoning). It is a **cognitive constraint framework** that applies neurobiological principles (circadian rhythms, multi-level memory consolidation, homeostatic regulation) to govern LLM behavior.
 
-**Status**: ✅ **Production Ready** - Ready for immediate deployment
+**Status**: See [status/READINESS.md](status/READINESS.md) (not yet verified)
 
 **Date**: November 20, 2025
 
@@ -14,7 +14,7 @@ This document summarizes the complete implementation of MLSDM Governed Cognitive
 
 ## Problem Statement (Original Request)
 
-**Title**: MLSDM Governed Cognitive Memory v1.0.0 — production-ready neurobiological framework
+**Title**: MLSDM Governed Cognitive Memory v1.0.0 — neurobiological framework
 
 **Requirements**:
 1. Create universal wrapper around ANY LLM with guarantees:
@@ -110,7 +110,7 @@ This document summarizes the complete implementation of MLSDM Governed Cognitive
 3. **README Updates**
    - Updated to v1.0.0 status
    - Added LLM wrapper quick start
-   - Documented production-ready status
+   - Documented readiness status in [status/READINESS.md](status/READINESS.md)
 
 ### 2. Quality Metrics
 
@@ -456,7 +456,7 @@ The following are research directions requiring external resources or specialize
 
 ## Conclusion
 
-This implementation delivers a **complete, tested, documented, production-ready** system that meets all requirements from the problem statement.
+This implementation delivers a **complete, tested, documented** system; readiness evidence is maintained in [status/READINESS.md](status/READINESS.md) rather than asserted here.
 
 **Key Achievements**:
 1. ✅ Universal LLM wrapper with biological constraints

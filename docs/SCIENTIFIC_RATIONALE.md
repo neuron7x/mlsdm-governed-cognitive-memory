@@ -330,4 +330,4 @@ Broca's aphasia exhibits characteristic patterns:
 - [ARCHITECTURE_SPEC.md](../ARCHITECTURE_SPEC.md) - Technical architecture specification
 - [FORMAL_INVARIANTS.md](FORMAL_INVARIANTS.md) - Formal properties and verification
 - [EFFECTIVENESS_VALIDATION_REPORT.md](../EFFECTIVENESS_VALIDATION_REPORT.md) - Empirical validation results
-- [BIBLIOGRAPHY.md](../BIBLIOGRAPHY.md) - Complete bibliography with BibTeX entries
+- [BIBLIOGRAPHY.md](bibliography/README.md) - Complete bibliography with BibTeX entries

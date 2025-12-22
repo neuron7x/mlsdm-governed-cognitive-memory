@@ -834,7 +834,7 @@ budget_remaining = (
 
 ### Observability Integration
 
-**Current State** (✅ Production-Ready):
+**Current State** (see [status/READINESS.md](status/READINESS.md)):
 - Prometheus metrics export at `/health/metrics`
 - Structured JSON logging with latency/status
 - Health check endpoints: `/health/liveness`, `/health/readiness`, `/health/detailed`
@@ -906,13 +906,13 @@ pytest tests/validation/test_moral_filter_effectiveness.py -v
 
 **Current State (v1.2)**: SLOs defined and verified through testing. Latency, memory bounds, and correctness targets met with margin. Continuous observability exists (Prometheus metrics), but automated SLO tracking dashboards not yet deployed.
 
-**Production Deployment**: System is production-ready with verified SLO compliance. Metrics export enables external monitoring. Recommended to set up Grafana dashboards post-deployment for continuous SLO tracking.
+**Production Deployment**: Deployment readiness is tracked in [status/READINESS.md](status/READINESS.md); metrics export enables external monitoring. Set up Grafana dashboards post-deployment for continuous SLO tracking.
 
 **Future Enhancements (v1.3+)**: Full SLO observability stack with automated alerting, error budget tracking, and burn-rate detection for mature SRE practices.
 
 ---
 
 **Document Version**: 2.0 (Verified Baselines)
-**Document Status**: Production-Ready
+**Document Status**: See [status/READINESS.md](status/READINESS.md) (not yet verified)
 **Last Updated**: November 24, 2025
 **Maintainer**: neuron7x / SRE Team

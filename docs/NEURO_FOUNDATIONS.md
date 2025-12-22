@@ -645,4 +645,4 @@ Pattern detection for telegraphic speech:
 - [ALIGNMENT_AND_SAFETY_FOUNDATIONS.md](ALIGNMENT_AND_SAFETY_FOUNDATIONS.md) - AI safety foundations
 - [ARCHITECTURE_SPEC.md](../ARCHITECTURE_SPEC.md) - Technical architecture
 - [APHASIA_SPEC.md](../APHASIA_SPEC.md) - Aphasia model specification
-- [BIBLIOGRAPHY.md](../BIBLIOGRAPHY.md) - Complete bibliography
+- [BIBLIOGRAPHY.md](bibliography/README.md) - Complete bibliography

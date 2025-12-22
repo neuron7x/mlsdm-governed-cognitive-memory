@@ -33,7 +33,7 @@ All configurations are validated against a strict schema to prevent runtime erro
 ### Available Templates
 
 - `config/default_config.yaml` - Development/testing configuration
-- `config/production.yaml` - Production-ready configuration template
+- `config/production.yaml` - Hardened configuration template (review readiness in [status/READINESS.md](status/READINESS.md))
 - `env.example` - Environment variable template
 
 ### File Format
@@ -526,8 +526,8 @@ neurolang:
 
 **Resource Comparison:**
 
-| Mode | Startup Time | Runtime Overhead | Memory Usage | Production Ready |
-|------|-------------|------------------|--------------|------------------|
+| Mode | Startup Time | Runtime Overhead | Memory Usage | Readiness (see [status/READINESS.md](status/READINESS.md)) |
+|------|-------------|------------------|--------------|----------------------------------------------------------|
 | `disabled` | Instant | Zero | Minimal | ✅ Yes |
 | `eager_train` (checkpoint) | Fast | Low | Moderate | ⚠️ Maybe |
 | `eager_train` (no checkpoint) | Slow | Low | Moderate | ❌ No |

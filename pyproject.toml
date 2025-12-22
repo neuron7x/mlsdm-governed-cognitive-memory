@@ -93,7 +93,7 @@ visualization = [
 [project.urls]
 Homepage = "https://github.com/neuron7x/mlsdm"
 Repository = "https://github.com/neuron7x/mlsdm"
-Documentation = "https://github.com/neuron7x/mlsdm/blob/main/DOCUMENTATION_INDEX.md"
+Documentation = "https://github.com/neuron7x/mlsdm/blob/main/docs/index.md"
 Issues = "https://github.com/neuron7x/mlsdm/issues"
 
 [project.scripts]

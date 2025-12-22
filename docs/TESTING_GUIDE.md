@@ -171,7 +171,7 @@ tests/
   - `src/mlsdm/cognition/moral_filter_v2.py` (100%)
   - `src/mlsdm/utils/coherence_safety_metrics.py` (99.56%)
 
-**Note**: Coverage measurement focuses on core modules. See [COVERAGE_REPORT_2025.md](COVERAGE_REPORT_2025.md) for detailed breakdown by module.
+**Note**: Coverage measurement focuses on core modules. See [COVERAGE_REPORT_2025.md](archive/reports/COVERAGE_REPORT_2025.md) for detailed breakdown by module.
 
 ## Writing New Tests
 
@@ -372,5 +372,5 @@ E2E tests are mandatory for release:
 
 - [pytest Documentation](https://docs.pytest.org/)
 - [pytest-cov Documentation](https://pytest-cov.readthedocs.io/)
-- [ESA Standards 2025](../COVERAGE_REPORT_2025.md)
-- [MLSDM Coverage Report](../COVERAGE_REPORT_2025.md)
+- [ESA Standards 2025](archive/reports/COVERAGE_REPORT_2025.md)
+- [MLSDM Coverage Report](archive/reports/COVERAGE_REPORT_2025.md)

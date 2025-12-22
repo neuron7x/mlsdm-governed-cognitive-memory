@@ -7,7 +7,7 @@
 
 ## Context
 
-MLSDM is a production-ready neurobiologically-grounded cognitive architecture with moral governance. The system makes numerous non-obvious architectural decisions derived from neuroscience research, AI safety principles, and production reliability requirements.
+MLSDM is a neurobiologically-grounded cognitive architecture with moral governance; readiness is tracked in [status/READINESS.md](../status/READINESS.md). The system makes numerous non-obvious architectural decisions derived from neuroscience research, AI safety principles, and production reliability requirements.
 
 Current challenges:
 - **Knowledge silos**: New contributors struggle to understand *why* specific design choices were made

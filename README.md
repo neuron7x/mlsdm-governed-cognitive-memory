@@ -24,14 +24,16 @@
 [![Python](https://img.shields.io/badge/python-3.10+-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://github.com/neuron7x/mlsdm/pkgs/container/mlsdm-neuro-engine)
-[![Status](https://img.shields.io/badge/status-beta-orange?style=for-the-badge)](CHANGELOG.md)
+[![Status](https://img.shields.io/badge/status-beta-orange?style=for-the-badge)](docs/status/READINESS.md)
 
-[🚀 Getting Started](GETTING_STARTED.md) •
+[🚀 Getting Started](docs/GETTING_STARTED.md) •
 [Quick Start](#-quick-start) •
 [Documentation](#-documentation) •
 [Architecture](#-architecture) •
 [Metrics](#-validated-metrics) •
 [Contributing](#-contributing)
+
+<p><em>Readiness status is tracked in <a href="docs/status/READINESS.md">docs/status/READINESS.md</a>. All readiness claims elsewhere are superseded by that page.</em></p>
 
 </div>
 
@@ -69,7 +71,7 @@
 </table>
 
 <p>
-  <img alt="Quick Glance" src="https://img.shields.io/badge/Quick%20Glance-Production--ready%20patterns-2563eb?style=for-the-badge&labelColor=0f172a">
+  <img alt="Quick Glance" src="https://img.shields.io/badge/Quick%20Glance-Status%20tracked%20in%20READINESS-2563eb?style=for-the-badge&labelColor=0f172a">
   <img alt="Docs" src="https://img.shields.io/badge/Docs-Extensive%20Coverage-7c3aed?style=for-the-badge&labelColor=0f172a">
   <img alt="Safety" src="https://img.shields.io/badge/Safety-Defense--in--Depth-0f766e?style=for-the-badge&labelColor=0f172a">
 </p>
@@ -87,7 +89,7 @@
 - [Quick Start](#-quick-start)
 - [Usage Examples](#-usage-examples)
 - [Validated Metrics](#-validated-metrics)
-- [Engineering & Production Readiness](#-engineering--production-readiness)
+- [Engineering & Readiness Status](#-engineering--readiness-status)
 - [Documentation](#-documentation)
 - [Roadmap](#-roadmap)
 - [Contributing](#-contributing)
@@ -96,7 +98,7 @@
 ---
 
 > [!NOTE]
-> **🆕 Latest Updates:** OpenTelemetry is now optional, reducing installation complexity. See [Getting Started](GETTING_STARTED.md) for the simplified setup.
+> **🆕 Latest Updates:** OpenTelemetry is now optional, reducing installation complexity. See [Getting Started](docs/GETTING_STARTED.md) for the simplified setup.
 
 <div align="center">
   <sub>✨ Візуальне покращення • чітка навігація • читаємий контент</sub>
@@ -342,13 +344,13 @@ sequenceDiagram
 | Non-Aphasic Output | `avg_sentence_len ≥ 6` | AphasiaBrocaDetector |
 | Function Words | `ratio ≥ 0.15` | Speech quality check |
 
-For complete system design, see [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md).
+For complete system design, see [ARCHITECTURE_SPEC.md](docs/ARCHITECTURE_SPEC.md).
 
 ---
 
 ## 🚀 Quick Start
 
-> **New to MLSDM?** Start with our [**Getting Started Guide**](GETTING_STARTED.md) for a streamlined introduction.
+> **New to MLSDM?** Start with our [**Getting Started Guide**](docs/GETTING_STARTED.md) for a streamlined introduction.
 
 ### Quickstart Profiles
 
@@ -366,7 +368,7 @@ For complete system design, see [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md).
   cp env.cloud.example .env
   make run-cloud-local
   ```
-  Replace placeholders in `.env` with real endpoints/keys only outside CI. See [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) for the required fields.
+  Replace placeholders in `.env` with real endpoints/keys only outside CI. See [CONFIGURATION_GUIDE.md](docs/CONFIGURATION_GUIDE.md) for the required fields.
 
 ### Prerequisites
 
@@ -391,7 +393,7 @@ pip install -e ".[observability]"  # Add OpenTelemetry tracing
 pip install -r requirements-neurolang.txt  # Add Aphasia/NeuroLang support
 ```
 
-> **Note:** For detailed installation options and minimal dependencies, see [GETTING_STARTED.md](GETTING_STARTED.md).
+> **Note:** For detailed installation options and minimal dependencies, see [GETTING_STARTED.md](docs/GETTING_STARTED.md).
 
 **Note:** OpenTelemetry is now optional. MLSDM works perfectly without it if you don't need distributed tracing.
 
@@ -724,30 +726,30 @@ All metrics are backed by reproducible tests with full traceability.
 
 **\*Aphasia Note**: Metrics measured on evaluation corpus of 100 samples (50 telegraphic + 50 normal). See `tests/eval/aphasia_corpus.json`.
 
-**\*\*Performance Note**: Throughput tested with Locust load tests. The 5,500 ops/sec estimate from earlier documentation requires server deployment and is marked as "Partial" in [CLAIMS_TRACEABILITY.md](CLAIMS_TRACEABILITY.md). The 1,000+ RPS figure represents the verified SLO target.
+**\*\*Performance Note**: Throughput tested with Locust load tests. The 5,500 ops/sec estimate from earlier documentation requires server deployment and is marked as "Partial" in [CLAIMS_TRACEABILITY.md](docs/CLAIMS_TRACEABILITY.md). The 1,000+ RPS figure represents the verified SLO target.
 
 For detailed validation results, see:
-- [EFFECTIVENESS_VALIDATION_REPORT.md](EFFECTIVENESS_VALIDATION_REPORT.md)
-- [CLAIMS_TRACEABILITY.md](CLAIMS_TRACEABILITY.md)
+- [EFFECTIVENESS_VALIDATION_REPORT.md](docs/archive/reports/EFFECTIVENESS_VALIDATION_REPORT.md)
+- [CLAIMS_TRACEABILITY.md](docs/CLAIMS_TRACEABILITY.md)
 
 ---
 
-## ⚙️ Engineering & Production Readiness
+## ⚙️ Engineering & Readiness Status
 
 > [!NOTE]
-> MLSDM is designed as an infrastructure component with comprehensive testing, observability, security controls, and production deployment patterns.
+> Evidence-based readiness is tracked centrally in [docs/status/READINESS.md](docs/status/READINESS.md). The tables below summarize capabilities and references without asserting production readiness.
 
 ### 🧪 Quality & Reliability Matrix
 
 | Dimension | Status | Implementation | Key References |
 |:----------|:-------|:---------------|:---------------|
-| **Test Coverage** | 88%* | `pytest`, `pytest-cov`, unit/integration/e2e/property | [TESTING_GUIDE.md](TESTING_GUIDE.md), [COVERAGE_REPORT_2025.md](COVERAGE_REPORT_2025.md) |
+| **Test Coverage** | 88%* | `pytest`, `pytest-cov`, unit/integration/e2e/property | [TESTING_GUIDE.md](docs/TESTING_GUIDE.md), [COVERAGE_REPORT_2025.md](docs/archive/reports/COVERAGE_REPORT_2025.md) |
 | **Test Types** | Unit, Integration, E2E, Property, Load, Security | `tests/unit/`, `tests/integration/`, `tests/e2e/`, `tests/property/`, `tests/load/`, `tests/security/` | [tests/](tests/) |
 | **Type Safety** | Strict mypy | Configured in `pyproject.toml` with strict mode | [pyproject.toml](pyproject.toml) |
 | **Static Analysis** | ruff, bandit | Pre-commit hooks and CI checks | [.pre-commit-config.yaml](.pre-commit-config.yaml) |
 | **CI/CD** | GitHub Actions | Multi-workflow pipeline (CI, property tests, release) | [.github/workflows/](.github/workflows/) |
-| **Security** | Policy + Implementation | Rate limiting, input validation, audit logging, threat model | [SECURITY_POLICY.md](SECURITY_POLICY.md), [THREAT_MODEL.md](THREAT_MODEL.md) |
-| **Observability** | Prometheus + OpenTelemetry | Metrics, structured logging, distributed tracing | [OBSERVABILITY_GUIDE.md](OBSERVABILITY_GUIDE.md), [SLO_SPEC.md](SLO_SPEC.md) |
+| **Security** | Policy + Implementation | Rate limiting, input validation, audit logging, threat model | [SECURITY_POLICY.md](docs/SECURITY_POLICY.md), [THREAT_MODEL.md](docs/THREAT_MODEL.md) |
+| **Observability** | Prometheus + OpenTelemetry | Metrics, structured logging, distributed tracing | [OBSERVABILITY_GUIDE.md](docs/OBSERVABILITY_GUIDE.md), [SLO_SPEC.md](docs/SLO_SPEC.md) |
 
 **\*Coverage Note**: CI threshold is 75%, actual coverage is ~88%. Core cognitive modules achieve 95%+. See [docs/METRICS_SOURCE.md](docs/METRICS_SOURCE.md) for current metrics and threshold rationale.
 
@@ -758,7 +760,7 @@ MLSDM supports multiple deployment patterns:
 | Topology | Description | Key Files |
 |:---------|:------------|:----------|
 | **Local/Dev** | Single container or bare metal | [`docker/Dockerfile`](docker/Dockerfile), [`docker/docker-compose.yaml`](docker/docker-compose.yaml) |
-| **Service Image** | Production-ready container | [`Dockerfile.neuro-engine-service`](Dockerfile.neuro-engine-service) |
+| **Service Image** | Hardened container image (see readiness status) | [`Dockerfile.neuro-engine-service`](Dockerfile.neuro-engine-service) |
 | **Kubernetes** | Full k8s manifests with monitoring | [`deploy/k8s/`](deploy/k8s/) |
 | **Production** | Hardened deployment with security contexts | [`deploy/k8s/production-deployment.yaml`](deploy/k8s/production-deployment.yaml) |
 
@@ -774,13 +776,13 @@ MLSDM supports multiple deployment patterns:
 
 | Category | Description | Reference |
 |:---------|:------------|:----------|
-| **Metrics** | Prometheus-compatible metrics at `/health/metrics` | [OBSERVABILITY_GUIDE.md](OBSERVABILITY_GUIDE.md) |
-| **Logging** | Structured JSON logs with correlation IDs, PII scrubbing | [OBSERVABILITY_GUIDE.md](OBSERVABILITY_GUIDE.md) |
-| **Tracing** | OpenTelemetry distributed tracing (optional) | [OBSERVABILITY_GUIDE.md](OBSERVABILITY_GUIDE.md) |
+| **Metrics** | Prometheus-compatible metrics at `/health/metrics` | [OBSERVABILITY_GUIDE.md](docs/OBSERVABILITY_GUIDE.md) |
+| **Logging** | Structured JSON logs with correlation IDs, PII scrubbing | [OBSERVABILITY_GUIDE.md](docs/OBSERVABILITY_GUIDE.md) |
+| **Tracing** | OpenTelemetry distributed tracing (optional) | [OBSERVABILITY_GUIDE.md](docs/OBSERVABILITY_GUIDE.md) |
 | **Dashboards** | Grafana JSON dashboard | [`deploy/grafana/mlsdm_observability_dashboard.json`](deploy/grafana/mlsdm_observability_dashboard.json) |
 | **Alerting** | Alertmanager rules | [`deploy/monitoring/alertmanager-rules.yaml`](deploy/monitoring/alertmanager-rules.yaml) |
-| **SLOs** | Availability ≥99.9%, P95 latency <120ms, memory ≤50MB | [SLO_SPEC.md](SLO_SPEC.md) |
-| **Runbook** | Operational procedures for incidents | [RUNBOOK.md](RUNBOOK.md) |
+| **SLOs** | Availability ≥99.9%, P95 latency <120ms, memory ≤50MB | [SLO_SPEC.md](docs/SLO_SPEC.md) |
+| **Runbook** | Operational procedures for incidents | [RUNBOOK.md](docs/RUNBOOK.md) |
 
 ### 🛡️ Safety-by-Design
 
@@ -788,38 +790,40 @@ MLSDM implements defense-in-depth security:
 
 | Control | Implementation | Reference |
 |:--------|:---------------|:----------|
-| **Rate Limiting** | 5 RPS per client (leaky bucket) | [SECURITY_IMPLEMENTATION.md](SECURITY_IMPLEMENTATION.md) |
-| **Input Validation** | Type, range, dimension, sanitization | [SECURITY_POLICY.md](SECURITY_POLICY.md) |
-| **Authentication** | Bearer token (OAuth2 scheme) | [SECURITY_POLICY.md](SECURITY_POLICY.md) |
-| **Memory Bounds** | Fixed 29.37 MB, zero-growth | [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) |
-| **Threat Model** | STRIDE analysis | [THREAT_MODEL.md](THREAT_MODEL.md) |
-| **Risk Register** | AI safety risks tracked | [RISK_REGISTER.md](RISK_REGISTER.md) |
-| **Secure Mode** | `MLSDM_SECURE_MODE=1` disables training in production | [SECURITY_POLICY.md](SECURITY_POLICY.md) |
+| **Rate Limiting** | 5 RPS per client (leaky bucket) | [SECURITY_IMPLEMENTATION.md](docs/SECURITY_IMPLEMENTATION.md) |
+| **Input Validation** | Type, range, dimension, sanitization | [SECURITY_POLICY.md](docs/SECURITY_POLICY.md) |
+| **Authentication** | Bearer token (OAuth2 scheme) | [SECURITY_POLICY.md](docs/SECURITY_POLICY.md) |
+| **Memory Bounds** | Fixed 29.37 MB, zero-growth | [ARCHITECTURE_SPEC.md](docs/ARCHITECTURE_SPEC.md) |
+| **Threat Model** | STRIDE analysis | [THREAT_MODEL.md](docs/THREAT_MODEL.md) |
+| **Risk Register** | AI safety risks tracked | [RISK_REGISTER.md](docs/RISK_REGISTER.md) |
+| **Secure Mode** | `MLSDM_SECURE_MODE=1` disables training in production | [SECURITY_POLICY.md](docs/SECURITY_POLICY.md) |
 
-For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md).
+For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md).
 
 ---
 
 ## 📖 Documentation
 
+See [docs/index.md](docs/index.md) for the canonical documentation hub (including the archive) and [docs/status/READINESS.md](docs/status/READINESS.md) for readiness evidence.
+
 ### Core Documentation
 
 | Document | Description |
 |:---------|:------------|
-| [Architecture Spec](ARCHITECTURE_SPEC.md) | Full system design and component interactions |
-| [Usage Guide](USAGE_GUIDE.md) | Detailed usage patterns and best practices |
-| [Configuration Guide](CONFIGURATION_GUIDE.md) | All configuration options explained |
-| [API Reference](API_REFERENCE.md) | Complete API documentation |
-| [Deployment Guide](DEPLOYMENT_GUIDE.md) | Production deployment instructions |
+| [Architecture Spec](docs/ARCHITECTURE_SPEC.md) | Full system design and component interactions |
+| [Usage Guide](docs/USAGE_GUIDE.md) | Detailed usage patterns and best practices |
+| [Configuration Guide](docs/CONFIGURATION_GUIDE.md) | All configuration options explained |
+| [API Reference](docs/API_REFERENCE.md) | Complete API documentation |
+| [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) | Production deployment instructions |
 
 ### Validation & Testing
 
 | Document | Description |
 |:---------|:------------|
-| [Implementation Summary](IMPLEMENTATION_SUMMARY.md) | What was built and how |
-| [Effectiveness Report](EFFECTIVENESS_VALIDATION_REPORT.md) | Quantitative validation results |
-| [Coverage Report](COVERAGE_REPORT_2025.md) | ~86% test coverage details |
-| [Testing Guide](TESTING_GUIDE.md) | How to run and write tests |
+| [Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md) | What was built and how |
+| [Effectiveness Report](docs/archive/reports/EFFECTIVENESS_VALIDATION_REPORT.md) | Quantitative validation results |
+| [Coverage Report](docs/archive/reports/COVERAGE_REPORT_2025.md) | ~86% test coverage details |
+| [Testing Guide](docs/TESTING_GUIDE.md) | How to run and write tests |
 
 ### Scientific Foundation
 
@@ -828,18 +832,18 @@ For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE
 | [Scientific Rationale](docs/SCIENTIFIC_RATIONALE.md) | Core hypothesis and theory |
 | [Neuro Foundations](docs/NEURO_FOUNDATIONS.md) | Neuroscience basis for each module |
 | [Safety Foundations](docs/ALIGNMENT_AND_SAFETY_FOUNDATIONS.md) | AI safety principles |
-| [Bibliography](BIBLIOGRAPHY.md) | Peer-reviewed references |
+| [Bibliography](docs/bibliography/README.md) | Peer-reviewed references |
 
 ### Operations & Support
 
 | Document | Description |
 |:---------|:------------|
-| [Getting Started](GETTING_STARTED.md) | **5-minute quickstart guide for new users** |
-| [Troubleshooting](TROUBLESHOOTING.md) | **Common issues and solutions** |
-| [CI Guide](CI_GUIDE.md) | **CI/CD configuration and workflows** |
-| [Observability Guide](OBSERVABILITY_GUIDE.md) | Metrics, logging, tracing setup |
-| [Runbook](RUNBOOK.md) | Operational procedures |
-| [Security Policy](SECURITY_POLICY.md) | Security guidelines |
+| [Getting Started](docs/GETTING_STARTED.md) | **5-minute quickstart guide for new users** |
+| [Troubleshooting](docs/TROUBLESHOOTING.md) | **Common issues and solutions** |
+| [CI Guide](docs/CI_GUIDE.md) | **CI/CD configuration and workflows** |
+| [Observability Guide](docs/OBSERVABILITY_GUIDE.md) | Metrics, logging, tracing setup |
+| [Runbook](docs/RUNBOOK.md) | Operational procedures |
+| [Security Policy](docs/SECURITY_POLICY.md) | Security guidelines |
 
 ---
 
@@ -898,11 +902,11 @@ For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE
 
 | Control | Status | Reference |
 |:--------|:-------|:----------|
-| Log sanitization | ✅ PII scrubbing | [SECURITY_GUARDRAILS.md](SECURITY_GUARDRAILS.md) |
+| Log sanitization | ✅ PII scrubbing | [SECURITY_GUARDRAILS.md](docs/SECURITY_GUARDRAILS.md) |
 | Least-privilege CI | ✅ `contents: read` | [docs/CI_SECURITY_GATING.md](docs/CI_SECURITY_GATING.md) |
-| Rate limiting | ✅ 5 RPS default | [SECURITY_IMPLEMENTATION.md](SECURITY_IMPLEMENTATION.md) |
-| Input validation | ✅ Type/range/sanitization | [SECURITY_GUARDRAILS.md](SECURITY_GUARDRAILS.md) |
-| Threat model | ✅ STRIDE analysis | [THREAT_MODEL.md](THREAT_MODEL.md) |
+| Rate limiting | ✅ 5 RPS default | [SECURITY_IMPLEMENTATION.md](docs/SECURITY_IMPLEMENTATION.md) |
+| Input validation | ✅ Type/range/sanitization | [SECURITY_GUARDRAILS.md](docs/SECURITY_GUARDRAILS.md) |
+| Threat model | ✅ STRIDE analysis | [THREAT_MODEL.md](docs/THREAT_MODEL.md) |
 
 **Limitations:**
 - Not a substitute for domain-specific security audit

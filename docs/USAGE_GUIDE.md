@@ -3,7 +3,7 @@
 **Document Version:** 1.2.0
 **Project Version:** 1.2.0
 **Last Updated:** December 2025
-**Status:** Production
+**Status:** See [status/READINESS.md](./status/READINESS.md) (not yet verified)
 
 Comprehensive guide for using MLSDM Governed Cognitive Memory in your applications.
 
@@ -11,7 +11,7 @@ Comprehensive guide for using MLSDM Governed Cognitive Memory in your applicatio
 
 ## Quick Start: Universal LLM Wrapper
 
-The MLSDM system provides a production-ready wrapper for any LLM that enforces biological constraints and prevents degradation.
+The MLSDM system provides a governed wrapper for any LLM that enforces biological constraints and prevents degradation; readiness is tracked in [status/READINESS.md](./status/READINESS.md).
 
 ### Basic Integration
 

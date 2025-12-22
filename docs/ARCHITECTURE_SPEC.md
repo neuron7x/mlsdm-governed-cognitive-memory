@@ -45,7 +45,7 @@ MLSDM (Multi-Level Synaptic Dynamic Memory) Governed Cognitive Memory is a neuro
 
 ### Full System Architecture
 
-MLSDM is a multi-layered system spanning from low-level cognitive primitives to production-ready HTTP services, client SDKs, and operational infrastructure. All layers are currently implemented and operational.
+MLSDM is a multi-layered system spanning from low-level cognitive primitives to HTTP services, client SDKs, and operational infrastructure. Readiness is tracked in [status/READINESS.md](status/READINESS.md); all layers are currently implemented and operational.
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
@@ -1194,7 +1194,7 @@ Enterprise-grade operational characteristics:
 - [docs/SCIENTIFIC_RATIONALE.md](docs/SCIENTIFIC_RATIONALE.md) - Core scientific rationale and hypothesis
 - [docs/NEURO_FOUNDATIONS.md](docs/NEURO_FOUNDATIONS.md) - Neuroscience foundations for each module
 - [docs/ALIGNMENT_AND_SAFETY_FOUNDATIONS.md](docs/ALIGNMENT_AND_SAFETY_FOUNDATIONS.md) - AI safety and governance foundations
-- [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md) - Complete bibliography with peer-reviewed sources
+- [BIBLIOGRAPHY.md](bibliography/README.md) - Complete bibliography with peer-reviewed sources
 
 ### Technical Documentation
 - [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) - Implementation details

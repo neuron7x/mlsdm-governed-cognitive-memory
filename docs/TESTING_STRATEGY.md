@@ -310,7 +310,7 @@ def test_emergency_shutdown_on_memory_pressure(self):
 - ✅ 93.3% toxic content rejection rate
 - ✅ Stable under 70% toxic attack (verified in effectiveness validation)
 
-**Current State**: Production-ready with verified drift resistance
+**Current State**: Hardened with verified drift resistance (readiness tracked in [status/READINESS.md](status/READINESS.md))
 
 ### Adversarial Red Teaming ⚠️ **Planned for v1.3+**
 
@@ -359,7 +359,7 @@ def test_emergency_shutdown_on_memory_pressure(self):
 - Recalibration logic planned for future versions
 
 ---
-## 12. Observability ✅ **Production-Ready**
+## 12. Observability (see [status/READINESS.md](status/READINESS.md))
 
 **Status**: ✅ **Fully Implemented**
 
@@ -391,7 +391,7 @@ def test_emergency_shutdown_on_memory_pressure(self):
 - LLM: LLMTimeoutSpike, LLMQuotaExceeded
 - Reliability: BulkheadSaturation, HighTimeoutRate
 
-**Current State**: Production-ready observability with full metrics, tracing, dashboards, and alerting.
+**Current State**: Observability with full metrics, tracing, dashboards, and alerting; readiness tracked in [status/READINESS.md](status/READINESS.md).
 
 ### Observability Validation Tests
 
@@ -494,7 +494,7 @@ invariant-coverage:
 **Future Gate**: Will include formal_verify and safety_suite when implemented
 
 ---
-## 15. Exit Criteria for "Production-Ready"
+## 15. Exit Criteria for readiness promotion
 
 **Current v1.2+ Criteria** (✅ Met):
 - All core invariants hold (no Hypothesis counterexamples for 100+ runs each) ✅
@@ -532,12 +532,12 @@ invariant-coverage:
 - Extended load testing (72h+ soak tests)
 - Automated adversarial red teaming
 
-**Current State**: Core testing methodology is production-ready. Advanced testing features are enhancements for increased confidence at scale.
+**Current State**: Core testing methodology is hardened; readiness is tracked in [status/READINESS.md](status/READINESS.md). Advanced testing features are enhancements for increased confidence at scale.
 
 ---
 ## 17. Implemented vs Planned Methodology Summary
 
-### ✅ Fully Implemented (Production-Ready)
+### ✅ Fully Implemented (readiness tracked in [status/READINESS.md](status/READINESS.md))
 
 | Methodology | Status | Evidence |
 |-------------|--------|----------|
@@ -573,7 +573,7 @@ invariant-coverage:
 
 ### Recommendation
 
-**Current State (v1.2)**: Production-ready with comprehensive testing across all layers. System has 92% coverage, 800+ tests, validated effectiveness metrics, and proven resilience.
+**Current State (v1.2)**: Comprehensive testing across all layers; system has 92% coverage, 800+ tests, validated effectiveness metrics, and proven resilience. Readiness is tracked in [status/READINESS.md](status/READINESS.md).
 
 **Planned Enhancements (v1.3+)**: Advanced testing methodologies for increased confidence at massive scale and formal verification for mathematical correctness guarantees. These are valuable enhancements but not blockers for production deployment.
 
@@ -632,4 +632,4 @@ This:
 **Document Maintainer**: neuron7x
 **Last Updated**: December 2025
 **Document Version**: 2.1 (Package Verification Added)
-**Status**: Production-Ready with Roadmap
+**Status**: See [status/READINESS.md](status/READINESS.md) (not yet verified)

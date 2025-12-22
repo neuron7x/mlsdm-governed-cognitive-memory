@@ -305,7 +305,7 @@ Verdict: SAFE_TO_MERGE_NOW
 
 ## Conclusion
 
-The CI Performance & Resilience Gate is a production-ready tool that fully implements the SDPL CONTROL BLOCK v2.0 protocol. It provides automated, evidence-based PR risk assessment with clear merge verdicts and concrete actions.
+The CI Performance & Resilience Gate fully implements the SDPL CONTROL BLOCK v2.0 protocol; readiness is tracked in [status/READINESS.md](status/READINESS.md). It provides automated, evidence-based PR risk assessment with clear merge verdicts and concrete actions.
 
 The implementation is:
 - ✅ **Complete**: All requirements met

@@ -804,7 +804,7 @@ See [API_REFERENCE.md](./API_REFERENCE.md#speech-governance) for complete Speech
 For detailed neuroscience foundations and complete bibliography:
 - [docs/NEURO_FOUNDATIONS.md](docs/NEURO_FOUNDATIONS.md#4-language-processing-and-aphasia) - Neuroscience foundations for language and aphasia
 - [docs/SCIENTIFIC_RATIONALE.md](docs/SCIENTIFIC_RATIONALE.md) - Scientific rationale for MLSDM architecture
-- [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md) - Complete bibliography with peer-reviewed sources
+- [BIBLIOGRAPHY.md](bibliography/README.md) - Complete bibliography with peer-reviewed sources
 
 ### Clinical Neuroscience
 

@@ -1021,7 +1021,7 @@ Content-Security-Policy: default-src 'self'
 
 ## Implementation Status
 
-### ✅ Implemented Security Controls (Production-Ready)
+### ✅ Implemented Security Controls (see [status/READINESS.md](status/READINESS.md))
 
 | Control | Component | Status | Evidence |
 |---------|-----------|--------|----------|
@@ -1215,4 +1215,4 @@ This script verifies:
 **Document Maintainer**: neuron7x / Security Team
 **Document Version**: 2.1 (With Policy-as-Code Integration)
 **Last Updated**: December 7, 2025
-**Status**: Production-Ready with Enforced Policy
+**Status**: See [status/READINESS.md](status/READINESS.md) (not yet verified)

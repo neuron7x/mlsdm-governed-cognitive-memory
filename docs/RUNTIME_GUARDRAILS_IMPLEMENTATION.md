@@ -16,7 +16,7 @@ This document summarizes the implementation of the Runtime Guardrails & Governan
 ✅ **OpenTelemetry Integration**: Full instrumentation with traces, metrics, and log correlation
 ✅ **Policy-as-Code**: Declarative policies with deterministic evaluation
 ✅ **Comprehensive Testing**: 38 new tests with 100% STRIDE coverage
-✅ **Production-Ready**: All checks passing (ruff, mypy, pytest, coverage ≥65%)
+✅ **Readiness Tracking**: Quality checks passing (ruff, mypy, pytest, coverage ≥65%); readiness recorded in [status/READINESS.md](status/READINESS.md)
 ✅ **Backward Compatible**: No breaking changes to existing APIs
 
 ---
@@ -257,7 +257,7 @@ exporter.record_guardrail_decision(
 
 **Implementation Lead**: GitHub Copilot Engineering Agent
 **Review Status**: ✅ APPROVED
-**Production Ready**: YES
+**Production Readiness**: See [status/READINESS.md](status/READINESS.md) (not yet verified)
 **Date**: December 2025
 
 ---
