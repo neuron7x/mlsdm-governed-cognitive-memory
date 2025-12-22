@@ -15,6 +15,7 @@ from mlsdm.adapters.llm_provider import (
     LocalStubProvider,
     OpenAIProvider,
 )
+from mlsdm.utils.env import get_env_float, get_env_int
 
 
 def build_provider_from_env(
@@ -56,11 +57,11 @@ def build_provider_from_env(
     backend = backend or os.environ.get("LLM_BACKEND", "local_stub")
     backend = backend.lower().strip()
 
-    timeout_seconds = _get_env_float(
+    timeout_seconds = get_env_float(
         "LLM_REQUEST_TIMEOUT_SECONDS",
         "LLM_TIMEOUT_SECONDS",
     )
-    max_retries = _get_env_int("LLM_MAX_RETRIES")
+    max_retries = get_env_int("LLM_MAX_RETRIES")
 
     if backend == "openai":
         api_key = kwargs.get("api_key") or os.environ.get("OPENAI_API_KEY")
@@ -93,38 +94,6 @@ def build_provider_from_env(
             f"Invalid LLM_BACKEND: {backend}. "
             f"Valid options are: 'openai', 'anthropic', 'local_stub'"
         )
-
-
-def _get_env_float(*keys: str) -> float | None:
-    """Parse first available float environment variable."""
-    for key in keys:
-        value = os.environ.get(key)
-        if value is None:
-            continue
-        try:
-            parsed = float(value)
-        except ValueError:
-            continue
-        if parsed <= 0:
-            continue
-        return parsed
-    return None
-
-
-def _get_env_int(*keys: str) -> int | None:
-    """Parse first available integer environment variable."""
-    for key in keys:
-        value = os.environ.get(key)
-        if value is None:
-            continue
-        try:
-            parsed = int(value)
-        except ValueError:
-            continue
-        if parsed < 0:
-            continue
-        return parsed
-    return None
 
 
 def build_multiple_providers_from_env() -> dict[str, LLMProvider]:

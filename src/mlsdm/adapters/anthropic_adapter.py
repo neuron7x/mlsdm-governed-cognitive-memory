@@ -9,6 +9,8 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING, Any
 
+from mlsdm.utils.env import get_env_float, get_env_int
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -39,20 +41,15 @@ def build_anthropic_llm_adapter() -> Callable[[str, int], str]:
 
     model = os.environ.get("ANTHROPIC_MODEL", "claude-3-sonnet-20240229")
 
-    try:
-        import anthropic
-    except ImportError as e:
-        raise ImportError(
-            "anthropic package is required for Anthropic adapter. Install it with: pip install anthropic"
-        ) from e
+    import anthropic
 
     # Initialize Anthropic client
-    timeout_seconds = _get_env_float(
+    timeout_seconds = get_env_float(
         "ANTHROPIC_TIMEOUT_SECONDS",
         "LLM_REQUEST_TIMEOUT_SECONDS",
         "LLM_TIMEOUT_SECONDS",
     )
-    max_retries = _get_env_int("ANTHROPIC_MAX_RETRIES", "LLM_MAX_RETRIES")
+    max_retries = get_env_int("ANTHROPIC_MAX_RETRIES", "LLM_MAX_RETRIES")
 
     client_kwargs: dict[str, Any] = {"api_key": api_key}
     if timeout_seconds is not None:
@@ -104,35 +101,3 @@ def build_anthropic_llm_adapter() -> Callable[[str, int], str]:
             raise Exception(f"Anthropic API call failed: {e}") from e
 
     return llm_generate_fn
-
-
-def _get_env_float(*keys: str) -> float | None:
-    """Parse first available float environment variable."""
-    for key in keys:
-        value = os.environ.get(key)
-        if value is None:
-            continue
-        try:
-            parsed = float(value)
-        except ValueError:
-            continue
-        if parsed <= 0:
-            continue
-        return parsed
-    return None
-
-
-def _get_env_int(*keys: str) -> int | None:
-    """Parse first available integer environment variable."""
-    for key in keys:
-        value = os.environ.get(key)
-        if value is None:
-            continue
-        try:
-            parsed = int(value)
-        except ValueError:
-            continue
-        if parsed < 0:
-            continue
-        return parsed
-    return None

@@ -12,43 +12,9 @@ import os
 from abc import ABC, abstractmethod
 from typing import Any
 
+from mlsdm.utils.env import get_env_float, get_env_int
+
 _logger = logging.getLogger(__name__)
-
-
-def _get_env_float(*keys: str) -> float | None:
-    """Parse first available float environment variable."""
-    for key in keys:
-        value = os.environ.get(key)
-        if value is None:
-            continue
-        try:
-            parsed = float(value)
-        except ValueError:
-            _logger.warning("Invalid float for %s=%r; ignoring.", key, value)
-            continue
-        if parsed <= 0:
-            _logger.warning("Non-positive value for %s=%r; ignoring.", key, value)
-            continue
-        return parsed
-    return None
-
-
-def _get_env_int(*keys: str) -> int | None:
-    """Parse first available integer environment variable."""
-    for key in keys:
-        value = os.environ.get(key)
-        if value is None:
-            continue
-        try:
-            parsed = int(value)
-        except ValueError:
-            _logger.warning("Invalid int for %s=%r; ignoring.", key, value)
-            continue
-        if parsed < 0:
-            _logger.warning("Negative value for %s=%r; ignoring.", key, value)
-            continue
-        return parsed
-    return None
 
 
 # ---------------------------------------------------------------------------
@@ -178,23 +144,17 @@ class OpenAIProvider(LLMProvider):
             )
 
         self.model = model or os.environ.get("OPENAI_MODEL", "gpt-3.5-turbo")
-        self.timeout_seconds = timeout_seconds or _get_env_float(
+        self.timeout_seconds = timeout_seconds or get_env_float(
             "OPENAI_TIMEOUT_SECONDS",
             "LLM_REQUEST_TIMEOUT_SECONDS",
             "LLM_TIMEOUT_SECONDS",
         )
-        self.max_retries = max_retries if max_retries is not None else _get_env_int(
+        self.max_retries = max_retries if max_retries is not None else get_env_int(
             "OPENAI_MAX_RETRIES",
             "LLM_MAX_RETRIES",
         )
 
-        try:
-            import openai
-        except ImportError as e:
-            raise ImportError(
-                "openai package is required for OpenAI provider. "
-                "Install it with: pip install openai"
-            ) from e
+        import openai
 
         client_kwargs: dict[str, Any] = {"api_key": self.api_key}
         if self.timeout_seconds is not None:
@@ -305,23 +265,17 @@ class AnthropicProvider(LLMProvider):
             )
 
         self.model = model or os.environ.get("ANTHROPIC_MODEL", "claude-3-sonnet-20240229")
-        self.timeout_seconds = timeout_seconds or _get_env_float(
+        self.timeout_seconds = timeout_seconds or get_env_float(
             "ANTHROPIC_TIMEOUT_SECONDS",
             "LLM_REQUEST_TIMEOUT_SECONDS",
             "LLM_TIMEOUT_SECONDS",
         )
-        self.max_retries = max_retries if max_retries is not None else _get_env_int(
+        self.max_retries = max_retries if max_retries is not None else get_env_int(
             "ANTHROPIC_MAX_RETRIES",
             "LLM_MAX_RETRIES",
         )
 
-        try:
-            import anthropic
-        except ImportError as e:
-            raise ImportError(
-                "anthropic package is required for Anthropic provider. "
-                "Install it with: pip install anthropic"
-            ) from e
+        import anthropic
 
         client_kwargs: dict[str, Any] = {"api_key": self.api_key}
         if self.timeout_seconds is not None:
