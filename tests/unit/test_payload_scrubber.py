@@ -13,7 +13,10 @@ import os
 import pytest
 
 from mlsdm.security.payload_scrubber import (
+    is_secure_mode,
     scrub_dict,
+    scrub_log_record,
+    scrub_request_payload,
     scrub_text,
     should_log_payload,
 )
@@ -323,6 +326,50 @@ class TestSecretPatterns:
         result = scrub_text(text)
         # API key should be redacted if it matches pattern
         assert "***REDACTED***" in result or "secret12345" not in result
+
+
+class TestSecureScrubbingEntrypoints:
+    """Tests for high-level scrubbing functions and secure mode flags."""
+
+    def test_scrub_request_payload_scrubs_forbidden_and_nested(self):
+        """Ensure request payload scrubs forbidden fields, PII, and nested secrets."""
+        payload = {
+            "prompt": "Sensitive prompt",
+            "user_id": "user-123",
+            "metadata": {"email": "user@example.com"},
+            "items": [{"token": "abc123"}],
+        }
+        result = scrub_request_payload(payload)
+
+        # Forbidden keys are redacted
+        assert result["prompt"] == "***REDACTED***"
+        assert result["user_id"] == "***REDACTED***"
+        # Nested dict/list values are redacted
+        assert result["metadata"] == "***REDACTED***"
+        assert result["items"][0]["token"] == "***REDACTED***"
+        # Original payload is not mutated
+        assert payload["prompt"] == "Sensitive prompt"
+
+    def test_scrub_log_record_scrubs_sensitive_fields(self):
+        """Ensure log record scrubbing redacts forbidden identifiers."""
+        record = {"message": "ok", "session_id": "sess-1", "details": {"token": "secret"}}
+        scrubbed = scrub_log_record(record)
+
+        assert scrubbed["message"] == "ok"
+        assert scrubbed["session_id"] == "***REDACTED***"
+        assert scrubbed["details"]["token"] == "***REDACTED***"
+
+    def test_is_secure_mode_respects_env(self, monkeypatch):
+        """Verify secure mode flag reads MLSDM_SECURE_MODE."""
+        if "MLSDM_SECURE_MODE" in os.environ:
+            del os.environ["MLSDM_SECURE_MODE"]
+        assert is_secure_mode() is False
+
+        monkeypatch.setenv("MLSDM_SECURE_MODE", "1")
+        assert is_secure_mode() is True
+
+        monkeypatch.setenv("MLSDM_SECURE_MODE", "true")
+        assert is_secure_mode() is True
 
 
 if __name__ == "__main__":

@@ -17,12 +17,12 @@ from pathlib import Path
 def load_coverage_data(coverage_file: str = "coverage.json") -> dict:
     """Load existing coverage data from file."""
     coverage_path = Path(coverage_file)
-    
+
     if not coverage_path.exists():
         print(f"❌ Error: {coverage_file} not found")
         print("Make sure to run pytest with --cov-report=json first")
         sys.exit(1)
-    
+
     with open(coverage_path) as f:
         return json.load(f)
 
@@ -35,9 +35,7 @@ def check_module_coverage(coverage_data: dict, module_name: str) -> tuple[float,
         tuple: (coverage_percentage, meets_threshold)
     """
     files = coverage_data.get("files", {})
-    module_files = [
-        path for path in files.keys() if f"src/mlsdm/{module_name}" in path
-    ]
+    module_files = [path for path in files if f"src/mlsdm/{module_name}" in path]
 
     if not module_files:
         print(f"❌ No files found for module: {module_name}")
@@ -66,7 +64,7 @@ def main() -> None:
     coverage_file = "coverage.json"
     if len(sys.argv) > 1 and sys.argv[1] == "--coverage-file":
         coverage_file = sys.argv[2] if len(sys.argv) > 2 else coverage_file
-    
+
     print("=" * 70)
     print("Core Modules Coverage Validation (≥95% threshold)")
     print("=" * 70)
