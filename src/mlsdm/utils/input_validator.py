@@ -84,7 +84,8 @@ class InputValidator:
                 if arr is not vector:
                     arr /= norm
                 else:
-                    arr = arr / norm
+                    arr = arr.astype(np.float32, copy=True)
+                    arr /= norm
 
             return arr
 
