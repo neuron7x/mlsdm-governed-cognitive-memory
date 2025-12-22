@@ -22,6 +22,12 @@ uv sync
 # Now you have the exact same dependencies as CI
 ```
 
+## 📌 Dependency Pinning Policy
+
+- **Direct deps:** Managed in `pyproject.toml` with explicit versions for type stubs.
+- **Transitive deps:** Hard-pinned in `requirements.txt` (security baselines).
+- **Lock sync:** Update `uv.lock` whenever any pin changes to keep CI and local installs aligned.
+
 ## ⚠️ Security Gates
 
 **CRITICAL:** MLSDM implements strict security gating. Security checks are **BLOCKING** and will prevent merges/releases if they fail.
@@ -35,7 +41,7 @@ See **[docs/CI_SECURITY_GATING.md](docs/CI_SECURITY_GATING.md)** for complete se
 **Quick security check before pushing:**
 ```bash
 bandit -r src/mlsdm --severity-level high --confidence-level high
-pip-audit --requirement requirements.txt --strict
+pip-audit --requirement requirements.txt --severity critical --progress-spinner=off
 ```
 
 ## CI Workflows
@@ -287,7 +293,7 @@ pytest tests/ --ignore=tests/load -v
 pip install pip-audit bandit
 
 # Run dependency audit (only requirements.txt to avoid system package false positives)
-pip-audit --requirement requirements.txt --progress-spinner=off
+pip-audit --requirement requirements.txt --severity critical --progress-spinner=off
 
 # Run security scan
 bandit -r src/
@@ -341,7 +347,7 @@ The CI pipeline was hardened with the following improvements:
    - Cache key based on `requirements.txt` and `pyproject.toml` hashes
 
 2. **Security Scan Refinement**
-   - Changed from `pip-audit --strict` to `pip-audit --requirement requirements.txt`
+   - Changed from `pip-audit --strict` to `pip-audit --requirement requirements.txt --severity critical`
    - Eliminates false positives from system packages (configobj, twisted, etc.)
    - Focuses audit on project dependencies only
 

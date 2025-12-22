@@ -70,8 +70,8 @@ dev = [
     "deptry>=0.24.0",
     "locust>=2.32.0",
     "httpx>=0.28.0",
-    "types-PyYAML>=6.0.12",
-    "types-requests>=2.32.0",
+    "types-PyYAML==6.0.12.20250915",
+    "types-requests==2.32.4.20250913",
     "sentence-transformers>=3.0.0",  # Include embeddings in dev for full testing
 ]
 docs = [

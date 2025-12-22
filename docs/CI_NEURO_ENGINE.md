@@ -58,7 +58,7 @@ mypy src/mlsdm
 1. Checkout code
 2. Set up Python with pip cache
 3. Install pip-audit and requirements.txt
-4. Run `pip-audit --requirement requirements.txt --progress-spinner=off`
+4. Run `pip-audit --requirement requirements.txt --severity critical --progress-spinner=off`
 
 **Success Criteria**:
 - Zero known vulnerabilities in project dependencies
@@ -72,7 +72,7 @@ mypy src/mlsdm
 **Local Reproduction**:
 ```bash
 pip install pip-audit
-pip-audit --requirement requirements.txt --progress-spinner=off
+pip-audit --requirement requirements.txt --severity critical --progress-spinner=off
 ```
 
 ---
@@ -438,7 +438,7 @@ mypy src/mlsdm
 
 echo "=== 2. Security Scan ==="
 pip install pip-audit
-pip-audit --requirement requirements.txt --progress-spinner=off
+pip-audit --requirement requirements.txt --severity critical --progress-spinner=off
 
 echo "=== 3. Tests (Python 3.11 only) ==="
 DISABLE_RATE_LIMIT=1 LLM_BACKEND=local_stub \

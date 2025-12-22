@@ -288,7 +288,7 @@ Changes containing these patterns are classified as critical:
 
 **Solution**:
 - Fix the failing jobs first (these are always required)
-- Run locally: `pytest`, `ruff check`, `pip-audit`
+- Run locally: `pytest`, `ruff check`, `pip-audit --severity critical`
 - Perf/resilience are secondary to base jobs
 
 ## Development

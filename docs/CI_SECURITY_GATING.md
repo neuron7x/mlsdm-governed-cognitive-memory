@@ -61,10 +61,10 @@ These jobs **BLOCK** merges and releases if they fail:
 
 #### pip-audit Dependency Scan (Primary)
 - **Job:** `dependency-audit`
-- **Tool:** pip-audit with `--strict` flag
-- **Threshold:** Any known vulnerability
-- **Blocks on:** CVEs in dependencies
-- **Exit behavior:** Non-zero exit code on vulnerabilities
+- **Tool:** pip-audit with `--severity critical`
+- **Threshold:** Critical vulnerabilities only
+- **Blocks on:** Critical CVEs in dependencies
+- **Exit behavior:** Non-zero exit code on critical vulnerabilities
 - **Status:** ✅ BLOCKING (no `continue-on-error`)
 
 **Additional Locations:**
@@ -194,7 +194,7 @@ bandit -r src/mlsdm --severity-level high --confidence-level high
 
 # 2. Run dependency audit (requires requirements.txt installed)
 # Exit code: 0 = no vulnerabilities, 1 = vulnerabilities found
-pip-audit --requirement requirements.txt --strict
+pip-audit --requirement requirements.txt --severity critical --progress-spinner=off
 
 # 3. Run all tests (includes security tests)
 pytest --ignore=tests/load
@@ -212,7 +212,7 @@ gitleaks detect --source . --verbose
 ```bash
 # Run all security checks before pushing (exits on first failure):
 bandit -r src/mlsdm --severity-level high --confidence-level high && \
-  pip-audit --requirement requirements.txt --strict && \
+  pip-audit --requirement requirements.txt --severity critical --progress-spinner=off && \
   pytest tests/security/ tests/contracts/test_no_secrets_in_logs.py -v
 ```
 

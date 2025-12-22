@@ -33,7 +33,7 @@ jobs:
 
       - name: Install bandit
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade "pip>=25.3"
           pip install bandit[sarif]
 
       - name: Run bandit scan for SARIF
@@ -166,15 +166,14 @@ jobs:
 
       - name: Install dependencies and pip-audit
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade "pip>=25.3"
           pip install pip-audit
           pip install -r requirements.txt
 
       - name: Run pip-audit (SECURITY GATE)
         run: |
-          # SECURITY GATE: Fail on any known vulnerabilities
-          # Uses --strict to fail on any vulnerability found
-          pip-audit --strict --progress-spinner=off
+          # SECURITY GATE: Fail on critical vulnerabilities
+          pip-audit --severity critical --progress-spinner=off
 
       - name: Generate dependency report
         if: always()

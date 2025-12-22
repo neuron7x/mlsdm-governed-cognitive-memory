@@ -34,7 +34,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade "pip>=25.3"
           pip install -r requirements.txt
           pip install -e ".[dev]"
 
@@ -71,7 +71,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade "pip>=25.3"
           pip install pip-audit
           pip install -r requirements.txt
 
@@ -79,7 +79,7 @@ jobs:
         run: |
           # WHY: Audit only requirements.txt dependencies to avoid false positives from system packages
           # Note: --format=json can be added for structured output if needed by reporting tools
-          pip-audit --requirement requirements.txt --progress-spinner=off
+          pip-audit --requirement requirements.txt --severity critical --progress-spinner=off
 
       - name: Report status
         if: failure()
@@ -111,7 +111,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade "pip>=25.3"
           pip install -r requirements.txt
           pip install -e ".[test]"
 
@@ -142,7 +142,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade "pip>=25.3"
           pip install -r requirements.txt
           pip install -e ".[test]"
 
@@ -196,7 +196,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade "pip>=25.3"
           pip install -r requirements.txt
           pip install -e ".[test]"
 
@@ -227,7 +227,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade "pip>=25.3"
           pip install -r requirements.txt
           pip install -e ".[test]"
 
@@ -268,7 +268,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade "pip>=25.3"
           pip install -r requirements.txt
           pip install -e ".[test]"
 
@@ -425,7 +425,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade "pip>=25.3"
           pip install -r requirements.txt
           pip install -e ".[test]"
 

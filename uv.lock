@@ -2277,8 +2277,8 @@ requires-dist = [
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=2.0.0" },
     { name = "tenacity", specifier = ">=8.2.3" },
     { name = "torch", marker = "extra == 'neurolang'", specifier = ">=2.0.0" },
-    { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0.0" },
-    { name = "types-requests", marker = "extra == 'dev'", specifier = ">=2.31.0" },
+    { name = "types-pyyaml", marker = "extra == 'dev'", specifier = "==6.0.12.20250915" },
+    { name = "types-requests", marker = "extra == 'dev'", specifier = "==2.32.4.20250913" },
     { name = "uvicorn", specifier = ">=0.29.0" },
 ]
 provides-extras = ["observability", "neurolang", "embeddings", "dev", "docs", "test", "visualization"]
