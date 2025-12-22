@@ -196,6 +196,36 @@ class TestCLISmoke:
         result = cmd_info(args)
         assert result == 0
 
+
+def test_stub_dependencies_are_pinned() -> None:
+    """Ensure stub dependencies stay pinned to exact versions."""
+    import tomllib
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent.parent
+    pyproject = tomllib.loads((root / "pyproject.toml").read_text())
+
+    dev_deps = pyproject["project"]["optional-dependencies"]["dev"]
+    pins = {
+        dep.split("==")[0]: dep
+        for dep in dev_deps
+        if dep.startswith(("types-PyYAML", "types-requests"))
+    }
+
+    assert pins.get("types-PyYAML", "").startswith("types-PyYAML==")
+    assert pins.get("types-requests", "").startswith("types-requests==")
+
+    # Keep requirements.txt aligned with pyproject pins
+    req_lines = [
+        line.strip()
+        for line in (root / "requirements.txt").read_text().splitlines()
+        if line.strip() and not line.startswith("#")
+    ]
+    req_map = {line.split("==")[0]: line for line in req_lines if "types-" in line}
+
+    assert req_map.get("types-PyYAML") == pins["types-PyYAML"]
+    assert req_map.get("types-requests") == pins["types-requests"]
+
     def test_cli_check_command(self) -> None:
         """Test that check command works.
 
