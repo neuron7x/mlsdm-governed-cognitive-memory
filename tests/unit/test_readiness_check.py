@@ -1,8 +1,6 @@
 import datetime
 from pathlib import Path
 
-import pytest
-
 from scripts import readiness_check as rc
 
 
