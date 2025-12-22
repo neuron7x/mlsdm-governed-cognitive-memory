@@ -196,6 +196,19 @@ class TestCLISmoke:
         result = cmd_info(args)
         assert result == 0
 
+    def test_cli_check_command(self) -> None:
+        """Test that check command works.
+
+        Verifies cmd_check returns success exit code.
+        """
+        import argparse
+
+        from mlsdm.cli import cmd_check
+
+        args = argparse.Namespace(verbose=False)
+        result = cmd_check(args)
+        assert result == 0
+
 
 def test_stub_dependencies_are_pinned() -> None:
     """Ensure stub dependencies stay pinned to exact versions."""
@@ -225,19 +238,6 @@ def test_stub_dependencies_are_pinned() -> None:
 
     assert req_map.get("types-PyYAML") == pins["types-PyYAML"]
     assert req_map.get("types-requests") == pins["types-requests"]
-
-    def test_cli_check_command(self) -> None:
-        """Test that check command works.
-
-        Verifies cmd_check returns success exit code.
-        """
-        import argparse
-
-        from mlsdm.cli import cmd_check
-
-        args = argparse.Namespace(verbose=False)
-        result = cmd_check(args)
-        assert result == 0
 
 
 class TestAPISmoke:
