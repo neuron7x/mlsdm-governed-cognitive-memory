@@ -6,6 +6,19 @@ import numpy as np
 from tenacity import retry, stop_after_attempt
 
 
+def _deserialize_npz_value(value: np.ndarray) -> Any:
+    """Deserialize numpy values loaded from NPZ files.
+
+    - Preserve wrapped dicts stored as single-element object arrays.
+    - Convert numeric arrays to lists for JSON-like compatibility.
+    """
+    if value.dtype == object:
+        if value.size == 1:
+            return value.item()
+        return value.tolist()
+    return value.tolist()
+
+
 @retry(stop=stop_after_attempt(3))
 def _save_data(data: dict[str, Any], filepath: str) -> None:
     ext = os.path.splitext(filepath)[1].lower()
@@ -18,7 +31,8 @@ def _save_data(data: dict[str, Any], filepath: str) -> None:
             if isinstance(value, np.ndarray):
                 processed[key] = value
             elif isinstance(value, dict):
-                processed[key] = np.array(value, dtype=object)
+                # Wrap dicts to preserve structure when saving as object arrays.
+                processed[key] = np.array([value], dtype=object)
             else:
                 processed[key] = np.asarray(value)
         # Use cast to work around numpy's imprecise savez signature
@@ -39,7 +53,8 @@ def _load_data(filepath: str) -> dict[str, Any]:
         arrs = np.load(filepath, allow_pickle=True)
         # Convert NpzFile to dict - explicit type to satisfy mypy
         result: dict[str, Any] = {
-            k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in arrs.items()
+            k: _deserialize_npz_value(v) if isinstance(v, np.ndarray) else v
+            for k, v in arrs.items()
         }
         return result
     else:
