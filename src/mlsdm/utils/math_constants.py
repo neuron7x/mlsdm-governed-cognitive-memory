@@ -409,9 +409,12 @@ def safe_entropy(
 
     # Take absolute value to handle negative numbers
     v = np.abs(vector)
+    max_abs = v.max()
+    if max_abs < epsilon:
+        return 0.0
 
     # Numerical stability: subtract max before exp (log-sum-exp trick)
-    v_shifted = v - v.max()
+    v_shifted = v - max_abs
     exp_v = np.exp(v_shifted)
     total = exp_v.sum()
 
