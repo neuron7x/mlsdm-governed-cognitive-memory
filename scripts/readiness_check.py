@@ -13,7 +13,8 @@ ROOT = Path(__file__).resolve().parent.parent
 READINESS_PATH = ROOT / "docs" / "status" / "READINESS.md"
 MAX_AGE_DAYS = 14
 LAST_UPDATED_PATTERN = r"Last updated:\s*(\d{4}-\d{2}-\d{2})"
-SCOPED_PREFIXES = ("src/", "tests/", "config/", ".github/workflows/")
+SCOPED_PREFIXES = ("src/", "tests/", "config/", "deploy/", ".github/workflows/")
+MAX_LISTED_FILES = 10
 
 
 class GitDiffResult(NamedTuple):
@@ -138,7 +139,7 @@ def collect_changed_files() -> List[str]:
 
 def is_scoped(path: str) -> bool:
     normalized = path.replace("\\", "/")
-    if normalized.startswith(SCOPED_PREFIXES):
+    if any(normalized.startswith(prefix) for prefix in SCOPED_PREFIXES):
         return True
     if Path(normalized).name.startswith("Dockerfile"):
         return True
@@ -161,9 +162,9 @@ def main() -> int:
     scoped_changes = [f for f in changed_files if is_scoped(f)]
 
     if scoped_changes and not readiness_updated(changed_files):
-        scoped_list = ", ".join(scoped_changes[:10])
-        if len(scoped_changes) > 10:
-            scoped_list += f", ... (+{len(scoped_changes) - 10} more)"
+        scoped_list = ", ".join(scoped_changes[:MAX_LISTED_FILES])
+        if len(scoped_changes) > MAX_LISTED_FILES:
+            scoped_list += f", ... (+{len(scoped_changes) - MAX_LISTED_FILES} more)"
         log_error(
             "Code/test/config/workflow changes detected without updating docs/status/READINESS.md. "
             f"Touched files: {scoped_list}"
