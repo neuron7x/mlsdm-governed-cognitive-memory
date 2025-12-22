@@ -49,6 +49,14 @@ from mlsdm.utils.security_logger import SecurityEventType, get_security_logger
 logger = logging.getLogger(__name__)
 security_logger = get_security_logger()
 
+
+def _get_env_bool(key: str, default: bool = False) -> bool:
+    value = os.getenv(key)
+    if value is None:
+        return default
+    return value.lower() in ("1", "true", "yes", "on")
+
+
 # Initialize OpenTelemetry tracing
 # Can be disabled via OTEL_SDK_DISABLED=true or OTEL_EXPORTER_TYPE=none
 _exporter_type_env = os.getenv("OTEL_EXPORTER_TYPE", "none")
@@ -66,8 +74,8 @@ _config_path = os.getenv("CONFIG_PATH", "config/default_config.yaml")
 _manager = MemoryManager(ConfigLoader.load_config(_config_path))
 
 # Initialize rate limiter (5 RPS per client as per SECURITY_POLICY.md)
-# Can be disabled in testing with DISABLE_RATE_LIMIT=1
-_rate_limiting_enabled = os.getenv("DISABLE_RATE_LIMIT") != "1"
+# Can be disabled in testing with DISABLE_RATE_LIMIT=true/1
+_rate_limiting_enabled = not _get_env_bool("DISABLE_RATE_LIMIT", False)
 _rate_limiter = RateLimiter(rate=5.0, capacity=10)
 
 # Initialize input validator

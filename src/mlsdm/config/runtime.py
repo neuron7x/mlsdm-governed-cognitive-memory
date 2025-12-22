@@ -302,12 +302,13 @@ def get_runtime_config(mode: RuntimeMode | None = None) -> RuntimeConfig:
     )
 
     # Security config with env overrides
+    disable_rate_limit = _get_env_bool("DISABLE_RATE_LIMIT", False)
     security = SecurityConfig(
         api_key=os.environ.get("API_KEY", defaults["security"]["api_key"]),
         rate_limit_enabled=_get_env_bool(
             "MLSDM_RATE_LIMIT_ENABLED", defaults["security"]["rate_limit_enabled"]
         )
-        and os.environ.get("DISABLE_RATE_LIMIT") != "1",
+        and not disable_rate_limit,
         rate_limit_requests=_get_env_int(
             "RATE_LIMIT_REQUESTS", defaults["security"]["rate_limit_requests"]
         ),
