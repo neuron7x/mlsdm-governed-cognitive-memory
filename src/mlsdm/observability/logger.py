@@ -232,6 +232,11 @@ class JSONFormatter(logging.Formatter):
     enabling correlation between logs and distributed traces.
     """
 
+    @staticmethod
+    def _json_default(value: Any) -> str:
+        """Provide a safe default for non-JSON-serializable values."""
+        return str(value)
+
     def format(self, record: logging.LogRecord) -> str:
         """Format log record as JSON.
 
@@ -304,7 +309,7 @@ class JSONFormatter(logging.Formatter):
             ]:
                 log_entry[key] = value
 
-        return json.dumps(log_entry)
+        return json.dumps(log_entry, default=self._json_default)
 
 
 class ObservabilityLogger:

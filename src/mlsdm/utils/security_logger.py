@@ -136,7 +136,7 @@ class SecurityLogger:
             log_entry["data"] = filtered_data
 
         # Log as structured JSON
-        json_log = json.dumps(log_entry)
+        json_log = json.dumps(log_entry, default=str)
         self.logger.log(level, json_log)
 
         return correlation_id
