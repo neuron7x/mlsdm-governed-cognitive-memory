@@ -1,128 +1,91 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" role="img" aria-labelledby="title desc">
-  <title id="title">MLSDM cognitive stack overview</title>
-  <desc id="desc">High-level illustration of the Multi-Level Synaptic Dynamic Memory pipeline with safety, observability, and adaptive memory layers.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" role="img" aria-labelledby="t d">
+  <title id="t">MLSDM architecture overview</title>
+  <desc id="d">Left to right pipeline showing API/CLI, ingest, safety gate, memory manager, retrieval, providers, and observability.</desc>
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0f172a"/>
-      <stop offset="100%" stop-color="#0b1224"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1220"/>
+      <stop offset="1" stop-color="#0a1b2a"/>
     </linearGradient>
-    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#38bdf8"/>
-      <stop offset="100%" stop-color="#a855f7"/>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#111a2d"/>
+      <stop offset="1" stop-color="#0f1626"/>
     </linearGradient>
-    <linearGradient id="card" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#162036"/>
-      <stop offset="100%" stop-color="#11182c"/>
-    </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0ea5e9" flood-opacity="0.22"/>
-    </filter>
-    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8"/>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb2d1"/>
     </marker>
     <style>
-      text { font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif; }
-      .caption { fill: #cbd5e1; font-size: 16px; letter-spacing: 0.2px; }
-      .label { fill: #e2e8f0; font-size: 18px; font-weight: 700; }
-      .metric { fill: #0ea5e9; font-size: 17px; font-weight: 700; letter-spacing: 0.3px; }
-      .small { fill: #94a3b8; font-size: 14px; }
-      .card { fill: url(#card); stroke: #1f2937; stroke-width: 1.5; }
+      .h { font: 700 38px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill: #e8f0ff; }
+      .s { font: 400 16px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill: #b9c7e2; }
+      .b { fill: url(#card); stroke: #2b3c5c; stroke-width: 2; rx: 18; }
+      .t { font: 700 16px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill: #e8f0ff; }
+      .p { font: 400 14px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill: #b9c7e2; }
+      .a { stroke: #9fb2d1; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .k { fill: #0b1220; stroke: #2b3c5c; stroke-width: 2; rx: 14; }
+      .kt { font: 700 13px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill: #d7e3ff; letter-spacing: 0.3px; }
     </style>
   </defs>
 
-  <rect width="1200" height="600" fill="url(#bg)"/>
-  <rect x="40" y="40" width="1120" height="520" rx="28" fill="#0f172a" opacity="0.4" stroke="#1e293b" stroke-width="1.2"/>
+  <rect x="0" y="0" width="1200" height="600" fill="url(#bg)"/>
 
-  <text x="600" y="90" text-anchor="middle" fill="url(#accent)" font-size="46" font-weight="800" letter-spacing="1px">MLSDM Cognitive Stack</text>
-  <text x="600" y="125" text-anchor="middle" fill="#cbd5e1" font-size="20">Multi-Level Synaptic Dynamic Memory for safe, adaptive LLM governance</text>
+  <text x="70" y="90" class="h">MLSDM</text>
+  <text x="70" y="122" class="s">Governed Cognitive Memory for LLM Systems (library + service)</text>
 
-  <g opacity="0.25" stroke="#1f2937" stroke-width="1">
-    <line x1="120" y1="180" x2="1080" y2="180"/>
-    <line x1="120" y1="260" x2="1080" y2="260"/>
-    <line x1="120" y1="340" x2="1080" y2="340"/>
-    <line x1="120" y1="420" x2="1080" y2="420"/>
-  </g>
+  <!-- Main pipeline blocks -->
+  <rect class="b" x="70"  y="165" width="160" height="110"/>
+  <text class="t" x="90" y="200">Client</text>
+  <text class="p" x="90" y="225">API / CLI</text>
+  <text class="p" x="90" y="248">Integrations</text>
 
-  <g transform="translate(90,190)">
-    <rect class="card" width="210" height="190" rx="18" filter="url(#shadow)"/>
-    <text class="label" x="20" y="34">Signal Intake</text>
-    <text class="small" x="20" y="62">Prompt stream + sensor traces</text>
-    <circle cx="36" cy="96" r="6" fill="#38bdf8"/>
-    <text class="caption" x="50" y="100">Aphasia detection</text>
-    <circle cx="36" cy="128" r="6" fill="#a855f7"/>
-    <text class="caption" x="50" y="132">Safety pre-filter</text>
-    <circle cx="36" cy="160" r="6" fill="#22c55e"/>
-    <text class="caption" x="50" y="164">Context normalization</text>
-  </g>
+  <rect class="b" x="260" y="165" width="170" height="110"/>
+  <text class="t" x="280" y="200">Ingest</text>
+  <text class="p" x="280" y="225">Normalize</text>
+  <text class="p" x="280" y="248">Validate</text>
 
-  <g transform="translate(370,170)">
-    <rect class="card" width="230" height="80" rx="16" filter="url(#shadow)"/>
-    <text class="label" x="18" y="34">Sensory Buffer</text>
-    <text class="small" x="18" y="58">Short-term traces &amp; rhythm gating</text>
-  </g>
+  <rect class="b" x="460" y="165" width="180" height="110"/>
+  <text class="t" x="480" y="200">Safety Gate</text>
+  <text class="p" x="480" y="225">Threat / Policy</text>
+  <text class="p" x="480" y="248">Moral filter</text>
 
-  <g transform="translate(370,270)">
-    <rect class="card" width="230" height="80" rx="16" filter="url(#shadow)"/>
-    <text class="label" x="18" y="34">Working Memory</text>
-    <text class="small" x="18" y="58">Phase-aligned synaptic slots</text>
-  </g>
+  <rect class="b" x="670" y="165" width="200" height="110"/>
+  <text class="t" x="690" y="200">Memory Manager</text>
+  <text class="p" x="690" y="225">Working + LTM</text>
+  <text class="p" x="690" y="248">State + persistence</text>
 
-  <g transform="translate(370,370)">
-    <rect class="card" width="230" height="80" rx="16" filter="url(#shadow)"/>
-    <text class="label" x="18" y="34">Long-term Trace</text>
-    <text class="small" x="18" y="58">Retrieval tuned for governance</text>
-  </g>
+  <rect class="b" x="900" y="165" width="230" height="110"/>
+  <text class="t" x="920" y="200">Retrieval + Compose</text>
+  <text class="p" x="920" y="225">Context builder</text>
+  <text class="p" x="920" y="248">Top-k / scoring</text>
 
-  <g transform="translate(660,190)">
-    <rect class="card" width="210" height="120" rx="18" filter="url(#shadow)"/>
-    <text class="label" x="18" y="36">Safety &amp; Morality</text>
-    <text class="small" x="18" y="64">Adaptive moral filter</text>
-    <text class="small" x="18" y="88">Toxicity rejection &gt;93%</text>
-    <text class="small" x="18" y="112">Policy traceability</text>
-  </g>
+  <!-- Providers -->
+  <rect class="k" x="670" y="300" width="200" height="65"/>
+  <text class="kt" x="690" y="337">Embeddings provider</text>
 
-  <g transform="translate(660,340)">
-    <rect class="card" width="210" height="120" rx="18" filter="url(#shadow)"/>
-    <text class="label" x="18" y="36">Aphasia Repair</text>
-    <text class="small" x="18" y="64">Speech quality guardrails</text>
-    <text class="small" x="18" y="88">Adaptive rhythm smoothing</text>
-    <text class="small" x="18" y="112">Hallucination dampening</text>
-  </g>
+  <rect class="k" x="900" y="300" width="230" height="65"/>
+  <text class="kt" x="920" y="337">LLM provider</text>
 
-  <g transform="translate(940,230)">
-    <rect class="card" width="190" height="180" rx="18" filter="url(#shadow)"/>
-    <text class="label" x="16" y="34">Actuation</text>
-    <text class="small" x="16" y="62">Answer synthesis</text>
-    <text class="small" x="16" y="86">Tool &amp; API calls</text>
-    <text class="small" x="16" y="110">Safety-aligned outputs</text>
-    <text class="small" x="16" y="134">Observability events</text>
-  </g>
+  <!-- Observability -->
+  <rect class="b" x="70" y="410" width="1060" height="110"/>
+  <text class="t" x="90" y="448">Observability + Reliability</text>
+  <text class="p" x="90" y="474">Metrics / tracing / logs, health endpoints, circuit breaker, retries, timeouts</text>
 
-  <line x1="300" y1="250" x2="370" y2="210" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="300" y1="280" x2="370" y2="310" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="300" y1="320" x2="370" y2="410" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrow)"/>
+  <!-- Arrows main flow -->
+  <path class="a" d="M 230 220 L 260 220"/>
+  <path class="a" d="M 430 220 L 460 220"/>
+  <path class="a" d="M 640 220 L 670 220"/>
+  <path class="a" d="M 870 220 L 900 220"/>
 
-  <line x1="600" y1="210" x2="660" y2="230" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="600" y1="310" x2="660" y2="270" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="600" y1="410" x2="660" y2="390" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrow)"/>
+  <!-- Provider arrows -->
+  <path class="a" d="M 770 275 L 770 300"/>
+  <path class="a" d="M 1015 275 L 1015 300"/>
 
-  <line x1="870" y1="250" x2="940" y2="280" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="870" y1="330" x2="940" y2="320" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="870" y1="430" x2="940" y2="380" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrow)"/>
+  <!-- Retrieval -> LLM -->
+  <path class="a" d="M 1015 275 L 1015 275"/>
+  <path class="a" d="M 1015 275 L 1015 300"/>
 
-  <circle cx="600" cy="180" r="10" fill="#38bdf8" opacity="0.8"/>
-  <circle cx="600" cy="280" r="10" fill="#22c55e" opacity="0.8"/>
-  <circle cx="600" cy="380" r="10" fill="#a855f7" opacity="0.8"/>
-
-  <g transform="translate(240,470)">
-    <rect width="720" height="70" rx="16" fill="#0b1224" stroke="#1f2937" stroke-width="1.5"/>
-    <text class="metric" x="24" y="32">Memory Footprint · 29.37 MB</text>
-    <text class="small" x="24" y="54">Deterministic footprint with phase-aware compaction</text>
-
-    <text class="metric" x="320" y="32">Toxic Rejection · 93.3%</text>
-    <text class="small" x="320" y="54">Defense-in-depth moral filtering</text>
-
-    <text class="metric" x="590" y="32">Rhythm Savings · 89.5%</text>
-    <text class="small" x="590" y="54">Wake/sleep resource optimization</text>
-  </g>
+  <!-- Observability connections (subtle) -->
+  <path class="a" d="M 150 275 L 150 410" opacity="0.45"/>
+  <path class="a" d="M 350 275 L 350 410" opacity="0.45"/>
+  <path class="a" d="M 550 275 L 550 410" opacity="0.45"/>
+  <path class="a" d="M 770 365 L 770 410" opacity="0.45"/>
+  <path class="a" d="M 1015 365 L 1015 410" opacity="0.45"/>
 </svg>
