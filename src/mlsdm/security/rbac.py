@@ -440,18 +440,7 @@ class RBACMiddleware(BaseHTTPMiddleware):
         Returns:
             Token string or None
         """
-        # Check Authorization header (Bearer token)
-        auth_header = request.headers.get("authorization", "")
-        if auth_header.startswith("Bearer "):
-            return auth_header[7:]
-
-        # Check X-API-Key header
-        api_key = request.headers.get("x-api-key")
-        if api_key:
-            return api_key
-
-        # Check query parameter (not recommended for production)
-        return request.query_params.get("api_key")
+        return _extract_token_from_request(request)
 
     async def dispatch(
         self,
@@ -586,9 +575,7 @@ def require_role(
             if user_context is None:
                 # Try to validate from request
                 validator = get_role_validator()
-                auth_header = request.headers.get("authorization", "")
-                token = auth_header[7:] if auth_header.startswith("Bearer ") else None
-
+                token = _extract_token_from_request(request)
                 if token:
                     user_context = validator.validate_key(token)
 
@@ -632,3 +619,26 @@ def get_current_user(request: Request) -> UserContext:
             detail="User context not found",
         )
     return cast("UserContext", user_context)
+
+
+def _extract_token_from_request(request: Request) -> str | None:
+    """Extract authentication token from request.
+
+    Args:
+        request: FastAPI request
+
+    Returns:
+        Token string or None
+    """
+    # Check Authorization header (Bearer token)
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.startswith("Bearer "):
+        return auth_header[7:]
+
+    # Check X-API-Key header
+    api_key = request.headers.get("x-api-key")
+    if api_key:
+        return api_key
+
+    # Check query parameter (not recommended for production)
+    return request.query_params.get("api_key")
