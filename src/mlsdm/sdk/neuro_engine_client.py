@@ -411,7 +411,9 @@ class NeuroCognitiveClient:
             response=result.get("response", ""),
             accepted=accepted,
             phase=phase,
-            moral_score=moral_value or mlsdm_state.get("moral_threshold"),
+            moral_score=(
+                moral_value if moral_value is not None else mlsdm_state.get("moral_threshold")
+            ),
             aphasia_flags=aphasia_flags,
             emergency_shutdown=False,
             cognitive_state=cognitive_state,
