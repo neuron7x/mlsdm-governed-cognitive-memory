@@ -79,7 +79,6 @@
   <path class="a" d="M 1015 275 L 1015 300"/>
 
   <!-- Retrieval -> LLM -->
-  <path class="a" d="M 1015 275 L 1015 275"/>
   <path class="a" d="M 1015 275 L 1015 300"/>
 
   <!-- Observability connections (subtle) -->
