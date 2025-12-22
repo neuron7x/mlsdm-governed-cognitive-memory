@@ -16,6 +16,7 @@
 
 ---
 
+[![Stars](https://img.shields.io/github/stars/neuron7x/mlsdm?style=for-the-badge&logo=github&logoColor=white)](https://github.com/neuron7x/mlsdm/stargazers)
 [![CI](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/ci-neuro-cognitive-engine.yml?style=for-the-badge&logo=github-actions&logoColor=white&label=CI)](https://github.com/neuron7x/mlsdm/actions/workflows/ci-neuro-cognitive-engine.yml)
 [![Tests](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/property-tests.yml?style=for-the-badge&logo=pytest&logoColor=white&label=Tests)](https://github.com/neuron7x/mlsdm/actions/workflows/property-tests.yml)
 [![Security](https://img.shields.io/github/actions/workflow/status/neuron7x/mlsdm/sast-scan.yml?style=for-the-badge&logo=shield&logoColor=white&label=Security)](https://github.com/neuron7x/mlsdm/actions/workflows/sast-scan.yml)
@@ -31,6 +32,39 @@
 [Architecture](#-architecture) •
 [Metrics](#-validated-metrics) •
 [Contributing](#-contributing)
+
+</div>
+
+---
+
+<div align="center">
+
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <strong>🧠 Memory</strong><br/>
+      <sub>29.37 MB fixed</sub>
+    </td>
+    <td align="center" width="25%">
+      <strong>🛡️ Safety</strong><br/>
+      <sub>93.3% toxic rejection</sub>
+    </td>
+    <td align="center" width="25%">
+      <strong>🌙 Rhythm</strong><br/>
+      <sub>89.5% resource savings</sub>
+    </td>
+    <td align="center" width="25%">
+      <strong>🗣️ Speech</strong><br/>
+      <sub>Aphasia repair</sub>
+    </td>
+  </tr>
+</table>
+
+<p>
+  <img alt="Quick Glance" src="https://img.shields.io/badge/Quick%20Glance-Production--ready%20patterns-0b7285?style=for-the-badge">
+  <img alt="Docs" src="https://img.shields.io/badge/Docs-Extensive%20Coverage-6f42c1?style=for-the-badge">
+  <img alt="Safety" src="https://img.shields.io/badge/Safety-Defense--in--Depth-8a2be2?style=for-the-badge">
+</p>
 
 </div>
 
@@ -55,6 +89,31 @@
 
 > [!NOTE]
 > **🆕 Latest Updates:** OpenTelemetry is now optional, reducing installation complexity. See [Getting Started](GETTING_STARTED.md) for the simplified setup.
+
+<div align="center">
+  <sub>✨ Візуальне покращення • чітка навігація • читаємий контент</sub>
+</div>
+
+<div align="center">
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="#-quick-start"><strong>⚡ Quick Start</strong></a><br/>
+      <sub>Запуск за 5 хвилин</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="#-architecture"><strong>🏗️ Architecture</strong></a><br/>
+      <sub>Схеми та потоки</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="#-documentation"><strong>📖 Docs Hub</strong></a><br/>
+      <sub>Повна база знань</sub>
+    </td>
+  </tr>
+</table>
+
+</div>
 
 ## 🧬 What is MLSDM?
 
@@ -124,6 +183,10 @@ MLSDM wraps **any LLM** with a neurobiologically-grounded cognitive layer that p
 ---
 
 ## ✨ Key Features
+
+<div align="center">
+  <sub>🔍 Hover over details sections for expanded deep-dives</sub>
+</div>
 
 ### Cognitive Governance
 
