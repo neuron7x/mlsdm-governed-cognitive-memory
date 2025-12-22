@@ -39,31 +39,39 @@
 
 <div align="center">
 
-<table>
+<table style="border-collapse: separate; border-spacing: 12px;">
   <tr>
-    <td align="center" width="25%">
+    <td align="center" width="25%" style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;">
       <strong>🧠 Memory</strong><br/>
-      <sub>29.37 MB fixed</sub>
+      <img alt="Memory footprint" src="https://img.shields.io/badge/29.37%20MB-Fixed-3b82f6?style=flat-square">
+      <br/>
+      <sub>Deterministic footprint</sub>
     </td>
-    <td align="center" width="25%">
+    <td align="center" width="25%" style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;">
       <strong>🛡️ Safety</strong><br/>
-      <sub>93.3% toxic rejection</sub>
+      <img alt="Safety score" src="https://img.shields.io/badge/93.3%25-Toxic%20rejection-0ea5a8?style=flat-square">
+      <br/>
+      <sub>Adaptive moral filter</sub>
     </td>
-    <td align="center" width="25%">
+    <td align="center" width="25%" style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;">
       <strong>🌙 Rhythm</strong><br/>
-      <sub>89.5% resource savings</sub>
+      <img alt="Rhythm savings" src="https://img.shields.io/badge/89.5%25-Resource%20savings-f59e0b?style=flat-square">
+      <br/>
+      <sub>Wake/sleep cycles</sub>
     </td>
-    <td align="center" width="25%">
+    <td align="center" width="25%" style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;">
       <strong>🗣️ Speech</strong><br/>
-      <sub>Aphasia repair</sub>
+      <img alt="Speech repair" src="https://img.shields.io/badge/Aphasia-Repair-8b5cf6?style=flat-square">
+      <br/>
+      <sub>Quality guardrails</sub>
     </td>
   </tr>
 </table>
 
 <p>
-  <img alt="Quick Glance" src="https://img.shields.io/badge/Quick%20Glance-Production--ready%20patterns-2f80ed?style=for-the-badge">
-  <img alt="Docs" src="https://img.shields.io/badge/Docs-Extensive%20Coverage-6d28d9?style=for-the-badge">
-  <img alt="Safety" src="https://img.shields.io/badge/Safety-Defense--in--Depth-0f766e?style=for-the-badge">
+  <img alt="Quick Glance" src="https://img.shields.io/badge/Quick%20Glance-Production--ready%20patterns-2563eb?style=for-the-badge&labelColor=0f172a">
+  <img alt="Docs" src="https://img.shields.io/badge/Docs-Extensive%20Coverage-7c3aed?style=for-the-badge&labelColor=0f172a">
+  <img alt="Safety" src="https://img.shields.io/badge/Safety-Defense--in--Depth-0f766e?style=for-the-badge&labelColor=0f172a">
 </p>
 
 </div>
@@ -96,17 +104,17 @@
 
 <div align="center">
 
-<table>
+<table style="border-collapse: separate; border-spacing: 12px;">
   <tr>
-    <td align="center" width="33%">
+    <td align="center" width="33%" style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;">
       <a href="#-quick-start"><strong>⚡ Quick Start</strong></a><br/>
       <sub>Запуск за 5 хвилин</sub>
     </td>
-    <td align="center" width="33%">
+    <td align="center" width="33%" style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;">
       <a href="#-architecture"><strong>🏗️ Architecture</strong></a><br/>
       <sub>Схеми та потоки</sub>
     </td>
-    <td align="center" width="33%">
+    <td align="center" width="33%" style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;">
       <a href="#-documentation"><strong>📖 Docs Hub</strong></a><br/>
       <sub>Повна база знань</sub>
     </td>
