@@ -57,6 +57,16 @@ def _get_env_bool(key: str, default: bool = False) -> bool:
     return value.lower() in ("1", "true", "yes", "on")
 
 
+def _get_env_int(key: str, default: int) -> int:
+    value = os.getenv(key)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
 # Initialize OpenTelemetry tracing
 # Can be disabled via OTEL_SDK_DISABLED=true or OTEL_EXPORTER_TYPE=none
 _exporter_type_env = os.getenv("OTEL_EXPORTER_TYPE", "none")
@@ -74,8 +84,25 @@ _manager = MemoryManager(ConfigLoader.load_config(_config_path))
 
 # Initialize rate limiter (5 RPS per client as per SECURITY_POLICY.md)
 # Can be disabled in testing with DISABLE_RATE_LIMIT=true/1
-_rate_limiting_enabled = not _get_env_bool("DISABLE_RATE_LIMIT", False)
-_rate_limiter = RateLimiter(rate=5.0, capacity=10)
+_secure_mode_enabled = _get_env_bool("MLSDM_SECURE_MODE", False)
+_rate_limiting_enabled = _get_env_bool(
+    "MLSDM_RATE_LIMIT_ENABLED", True
+) and not _get_env_bool("DISABLE_RATE_LIMIT", False)
+_rate_limit_requests = _get_env_int("RATE_LIMIT_REQUESTS", 5)
+_rate_limit_window = _get_env_int("RATE_LIMIT_WINDOW", 1)
+
+if _rate_limit_requests <= 0 or _rate_limit_window <= 0:
+    security_logger.log_security_config_error(
+        "invalid_rate_limit",
+        "RATE_LIMIT_REQUESTS and RATE_LIMIT_WINDOW must be positive integers; "
+        "falling back to 5 requests per second.",
+    )
+    _rate_limit_requests = 5
+    _rate_limit_window = 1
+
+_rate_limit_rate = _rate_limit_requests / _rate_limit_window
+_rate_limit_capacity = max(1, _rate_limit_requests)
+_rate_limiter = RateLimiter(rate=_rate_limit_rate, capacity=_rate_limit_capacity)
 
 # Initialize input validator
 _validator = InputValidator()
@@ -164,7 +191,16 @@ app.include_router(health.router)
 # Set memory manager for health checks
 health.set_memory_manager(_manager)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
+
+
+def _rate_limit_message() -> str:
+    if _rate_limit_window <= 1:
+        return f"Rate limit exceeded. Maximum {_rate_limit_requests} requests per second."
+    return (
+        "Rate limit exceeded. Maximum "
+        f"{_rate_limit_requests} requests per {_rate_limit_window} seconds."
+    )
 
 
 def _get_client_id(request: Request) -> str:
@@ -182,15 +218,27 @@ def _get_client_id(request: Request) -> str:
     return hashed
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
+async def get_current_user(token: str | None = Depends(oauth2_scheme)) -> str | None:
     """Authenticate user with enhanced security logging."""
     api_key = os.getenv("API_KEY")
 
+    if _secure_mode_enabled and not api_key:
+        security_logger.log_security_config_error(
+            "missing_api_key",
+            "MLSDM_SECURE_MODE enabled but API_KEY is not configured.",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication is not configured.",
+        )
+
     if api_key and token != api_key:
-        security_logger.log_auth_failure(client_id="unknown", reason="Invalid token")
+        reason = "Missing token" if not token else "Invalid token"
+        security_logger.log_auth_failure(client_id="unknown", reason=reason)
         raise HTTPException(status_code=401, detail="Invalid authentication")
 
-    security_logger.log_auth_success(client_id="unknown")
+    if token:
+        security_logger.log_auth_success(client_id="unknown")
     return token
 
 
@@ -357,9 +405,7 @@ async def process_event(
     # Rate limiting check (can be disabled for testing)
     if _rate_limiting_enabled and not _rate_limiter.is_allowed(client_id):
         security_logger.log_rate_limit_exceeded(client_id=client_id)
-        raise HTTPException(
-            status_code=429, detail="Rate limit exceeded. Maximum 5 requests per second."
-        )
+        raise HTTPException(status_code=429, detail=_rate_limit_message())
 
     # Validate moral value
     try:
@@ -391,9 +437,7 @@ async def get_state(request: Request, user: str = Depends(get_current_user)) -> 
     # Rate limiting check (can be disabled for testing)
     if _rate_limiting_enabled and not _rate_limiter.is_allowed(client_id):
         security_logger.log_rate_limit_exceeded(client_id=client_id)
-        raise HTTPException(
-            status_code=429, detail="Rate limit exceeded. Maximum 5 requests per second."
-        )
+        raise HTTPException(status_code=429, detail=_rate_limit_message())
 
     L1, L2, L3 = _manager.memory.get_state()
     metrics = _manager.metrics_collector.get_metrics()
@@ -422,6 +466,7 @@ async def get_state(request: Request, user: str = Depends(get_current_user)) -> 
 async def generate(
     request_body: GenerateRequest,
     request: Request,
+    _user: str | None = Depends(get_current_user),
 ) -> GenerateResponse | JSONResponse:
     """Generate a response using the NeuroCognitiveEngine.
 
@@ -469,7 +514,7 @@ async def generate(
                 content={
                     "error": {
                         "error_type": "rate_limit_exceeded",
-                        "message": "Rate limit exceeded. Maximum 5 requests per second.",
+                        "message": _rate_limit_message(),
                         "details": None,
                     }
                 },
@@ -671,7 +716,7 @@ async def infer(
                 content={
                     "error": {
                         "error_type": "rate_limit_exceeded",
-                        "message": "Rate limit exceeded. Maximum 5 requests per second.",
+                        "message": _rate_limit_message(),
                         "details": None,
                     }
                 },
@@ -847,5 +892,8 @@ async def get_status() -> dict[str, Any]:
         "config": {
             "dimension": _manager.dimension,
             "rate_limiting_enabled": _rate_limiting_enabled,
+            "rate_limit_requests": _rate_limit_requests,
+            "rate_limit_window": _rate_limit_window,
+            "secure_mode": _secure_mode_enabled,
         },
     }
