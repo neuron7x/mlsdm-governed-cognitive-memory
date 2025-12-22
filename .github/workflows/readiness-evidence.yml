@@ -1,0 +1,123 @@
+name: Readiness Evidence
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install "pytest>=8.3.0" "pytest-asyncio>=0.24.0" "pytest-cov>=6.0.0" "hypothesis>=6.122.0" "httpx>=0.28.0"
+      - name: Run unit tests
+        run: |
+          set -o pipefail
+          python -m pytest tests/unit -q | tee unit-tests.log
+      - name: Upload unit test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: readiness-unit-log
+          path: unit-tests.log
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: unit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install "pytest>=8.3.0" "pytest-asyncio>=0.24.0" "pytest-cov>=6.0.0" "hypothesis>=6.122.0" "httpx>=0.28.0"
+      - name: Run integration tests
+        run: |
+          set -o pipefail
+          python -m pytest tests/integration -q | tee integration-tests.log
+      - name: Upload integration test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: readiness-integration-log
+          path: integration-tests.log
+
+  property:
+    runs-on: ubuntu-latest
+    needs: unit
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install "pytest>=8.3.0" "pytest-asyncio>=0.24.0" "pytest-cov>=6.0.0" "hypothesis>=6.122.0" "httpx>=0.28.0"
+      - name: Run property tests
+        run: |
+          set -o pipefail
+          python -m pytest tests/property -q | tee property-tests.log
+      - name: Upload property test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: readiness-property-log
+          path: property-tests.log
+
+  coverage_gate:
+    runs-on: ubuntu-latest
+    needs: unit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install "pytest>=8.3.0" "pytest-asyncio>=0.24.0" "pytest-cov>=6.0.0" "hypothesis>=6.122.0" "httpx>=0.28.0"
+      - name: Run coverage gate
+        run: |
+          set -o pipefail
+          bash ./coverage_gate.sh | tee coverage-gate.log
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: readiness-coverage-artifacts
+          path: |
+            coverage-gate.log
+            coverage.xml
