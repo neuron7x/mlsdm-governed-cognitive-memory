@@ -44,3 +44,4 @@ Blocking issues: 3
 
 ## Change Log
 - 2025-12-22 — Established structured readiness record and CI gate policy — PR: copilot/create-readiness-documentation
+- 2025-12-22 — Aligned readiness gate scope and workflow enforcement — PR: copilot/create-readiness-documentation

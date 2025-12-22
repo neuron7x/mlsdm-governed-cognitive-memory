@@ -13,7 +13,12 @@ ROOT = Path(__file__).resolve().parent.parent
 READINESS_PATH = ROOT / "docs" / "status" / "READINESS.md"
 MAX_AGE_DAYS = 14
 LAST_UPDATED_PATTERN = r"Last updated:\s*(\d{4}-\d{2}-\d{2})"
-SCOPED_PREFIXES = ("src/", "tests/", "config/", "deploy/", ".github/workflows/")
+DEFAULT_SCOPED_PREFIXES = ("src/", "tests/", "config/", "deploy/", ".github/workflows/")
+SCOPED_PREFIXES = tuple(
+    prefix.strip()
+    for prefix in os.environ.get("READINESS_SCOPED_PREFIXES", "").split(",")
+    if prefix.strip()
+) or DEFAULT_SCOPED_PREFIXES
 MAX_LISTED_FILES = 10
 
 
