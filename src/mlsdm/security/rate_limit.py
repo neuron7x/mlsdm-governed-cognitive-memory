@@ -114,6 +114,10 @@ class RateLimiter:
 
             client_requests = self._requests.get(client_id, [])
             client_requests = [(ts, count) for ts, count in client_requests if ts > cutoff_time]
+            if client_requests:
+                self._requests[client_id] = client_requests
+            else:
+                self._requests.pop(client_id, None)
 
             total_requests = sum(count for _, count in client_requests)
             return max(0, self._requests_per_window - total_requests)
