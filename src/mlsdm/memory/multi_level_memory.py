@@ -122,8 +122,14 @@ class MultiLevelSynapticMemory:
         Raises:
             ValueError: If event is not a valid numpy array of correct dimension
         """
-        if not isinstance(event, np.ndarray) or event.shape[0] != self.dim:
-            raise ValueError(f"Event vector must be a NumPy array of dimension {self.dim}.")
+        if (
+            not isinstance(event, np.ndarray)
+            or event.ndim != 1
+            or event.shape[0] != self.dim
+        ):
+            raise ValueError(
+                f"Event vector must be a 1D NumPy array of dimension {self.dim}."
+            )
 
         start_time = time.perf_counter() if _OBSERVABILITY_AVAILABLE else None
 
