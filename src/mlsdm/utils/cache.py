@@ -508,8 +508,15 @@ def cached_llm_response(
     def decorator(func: Callable[..., str]) -> Callable[..., str]:
         @wraps(func)
         def wrapper(prompt: str, max_tokens: int = 256, *args: Any, **kwargs: Any) -> str:
-            # Generate cache key
-            key = f"llm:{hash_text(prompt)}:{max_tokens}"
+            # Generate cache key (include args/kwargs to avoid collisions)
+            payload = {
+                "prompt": prompt,
+                "max_tokens": max_tokens,
+                "args": args,
+                "kwargs": kwargs,
+            }
+            serialized = json.dumps(payload, sort_keys=True, default=str)
+            key = f"llm:{hash_text(serialized)}"
 
             # Check cache
             cached = cache.get(key)
