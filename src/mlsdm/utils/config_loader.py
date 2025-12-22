@@ -295,19 +295,30 @@ class ConfigLoader:
             parser = configparser.ConfigParser()
             parser.read(path, encoding="utf-8")
 
+            def _parse_value(raw_value: str) -> Any:
+                lower = raw_value.strip().lower()
+                if lower in ("true", "false"):
+                    return lower == "true"
+                try:
+                    return int(raw_value)
+                except ValueError:
+                    try:
+                        return float(raw_value)
+                    except ValueError:
+                        return raw_value
+
+            def _populate(target: dict[str, Any], items: Any) -> None:
+                for key, value in items:
+                    target[key] = _parse_value(value)
+
+            # Apply DEFAULT section values to top-level config when present
+            if parser.defaults():
+                _populate(config, parser.defaults().items())
+
             for section in parser.sections():
-                for key, value in parser[section].items():
-                    lower = value.lower()
-                    if lower in ("true", "false"):
-                        config[key] = lower == "true"
-                    else:
-                        try:
-                            config[key] = int(value)
-                        except ValueError:
-                            try:
-                                config[key] = float(value)
-                            except ValueError:
-                                config[key] = value
+                section_data: dict[str, Any] = {}
+                _populate(section_data, parser[section].items())
+                config[section] = section_data
 
             return config
         except Exception as e:
