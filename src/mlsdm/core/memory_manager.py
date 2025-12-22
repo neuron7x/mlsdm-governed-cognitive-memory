@@ -375,6 +375,23 @@ class MemoryManager:
         if not isinstance(qilm_state.get("phases"), list):
             invalid_fields["qilm.phases"] = "expected list"
 
+        qilm_memory = qilm_state.get("memory")
+        qilm_phases = qilm_state.get("phases")
+        if isinstance(qilm_memory, list):
+            for index, vector in enumerate(qilm_memory):
+                if not isinstance(vector, list):
+                    invalid_fields[f"qilm.memory[{index}]"] = "expected list"
+                elif len(vector) != self.dimension:
+                    invalid_fields[f"qilm.memory[{index}]"] = (
+                        f"length {len(vector)} does not match dimension {self.dimension}"
+                    )
+        if isinstance(qilm_memory, list) and isinstance(qilm_phases, list):
+            if len(qilm_phases) != len(qilm_memory):
+                invalid_fields["qilm.phases"] = (
+                    f"length {len(qilm_phases)} does not match memory length "
+                    f"{len(qilm_memory)}"
+                )
+
         if invalid_fields:
             raise StateIncompleteError(
                 filepath=filepath,
