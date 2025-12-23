@@ -4,6 +4,7 @@ This module provides counters, gauges, and histograms for monitoring
 the MLSDM cognitive architecture system, with Prometheus export format.
 """
 
+import logging
 import time
 from enum import Enum
 from threading import Lock
@@ -16,6 +17,8 @@ from prometheus_client import (
     Histogram,
     generate_latest,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class PhaseType(Enum):
@@ -1401,7 +1404,7 @@ def record_request(
 
     except Exception:
         # Graceful degradation - don't crash if metrics fail
-        pass
+        logger.debug("Failed to record request metrics", exc_info=True)
 
 
 def record_aphasia_event(mode: str = "detect", severity: float = 0.0) -> None:
@@ -1441,7 +1444,7 @@ def record_aphasia_event(mode: str = "detect", severity: float = 0.0) -> None:
 
     except Exception:
         # Graceful degradation - don't crash if metrics fail
-        pass
+        logger.debug("Failed to record aphasia metrics", exc_info=True)
 
 
 # ---------------------------------------------------------------------------

@@ -159,7 +159,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         try:
             await _cpu_background_task
         except asyncio.CancelledError:
-            pass
+            logger.debug("CPU background sampler cancelled during shutdown")
         logger.info("Stopped CPU background sampler")
 
     # Log system shutdown

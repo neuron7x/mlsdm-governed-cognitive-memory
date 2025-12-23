@@ -372,19 +372,15 @@ class ConfigLoader:
             return False
 
         # Try integer
+        # Conversion precedence: attempt integers first, then floats, else return raw string
         try:
             return int(value)
         except ValueError:
-            pass
-
-        # Try float
-        try:
-            return float(value)
-        except ValueError:
-            pass
-
-        # Return as string
-        return value
+            # Try float next
+            try:
+                return float(value)
+            except ValueError:
+                return value
 
     @staticmethod
     def load_validated_config(path: str) -> SystemConfig:

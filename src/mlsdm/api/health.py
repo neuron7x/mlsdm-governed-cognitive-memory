@@ -497,7 +497,7 @@ async def _compute_readiness(response: Response) -> ReadinessStatus:
                 pct_str = cpu_details.split("usage:")[1].strip().rstrip("%")
                 details["system_cpu_percent"] = float(pct_str)
             except (IndexError, ValueError):
-                pass
+                logger.debug("Unable to parse CPU usage percent from details: %s", cpu_details)
 
     # Set response status code
     if all_ready:

@@ -113,8 +113,6 @@ class CircuitBreakerStats:
 class CircuitBreakerError(Exception):
     """Base exception for circuit breaker errors."""
 
-    pass
-
 
 class CircuitOpenError(CircuitBreakerError):
     """Raised when circuit is open and request is rejected."""

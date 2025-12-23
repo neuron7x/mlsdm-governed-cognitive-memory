@@ -225,14 +225,14 @@ def scrub_text(text: str, scrub_emails: bool = False) -> str:
                 scrubbed = pattern.sub(replacement, scrubbed)
             except Exception:
                 # If a single pattern fails, continue with others
-                pass
+                _logger.debug("Secret pattern substitution failed", exc_info=True)
 
         # Optionally scrub email addresses
         if scrub_emails:
             try:
                 scrubbed = EMAIL_PATTERN.sub(r"***@***.***", scrubbed)
             except Exception:
-                pass
+                _logger.debug("Email scrubbing failed", exc_info=True)
 
         return scrubbed
     except Exception:

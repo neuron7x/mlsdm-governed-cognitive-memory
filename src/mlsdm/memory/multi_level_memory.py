@@ -1,3 +1,4 @@
+import logging
 import time
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -12,13 +13,14 @@ if TYPE_CHECKING:
 # Import calibration defaults for consistent parameter values
 # Type annotation uses Optional since module may not be available
 _SYNAPTIC_MEMORY_DEFAULTS: Optional["SynapticMemoryCalibration"] = None
+logger = logging.getLogger(__name__)
 try:
     from mlsdm.config import SYNAPTIC_MEMORY_DEFAULTS as _IMPORTED_DEFAULTS
 
     _SYNAPTIC_MEMORY_DEFAULTS = _IMPORTED_DEFAULTS
 except ImportError:
     # Fallback if calibration module is not available - already None
-    pass
+    logger.info("Synaptic memory calibration defaults unavailable; using fallback parameters")
 
 # Observability imports - gracefully handle missing module
 try:

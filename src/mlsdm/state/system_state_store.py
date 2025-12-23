@@ -37,25 +37,17 @@ logger = logging.getLogger(__name__)
 class StateLoadError(Exception):
     """Error loading system state."""
 
-    pass
-
 
 class StateSaveError(Exception):
     """Error saving system state."""
-
-    pass
 
 
 class StateCorruptionError(Exception):
     """Corrupted system state detected."""
 
-    pass
-
 
 class StateRecoveryError(Exception):
     """Failed to recover corrupted state."""
-
-    pass
 
 
 def _compute_checksum(data: bytes) -> str:
@@ -121,8 +113,8 @@ def _write_file_atomic(filepath: str, data: bytes) -> None:
         if os.path.exists(temp_path):
             try:
                 os.remove(temp_path)
-            except OSError:
-                pass
+            except OSError as e:
+                logger.debug("Failed to remove temp file %s: %s", temp_path, e)
 
 
 def save_system_state(
@@ -198,8 +190,8 @@ def save_system_state(
                 if os.path.exists(temp_path):
                     try:
                         os.remove(temp_path)
-                    except OSError:
-                        pass
+                    except OSError as e:
+                        logger.debug("Failed to remove temp npz file %s: %s", temp_path, e)
 
         logger.info(f"Saved system state to {filepath} (version {state.version})")
 

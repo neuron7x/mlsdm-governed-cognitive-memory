@@ -236,7 +236,7 @@ class BulkheadMiddleware(BaseHTTPMiddleware):
             )
         except Exception:
             # Graceful degradation - don't fail request if metrics fail
-            pass
+            logger.debug("Prometheus metrics update failed", exc_info=True)
 
     async def dispatch(
         self,
@@ -389,9 +389,7 @@ class RequestPriority:
             else:
                 return cls.HIGH
         except ValueError:
-            pass
-
-        return default
+            return default
 
 
 @dataclass

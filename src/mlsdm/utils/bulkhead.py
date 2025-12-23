@@ -9,7 +9,7 @@ Usage:
     bulkhead = Bulkhead()
     with bulkhead.acquire(BulkheadCompartment.LLM_GENERATION):
         # perform operation
-        pass
+        result = some_llm_call()
 
 The bulkhead pattern ensures that failures or overload in one subsystem
 (e.g., LLM generation) don't cascade to other subsystems (e.g., memory

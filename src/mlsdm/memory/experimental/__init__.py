@@ -21,14 +21,17 @@ Usage:
 
 from __future__ import annotations
 
+import logging
+
 __all__: list[str] = []
+logger = logging.getLogger(__name__)
 
 # Lazy import - only export FractalPELMGPU if torch is available
 try:
     from .fractal_pelm_gpu import FractalPELMGPU
 
     __all__.append("FractalPELMGPU")
-except ImportError:
+except ImportError as exc:
     # torch not available - FractalPELMGPU will not be exported
     # Users attempting to import it directly will get a clear error
-    pass
+    logger.info("FractalPELMGPU unavailable (torch not installed): %s", exc)

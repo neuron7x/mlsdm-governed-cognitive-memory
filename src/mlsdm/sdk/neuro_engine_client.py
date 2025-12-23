@@ -29,8 +29,6 @@ logger = logging.getLogger(__name__)
 class MLSDMError(Exception):
     """Base exception for MLSDM SDK errors."""
 
-    pass
-
 
 class MLSDMClientError(MLSDMError):
     """Exception for client-side errors (4xx equivalent).

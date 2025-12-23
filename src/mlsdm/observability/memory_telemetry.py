@@ -385,7 +385,7 @@ def log_pelm_store(
         )
     except Exception:
         # Graceful degradation - don't crash if logging fails
-        pass
+        logger.debug("PELM store logging failed", exc_info=True)
 
 
 def log_pelm_retrieve(
@@ -430,7 +430,7 @@ def log_pelm_retrieve(
             metrics=metrics,
         )
     except Exception:
-        pass
+        logger.debug("PELM retrieve logging failed", exc_info=True)
 
 
 def log_pelm_capacity_warning(
@@ -465,7 +465,7 @@ def log_pelm_capacity_warning(
             },
         )
     except Exception:
-        pass
+        logger.debug("PELM capacity warning logging failed", exc_info=True)
 
 
 def log_pelm_corruption(
@@ -508,7 +508,7 @@ def log_pelm_corruption(
             },
         )
     except Exception:
-        pass
+        logger.debug("PELM corruption logging failed", exc_info=True)
 
 
 def log_synaptic_update(
@@ -559,7 +559,7 @@ def log_synaptic_update(
             metrics=metrics,
         )
     except Exception:
-        pass
+        logger.debug("Synaptic update logging failed", exc_info=True)
 
 
 # ---------------------------------------------------------------------------
@@ -706,7 +706,7 @@ def record_pelm_store(
         )
     except Exception:
         # Graceful degradation
-        pass
+        logger.debug("Failed to record PELM store event", exc_info=True)
 
 
 def record_pelm_retrieve(
@@ -739,7 +739,7 @@ def record_pelm_retrieve(
             query_phase, phase_tolerance, top_k, results_count, latency_ms, correlation_id
         )
     except Exception:
-        pass
+        logger.debug("Failed to record PELM retrieve event", exc_info=True)
 
 
 def record_synaptic_update(
@@ -788,7 +788,7 @@ def record_synaptic_update(
             correlation_id,
         )
     except Exception:
-        pass
+        logger.debug("Failed to record synaptic update event", exc_info=True)
 
 
 def record_pelm_corruption(
@@ -814,7 +814,7 @@ def record_pelm_corruption(
 
         log_pelm_corruption(detected, recovered, pointer, size, correlation_id)
     except Exception:
-        pass
+        logger.debug("Failed to record PELM corruption event", exc_info=True)
 
 
 # ---------------------------------------------------------------------------

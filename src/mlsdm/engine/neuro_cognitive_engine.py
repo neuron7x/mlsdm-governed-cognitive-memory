@@ -58,6 +58,9 @@ except Exception:  # pragma: no cover - optional
     FSLGSWrapper = None
 
 
+logger = logging.getLogger(__name__)
+
+
 # ---------------------------------------------------------------------------
 # Exceptions
 # ---------------------------------------------------------------------------
@@ -66,19 +69,13 @@ except Exception:  # pragma: no cover - optional
 class MLSDMRejectionError(Exception):
     """MLSDM відхилив запит (мораль, ритм, резилієнтність)."""
 
-    pass
-
 
 class EmptyResponseError(Exception):
     """LLM/MLSDM повернули порожню відповідь."""
 
-    pass
-
 
 class LLMProviderError(Exception):
     """LLM provider failed (network, API, timeout, etc.)."""
-
-    pass
 
 
 # ---------------------------------------------------------------------------
@@ -1160,7 +1157,7 @@ class NeuroCognitiveEngine:
                 moral_score: float = moral_filter.compute_moral_value(response_text)
                 return moral_score
             except Exception:
-                pass  # Fall back to heuristic
+                logger.exception("Moral filter computation failed, using heuristic fallback")
 
         # Heuristic fallback (matches test expectations)
         harmful_patterns = ["hate", "violence", "attack", "harmful"]

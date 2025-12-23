@@ -89,6 +89,12 @@ def test_noop_tracer_without_otel():
                 span.record_exception(e)
             span.set_status("OK")
 
+            # Verify no-op span still records diagnostics for introspection
+            assert span.attributes["key"] == "value"
+            assert ("test_event", {"detail": "test"}) in span.events
+            assert isinstance(span.exceptions[-1], ValueError)
+            assert span.status == "OK"
+
         print("✓ NoOpTracer operations completed without errors")
 
 
