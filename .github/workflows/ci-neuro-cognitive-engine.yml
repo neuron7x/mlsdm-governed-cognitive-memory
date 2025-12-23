@@ -117,7 +117,10 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest -q --ignore=tests/load
+          # Exclude benchmark tests from CI matrix - they are timing-sensitive and run
+          # separately in the benchmarks job on Python 3.11 with fixed environment.
+          # This prevents flaky failures from CI virtualization overhead variability.
+          pytest -q --ignore=tests/load -m "not benchmark"
 
   coverage:
     name: Code Coverage Gate
@@ -276,9 +279,11 @@ jobs:
         id: benchmarks
         run: |
           # Run benchmarks and capture output
+          # Includes both benchmarks/ directory AND tests/perf/ with @pytest.mark.benchmark
+          # These are timing-sensitive tests that need stable, single-version environment
           echo "Running SLO-based performance benchmarks..."
-          pytest benchmarks/test_neuro_engine_performance.py -v -s --tb=short \
-            --junitxml=benchmark-results.xml 2>&1 | tee benchmark-output.txt
+          pytest benchmarks/test_neuro_engine_performance.py tests/perf/ -v -s --tb=short \
+            -m "benchmark" --junitxml=benchmark-results.xml 2>&1 | tee benchmark-output.txt
 
           # Extract P95 latencies from output for tracking
           # WHY: Use Python datetime for accurate timestamps instead of shell command
