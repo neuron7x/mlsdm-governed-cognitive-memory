@@ -179,9 +179,8 @@ def cmd_serve(args: argparse.Namespace) -> int:
     """Start the HTTP API server."""
     from mlsdm.entrypoints.serve import serve
 
-    dry_run = getattr(args, "dry_run", False)
     # Set environment variables from args
-    if dry_run:
+    if getattr(args, "dry_run", False):
         os.environ["MLSDM_DRY_RUN"] = "1"
     if getattr(args, "config", None):
         os.environ["CONFIG_PATH"] = args.config
@@ -201,16 +200,8 @@ def cmd_serve(args: argparse.Namespace) -> int:
     print()
 
     args_map = vars(args).copy()
-    if "dry_run" not in args_map:
-        args_map["dry_run"] = dry_run
     args_map.pop("command", None)
     return serve(**args_map)
-
-
-def _serve_cmd(args: argparse.Namespace) -> int:
-    from mlsdm.entrypoints.serve import serve
-
-    return serve(**vars(args))
 
 
 def cmd_check(args: argparse.Namespace) -> int:

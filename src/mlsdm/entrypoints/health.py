@@ -188,5 +188,5 @@ def _cli_main() -> None:
     print(json.dumps(health_check(), indent=2))
 
 
-if "__main__" == __name__ or (sys.argv and sys.argv[0].endswith("mlsdm.entrypoints.health")):
+if __name__ == "__main__" or (sys.argv and sys.argv[0].endswith("mlsdm.entrypoints.health")):
     _cli_main()

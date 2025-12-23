@@ -10,6 +10,7 @@ ALLOWED_MAIN = {
     "src/mlsdm/cli/__init__.py",
     "src/mlsdm/entrypoints/serve.py",
     "src/mlsdm/service/neuro_engine_service.py",
+    "src/mlsdm/entrypoints/health.py",
 }
 
 

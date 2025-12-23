@@ -25,10 +25,16 @@ def serve(
     reload: bool = False,
     workers: int | None = None,
     timeout_keep_alive: int | None = None,
+    profile: str | None = None,
     dry_run: bool = False,
     **extra: Any,
 ) -> int:
-    """Start the canonical HTTP API server."""
+    """
+    Start the canonical HTTP API server.
+
+    Args:
+        profile: Optional runtime profile hint (e.g., \"dev\", \"cloud\", \"agent\"); used by wrappers only.
+    """
     if dry_run:
         from mlsdm.api.app import app  # noqa: F401
 
