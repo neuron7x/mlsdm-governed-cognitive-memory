@@ -150,11 +150,10 @@ def save_system_state(
     try:
         # Ensure target directory exists before writing state/checksum files
         dirpath = os.path.dirname(os.path.abspath(filepath))
-        if dirpath:
-            try:
-                os.makedirs(dirpath, mode=0o755, exist_ok=True)
-            except OSError as e:
-                raise StateSaveError(f"Failed to create directory {dirpath}: {e}") from e
+        try:
+            os.makedirs(dirpath, mode=0o750, exist_ok=True)
+        except OSError as e:
+            raise StateSaveError(f"Failed to create directory {dirpath}: {e}") from e
 
         # Update state with new timestamp and id if provided
         update_data: dict[str, datetime | str] = {"updated_at": datetime.now(timezone.utc)}
