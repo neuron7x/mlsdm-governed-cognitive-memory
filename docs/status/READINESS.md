@@ -56,6 +56,19 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-23 — **Hardened CI neuro-cognitive-engine workflow for deterministic, auditable runs** — PR: #362
+  - **Determinism improvements**:
+    - Added `PYTHONHASHSEED: "0"` and `HYPOTHESIS_SEED: "1"` to test, coverage, e2e-tests jobs
+    - Disabled `fail-fast: false` in test matrix to report all Python version failures
+  - **Heavy-path governance**:
+    - Benchmarks job now runs on PRs only when labeled `run-benchmarks`
+    - Cognitive safety evaluation (`neuro-engine-eval`) gated behind `run-safety-eval` label for PRs
+    - Both jobs remain active for push/schedule/workflow_dispatch events
+  - **Scheduling & triggers**:
+    - Added nightly cron schedule: `'0 3 * * *'`
+    - Enabled `workflow_dispatch` for manual heavy runs
+  - **Strategy**: Fast PR feedback with blocking gates (lint, security, test, coverage, e2e), deferred heavy checks (benchmarks, safety-eval) to labels/schedule
+  - **Evidence impact**: Test determinism now seeded; Python 3.10/3.11/3.12 matrix failures will all report; benchmark/safety-eval runs tracked separately
 - 2025-12-23 — Fixed flaky benchmark test, improved CI structure (benchmarks non-blocking for PRs, added uv caching) — PR: copilot/extract-facts-from-failures
 - 2025-12-22 — Established structured readiness record and CI gate policy — PR: copilot/create-readiness-documentation
 - 2025-12-22 — Aligned readiness gate scope and workflow enforcement — PR: copilot/create-readiness-documentation
