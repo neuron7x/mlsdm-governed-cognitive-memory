@@ -56,6 +56,18 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-23 — **Documented observability hardening and stub cleanup** — PR: #365
+  - Updated `src/mlsdm/api/app.py`: graceful shutdown logs for CPU sampler cancellation
+  - Updated `src/mlsdm/api/health.py`: CPU health parsing now debugs failures instead of silently passing
+  - Updated `src/mlsdm/api/middleware.py`: Prometheus metric update failures now debug-log; priority parsing clarified
+  - Updated `src/mlsdm/engine/neuro_cognitive_engine.py`: moral filter fallback now logs exceptions instead of silent pass
+  - Updated `src/mlsdm/memory/experimental/__init__.py`: log missing torch for fractal PELM exports
+  - Updated `src/mlsdm/memory/multi_level_memory.py`: log fallback when calibration defaults unavailable
+  - Updated `src/mlsdm/observability/memory_telemetry.py`: telemetry now debugs suppressed errors across PELM/synaptic paths
+  - Updated `src/mlsdm/observability/metrics.py`: request/aphasia metric failures now debug-log
+  - Updated `src/mlsdm/observability/tracing.py`: No-op spans now capture attributes/events/exceptions for diagnostics
+  - Updated `src/mlsdm/sdk/neuro_engine_client.py`, `src/mlsdm/state/system_state_store.py`, `src/mlsdm/security/payload_scrubber.py`, `src/mlsdm/utils/*`: removed silent `pass` placeholders and improved cleanup logging
+  - **Evidence impact**: Targeted tracing gate passed (`pytest tests/observability/test_tracing_no_otel.py -q`); readiness check passes locally (`python scripts/readiness_check.py`)
 - 2025-12-23 — **Hardened CI neuro-cognitive-engine workflow for deterministic, auditable runs** — PR: #362
   - **Determinism improvements**:
     - Added `PYTHONHASHSEED: "0"` and `HYPOTHESIS_SEED: "1"` to test, coverage, e2e-tests jobs
