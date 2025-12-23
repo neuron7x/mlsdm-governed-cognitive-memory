@@ -56,6 +56,31 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-23 — **Hardened dependency supply chain: enforced pip≥25.3, added dependency drift lock** — PR: #363
+  - **Objective**: Eliminate security debt item TD-001 (pip CVE surface + dependency drift risk)
+  - **Changes**:
+    - **Pip version enforcement**: Updated 11 CI workflows (aphasia-ci, chaos-tests, ci-neuro-cognitive-engine, ci-smoke, citation-integrity, perf-resilience, prod-gate, property-tests, readiness-evidence, release, sast-scan) to enforce `pip>=25.3` in Python setup steps
+    - **Dependency drift gate**: Added `scripts/check_dependency_drift.py` to validate `requirements.txt` ↔ `pyproject.toml` alignment with allowlist for hardened pins
+    - **Security workflow enhancement**: ci-neuro-cognitive-engine workflow now runs drift check and uploads pip-audit JSON artifact
+    - **Build hardening**: Updated Dockerfile.neuro-engine-service to enforce `pip>=25.3` during image build
+    - **Developer tooling**: Updated Makefile pip install command, updated troubleshooting docs
+    - **Requirements cleanup**: Aligned requirements.txt to pyproject.toml; removed jupyter stack (nbconvert CVE mitigation); kept matplotlib baseline
+  - **Verification commands**:
+    - Drift check: `python scripts/check_dependency_drift.py`
+    - Pip version gate: check job `security` in `.github/workflows/ci-neuro-cognitive-engine.yml`
+    - Pip audit: artifact `pip-audit-report` from workflow run
+  - **Test coverage**: `tests/unit/test_check_dependency_drift.py` — validates drift detection logic, allowlist behavior, and pass/fail scenarios
+  - **Evidence required**:
+    - Successful CI run of ci-neuro-cognitive-engine workflow showing:
+      - Job `security` PASS with pip version check ≥25.3
+      - Drift check PASS (`scripts/check_dependency_drift.py` exit 0)
+      - pip-audit JSON artifact uploaded
+    - All 11 updated workflows execute without pip-related failures
+  - **Debt lock**:
+    - pip version gate in security workflow (fails CI if pip < 25.3 detected)
+    - drift check in CI pipeline (fails if requirements.txt diverges from pyproject.toml outside allowlist)
+    - Unit tests covering drift check behavior
+  - **Risk mitigation**: CVE surface reduced by enforcing patched pip; dependency reproducibility improved; supply chain drift detectable in CI
 - 2025-12-23 — Fixed flaky benchmark test, improved CI structure (benchmarks non-blocking for PRs, added uv caching) — PR: copilot/extract-facts-from-failures
 - 2025-12-22 — Established structured readiness record and CI gate policy — PR: copilot/create-readiness-documentation
 - 2025-12-22 — Aligned readiness gate scope and workflow enforcement — PR: copilot/create-readiness-documentation
