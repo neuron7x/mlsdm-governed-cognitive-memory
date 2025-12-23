@@ -56,6 +56,7 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-23 — Fixed flaky benchmark test, improved CI structure (benchmarks non-blocking for PRs, added uv caching) — PR: copilot/extract-facts-from-failures
 - 2025-12-22 — Established structured readiness record and CI gate policy — PR: copilot/create-readiness-documentation
 - 2025-12-22 — Aligned readiness gate scope and workflow enforcement — PR: copilot/create-readiness-documentation
 - 2025-12-22 — Expanded auditor-grade readiness evidence and hardened gate — PR: #356

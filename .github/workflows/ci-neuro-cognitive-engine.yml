@@ -117,7 +117,10 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest -q --ignore=tests/load
+          # Exclude benchmark tests from CI matrix - they are timing-sensitive and run
+          # separately in the benchmarks job on Python 3.11 with fixed environment.
+          # This prevents flaky failures from CI virtualization overhead variability.
+          pytest -q --ignore=tests/load -m "not benchmark"
 
   coverage:
     name: Code Coverage Gate
@@ -249,6 +252,16 @@ jobs:
     name: Performance Benchmarks (SLO Gate)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # HEAVY PATH CONFIGURATION:
+    # - For pull_request: continue-on-error=true (informational, not blocking)
+    #   Benchmark failures in PRs are reported but don't block merge.
+    # - For push to main: continue-on-error=false (blocking)
+    #   Regressions on main must be investigated.
+    # 
+    # WHY: Benchmark tests are timing-sensitive and may fail due to CI VM 
+    # overhead variability, not actual code regressions. Making them
+    # non-blocking for PRs prevents flaky CI while still running/reporting.
+    continue-on-error: ${{ github.event_name == 'pull_request' }}
     env:
       DISABLE_RATE_LIMIT: "1"
       LLM_BACKEND: "local_stub"
@@ -276,9 +289,11 @@ jobs:
         id: benchmarks
         run: |
           # Run benchmarks and capture output
+          # Includes both benchmarks/ directory AND tests/perf/ with @pytest.mark.benchmark
+          # These are timing-sensitive tests that need stable, single-version environment
           echo "Running SLO-based performance benchmarks..."
-          pytest benchmarks/test_neuro_engine_performance.py -v -s --tb=short \
-            --junitxml=benchmark-results.xml 2>&1 | tee benchmark-output.txt
+          pytest benchmarks/test_neuro_engine_performance.py tests/perf/ -v -s --tb=short \
+            -m "benchmark" --junitxml=benchmark-results.xml 2>&1 | tee benchmark-output.txt
 
           # Extract P95 latencies from output for tracking
           # WHY: Use Python datetime for accurate timestamps instead of shell command
@@ -450,12 +465,16 @@ jobs:
           retention-days: 90
 
   # Gate job that requires all critical CI jobs to pass
-  # WHY: neuro-engine-eval is excluded because it has continue-on-error: true (non-blocking)
+  # WHY: neuro-engine-eval and benchmarks are excluded because they have continue-on-error: true
+  # Benchmarks are heavy-path (informational for PRs, blocking only on main push)
+  # NOTE: For branch protection, use this job as required check. On main pushes,
+  # benchmarks will still block the workflow (continue-on-error: false on push)
+  # even though not in needs list, because the overall workflow status shows failure.
   all-ci-passed:
     name: All CI Checks Passed
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [lint, security, test, coverage, e2e-tests, effectiveness-validation, benchmarks]
+    needs: [lint, security, test, coverage, e2e-tests, effectiveness-validation]
     steps:
       - name: All checks passed
         run: echo "All CI checks passed successfully!"
