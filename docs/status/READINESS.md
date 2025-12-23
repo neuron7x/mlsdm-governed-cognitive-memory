@@ -17,7 +17,7 @@ Blocking issues: 3
 | Embedding cache / retrieval | PARTIAL | `tests/unit/test_embedding_cache.py` | Cache behavior tested; no dated execution for this commit. |
 | Moral filter & safety invariants | PARTIAL | `tests/validation/test_moral_filter_effectiveness.py`, `tests/property/test_moral_filter_properties.py` | Safety metrics tested; CI evidence missing for this branch. |
 | Cognitive rhythm & state management | PARTIAL | `tests/validation/test_wake_sleep_effectiveness.py`, `tests/validation/test_rhythm_state_machine.py` | Rhythm behavior validated in tests; not re-run here. |
-| HTTP API surface (health/inference) | PARTIAL | `tests/api/test_health.py`, `tests/e2e/test_http_inference_api.py` | Health endpoint optimized with async CPU monitoring (PR #359); perf validation pending. |
+| HTTP API surface (health/inference) | IMPROVED | `tests/api/test_health.py`, `tests/e2e/test_http_inference_api.py`, `tests/e2e/conftest.py` | Health endpoint race condition fixed in PR #368; E2E fixture now handles async initialization |
 | Observability pipeline (logging/metrics/tracing) | NOT VERIFIED | `tests/observability/test_aphasia_logging.py`, `tests/observability/test_aphasia_metrics.py`, `docs/OBSERVABILITY_GUIDE.md` | Instrumentation documented; no execution evidence in this PR. |
 | CI / quality gates (coverage, property tests) | NOT VERIFIED | `.github/workflows/readiness-evidence.yml` (jobs: deps_smoke, unit, coverage_gate), `.github/workflows/property-tests.yml`, `coverage_gate.sh` | Evidence workflow (uv-based) runs on pull_request/workflow_dispatch; awaiting current run artifacts for this PR. |
 | Config & calibration pipeline | NOT VERIFIED | `config/`, `docs/CONFIGURATION_GUIDE.md`, `tests/integration/test_public_api.py` | Config paths defined; validation runs absent for this commit. |
@@ -56,6 +56,12 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-23 — **Fixed E2E test race condition in HTTP client fixture** — PR: #368
+  - Updated `tests/e2e/conftest.py`: Added readiness verification with retry logic
+  - Implemented 200ms warmup delay + 5 retry attempts for `/health/ready` endpoint
+  - Ensures lifespan startup completes before test execution (fixes CPU monitoring race condition)
+  - **Evidence impact**: Prevents 503 Service Unavailable errors in `test_e2e_health_endpoints`
+  - **Testing posture**: E2E fixture now robust against async initialization timing variability
 - 2025-12-23 — **Documented observability hardening and stub cleanup** — PR: #365
   - Updated `src/mlsdm/api/app.py`: graceful shutdown logs for CPU sampler cancellation
   - Updated `src/mlsdm/api/health.py`: CPU health parsing now debugs failures instead of silently passing
