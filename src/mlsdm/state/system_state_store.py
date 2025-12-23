@@ -151,7 +151,7 @@ def save_system_state(
         # Ensure target directory exists before writing state/checksum files
         dirpath = os.path.dirname(os.path.abspath(filepath))
         try:
-            os.makedirs(dirpath, mode=0o750, exist_ok=True)
+            os.makedirs(dirpath, exist_ok=True)
         except OSError as e:
             raise StateSaveError(f"Failed to create directory {dirpath}: {e}") from e
 
