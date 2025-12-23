@@ -1,9 +1,10 @@
 import hashlib
 import logging
 import os
+import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 import psutil
@@ -48,6 +49,9 @@ from mlsdm.utils.security_logger import SecurityEventType, get_security_logger
 
 logger = logging.getLogger(__name__)
 security_logger = get_security_logger()
+
+# Global reference to CPU background sampler task
+_cpu_background_task: Optional[asyncio.Task] = None
 
 
 def _get_env_bool(key: str, default: bool = False) -> bool:
@@ -119,42 +123,51 @@ _neuro_engine = build_neuro_engine_from_env(config=_engine_config)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Modern lifespan context manager for FastAPI startup/shutdown events."""
+    global _cpu_background_task
+    
     # STARTUP
-    # Initialize lifecycle manager
     lifecycle = get_lifecycle_manager()
     await lifecycle.startup()
-
+    
     # Register cleanup tasks
     lifecycle.register_cleanup(lambda: cleanup_memory_manager(_manager))
-
-    # Initialize psutil CPU monitoring to ensure consistent readings
-    # WHY: First call to cpu_percent(interval=0) returns unreliable value (often 0.0)
-    #      Priming with interval=0.1 ensures subsequent interval=0 calls return actual CPU usage
-    #      Fixes Python 3.11 test flakiness in test_ready_legacy_readiness_alias_works
+    
+    # Start CPU background sampler for non-blocking health checks
+    from mlsdm.api.health import _cpu_background_sampler
+    _cpu_background_task = asyncio.create_task(_cpu_background_sampler())
+    logger.info("Started CPU background sampler for health checks")
+    
+    # Legacy warmup still useful as immediate fallback
     try:
         psutil.cpu_percent(interval=0.1)
     except Exception as e:
         logger.warning(f"Failed to initialize CPU monitoring: {e}")
-
+    
     # Log system startup
     security_logger.log_system_event(
         SecurityEventType.STARTUP,
         "MLSDM Governed Cognitive Memory API started",
         additional_data={"version": "1.0.0", "dimension": _manager.dimension},
     )
-
+    
     yield
-
+    
     # SHUTDOWN
+    # Cancel CPU background sampler gracefully
+    if _cpu_background_task and not _cpu_background_task.done():
+        _cpu_background_task.cancel()
+        try:
+            await _cpu_background_task
+        except asyncio.CancelledError:
+            pass
+        logger.info("Stopped CPU background sampler")
+    
     # Log system shutdown
     security_logger.log_system_event(
         SecurityEventType.SHUTDOWN, "MLSDM Governed Cognitive Memory API shutting down"
     )
-
-    # Shutdown OpenTelemetry tracing (flush pending spans)
+    
     shutdown_tracing()
-
-    # Execute graceful shutdown
     await lifecycle.shutdown()
 
 
