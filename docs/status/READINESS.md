@@ -1,5 +1,5 @@
 # System Readiness Status
-Last updated: 2025-12-22
+Last updated: 2025-12-23
 Owner: neuron7x / MLSDM maintainers
 Scope: MLSDM cognitive engine repository (src/, tests/, deploy/, workflows)
 
@@ -19,7 +19,7 @@ Blocking issues: 3
 | Cognitive rhythm & state management | PARTIAL | `tests/validation/test_wake_sleep_effectiveness.py`, `tests/validation/test_rhythm_state_machine.py` | Rhythm behavior validated in tests; not re-run here. |
 | HTTP API surface (health/inference) | NOT VERIFIED | `tests/api/test_health.py`, `tests/e2e/test_http_inference_api.py` | No current passing run for API endpoints in this PR. |
 | Observability pipeline (logging/metrics/tracing) | NOT VERIFIED | `tests/observability/test_aphasia_logging.py`, `tests/observability/test_aphasia_metrics.py`, `docs/OBSERVABILITY_GUIDE.md` | Instrumentation documented; no execution evidence in this PR. |
-| CI / quality gates (coverage, property tests) | NOT VERIFIED | `.github/workflows/readiness-evidence.yml` (jobs: deps_smoke, unit, coverage_gate), `.github/workflows/property-tests.yml`, `coverage_gate.sh` | Evidence workflow (uv-based) added; awaiting current run artifacts for this PR. |
+| CI / quality gates (coverage, property tests) | NOT VERIFIED | `.github/workflows/readiness-evidence.yml` (jobs: deps_smoke, unit, coverage_gate), `.github/workflows/property-tests.yml`, `coverage_gate.sh` | Evidence workflow (uv-based) runs on pull_request/workflow_dispatch; awaiting current run artifacts for this PR. |
 | Config & calibration pipeline | NOT VERIFIED | `config/`, `docs/CONFIGURATION_GUIDE.md`, `tests/integration/test_public_api.py` | Config paths defined; validation runs absent for this commit. |
 | CLI / entrypoints | NOT VERIFIED | `src/mlsdm/entrypoints/`, `Makefile` | Entrypoints exist; no execution evidence tied to this revision. |
 | Benchmarks / performance tooling | NOT VERIFIED | `tests/perf/test_slo_api_endpoints.py`, `benchmarks/README.md` | Perf tooling present; benchmarks not executed in this PR. |
@@ -48,7 +48,7 @@ Blocking issues: 3
 - Alerting: NOT VERIFIED — Evidence: `deploy/monitoring/alertmanager-rules.yaml`; no validation run provided.
 
 ## Known Blocking Gaps
-1. Evidence jobs pending execution: `.github/workflows/readiness-evidence.yml` (deps_smoke, unit, coverage_gate) need a passing run with artifacts for this commit.
+1. Evidence jobs pending execution: `.github/workflows/readiness-evidence.yml` (deps_smoke, unit, coverage_gate) now run on pull_request/workflow_dispatch; need a passing run with artifacts for this commit.
 2. Coverage gate unverified: `uv run bash ./coverage_gate.sh` (readiness-evidence job: coverage_gate) not yet executed successfully in CI; need coverage.xml/log artifacts.
 3. Integration and property suites unverified: need workflow_dispatch run with `python -m pytest tests/integration -q --disable-warnings --maxfail=1` and `python -m pytest tests/property -q --maxfail=3`, with artifacts.
 4. Observability pipeline unvalidated: `python -m pytest tests/observability/ -v` not executed; need metrics/logging evidence.
