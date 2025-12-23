@@ -372,6 +372,7 @@ class ConfigLoader:
             return False
 
         # Try integer
+        # Conversion precedence: attempt integers first, then floats, else return raw string
         try:
             return int(value)
         except ValueError:
