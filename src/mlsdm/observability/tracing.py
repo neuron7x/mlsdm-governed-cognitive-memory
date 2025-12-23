@@ -156,7 +156,11 @@ class NoOpTracer:
         context: Any = None,
     ) -> Iterator[NoOpSpan]:
         """No-op span context manager."""
-        yield NoOpSpan()
+        span = NoOpSpan()
+        span.set_attribute("span_name", name)
+        if attributes:
+            span.set_attributes(attributes)
+        yield span
 
 
 # Type alias for functions that return either a real tracer or NoOpTracer
