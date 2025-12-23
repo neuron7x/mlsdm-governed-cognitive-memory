@@ -142,7 +142,6 @@ class NoOpSpan:
 
     def __exit__(self, *args: Any) -> None:
         """No-op context manager exit."""
-        return None
 
 
 class NoOpTracer:
