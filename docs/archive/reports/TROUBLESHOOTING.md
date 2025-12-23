@@ -30,7 +30,7 @@ ERROR: Cannot install mlsdm because these package versions have conflicting depe
    ```bash
    python -m venv mlsdm-env
    source mlsdm-env/bin/activate  # On Windows: mlsdm-env\Scripts\activate
-   pip install --upgrade pip
+   pip install "pip>=25.3"
    pip install -r requirements.txt
    ```
 

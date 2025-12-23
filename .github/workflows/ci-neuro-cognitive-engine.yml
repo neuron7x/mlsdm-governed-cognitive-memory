@@ -34,7 +34,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install "pip>=25.3"
           pip install -r requirements.txt
           pip install -e ".[dev]"
 
@@ -69,17 +69,48 @@ jobs:
             requirements.txt
             pyproject.toml
 
+      - name: Check dependency drift (pyproject vs requirements)
+        run: python scripts/check_dependency_drift.py
+
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install "pip>=25.3"
           pip install pip-audit
           pip install -r requirements.txt
+
+      - name: Verify pip version (CVE guard)
+        env:
+          PIP_MIN_VERSION: "25.3"
+        run: |
+          python - <<'PY'
+          import os
+          import sys
+          import subprocess
+          import pip
+          try:
+              from packaging.version import Version
+          except ImportError:
+              subprocess.check_call([sys.executable, "-m", "pip", "install", "packaging>=24.0"])
+              from packaging.version import Version
+
+          required = Version(os.environ.get("PIP_MIN_VERSION", "25.3"))
+          current = Version(pip.__version__)
+          print(f"pip version: {current}")
+          if current < required:
+              sys.exit(f"pip {current} is below required {required}")
+          PY
 
       - name: Run pip-audit for vulnerability scanning
         run: |
           # WHY: Audit only requirements.txt dependencies to avoid false positives from system packages
-          # Note: --format=json can be added for structured output if needed by reporting tools
-          pip-audit --requirement requirements.txt --progress-spinner=off
+          pip-audit --requirement requirements.txt --progress-spinner=off --format json > pip-audit.json
+
+      - name: Upload pip-audit report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: pip-audit-report
+          path: pip-audit.json
 
       - name: Report status
         if: failure()
@@ -111,7 +142,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install "pip>=25.3"
           pip install -r requirements.txt
           pip install -e ".[test]"
 
@@ -145,7 +176,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install "pip>=25.3"
           pip install -r requirements.txt
           pip install -e ".[test]"
 
@@ -199,7 +230,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install "pip>=25.3"
           pip install -r requirements.txt
           pip install -e ".[test]"
 
@@ -230,7 +261,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install "pip>=25.3"
           pip install -r requirements.txt
           pip install -e ".[test]"
 
@@ -281,7 +312,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install "pip>=25.3"
           pip install -r requirements.txt
           pip install -e ".[test]"
 
@@ -440,7 +471,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install "pip>=25.3"
           pip install -r requirements.txt
           pip install -e ".[test]"
 

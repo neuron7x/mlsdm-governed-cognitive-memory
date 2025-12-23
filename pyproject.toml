@@ -215,6 +215,27 @@ show_missing = true
 # Skip files with 0% coverage (intentionally excluded)
 skip_empty = true
 
+[tool.mlsdm.dependency_drift]
+# Dependencies that are intentionally pinned in requirements.txt but are not part of the
+# core dependency declarations (e.g., transitive hardening pins).
+allowlist = [
+    # Visualization baseline without pulling the full jupyter stack (nbconvert CVE)
+    "matplotlib>=3.8.4",
+    "certifi>=2025.11.12",
+    "cryptography>=46.0.3",
+    "idna>=3.11",
+    "jinja2>=3.1.6",
+    "setuptools>=80.9.0",
+    "urllib3>=2.6.2",
+]
+checked_optional_groups = [
+    "observability",
+    "embeddings",
+    "dev",
+    "test",
+    # Intentionally exclude "neurolang" optional extra to avoid forcing heavyweight torch installs in CI.
+]
+
 [tool.ruff]
 target-version = "py310"
 line-length = 100
