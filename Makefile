@@ -94,7 +94,7 @@ test-package:
 	@echo "Testing package installation in fresh venv..."
 	rm -rf /tmp/mlsdm-test-venv
 	python -m venv /tmp/mlsdm-test-venv
-	/tmp/mlsdm-test-venv/bin/pip install --upgrade pip -q
+	/tmp/mlsdm-test-venv/bin/pip install --upgrade "pip>=25.3" -q
 	/tmp/mlsdm-test-venv/bin/pip install dist/*.whl -q
 	/tmp/mlsdm-test-venv/bin/python scripts/test_package_install.py
 	rm -rf /tmp/mlsdm-test-venv

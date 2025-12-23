@@ -38,7 +38,7 @@ Quality gates recommended for every merge:
 | AUD-CODE-002 | Code / Security | Medium | Open | `src/mlsdm/memory/*` | Memory entries lack provenance metadata | Provenance tracking (R015) not modeled | Hallucination propagation and forensics gaps |
 | AUD-TEST-001 | Tests | Medium | Open | `Makefile` (`pytest --ignore=tests/load`) | Load/stress suite excluded from default target | Default test target skips `tests/load` to save time | Perf/resource regressions may ship unnoticed |
 | AUD-CI-001 | CI/CD | Low | Open | `.github/workflows/ci-neuro-cognitive-engine.yml` | PR workflows can sit in `action_required` with zero jobs | Approval gating for PR workflows | PRs may appear green while checks are unrun |
-| AUD-DEP-001 | Dependencies | Medium | Open | `requirements*.txt`, `uv.lock` | pip-audit reports 1 unresolved vulnerability (2025-12-19) | Vulnerable transitive not yet patched | Security exposure until patched |
+| AUD-DEP-001 | Dependencies | Medium | Closed | `requirements*.txt`, `uv.lock` | pip-audit reports **0** vulnerabilities (2025-12-23) | pip pinned to >=25.3, dependency drift gate added | CI blocks on drift/vulns |
 | AUD-DOC-001 | Documentation | Low | Open | `README.md`, `GETTING_STARTED.md` | Quick start docs omit coverage gate/load-test expectations | Docs focus on functional usage, not gates | Contributors may skip required quality checks |
 
 ### Actions (how to close)
@@ -50,7 +50,7 @@ Quality gates recommended for every merge:
 | AUD-CODE-002 | Inject synthetic memory entry; no source/policy trace recorded | Add origin/policy metadata to memory models; guard tests rejecting untrusted entries | Provenance fields enforced in models; tests assert rejection of untrusted entries | `ENGINEERING_DEFICIENCIES_REGISTER.md` SEC-S001 (R015) |
 | AUD-TEST-001 | Run `make test`; load suite is skipped | Schedule nightly CI job for `tests/load`; note in release checklist | Nightly job green or fails on regression; checklist references load run | `Makefile` line 51; `TESTING_STRATEGY.md` (load tests optional) |
 | AUD-CI-001 | Open PR from non-trusted branch; workflow shows `action_required` and no jobs | Enforce branch protection requiring successful workflow; auto-request approval/rerun | Workflow transitions to `success` after approval; branch protection blocks merge otherwise | GitHub Actions CI (approval gating observed 2025-12-20) |
-| AUD-DEP-001 | Run `pip-audit` -> reports 1 vulnerability | Patch/pin dependency and re-run `pip-audit`; add scheduled CI step | `pip-audit` returns 0 vulns in CI | `TECHNICAL_DEBT_REGISTER.md` (pip-audit row, 2025-12-19) |
+| AUD-DEP-001 | Run `pip-audit` -> reports 1 vulnerability | Patch/pin dependency and re-run `pip-audit`; add scheduled CI step | `pip-audit` returns 0 vulns in CI; dependency drift job passes | `ci-neuro-cognitive-engine.yml` (`dependency-drift`, `security`), `pip-audit --requirement requirements.txt` |
 | AUD-DOC-001 | Read quick-start docs; no mention of `coverage_gate.sh` or load tests | Add short quality-gate note to quick-start docs and release checklist | Docs updated; release checklist references gates | `README.md`, `GETTING_STARTED.md` (quick start sections) |
 
 ---

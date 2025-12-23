@@ -28,6 +28,7 @@ These jobs **BLOCK** merges and releases if they fail:
 | **Semgrep (container)** | `sast-scan.yml` | `semgrep` / Run Semgrep | BLOCKING | ✅ No `continue-on-error` |
 | **pip-audit** | `sast-scan.yml` | `dependency-audit` / Run pip-audit | BLOCKING | ✅ No `continue-on-error` |
 | **Gitleaks (container)** | `sast-scan.yml` | `secrets-scan` / Run Gitleaks | BLOCKING | ✅ No `continue-on-error` |
+| **Dependency drift guard** | `ci-neuro-cognitive-engine.yml` | `dependency-drift` / Verify pyproject ⇔ requirements ⇔ uv.lock | BLOCKING | ✅ No `continue-on-error` |
 | **pip-audit** | `ci-neuro-cognitive-engine.yml` | `security` / Run pip-audit | BLOCKING | ✅ No `continue-on-error` |
 | **pip-audit** | `prod-gate.yml` | `preflight` / Security vulnerability scan | BLOCKING | ✅ No `continue-on-error` |
 | **Trivy** | `release.yml` | `security-scan` / Run Trivy | BLOCKING | ✅ No `continue-on-error` |

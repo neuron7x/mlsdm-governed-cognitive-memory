@@ -19,6 +19,23 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from packaging.version import Version
+
+
+MIN_PIP_VERSION = Version("25.3")
+
+
+def ensure_minimum_pip() -> None:
+    """Ensure pip meets the minimum secured version."""
+    try:
+        output = subprocess.check_output([sys.executable, "-m", "pip", "--version"], text=True)
+        current = Version(output.split()[1])
+    except Exception:
+        current = Version("0")
+
+    if current < MIN_PIP_VERSION:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", f"pip>={MIN_PIP_VERSION}"])
+
 
 def check_pip_audit_installed() -> bool:
     """Check if pip-audit is installed."""
@@ -33,6 +50,7 @@ def install_pip_audit() -> bool:
     """Install pip-audit if not present."""
     print("Installing pip-audit...")
     try:
+        ensure_minimum_pip()
         subprocess.run(
             [sys.executable, "-m", "pip", "install", "pip-audit"], capture_output=True, check=True
         )
@@ -55,6 +73,8 @@ def run_pip_audit(fix: bool = False) -> tuple[bool, dict[str, Any]]:
     print("\n" + "=" * 60)
     print("Running dependency vulnerability scan with pip-audit...")
     print("=" * 60)
+
+    ensure_minimum_pip()
 
     cmd = ["pip-audit", "--format", "json"]
     if fix:

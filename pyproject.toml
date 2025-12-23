@@ -74,6 +74,14 @@ dev = [
     "types-requests>=2.32.0",
     "sentence-transformers>=3.0.0",  # Include embeddings in dev for full testing
 ]
+security = [
+    "certifi>=2025.11.12",
+    "cryptography>=46.0.3",
+    "jinja2>=3.1.6",
+    "urllib3>=2.6.2",
+    "setuptools>=80.9.0",
+    "idna>=3.11",
+]
 docs = [
     "sphinx>=7.0.0",
     "sphinx-rtd-theme>=2.0.0",
@@ -87,7 +95,6 @@ test = [
 ]
 visualization = [
     "matplotlib>=3.8.4",
-    "jupyter>=1.0.0",
 ]
 
 [project.urls]
