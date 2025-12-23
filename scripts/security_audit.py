@@ -30,7 +30,7 @@ def ensure_minimum_pip() -> None:
     try:
         output = subprocess.check_output([sys.executable, "-m", "pip", "--version"], text=True)
         current = Version(output.split()[1])
-    except Exception:
+    except (subprocess.CalledProcessError, FileNotFoundError, IndexError, ValueError):
         current = Version("0")
 
     if current < MIN_PIP_VERSION:
