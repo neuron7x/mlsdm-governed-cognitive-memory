@@ -129,7 +129,8 @@ def e2e_http_client():
     Create HTTP test client for E2E API testing.
 
     This fixture provides a FastAPI TestClient for testing
-    HTTP endpoints directly.
+    HTTP endpoints directly. Initializes health check components
+    to ensure readiness checks work properly in E2E tests.
 
     Yields:
         FastAPI TestClient instance.
@@ -140,6 +141,26 @@ def e2e_http_client():
     from fastapi.testclient import TestClient
 
     from mlsdm.api.app import app
+    from mlsdm.api.health import set_cognitive_controller, set_memory_manager, set_neuro_engine
+    from mlsdm.engine import build_neuro_engine_from_env
+
+    # Initialize engine and components for health checks
+    config = NeuroEngineConfig(
+        dim=384,
+        capacity=1000,
+        enable_fslgs=False,
+        enable_metrics=True,
+        initial_moral_threshold=0.5,
+    )
+    engine = build_neuro_engine_from_env(config=config)
+
+    # Set global references for health checks
+    if hasattr(engine, "_mlsdm"):
+        set_neuro_engine(engine)
+    if hasattr(engine, "controller"):
+        set_cognitive_controller(engine.controller)
+    if hasattr(engine, "manager"):
+        set_memory_manager(engine.manager)
 
     with TestClient(app) as client:
         yield client
