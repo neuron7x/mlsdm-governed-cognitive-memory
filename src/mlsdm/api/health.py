@@ -489,15 +489,15 @@ async def _compute_readiness(response: Response) -> ReadinessStatus:
     cpu_healthy, cpu_details = _check_cpu_health()
     components["system_cpu"] = ComponentStatus(healthy=cpu_healthy, details=cpu_details)
     checks["cpu_available"] = cpu_healthy
-        if not cpu_healthy:
-            all_ready = False
-            # Extract CPU percent from details if available
-            if cpu_details and "usage:" in cpu_details:
-                try:
-                    pct_str = cpu_details.split("usage:")[1].strip().rstrip("%")
-                    details["system_cpu_percent"] = float(pct_str)
-                except (IndexError, ValueError):
-                    logger.debug("Unable to parse CPU usage percent from details: %s", cpu_details)
+    if not cpu_healthy:
+        all_ready = False
+        # Extract CPU percent from details if available
+        if cpu_details and "usage:" in cpu_details:
+            try:
+                pct_str = cpu_details.split("usage:")[1].strip().rstrip("%")
+                details["system_cpu_percent"] = float(pct_str)
+            except (IndexError, ValueError):
+                logger.debug("Unable to parse CPU usage percent from details: %s", cpu_details)
 
     # Set response status code
     if all_ready:

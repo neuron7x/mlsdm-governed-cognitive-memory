@@ -381,9 +381,6 @@ class ConfigLoader:
             except ValueError:
                 return value
 
-        # Return as string
-        return value
-
     @staticmethod
     def load_validated_config(path: str) -> SystemConfig:
         """Load and return validated configuration as SystemConfig object.
