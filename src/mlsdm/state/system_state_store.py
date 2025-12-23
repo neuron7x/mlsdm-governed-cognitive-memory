@@ -150,8 +150,7 @@ def save_system_state(
     try:
         # Ensure target directory exists before writing state/checksum files
         dirpath = os.path.dirname(os.path.abspath(filepath))
-        if dirpath and not os.path.exists(dirpath):
-            os.makedirs(dirpath, exist_ok=True)
+        os.makedirs(dirpath, exist_ok=True)
 
         # Update state with new timestamp and id if provided
         update_data: dict[str, datetime | str] = {"updated_at": datetime.now(timezone.utc)}
