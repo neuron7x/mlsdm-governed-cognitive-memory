@@ -22,8 +22,8 @@ import os
 import time
 from typing import Any
 
-DEFAULT_CONFIG_PATH = "config/default_config.yaml"
-STRICT_CONFIG_MODES = {"cloud-prod", "agent-api"}
+from mlsdm.config.constants import DEFAULT_CONFIG_PATH, STRICT_CONFIG_MODES
+from mlsdm.utils.config_loader import ConfigLoader
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +51,10 @@ def _check_config_valid() -> tuple[bool, str, bool]:
         return False, f"config_missing: {config_path}", False
 
     if config_path != DEFAULT_CONFIG_PATH and os.path.exists(DEFAULT_CONFIG_PATH):
+        try:
+            ConfigLoader.load_config(DEFAULT_CONFIG_PATH)
+        except (FileNotFoundError, ValueError) as exc:  # pragma: no cover - surfaces in health only
+            return False, f"config_fallback_error:{exc}", False
         degraded = True
         return True, f"config_missing_fallback:{config_path}->{DEFAULT_CONFIG_PATH}", degraded
 

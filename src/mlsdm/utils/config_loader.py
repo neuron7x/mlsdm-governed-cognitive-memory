@@ -328,6 +328,8 @@ class ConfigLoader:
         for env_key, env_value in os.environ.items():
             if not env_key.startswith(prefix):
                 continue
+            if env_key == "MLSDM_RUNTIME_MODE":
+                continue
 
             # Remove prefix and convert to lowercase
             config_key = env_key[len(prefix) :].lower()

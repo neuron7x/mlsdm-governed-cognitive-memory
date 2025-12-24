@@ -13,8 +13,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, Field
 
-DEFAULT_CONFIG_PATH = "config/default_config.yaml"
-STRICT_CONFIG_MODES = {"cloud-prod", "agent-api"}
+from mlsdm.config.constants import DEFAULT_CONFIG_PATH, STRICT_CONFIG_MODES
 
 # Try to import OpenTelemetry, but allow graceful degradation
 try:
@@ -80,19 +79,9 @@ def _load_config_with_runtime_policy(config_path: str) -> tuple[dict[str, Any], 
     runtime_mode = os.getenv("MLSDM_RUNTIME_MODE", "dev").lower()
     strict_config = runtime_mode in STRICT_CONFIG_MODES
     fallback_path = DEFAULT_CONFIG_PATH
-    runtime_env = os.environ.get("MLSDM_RUNTIME_MODE")
-
-    def _load_path(path: str) -> dict[str, Any]:
-        if runtime_env is None:
-            return ConfigLoader.load_config(path)
-        os.environ.pop("MLSDM_RUNTIME_MODE", None)
-        try:
-            return ConfigLoader.load_config(path)
-        finally:
-            os.environ["MLSDM_RUNTIME_MODE"] = runtime_env
 
     try:
-        return _load_path(config_path), config_path, False
+        return ConfigLoader.load_config(config_path), config_path, False
     except FileNotFoundError:
         if strict_config:
             logger.error(
@@ -100,11 +89,11 @@ def _load_config_with_runtime_policy(config_path: str) -> tuple[dict[str, Any], 
             )
             raise
         if config_path == fallback_path:
-            logger.warning("Config file not found at %s; no fallback available", config_path)
+            logger.error("Config file not found at %s; no fallback available", config_path)
             raise
 
         try:
-            fallback_config = _load_path(fallback_path)
+            fallback_config = ConfigLoader.load_config(fallback_path)
         except FileNotFoundError:
             logger.error("Fallback configuration file missing: %s", fallback_path)
             raise

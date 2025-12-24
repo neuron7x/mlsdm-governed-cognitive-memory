@@ -245,8 +245,9 @@ class TestCLIServe:
         monkeypatch.setenv("CONFIG_PATH", str(tmp_path / "missing.yaml"))
         monkeypatch.setenv("MLSDM_RUNTIME_MODE", "dev")
 
+        removed_modules = []
         for mod in ("mlsdm.api.app", "mlsdm.entrypoints.serve"):
-            sys.modules.pop(mod, None)
+            removed_modules.append((mod, sys.modules.pop(mod, None)))
 
         monkeypatch.setattr("uvicorn.run", lambda *args, **kwargs: None)
 
@@ -262,12 +263,17 @@ class TestCLIServe:
 
         from mlsdm.cli import cmd_serve
 
-        result = cmd_serve(args)
-        assert result == 0
+        try:
+            result = cmd_serve(args)
+            assert result == 0
 
-        import mlsdm.api.app as app_mod
+            import mlsdm.api.app as app_mod
 
-        assert app_mod._effective_config_path == str(custom_config)
+            assert app_mod._effective_config_path == str(custom_config)
+        finally:
+            for name, module in removed_modules:
+                if module is not None:
+                    sys.modules[name] = module
 
 
 if __name__ == "__main__":
