@@ -16,7 +16,7 @@ jobs:
   coverage-badge:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: github.repository_owner == 'neuron7x' && github.ref == 'refs/heads/main'
+    if: github.repository == 'neuron7x/mlsdm' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
     
@@ -71,5 +71,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B badges
           git add coverage.svg
-          git commit -m "chore: update coverage badge [skip ci]" || { echo "No changes to commit"; exit 0; }
-          git push origin badges || { echo "Failed to push badges branch"; exit 1; }
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "chore: update coverage badge [skip ci]"
+          git push origin badges
