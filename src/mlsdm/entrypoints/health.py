@@ -22,25 +22,39 @@ import os
 import time
 from typing import Any
 
+DEFAULT_CONFIG_PATH = "config/default_config.yaml"
+STRICT_CONFIG_MODES = {"cloud-prod", "agent-api"}
+
 logger = logging.getLogger(__name__)
 
 
-def _check_config_valid() -> tuple[bool, str]:
+def _check_config_valid() -> tuple[bool, str, bool]:
     """Check if configuration is valid.
 
     Returns:
-        Tuple of (is_valid, details)
+        Tuple of (is_valid, details, degraded)
     """
-    config_path = os.environ.get("CONFIG_PATH", "config/default_config.yaml")
+    config_path = os.environ.get("CONFIG_PATH", DEFAULT_CONFIG_PATH)
+    runtime_mode = os.environ.get("MLSDM_RUNTIME_MODE", "dev").lower()
+    strict_mode = runtime_mode in STRICT_CONFIG_MODES
+    degraded = False
 
     # Check if config file exists (if it's a path)
-    if not config_path.startswith("{") and config_path.endswith(".yaml"):
-        if os.path.exists(config_path):
-            return True, f"config_found: {config_path}"
-        # Config file not found, but may still work with defaults
-        return True, f"config_not_found_using_defaults: {config_path}"
+    if config_path.startswith("{"):
+        return True, "config_inline", False
+    if not config_path.endswith(".yaml"):
+        return True, "config_not_file_path", False
+    if os.path.exists(config_path):
+        return True, f"config_found: {config_path}", False
 
-    return True, "config_ok"
+    if strict_mode:
+        return False, f"config_missing: {config_path}", False
+
+    if config_path != DEFAULT_CONFIG_PATH and os.path.exists(DEFAULT_CONFIG_PATH):
+        degraded = True
+        return True, f"config_missing_fallback:{config_path}->{DEFAULT_CONFIG_PATH}", degraded
+
+    return False, f"config_missing: {config_path}", False
 
 
 def _check_engine_available() -> tuple[bool, str]:
@@ -110,10 +124,12 @@ def health_check() -> dict[str, Any]:
     degraded = False
 
     # Check 1: Configuration
-    config_ok, config_details = _check_config_valid()
+    config_ok, config_details, config_degraded = _check_config_valid()
     checks["config"] = {"healthy": config_ok, "details": config_details}
     if not config_ok:
         all_healthy = False
+    if config_degraded:
+        degraded = True
 
     # Check 2: Engine availability
     engine_ok, engine_details = _check_engine_available()

@@ -486,6 +486,10 @@ conftest test .github/workflows/*.yml -p policies/ci/
 
 ### Runtime Modes
 
+Canonical start for end users is the CLI command `mlsdm serve`. The module wrappers
+(`python -m mlsdm.entrypoints.{dev,cloud,agent}`) remain supported for ops/Docker
+scenarios with preset runtime modes.
+
 MLSDM supports three runtime profiles for different deployment scenarios:
 
 | Mode | Command | Use Case |

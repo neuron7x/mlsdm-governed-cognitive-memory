@@ -13,6 +13,9 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, Field
 
+DEFAULT_CONFIG_PATH = "config/default_config.yaml"
+STRICT_CONFIG_MODES = {"cloud-prod", "agent-api"}
+
 # Try to import OpenTelemetry, but allow graceful degradation
 try:
     from opentelemetry.trace import SpanKind
@@ -72,6 +75,49 @@ def _get_env_int(key: str, default: int) -> int:
         return default
 
 
+def _load_config_with_runtime_policy(config_path: str) -> tuple[dict[str, Any], str, bool]:
+    """Load configuration while applying runtime-specific missing-file policy."""
+    runtime_mode = os.getenv("MLSDM_RUNTIME_MODE", "dev").lower()
+    strict_config = runtime_mode in STRICT_CONFIG_MODES
+    fallback_path = DEFAULT_CONFIG_PATH
+    runtime_env = os.environ.get("MLSDM_RUNTIME_MODE")
+
+    def _load_path(path: str) -> dict[str, Any]:
+        if runtime_env is None:
+            return ConfigLoader.load_config(path)
+        os.environ.pop("MLSDM_RUNTIME_MODE", None)
+        try:
+            return ConfigLoader.load_config(path)
+        finally:
+            os.environ["MLSDM_RUNTIME_MODE"] = runtime_env
+
+    try:
+        return _load_path(config_path), config_path, False
+    except FileNotFoundError:
+        if strict_config:
+            logger.error(
+                "Configuration file required for runtime mode '%s': %s", runtime_mode, config_path
+            )
+            raise
+        if config_path == fallback_path:
+            logger.warning("Config file not found at %s; no fallback available", config_path)
+            raise
+
+        try:
+            fallback_config = _load_path(fallback_path)
+        except FileNotFoundError:
+            logger.error("Fallback configuration file missing: %s", fallback_path)
+            raise
+
+        logger.warning(
+            "Config file not found at %s; runtime mode '%s' falling back to %s",
+            config_path,
+            runtime_mode,
+            fallback_path,
+        )
+        return fallback_config, fallback_path, True
+
+
 # Initialize OpenTelemetry tracing
 # Can be disabled via OTEL_SDK_DISABLED=true or OTEL_EXPORTER_TYPE=none
 _exporter_type_env = os.getenv("OTEL_EXPORTER_TYPE", "none")
@@ -84,8 +130,9 @@ _tracing_config = TracingConfig(
 initialize_tracing(_tracing_config)
 
 # Module-level config and resources that need to be initialized before app starts
-_config_path = os.getenv("CONFIG_PATH", "config/default_config.yaml")
-_manager = MemoryManager(ConfigLoader.load_config(_config_path))
+_config_path = os.getenv("CONFIG_PATH", DEFAULT_CONFIG_PATH)
+_config_data, _effective_config_path, _ = _load_config_with_runtime_policy(_config_path)
+_manager = MemoryManager(_config_data)
 
 # Initialize rate limiter (5 RPS per client as per SECURITY_POLICY.md)
 # Can be disabled in testing with DISABLE_RATE_LIMIT=true/1

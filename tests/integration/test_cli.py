@@ -6,6 +6,8 @@ Tests the CLI commands: demo, serve, check
 
 import subprocess
 import sys
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -232,6 +234,40 @@ class TestCLIServe:
         assert "--port" in result.stdout
         assert "--backend" in result.stdout
         assert "--config" in result.stdout
+
+    def test_serve_config_flag_applies_before_import(self, tmp_path, monkeypatch):
+        """Config flag should set env before importing serve/app."""
+        repo_root = Path(__file__).resolve().parents[2]
+        custom_config = tmp_path / "custom_config.yaml"
+        custom_config.write_text((repo_root / "config" / "default_config.yaml").read_text())
+
+        # Intentionally set a broken default to ensure CLI overrides before import.
+        monkeypatch.setenv("CONFIG_PATH", str(tmp_path / "missing.yaml"))
+        monkeypatch.setenv("MLSDM_RUNTIME_MODE", "dev")
+
+        for mod in ("mlsdm.api.app", "mlsdm.entrypoints.serve"):
+            sys.modules.pop(mod, None)
+
+        monkeypatch.setattr("uvicorn.run", lambda *args, **kwargs: None)
+
+        args = SimpleNamespace(
+            host="127.0.0.1",
+            port=0,
+            log_level="info",
+            reload=False,
+            config=str(custom_config),
+            backend="local_stub",
+            disable_rate_limit=True,
+        )
+
+        from mlsdm.cli import cmd_serve
+
+        result = cmd_serve(args)
+        assert result == 0
+
+        import mlsdm.api.app as app_mod
+
+        assert app_mod._effective_config_path == str(custom_config)
 
 
 if __name__ == "__main__":
