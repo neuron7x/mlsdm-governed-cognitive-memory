@@ -56,6 +56,13 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-24 — **Fixed coverage badge workflow orphan branch artifact loss** — PR: #376
+  - Updated `.github/workflows/coverage-badge.yml`: Preserve `coverage.svg` through branch operations
+  - **Problem**: `git checkout --orphan badges` + `git rm -rf .` deleted generated badge before commit
+  - **Solution**: Copy artifact to `/tmp/mlsdm-badges/` before branch switch, restore after cleanup
+  - Added verification step to validate badge exists post-generation with size logging
+  - **Evidence impact**: Badge workflow now atomic for both initial creation and updates
+  - **Testing posture**: Idempotent branch operations; no impact on readiness evidence collection
 - 2025-12-24 — **CI/CD Sprint 1: Cache warming, matrix optimization, benchmark stability** — PR: #370
   - **Cache warming (8 workflows, 29 jobs)**: Added `actions/cache@v4` to all Python workflows caching `~/.cache/pip`, `~/.cache/uv`, `.venv` with smart keys based on `requirements.txt`, `pyproject.toml`, `uv.lock`; expected cache hit rate: 70-80% (up from ~30%)
   - **Python version matrix optimization**: Primary version (3.11) always tested; secondary versions (3.10, 3.12) conditionally tested only on scheduled runs, main branch pushes, or PRs with `test-all-versions` label; reduces runner minutes by ~30% per PR
