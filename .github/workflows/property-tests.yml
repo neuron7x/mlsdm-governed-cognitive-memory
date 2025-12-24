@@ -23,6 +23,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   property-tests:
     name: Property-Based Invariants Tests
@@ -30,7 +34,15 @@ jobs:
     timeout-minutes: 20
     strategy:
       matrix:
-        python-version: ['3.10', '3.11']
+        # Conditional matrix: test all versions on schedule/main/labeled PRs, otherwise only 3.11
+        python-version: >-
+          ${{
+            (github.event_name == 'schedule' ||
+             (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+             contains(github.event.pull_request.labels.*.name, 'test-all-versions'))
+            && fromJSON('["3.10", "3.11"]')
+            || fromJSON('["3.11"]')
+          }}
 
     steps:
       - name: Checkout code
@@ -44,6 +56,18 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             pyproject.toml
+
+      - name: Restore Python cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-py${{ matrix.python-version }}-
+            ${{ runner.os }}-
 
       - name: Install dependencies
         run: |
@@ -99,6 +123,18 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             pyproject.toml
+
+      - name: Restore Python cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-py3.11-
+            ${{ runner.os }}-
 
       - name: Install dependencies
         run: |

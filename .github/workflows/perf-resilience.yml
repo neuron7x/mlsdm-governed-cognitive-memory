@@ -16,6 +16,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   # Fast resilience tests (run on all PRs)
   resilience-fast:
@@ -43,6 +47,18 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             pyproject.toml
+
+      - name: Restore Python cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-py3.11-
+            ${{ runner.os }}-
 
       - name: Install dependencies
         run: |
@@ -94,6 +110,18 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             pyproject.toml
+
+      - name: Restore Python cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-py3.11-
+            ${{ runner.os }}-
 
       - name: Install dependencies
         run: |
@@ -152,6 +180,18 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             pyproject.toml
+
+      - name: Restore Python cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-py3.11-
+            ${{ runner.os }}-
 
       - name: Install dependencies
         run: |
