@@ -21,7 +21,7 @@ Blocking issues: 3
 | Observability pipeline (logging/metrics/tracing) | NOT VERIFIED | `tests/observability/test_aphasia_logging.py`, `tests/observability/test_aphasia_metrics.py`, `docs/OBSERVABILITY_GUIDE.md` | Instrumentation documented; no execution evidence in this PR. |
 | CI / quality gates (coverage, property tests) | NOT VERIFIED | `.github/workflows/readiness-evidence.yml` (jobs: deps_smoke, unit, coverage_gate), `.github/workflows/property-tests.yml`, `coverage_gate.sh` | Evidence workflow (uv-based) runs on pull_request/workflow_dispatch; awaiting current run artifacts for this PR. |
 | Config & calibration pipeline | NOT VERIFIED | `config/`, `docs/CONFIGURATION_GUIDE.md`, `tests/integration/test_public_api.py` | Config paths defined; validation runs absent for this commit. |
-| CLI / entrypoints | NOT VERIFIED | `src/mlsdm/entrypoints/`, `Makefile` | Entrypoints exist; no execution evidence tied to this revision. |
+| CLI / entrypoints | IMPROVED | `docs/ENTRYPOINTS.md`, `tests/integration/test_cli.py::test_serve_applies_config_before_import`, `tests/e2e/test_server_subprocess_smoke.py` | Canonical startup documented (`mlsdm serve`), CLI config ordering tested, subprocess smoke added. |
 | Benchmarks / performance tooling | NOT VERIFIED | `tests/perf/test_slo_api_endpoints.py`, `benchmarks/README.md` | Perf tooling present; benchmarks not executed in this PR. |
 | Deployment artifacts (k8s/manifests) | NOT VERIFIED | `deploy/k8s/`, `deploy/grafana/mlsdm_observability_dashboard.json` | Deployment manifests exist; no deployment validation evidence in this PR. |
 
@@ -56,6 +56,10 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-24 — **Canonical CLI startup & runtime health truthiness** — PR: copilot/refactor-pr-379-content  
+  - Documented all entrypoints with canonical status in `docs/ENTRYPOINTS.md`; README/GETTING_STARTED now point to `mlsdm serve` as the single public start.  
+  - Runtime config loader enforces dev fallback vs. strict fail-fast; health checks mirror the same policy. Docker CMD switches to `python -m mlsdm.entrypoints.cloud` with readiness healthcheck.  
+  - Added subprocess smoke test (`tests/e2e/test_server_subprocess_smoke.py`) and CLI regression test for `--config` import ordering; CI smoke workflow now runs the subprocess check.  
 - 2025-12-24 — **Fixed coverage badge workflow orphan branch artifact loss** — PR: #376
   - Updated `.github/workflows/coverage-badge.yml`: Preserve `coverage.svg` through branch operations
   - **Problem**: `git checkout --orphan badges` + `git rm -rf .` deleted generated badge before commit

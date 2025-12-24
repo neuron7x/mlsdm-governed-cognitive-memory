@@ -34,7 +34,7 @@ services:
       # Security configuration
       - LOG_PAYLOADS=${LOG_PAYLOADS:-false}
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/healthz').raise_for_status()"]
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health/ready').raise_for_status()"]
       interval: 30s
       timeout: 10s
       retries: 3

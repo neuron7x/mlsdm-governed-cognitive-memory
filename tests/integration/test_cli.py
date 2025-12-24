@@ -4,8 +4,10 @@ Integration tests for the MLSDM CLI.
 Tests the CLI commands: demo, serve, check
 """
 
+import importlib
 import subprocess
 import sys
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -232,6 +234,32 @@ class TestCLIServe:
         assert "--port" in result.stdout
         assert "--backend" in result.stdout
         assert "--config" in result.stdout
+
+    def test_serve_applies_config_before_import(self, tmp_path, monkeypatch):
+        """Ensure CONFIG_PATH from CLI is applied before importing serve/app."""
+        from mlsdm.config.constants import DEFAULT_CONFIG_PATH
+        from mlsdm import cli
+
+        temp_config = tmp_path / "temp_config.yaml"
+        temp_config.write_text(Path(DEFAULT_CONFIG_PATH).read_text(), encoding="utf-8")
+        monkeypatch.delenv("CONFIG_PATH", raising=False)
+
+        def _fake_serve(**_: object) -> int:
+            return 0
+
+        with patch("mlsdm.entrypoints.serve.serve", side_effect=_fake_serve) as serve_mock, patch.object(
+            sys, "argv", ["mlsdm", "serve", "--config", str(temp_config)]
+        ):
+            exit_code = cli.main()
+
+        from mlsdm.api import app as api_app
+
+        assert exit_code == 0
+        assert serve_mock.called
+        assert api_app._config_path == str(temp_config)
+
+        monkeypatch.delenv("CONFIG_PATH", raising=False)
+        importlib.reload(api_app)
 
 
 if __name__ == "__main__":

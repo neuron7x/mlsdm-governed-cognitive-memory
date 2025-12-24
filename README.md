@@ -350,6 +350,7 @@ For complete system design, see [ARCHITECTURE_SPEC.md](docs/ARCHITECTURE_SPEC.md
 
 ## 🚀 Quick Start
 
+> **Canonical start command:** `mlsdm serve`  
 > **New to MLSDM?** Start with our [**Getting Started Guide**](docs/GETTING_STARTED.md) for a streamlined introduction.
 
 ### Quickstart Profiles
@@ -357,18 +358,18 @@ For complete system design, see [ARCHITECTURE_SPEC.md](docs/ARCHITECTURE_SPEC.md
 - **Dev/Test (local, no external keys):**
   ```bash
   pip install -e ".[dev]"
-  cp env.dev.example .env
-  make run-dev
+  cp env.dev.example .env  # optional convenience
+  mlsdm serve --host 0.0.0.0 --port 8000 --config config/default_config.yaml
   ```
-  Uses `config/default_config.yaml` and `env.dev.example` for defaults. Providers stay local unless you override them.
+  Uses `config/default_config.yaml` plus `MLSDM_*` overrides if set. This is the canonical way to start the service locally.
 
-- **Prod-like (no real keys in CI):**
+- **Prod-like (ops wrapper, no real keys in CI):**
   ```bash
   pip install -e ".[dev]"
-  cp env.cloud.example .env
-  make run-cloud-local
+  cp env.cloud.example .env  # set real values only outside CI
+  python -m mlsdm.entrypoints.cloud
   ```
-  Replace placeholders in `.env` with real endpoints/keys only outside CI. See [CONFIGURATION_GUIDE.md](docs/CONFIGURATION_GUIDE.md) for the required fields.
+  Cloud entrypoint applies runtime defaults (secure mode, workers) then delegates to the canonical server. See [CONFIGURATION_GUIDE.md](docs/CONFIGURATION_GUIDE.md) for required fields.
 
 ### Prerequisites
 

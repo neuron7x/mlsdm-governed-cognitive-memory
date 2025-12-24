@@ -44,6 +44,7 @@ COPY --from=builder --chown=neuro:neuro /opt/venv /opt/venv
 
 # Copy application code
 COPY --chown=neuro:neuro src/ ./src/
+COPY --chown=neuro:neuro config/ ./config/
 COPY --chown=neuro:neuro pyproject.toml .
 COPY --chown=neuro:neuro README.md .
 
@@ -64,12 +65,12 @@ ENV PATH="/opt/venv/bin:$PATH" \
 # Switch to non-root user
 USER neuro
 
-# Health check - using liveness endpoint
+# Health check - using readiness endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/health/liveness').raise_for_status()" || exit 1
+    CMD python -c "import requests; requests.get('http://localhost:8000/health/ready').raise_for_status()" || exit 1
 
 # Expose port
 EXPOSE 8000
 
 # Run the service
-CMD ["python", "-m", "mlsdm.service.neuro_engine_service"]
+CMD ["python", "-m", "mlsdm.entrypoints.cloud"]

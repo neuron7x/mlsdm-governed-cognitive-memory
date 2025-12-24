@@ -236,15 +236,16 @@ wrapper = NeuroLangWrapper(
 
 ## Running as a Service
 
-Start MLSDM as a FastAPI service:
+Canonical startup for the HTTP API:
 
 ```bash
-# Development mode (with hot reload)
-python -m mlsdm.entrypoints.dev
-
-# OR use make
-make run-dev
+mlsdm serve --config config/default_config.yaml --host 0.0.0.0 --port 8000
 ```
+
+Operational wrappers (still delegate to the canonical server):
+
+- Local dev convenience: `python -m mlsdm.entrypoints.dev`
+- Cloud/Docker: `python -m mlsdm.entrypoints.cloud`
 
 Then access the API at `http://localhost:8000`:
 

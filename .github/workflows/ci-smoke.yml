@@ -49,6 +49,11 @@ jobs:
           pytest tests/unit/ -v -m "not slow" --tb=short -q --maxfail=5
         timeout-minutes: 3
 
+      - name: Run subprocess smoke (cloud entrypoint)
+        run: |
+          python -m pytest tests/e2e/test_server_subprocess_smoke.py -q --maxfail=1
+        timeout-minutes: 4
+
       - name: Run critical module imports
         run: |
           python -c "

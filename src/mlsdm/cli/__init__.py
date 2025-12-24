@@ -177,8 +177,6 @@ def cmd_demo(args: argparse.Namespace) -> int:
 
 def cmd_serve(args: argparse.Namespace) -> int:
     """Start the HTTP API server."""
-    from mlsdm.entrypoints.serve import serve
-
     # Set environment variables from args
     if args.config:
         os.environ["CONFIG_PATH"] = args.config
@@ -196,6 +194,16 @@ def cmd_serve(args: argparse.Namespace) -> int:
     print(f"Backend: {os.environ.get('LLM_BACKEND', 'local_stub')}")
     print(f"Config: {os.environ.get('CONFIG_PATH', 'config/default_config.yaml')}")
     print()
+
+    # ENV MUST BE SET BEFORE IMPORT
+    # Reload app module to ensure CONFIG_PATH is honored before serve import
+    import importlib
+
+    import mlsdm.api.app as api_app
+
+    importlib.reload(api_app)
+
+    from mlsdm.entrypoints.serve import serve
 
     return serve(
         host=args.host,

@@ -36,6 +36,8 @@ from mlsdm.api.middleware import (
 from mlsdm.contracts import AphasiaMetadata
 from mlsdm.core.memory_manager import MemoryManager
 from mlsdm.engine import NeuroEngineConfig, build_neuro_engine_from_env
+from mlsdm.config.constants import DEFAULT_CONFIG_PATH, STRICT_CONFIG_MODES
+from mlsdm.config.runtime import RuntimeMode, get_runtime_mode
 from mlsdm.observability.tracing import (
     TracingConfig,
     add_span_attributes,
@@ -53,6 +55,30 @@ security_logger = get_security_logger()
 
 # Global reference to CPU background sampler task
 _cpu_background_task: asyncio.Task[None] | None = None
+
+_app_instance: FastAPI | None = None
+_config_data: dict[str, Any] | None = None
+_config_path: str | None = None
+_runtime_mode: RuntimeMode | None = None
+_manager: MemoryManager | None = None
+_neuro_engine: Any | None = None
+_rate_limiter: RateLimiter | None = None
+_validator: InputValidator | None = None
+_secure_mode_enabled: bool = False
+_rate_limiting_enabled: bool = False
+_rate_limit_requests: int = 5
+_rate_limit_window: int = 1
+_RUNTIME_ENV_KEYS = {
+    "MLSDM_RUNTIME_MODE",
+    "MLSDM_WORKERS",
+    "MLSDM_RELOAD",
+    "MLSDM_LOG_LEVEL",
+    "MLSDM_TIMEOUT_KEEP_ALIVE",
+    "MLSDM_RATE_LIMIT_ENABLED",
+    "MLSDM_SECURE_MODE",
+    "MLSDM_ENGINE_ENABLE_METRICS",
+    "MLSDM_DEBUG",
+}
 
 
 def _get_env_bool(key: str, default: bool = False) -> bool:
@@ -83,42 +109,82 @@ _tracing_config = TracingConfig(
 )
 initialize_tracing(_tracing_config)
 
-# Module-level config and resources that need to be initialized before app starts
-_config_path = os.getenv("CONFIG_PATH", "config/default_config.yaml")
-_manager = MemoryManager(ConfigLoader.load_config(_config_path))
+def _resolve_runtime_mode(runtime_mode: RuntimeMode | str | None) -> RuntimeMode:
+    if runtime_mode is None:
+        return get_runtime_mode()
+    if isinstance(runtime_mode, RuntimeMode):
+        return runtime_mode
+    try:
+        return RuntimeMode(runtime_mode)
+    except ValueError:
+        logger.warning("Unknown runtime mode '%s', falling back to dev", runtime_mode)
+        return RuntimeMode.DEV
 
-# Initialize rate limiter (5 RPS per client as per SECURITY_POLICY.md)
-# Can be disabled in testing with DISABLE_RATE_LIMIT=true/1
-_secure_mode_enabled = _get_env_bool("MLSDM_SECURE_MODE", False)
-_rate_limiting_enabled = _get_env_bool(
-    "MLSDM_RATE_LIMIT_ENABLED", True
-) and not _get_env_bool("DISABLE_RATE_LIMIT", False)
-_rate_limit_requests = _get_env_int("RATE_LIMIT_REQUESTS", 5)
-_rate_limit_window = _get_env_int("RATE_LIMIT_WINDOW", 1)
 
-if _rate_limit_requests <= 0 or _rate_limit_window <= 0:
-    security_logger.log_security_config_error(
-        "invalid_rate_limit",
-        "RATE_LIMIT_REQUESTS and RATE_LIMIT_WINDOW must be positive integers; "
-        "falling back to 5 requests per second.",
+def _load_config_with_runtime_policy(
+    config_path: str, runtime_mode: RuntimeMode | str
+) -> tuple[dict[str, Any], str, RuntimeMode]:
+    mode_enum = _resolve_runtime_mode(runtime_mode)
+    if not isinstance(config_path, str) or not config_path:
+        raise ValueError("CONFIG_PATH must be a non-empty string")
+
+    removed_env: dict[str, str] = {}
+    for key in _RUNTIME_ENV_KEYS:
+        if key in os.environ:
+            removed_env[key] = os.environ.pop(key)
+
+    try:
+        if os.path.exists(config_path):
+            return ConfigLoader.load_config(config_path), config_path, mode_enum
+
+        if mode_enum in STRICT_CONFIG_MODES:
+            raise FileNotFoundError(
+                f"Configuration file not found: {config_path} (mode={mode_enum.value})"
+            )
+
+        logger.warning(
+            "Configuration file not found at %s; falling back to default config for mode %s",
+            config_path,
+            mode_enum.value,
+        )
+        return ConfigLoader.load_config(DEFAULT_CONFIG_PATH), DEFAULT_CONFIG_PATH, mode_enum
+    finally:
+        os.environ.update(removed_env)
+
+
+def _initialize_runtime_components(config_data: dict[str, Any]) -> None:
+    global _manager, _neuro_engine, _rate_limiter, _validator
+    global _rate_limiting_enabled, _rate_limit_requests, _rate_limit_window, _secure_mode_enabled
+
+    _manager = MemoryManager(config_data)
+
+    _secure_mode_enabled = _get_env_bool("MLSDM_SECURE_MODE", False)
+    _rate_limiting_enabled = _get_env_bool(
+        "MLSDM_RATE_LIMIT_ENABLED", True
+    ) and not _get_env_bool("DISABLE_RATE_LIMIT", False)
+    _rate_limit_requests = _get_env_int("RATE_LIMIT_REQUESTS", 5)
+    _rate_limit_window = _get_env_int("RATE_LIMIT_WINDOW", 1)
+
+    if _rate_limit_requests <= 0 or _rate_limit_window <= 0:
+        security_logger.log_security_config_error(
+            "invalid_rate_limit",
+            "RATE_LIMIT_REQUESTS and RATE_LIMIT_WINDOW must be positive integers; "
+            "falling back to 5 requests per second.",
+        )
+        _rate_limit_requests = 5
+        _rate_limit_window = 1
+
+    rate = _rate_limit_requests / _rate_limit_window
+    capacity = max(1, _rate_limit_requests)
+    _rate_limiter = RateLimiter(rate=rate, capacity=capacity)
+    _validator = InputValidator()
+
+    engine_config = NeuroEngineConfig(
+        dim=_manager.dimension,
+        enable_fslgs=False,  # FSLGS is optional
+        enable_metrics=True,
     )
-    _rate_limit_requests = 5
-    _rate_limit_window = 1
-
-_rate_limit_rate = _rate_limit_requests / _rate_limit_window
-_rate_limit_capacity = max(1, _rate_limit_requests)
-_rate_limiter = RateLimiter(rate=_rate_limit_rate, capacity=_rate_limit_capacity)
-
-# Initialize input validator
-_validator = InputValidator()
-
-# Initialize NeuroCognitiveEngine for /generate endpoint
-_engine_config = NeuroEngineConfig(
-    dim=_manager.dimension,
-    enable_fslgs=False,  # FSLGS is optional
-    enable_metrics=True,
-)
-_neuro_engine = build_neuro_engine_from_env(config=_engine_config)
+    _neuro_engine = build_neuro_engine_from_env(config=engine_config)
 
 
 @asynccontextmanager
@@ -128,10 +194,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # STARTUP
     lifecycle = get_lifecycle_manager()
+    manager = _require_manager()
     await lifecycle.startup()
 
     # Register cleanup tasks
-    lifecycle.register_cleanup(lambda: cleanup_memory_manager(_manager))
+    lifecycle.register_cleanup(lambda: cleanup_memory_manager(manager))
 
     # Start CPU background sampler for non-blocking health checks
     _cpu_background_task = asyncio.create_task(_cpu_background_sampler())
@@ -147,7 +214,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     security_logger.log_system_event(
         SecurityEventType.STARTUP,
         "MLSDM Governed Cognitive Memory API started",
-        additional_data={"version": "1.0.0", "dimension": _manager.dimension},
+        additional_data={"version": "1.0.0", "dimension": manager.dimension},
     )
 
     yield
@@ -171,38 +238,83 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await lifecycle.shutdown()
 
 
-# Initialize FastAPI with production-ready settings
-app = FastAPI(
-    title="mlsdm-governed-cognitive-memory",
-    version="1.0.0",
-    description="Production-ready neurobiologically-grounded cognitive architecture",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    lifespan=lifespan,
-)
+def create_app(
+    *,
+    config_path: str | None = None,
+    runtime_mode: RuntimeMode | str | None = None,
+) -> FastAPI:
+    """Create a FastAPI application instance with runtime-aware config loading."""
+    global _config_data, _config_path, _runtime_mode, app, _app_instance
 
-# Canonical app factory used by all runtime entrypoints
-def create_app() -> FastAPI:
-    """Return the canonical FastAPI application instance."""
-    return app
+    if _app_instance is not None:
+        return _app_instance
 
-# Add production middleware (order matters: outer to inner)
-# 1. SecurityHeaders - adds security headers to all responses
-# 2. RequestID - adds request ID for tracking
-# 3. Timeout - enforces request-level timeouts (REL-004)
-# 4. Priority - parses priority header (REL-005)
-# 5. Bulkhead - limits concurrent requests (REL-002)
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(RequestIDMiddleware)
-app.add_middleware(TimeoutMiddleware)
-app.add_middleware(PriorityMiddleware)
-app.add_middleware(BulkheadMiddleware)
+    path_candidate = config_path or os.getenv("CONFIG_PATH") or DEFAULT_CONFIG_PATH
+    if not isinstance(path_candidate, str) or not path_candidate:
+        raise ValueError("CONFIG_PATH must be a non-empty string")
+    config, resolved_path, resolved_mode = _load_config_with_runtime_policy(
+        path_candidate, runtime_mode or get_runtime_mode()
+    )
 
-# Include health check router
-app.include_router(health.router)
+    _config_data = config
+    _config_path = resolved_path
+    _runtime_mode = resolved_mode
+    _initialize_runtime_components(config)
 
-# Set memory manager for health checks
-health.set_memory_manager(_manager)
+    fastapi_app = FastAPI(
+        title="mlsdm-governed-cognitive-memory",
+        version="1.0.0",
+        description="Production-ready neurobiologically-grounded cognitive architecture",
+        docs_url="/docs",
+        redoc_url="/redoc",
+        lifespan=lifespan,
+    )
+
+    fastapi_app.add_middleware(SecurityHeadersMiddleware)
+    fastapi_app.add_middleware(RequestIDMiddleware)
+    fastapi_app.add_middleware(TimeoutMiddleware)
+    fastapi_app.add_middleware(PriorityMiddleware)
+    fastapi_app.add_middleware(BulkheadMiddleware)
+
+    fastapi_app.include_router(health.router)
+
+    if _manager is not None:
+        health.set_memory_manager(_manager)
+    if _neuro_engine is not None:
+        health.set_neuro_engine(_neuro_engine)
+
+    app = fastapi_app
+    _app_instance = fastapi_app
+    return fastapi_app
+
+
+# Initialize FastAPI with production-ready settings (canonical singleton for import string)
+app = create_app()
+
+
+def _require_manager() -> MemoryManager:
+    if _manager is None:
+        raise RuntimeError("Application not initialized; call create_app() first.")
+    return _manager
+
+
+def _require_rate_limiter() -> RateLimiter:
+    if _rate_limiter is None:
+        raise RuntimeError("Rate limiter not initialized; call create_app() first.")
+    return _rate_limiter
+
+
+def _require_validator() -> InputValidator:
+    if _validator is None:
+        raise RuntimeError("Validator not initialized; call create_app() first.")
+    return _validator
+
+
+def _require_engine() -> Any:
+    if _neuro_engine is None:
+        raise RuntimeError("Neuro engine not initialized; call create_app() first.")
+    return _neuro_engine
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
@@ -414,30 +526,31 @@ async def process_event(
     as specified in SECURITY_POLICY.md.
     """
     client_id = _get_client_id(request)
+    rate_limiter = _require_rate_limiter()
+    validator = _require_validator()
+    manager = _require_manager()
 
     # Rate limiting check (can be disabled for testing)
-    if _rate_limiting_enabled and not _rate_limiter.is_allowed(client_id):
+    if _rate_limiting_enabled and not rate_limiter.is_allowed(client_id):
         security_logger.log_rate_limit_exceeded(client_id=client_id)
         raise HTTPException(status_code=429, detail=_rate_limit_message())
 
     # Validate moral value
     try:
-        moral_value = _validator.validate_moral_value(event.moral_value)
+        moral_value = validator.validate_moral_value(event.moral_value)
     except ValueError as e:
         security_logger.log_invalid_input(client_id=client_id, error_message=str(e))
         raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Validate and convert vector
     try:
-        vec = _validator.validate_vector(
-            event.event_vector, expected_dim=_manager.dimension, normalize=False
-        )
+        vec = validator.validate_vector(event.event_vector, expected_dim=manager.dimension, normalize=False)
     except ValueError as e:
         security_logger.log_invalid_input(client_id=client_id, error_message=str(e))
         raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Process the event
-    await _manager.process_event(vec, moral_value)
+    await manager.process_event(vec, moral_value)
 
     return await get_state(request, user)
 
@@ -446,23 +559,25 @@ async def process_event(
 async def get_state(request: Request, user: str = Depends(get_current_user)) -> StateResponse:
     """Get system state with rate limiting."""
     client_id = _get_client_id(request)
+    rate_limiter = _require_rate_limiter()
+    manager = _require_manager()
 
     # Rate limiting check (can be disabled for testing)
-    if _rate_limiting_enabled and not _rate_limiter.is_allowed(client_id):
+    if _rate_limiting_enabled and not rate_limiter.is_allowed(client_id):
         security_logger.log_rate_limit_exceeded(client_id=client_id)
         raise HTTPException(status_code=429, detail=_rate_limit_message())
 
-    L1, L2, L3 = _manager.memory.get_state()
-    metrics = _manager.metrics_collector.get_metrics()
+    L1, L2, L3 = manager.memory.get_state()
+    metrics = manager.metrics_collector.get_metrics()
     return StateResponse(
         L1_norm=float(np.linalg.norm(L1)),
         L2_norm=float(np.linalg.norm(L2)),
         L3_norm=float(np.linalg.norm(L3)),
-        current_phase=_manager.rhythm.get_current_phase(),
+        current_phase=manager.rhythm.get_current_phase(),
         latent_events_count=int(metrics["latent_events_count"]),
         accepted_events_count=int(metrics["accepted_events_count"]),
         total_events_processed=int(metrics["total_events_processed"]),
-        moral_filter_threshold=float(_manager.filter.threshold),
+        moral_filter_threshold=float(manager.filter.threshold),
     )
 
 
@@ -499,6 +614,8 @@ async def generate(
     """
     client_id = _get_client_id(request)
     request_id = getattr(request.state, "request_id", None)
+    rate_limiter = _require_rate_limiter()
+    engine = _require_engine()
 
     # Start root span for the generate endpoint
     tracer_manager = get_tracer_manager()
@@ -519,7 +636,7 @@ async def generate(
             span.set_attribute("mlsdm.request_id", request_id)
 
         # Rate limiting check (can be disabled for testing)
-        if _rate_limiting_enabled and not _rate_limiter.is_allowed(client_id):
+        if _rate_limiting_enabled and not rate_limiter.is_allowed(client_id):
             security_logger.log_rate_limit_exceeded(client_id=client_id)
             span.set_attribute("mlsdm.rate_limited", True)
             return JSONResponse(
@@ -559,7 +676,7 @@ async def generate(
                 kwargs["moral_value"] = request_body.moral_value
 
             # Generate response (engine has its own child spans)
-            result: dict[str, Any] = _neuro_engine.generate(**kwargs)
+            result: dict[str, Any] = engine.generate(**kwargs)
 
             # Extract phase from mlsdm state if available
             mlsdm_state = result.get("mlsdm", {})
@@ -700,6 +817,8 @@ async def infer(
     """
     client_id = _get_client_id(request)
     request_id = getattr(request.state, "request_id", None)
+    rate_limiter = _require_rate_limiter()
+    engine = _require_engine()
 
     # Start root span for the infer endpoint
     tracer_manager = get_tracer_manager()
@@ -721,7 +840,7 @@ async def infer(
             span.set_attribute("mlsdm.request_id", request_id)
 
         # Rate limiting check
-        if _rate_limiting_enabled and not _rate_limiter.is_allowed(client_id):
+        if _rate_limiting_enabled and not rate_limiter.is_allowed(client_id):
             security_logger.log_rate_limit_exceeded(client_id=client_id)
             span.set_attribute("mlsdm.rate_limited", True)
             return JSONResponse(
@@ -778,7 +897,7 @@ async def infer(
                 kwargs["context_top_k"] = 0
 
             # Generate response (engine has its own child spans)
-            result: dict[str, Any] = _neuro_engine.generate(**kwargs)
+            result: dict[str, Any] = engine.generate(**kwargs)
 
             # Extract state
             mlsdm_state = result.get("mlsdm", {})
@@ -894,6 +1013,8 @@ async def get_status() -> dict[str, Any]:
     """
     import psutil
 
+    manager = _require_manager()
+
     return {
         "status": "ok",
         "version": "1.2.0",
@@ -903,7 +1024,7 @@ async def get_status() -> dict[str, Any]:
             "cpu_percent": psutil.cpu_percent(),
         },
         "config": {
-            "dimension": _manager.dimension,
+            "dimension": manager.dimension,
             "rate_limiting_enabled": _rate_limiting_enabled,
             "rate_limit_requests": _rate_limit_requests,
             "rate_limit_window": _rate_limit_window,

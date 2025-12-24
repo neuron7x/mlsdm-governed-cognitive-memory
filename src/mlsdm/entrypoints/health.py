@@ -22,6 +22,9 @@ import os
 import time
 from typing import Any
 
+from mlsdm.config.constants import DEFAULT_CONFIG_PATH, STRICT_CONFIG_MODES
+from mlsdm.config.runtime import get_runtime_mode
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,14 +34,20 @@ def _check_config_valid() -> tuple[bool, str]:
     Returns:
         Tuple of (is_valid, details)
     """
-    config_path = os.environ.get("CONFIG_PATH", "config/default_config.yaml")
+    config_path = os.environ.get("CONFIG_PATH", DEFAULT_CONFIG_PATH)
+    runtime_mode = get_runtime_mode()
 
     # Check if config file exists (if it's a path)
     if not config_path.startswith("{") and config_path.endswith(".yaml"):
         if os.path.exists(config_path):
             return True, f"config_found: {config_path}"
-        # Config file not found, but may still work with defaults
-        return True, f"config_not_found_using_defaults: {config_path}"
+
+        if runtime_mode in STRICT_CONFIG_MODES:
+            return False, f"config_missing_strict: {config_path}"
+
+        if os.path.exists(DEFAULT_CONFIG_PATH):
+            return True, f"config_not_found_using_defaults: {config_path}"
+        return False, f"default_config_missing: {DEFAULT_CONFIG_PATH}"
 
     return True, "config_ok"
 
@@ -114,6 +123,8 @@ def health_check() -> dict[str, Any]:
     checks["config"] = {"healthy": config_ok, "details": config_details}
     if not config_ok:
         all_healthy = False
+    elif "using_defaults" in config_details:
+        degraded = True
 
     # Check 2: Engine availability
     engine_ok, engine_details = _check_engine_available()
