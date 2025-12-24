@@ -324,11 +324,22 @@ class ConfigLoader:
         - MLSDM_COGNITIVE_RHYTHM__WAKE_DURATION=10
         """
         prefix = "MLSDM_"
+        ignored_keys = {
+            "MLSDM_RUNTIME_MODE",
+            "MLSDM_WORKERS",
+            "MLSDM_RELOAD",
+            "MLSDM_LOG_LEVEL",
+            "MLSDM_TIMEOUT_KEEP_ALIVE",
+            "MLSDM_RATE_LIMIT_ENABLED",
+            "MLSDM_SECURE_MODE",
+            "MLSDM_ENGINE_ENABLE_METRICS",
+            "MLSDM_DEBUG",
+        }
 
         for env_key, env_value in os.environ.items():
             if not env_key.startswith(prefix):
                 continue
-            if env_key == "MLSDM_RUNTIME_MODE":
+            if env_key in ignored_keys:
                 continue
 
             # Remove prefix and convert to lowercase
