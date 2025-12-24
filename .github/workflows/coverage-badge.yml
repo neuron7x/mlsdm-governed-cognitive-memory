@@ -65,12 +65,27 @@ jobs:
         run: |
           coverage-badge -o coverage.svg -f
       
+      - name: Verify badge generation
+        run: |
+          if [ ! -f coverage.svg ]; then
+            echo "ERROR: coverage.svg was not generated"
+            exit 1
+          fi
+          echo "✓ coverage.svg exists ($(stat -c%s coverage.svg 2>/dev/null || stat -f%z coverage.svg) bytes)"
+      
       - name: Commit badge to badges branch
         run: |
           set -euo pipefail
+          
+          # 1. Preserve coverage.svg before branch operations
+          mkdir -p /tmp/mlsdm-badges
+          cp coverage.svg /tmp/mlsdm-badges/coverage.svg
+          
+          # 2. Configure Git
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+          # 3. Switch to badges branch (create if doesn't exist)
           git fetch origin badges || true
           if git show-ref --verify --quiet refs/remotes/origin/badges; then
             git checkout -B badges origin/badges
@@ -79,6 +94,10 @@ jobs:
             git rm -rf . || true
           fi
 
+          # 4. Restore coverage.svg after branch cleanup
+          cp /tmp/mlsdm-badges/coverage.svg coverage.svg
+          
+          # 5. Commit and push
           git add coverage.svg
           if git diff --cached --quiet; then
             echo "No changes to commit"
