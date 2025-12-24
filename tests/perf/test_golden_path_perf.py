@@ -13,6 +13,7 @@ Usage:
     python tests/perf/test_golden_path_perf.py  # standalone
 """
 
+import math
 import platform
 import sys
 import time
@@ -67,7 +68,7 @@ def percentile(data: list[float], p: float) -> float:
     sorted_data = sorted(data)
     n = len(sorted_data)
     # Nearest-rank: index = ceil(p * n) - 1, clamped to valid range
-    idx = max(0, min(int(p * n), n - 1))
+    idx = max(0, min(math.ceil(p * n) - 1, n - 1))
     return sorted_data[idx]
 
 
