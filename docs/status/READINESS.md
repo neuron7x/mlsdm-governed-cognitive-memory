@@ -65,6 +65,9 @@ Blocking issues: 3
   - **Workflows modified**: `ci-neuro-cognitive-engine.yml`, `sast-scan.yml`, `property-tests.yml`, `chaos-tests.yml`, `perf-resilience.yml`, `release.yml`, `prod-gate.yml`, `coverage-badge.yml` (new)
   - **Evidence impact**: Expected CI time reduction from 18min to 12-15min (-17% to -33%); runner minutes per PR from ~100 to ~70 (-30%); cache effectiveness +50%; benchmark reliability +80%
   - **Testing posture**: All 15 workflow files validated (YAML syntax); benchmark stability verified through 3-run median approach; no breaking changes; all security gates preserved
+- 2025-12-24 — **Coverage badge isolation and branch guard** — PR: copilot/update-github-actions-workflows
+  - Coverage badge workflow now writes to dedicated `badges` branch with repo/ref guard and explicit push error handling, preventing `[skip ci]` commits from advancing `main`
+  - README coverage badge updated to reference `badges` branch artifact to keep visibility while protecting main CI statuses
 - 2025-12-23 — **Fixed E2E test race condition in HTTP client fixture** — PR: #368
   - Updated `tests/e2e/conftest.py`: Added readiness verification with retry logic
   - Implemented 200ms warmup delay + 5 retry attempts for `/health/ready` endpoint

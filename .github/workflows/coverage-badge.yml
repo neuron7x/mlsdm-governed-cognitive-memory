@@ -70,11 +70,20 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -B badges || { echo "Failed to prepare badges branch"; exit 1; }
+
+          git fetch origin badges || true
+          if git show-ref --verify --quiet refs/remotes/origin/badges; then
+            git checkout -B badges origin/badges
+          else
+            git checkout --orphan badges
+            git rm -rf . || true
+          fi
+
           git add coverage.svg
           if git diff --cached --quiet; then
             echo "No changes to commit"
             exit 0
           fi
+
           git commit -m "chore: update coverage badge [skip ci]"
-          git push origin badges || { echo "Failed to push badges branch"; exit 1; }
+          git push origin badges
