@@ -70,6 +70,7 @@ jobs:
           set -euo pipefail
           tmp_svg="$(mktemp)"
           cp coverage.svg "$tmp_svg"
+          trap 'rm -f "$tmp_svg"' EXIT
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
