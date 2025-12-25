@@ -5,6 +5,7 @@ import argparse
 import ast
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -215,6 +216,28 @@ def _read_file(path: Path) -> str | None:
         return None
 
 
+def get_file_at_ref(path: str, ref: str, root: Path) -> str | None:
+    """Return file contents at a git ref using `git show`, or None if unavailable."""
+    try:
+        result = subprocess.run(
+            ["git", "show", f"{ref}:{path}"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if result.returncode != 0:
+        return None
+    content = result.stdout
+    try:
+        _ensure_no_bidi(content, f"{ref}:{path}")
+    except ValueError:
+        return None
+    return content
+
+
 def analyze_paths(paths: Sequence[str], base_ref: str, root: Path = ROOT) -> dict[str, object]:
     normalized_paths = sorted({normalize_path(p) for p in paths if normalize_path(p)})
     categories: list[str] = []
@@ -229,7 +252,7 @@ def analyze_paths(paths: Sequence[str], base_ref: str, root: Path = ROOT) -> dic
 
         module = module_name(path) if path.endswith(".py") else ""
         after_content = _read_file(root / path) if path.endswith(".py") else None
-        before_content = None  # base-ref integration deferred; present for future compatibility
+        before_content = get_file_at_ref(path, base_ref, root) if path.endswith(".py") else None
         semantic = (
             semantic_diff(before_content, after_content, module)
             if path.endswith(".py")

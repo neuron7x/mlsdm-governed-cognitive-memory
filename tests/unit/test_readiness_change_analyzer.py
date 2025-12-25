@@ -58,6 +58,12 @@ def test_json_structure_and_counts(tmp_path: Path):
     assert counts["risks"]["informational"] == 2
     assert counts["risks"]["low"] == 1
 
+    files = result["files"]
+    assert isinstance(files, list) and len(files) == 4
+    assert [f["path"] for f in files] == sorted([f["path"] for f in files])
+    for entry in files:
+        assert set(entry.keys()) == {"path", "category", "risk", "details"}
+
 
 def test_module_name_src_and_tests():
     assert ca.module_name("src/foo/bar.py") == "foo.bar"
@@ -110,6 +116,22 @@ def test_analyze_paths_handles_missing_and_invalid_files(tmp_path: Path):
     assert files[str(missing.relative_to(tmp_path))]["details"]["semantic"]["summary"]["added"] == 0
     assert files[str(broken.relative_to(tmp_path))]["details"]["semantic"]["summary"]["added"] == 0
     assert files[str(text_file.relative_to(tmp_path))]["details"]["semantic"]["summary"]["added"] == 0
+
+
+def test_analyze_paths_uses_base_ref_for_deleted_file(tmp_path: Path, monkeypatch):
+    before_source = "def gone():\n    return 1\n"
+    missing = "src/gone.py"
+
+    def fake_show(path: str, ref: str, root: Path) -> str | None:  # type: ignore[override]
+        return before_source if path == missing else None
+
+    monkeypatch.setattr(ca, "get_file_at_ref", fake_show)
+    result = ca.analyze_paths([missing], base_ref="origin/main", root=tmp_path)
+    entry = result["files"][0]
+    semantic = entry["details"]["semantic"]
+    assert semantic["added_functions"] == []
+    assert semantic["modified_functions"] == []
+    assert semantic["removed_functions"] == ["gone:gone()->None"]
 
 
 def test_cli_outputs_json(tmp_path: Path):
