@@ -147,6 +147,13 @@ class MoralFilterV2:
 
         # NEW: Record drift if threshold changed
         if self.threshold != old_threshold:
+            logger.debug(
+                "MoralFilterV2 threshold adapted: %.3f -> %.3f (ema=%.3f error=%.3f)",
+                old_threshold,
+                self.threshold,
+                self.ema_accept_rate,
+                error,
+            )
             self._record_drift(old_threshold, self.threshold)
 
     def get_state(self) -> dict[str, float]:
@@ -156,6 +163,7 @@ class MoralFilterV2:
             "min_threshold": float(self.MIN_THRESHOLD),
             "max_threshold": float(self.MAX_THRESHOLD),
             "dead_band": float(self.DEAD_BAND),
+            "ema_alpha": float(self.EMA_ALPHA),
         }
 
     def _log_boundary_cases(self, moral_value: float) -> None:
