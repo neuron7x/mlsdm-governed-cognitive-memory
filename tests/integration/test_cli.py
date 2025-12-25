@@ -234,5 +234,113 @@ class TestCLIServe:
         assert "--config" in result.stdout
 
 
+class TestExampleWrapperSubprocessDelegation:
+    """Test the example wrapper subprocess delegation security posture."""
+
+    def test_example_wrapper_uses_constant_argv(self) -> None:
+        """Verify the example wrapper uses constant argv without env-derived CLI args."""
+        import importlib.util
+        from unittest.mock import MagicMock, patch
+
+        # Load the example module without executing __main__
+        spec = importlib.util.spec_from_file_location(
+            "run_neuro_service",
+            "examples/run_neuro_service.py"
+        )
+        assert spec is not None
+        assert spec.loader is not None
+
+        # Mock subprocess.run to capture the call
+        mock_run = MagicMock()
+        mock_run.return_value.returncode = 0
+
+        with patch("subprocess.run", mock_run):
+            example_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(example_module)
+            example_module.main()
+
+        # Verify subprocess.run was called with constant argv
+        assert mock_run.called
+        call_args = mock_run.call_args
+        cmd = call_args[0][0] if call_args[0] else call_args[1].get("cmd")
+
+        # The command should be constant: [sys.executable, "-m", "mlsdm.cli", "serve"]
+        assert cmd[1:] == ["-m", "mlsdm.cli", "serve"], \
+            f"Expected constant argv, got: {cmd}"
+
+    def test_example_wrapper_passes_config_via_env(self) -> None:
+        """Verify the example wrapper passes host/port/config via environment."""
+        import importlib.util
+        from unittest.mock import MagicMock, patch
+
+        spec = importlib.util.spec_from_file_location(
+            "run_neuro_service",
+            "examples/run_neuro_service.py"
+        )
+        assert spec is not None
+        assert spec.loader is not None
+        example_module = importlib.util.module_from_spec(spec)
+
+        mock_run = MagicMock()
+        mock_run.return_value.returncode = 0
+
+        with patch("subprocess.run", mock_run):
+            spec.loader.exec_module(example_module)
+            example_module.main()
+
+        # Verify env contains HOST, PORT, CONFIG_PATH
+        call_kwargs = mock_run.call_args[1] if mock_run.call_args[1] else {}
+        env = call_kwargs.get("env", {})
+
+        assert "HOST" in env, "HOST should be in subprocess env"
+        assert "PORT" in env, "PORT should be in subprocess env"
+        assert "CONFIG_PATH" in env, "CONFIG_PATH should be in subprocess env"
+
+    def test_example_wrapper_uses_check_false(self) -> None:
+        """Verify the example wrapper uses check=False explicitly."""
+        import importlib.util
+        from unittest.mock import MagicMock, patch
+
+        spec = importlib.util.spec_from_file_location(
+            "run_neuro_service",
+            "examples/run_neuro_service.py"
+        )
+        assert spec is not None
+        assert spec.loader is not None
+        example_module = importlib.util.module_from_spec(spec)
+
+        mock_run = MagicMock()
+        mock_run.return_value.returncode = 0
+
+        with patch("subprocess.run", mock_run):
+            spec.loader.exec_module(example_module)
+            example_module.main()
+
+        call_kwargs = mock_run.call_args[1] if mock_run.call_args[1] else {}
+        assert call_kwargs.get("check") is False, "subprocess.run should use check=False"
+
+    def test_example_wrapper_propagates_returncode(self) -> None:
+        """Verify the example wrapper propagates subprocess return code."""
+        import importlib.util
+        from unittest.mock import MagicMock, patch
+
+        spec = importlib.util.spec_from_file_location(
+            "run_neuro_service",
+            "examples/run_neuro_service.py"
+        )
+        assert spec is not None
+        assert spec.loader is not None
+        example_module = importlib.util.module_from_spec(spec)
+
+        mock_run = MagicMock()
+        mock_run.return_value.returncode = 42  # Non-zero exit code
+
+        with patch("subprocess.run", mock_run):
+            spec.loader.exec_module(example_module)
+            result = example_module.main()
+
+        assert result == 42, "Should propagate subprocess return code"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

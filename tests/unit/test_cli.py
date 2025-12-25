@@ -693,3 +693,116 @@ class TestDemoInteractiveMode:
         assert result == 0
         captured = capsys.readouterr()
         assert "MLSDM" in captured.out
+
+
+class TestGetEnvPort:
+    """Tests for _get_env_port helper function."""
+
+    def test_returns_default_when_port_unset(self, monkeypatch: "MonkeyPatch") -> None:
+        """Should return default value when PORT is not set."""
+        from mlsdm.cli import _get_env_port
+
+        monkeypatch.delenv("PORT", raising=False)
+        result = _get_env_port(8000)
+        assert result == 8000
+
+    def test_returns_default_when_port_empty(self, monkeypatch: "MonkeyPatch") -> None:
+        """Should return default value when PORT is empty string."""
+        from mlsdm.cli import _get_env_port
+
+        # When PORT is set to empty string, os.environ.get returns ""
+        # which should cause int("") to raise ValueError -> return default
+        monkeypatch.setenv("PORT", "")
+        result = _get_env_port(8000)
+        assert result == 8000
+
+    def test_returns_parsed_int_when_port_valid(self, monkeypatch: "MonkeyPatch") -> None:
+        """Should return parsed integer when PORT is valid."""
+        from mlsdm.cli import _get_env_port
+
+        monkeypatch.setenv("PORT", "9000")
+        result = _get_env_port(8000)
+        assert result == 9000
+
+    def test_returns_default_when_port_invalid(self, monkeypatch: "MonkeyPatch") -> None:
+        """Should return default when PORT is not a valid integer."""
+        from mlsdm.cli import _get_env_port
+
+        monkeypatch.setenv("PORT", "not_a_number")
+        result = _get_env_port(8000)
+        assert result == 8000
+
+    def test_returns_default_when_port_float(self, monkeypatch: "MonkeyPatch") -> None:
+        """Should return default when PORT is a float string."""
+        from mlsdm.cli import _get_env_port
+
+        monkeypatch.setenv("PORT", "8080.5")
+        result = _get_env_port(8000)
+        assert result == 8000
+
+    def test_uses_custom_default(self, monkeypatch: "MonkeyPatch") -> None:
+        """Should use custom default value when provided."""
+        from mlsdm.cli import _get_env_port
+
+        monkeypatch.delenv("PORT", raising=False)
+        result = _get_env_port(3000)
+        assert result == 3000
+
+
+class TestServeSecurityNotice:
+    """Tests for the security warning when binding to 0.0.0.0."""
+
+    def test_serve_shows_security_notice_for_all_interfaces(
+        self, monkeypatch: "MonkeyPatch", capsys: "CaptureFixture[str]"
+    ) -> None:
+        """Serve should show security notice when binding to 0.0.0.0."""
+        from unittest.mock import MagicMock, patch
+
+        # Create a mock serve function to prevent actual server startup
+        mock_serve_func = MagicMock(return_value=0)
+        mock_serve_module = MagicMock()
+        mock_serve_module.serve = mock_serve_func
+
+        with patch.dict("sys.modules", {"mlsdm.entrypoints.serve": mock_serve_module}):
+            from mlsdm.cli import cmd_serve
+
+            args = argparse.Namespace(
+                host="0.0.0.0",
+                port=8000,
+                config=None,
+                backend=None,
+                log_level="info",
+                reload=False,
+                disable_rate_limit=False,
+            )
+            cmd_serve(args)
+
+        captured = capsys.readouterr()
+        assert "SECURITY NOTICE" in captured.out
+
+    def test_serve_no_security_notice_for_localhost(
+        self, monkeypatch: "MonkeyPatch", capsys: "CaptureFixture[str]"
+    ) -> None:
+        """Serve should not show security notice when binding to localhost."""
+        from unittest.mock import MagicMock, patch
+
+        mock_serve_func = MagicMock(return_value=0)
+        mock_serve_module = MagicMock()
+        mock_serve_module.serve = mock_serve_func
+
+        with patch.dict("sys.modules", {"mlsdm.entrypoints.serve": mock_serve_module}):
+            from mlsdm.cli import cmd_serve
+
+            args = argparse.Namespace(
+                host="127.0.0.1",
+                port=8000,
+                config=None,
+                backend=None,
+                log_level="info",
+                reload=False,
+                disable_rate_limit=False,
+            )
+            cmd_serve(args)
+
+        captured = capsys.readouterr()
+        assert "SECURITY NOTICE" not in captured.out

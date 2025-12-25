@@ -187,7 +187,16 @@ def cmd_demo(args: argparse.Namespace) -> int:
 
 
 def cmd_serve(args: argparse.Namespace) -> int:
-    """Start the HTTP API server."""
+    """Start the HTTP API server.
+
+    The server binds to the specified host and port. By default, it binds to
+    0.0.0.0 (all interfaces) which may expose the service to external networks.
+    In production, consider using a reverse proxy or binding to localhost only.
+
+    Environment variables HOST and PORT can be used as defaults for --host and
+    --port respectively. This allows configuration via environment without
+    requiring command-line arguments.
+    """
     from mlsdm.entrypoints.serve import serve
 
     # Set environment variables from args
@@ -206,6 +215,15 @@ def cmd_serve(args: argparse.Namespace) -> int:
     print(f"Starting server on {args.host}:{args.port}")
     print(f"Backend: {os.environ.get('LLM_BACKEND', 'local_stub')}")
     print(f"Config: {os.environ.get('CONFIG_PATH', 'config/default_config.yaml')}")
+
+    # Security notice: warn when binding to all interfaces (0.0.0.0)
+    # This is a common default but may unintentionally expose the service.
+    if args.host == "0.0.0.0":
+        print()
+        print("⚠️  SECURITY NOTICE: Binding to 0.0.0.0 exposes the server to all")
+        print("   network interfaces. For local development, consider using 127.0.0.1.")
+        print("   In production, use a reverse proxy (nginx, traefik) for TLS termination.")
+
     print()
 
     return serve(

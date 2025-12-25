@@ -370,6 +370,17 @@ For complete system design, see [ARCHITECTURE_SPEC.md](docs/ARCHITECTURE_SPEC.md
   ```
   Replace placeholders in `.env` with real endpoints/keys only outside CI. See [CONFIGURATION_GUIDE.md](docs/CONFIGURATION_GUIDE.md) for the required fields.
 
+- **Canonical CLI with env vars:**
+  ```bash
+  # Start with custom host/port via environment
+  HOST=127.0.0.1 PORT=8080 mlsdm serve
+  
+  # Or export and run
+  export HOST=0.0.0.0 PORT=9000
+  mlsdm serve --config config/production.yaml
+  ```
+  The `mlsdm serve` command accepts `HOST` and `PORT` environment variables as defaults for `--host` and `--port` options.
+
 ### Prerequisites
 
 - Python 3.10+

@@ -592,6 +592,34 @@ export MLSDM_NEUROLANG__MODE=disabled
 export MLSDM_NEUROLANG__CHECKPOINT_PATH=config/neurolang_grammar.pt
 ```
 
+### Server Binding Environment Variables
+
+The `mlsdm serve` command supports the following environment variables for server configuration:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `HOST` | `0.0.0.0` | Host address to bind the server |
+| `PORT` | `8000` | Port number for the HTTP API |
+| `CONFIG_PATH` | `config/default_config.yaml` | Path to configuration file |
+| `LLM_BACKEND` | `local_stub` | LLM backend to use |
+
+**Example usage:**
+
+```bash
+# Bind to localhost on port 8080
+HOST=127.0.0.1 PORT=8080 mlsdm serve
+
+# Use custom config and OpenAI backend
+CONFIG_PATH=config/production.yaml LLM_BACKEND=openai mlsdm serve
+
+# Environment variables can also be exported
+export HOST=127.0.0.1
+export PORT=9000
+mlsdm serve
+```
+
+> **Security Note:** The default `HOST=0.0.0.0` binds to all network interfaces, which may expose the server externally. For local development, use `HOST=127.0.0.1`. In production, use a reverse proxy (nginx, traefik) for TLS termination and access control.
+
 ### Using .env File
 
 Create `.env` from `env.example`:
