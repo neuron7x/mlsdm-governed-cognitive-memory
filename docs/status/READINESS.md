@@ -21,7 +21,7 @@ Blocking issues: 3
 | Observability pipeline (logging/metrics/tracing) | NOT VERIFIED | `tests/observability/test_aphasia_logging.py`, `tests/observability/test_aphasia_metrics.py`, `docs/OBSERVABILITY_GUIDE.md` | Instrumentation documented; no execution evidence in this PR. |
 | CI / quality gates (coverage, property tests) | NOT VERIFIED | `.github/workflows/readiness-evidence.yml` (jobs: deps_smoke, unit, coverage_gate), `.github/workflows/property-tests.yml`, `coverage_gate.sh` | Evidence workflow (uv-based) runs on pull_request/workflow_dispatch; awaiting current run artifacts for this PR. |
 | Config & calibration pipeline | NOT VERIFIED | `config/`, `docs/CONFIGURATION_GUIDE.md`, `tests/integration/test_public_api.py` | Config paths defined; validation runs absent for this commit. |
-| CLI / entrypoints | NOT VERIFIED | `src/mlsdm/entrypoints/`, `Makefile` | Entrypoints exist; no execution evidence tied to this revision. |
+| CLI / entrypoints | IMPROVED | `src/mlsdm/entrypoints/`, `src/mlsdm/cli/__init__.py`, `Makefile` | CLI now respects HOST/PORT env vars; safe PORT parsing with `_get_env_port()` helper; PR #381 |
 | Benchmarks / performance tooling | NOT VERIFIED | `tests/perf/test_slo_api_endpoints.py`, `benchmarks/README.md` | Perf tooling present; benchmarks not executed in this PR. |
 | Deployment artifacts (k8s/manifests) | NOT VERIFIED | `deploy/k8s/`, `deploy/grafana/mlsdm_observability_dashboard.json` | Deployment manifests exist; no deployment validation evidence in this PR. |
 
@@ -56,6 +56,14 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-25 — **Enhanced CLI environment variable support for HOST/PORT defaults** — PR: #381
+  - Updated `src/mlsdm/cli/__init__.py`: CLI now respects HOST and PORT environment variables as defaults
+  - Added `_get_env_port()` helper for safe PORT parsing with ValueError handling
+  - Updated `examples/run_neuro_service.py`: Replaced direct `serve()` call with secure subprocess delegation
+  - **Security improvement**: Subprocess now uses constant argv `[sys.executable, "-m", "mlsdm.cli", "serve"]` with configuration passed via environment (fixes Semgrep `dangerous-subprocess-use-tainted-env-args` finding)
+  - **Type safety**: Fixed mypy error where `Optional[str]` was passed where `str` required
+  - **Evidence impact**: CLI interface remains backward-compatible; canonical entrypoint `mlsdm serve` now accepts HOST/PORT from environment
+  - **Testing posture**: Subprocess delegation eliminates double-start behavior; example wrapper now propagates exit codes correctly
 - 2025-12-24 — **Fixed coverage badge workflow orphan branch artifact loss** — PR: #376
   - Updated `.github/workflows/coverage-badge.yml`: Preserve `coverage.svg` through branch operations
   - **Problem**: `git checkout --orphan badges` + `git rm -rf .` deleted generated badge before commit
