@@ -9,7 +9,15 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+# Ensure src layout is importable for tests without an installed package.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_PATH = PROJECT_ROOT / "src"
+if str(SRC_PATH) not in sys.path:
+    sys.path.insert(0, str(SRC_PATH))
 
 # CRITICAL: Set environment variables BEFORE any imports that might load mlsdm.api.app
 # This ensures rate limiting is disabled before FastAPI middleware is initialized
