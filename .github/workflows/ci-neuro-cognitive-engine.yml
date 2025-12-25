@@ -10,6 +10,17 @@ on:
       - main
       - 'feature/*'
   workflow_dispatch:
+    inputs:
+      run_safety_eval:
+        description: 'Run Cognitive Safety Evaluation'
+        required: false
+        type: boolean
+        default: false
+      run_benchmarks:
+        description: 'Run Performance Benchmarks'
+        required: false
+        type: boolean
+        default: false
   schedule:
     - cron: '0 3 * * *'
 
@@ -346,7 +357,7 @@ jobs:
     name: Performance Benchmarks (SLO Gate)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks')
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-benchmarks') || (github.event_name == 'workflow_dispatch' && inputs.run_benchmarks)
     # HEAVY PATH CONFIGURATION:
     # - For pull_request: continue-on-error=true (informational, not blocking)
     #   Benchmark failures in PRs are reported but don't block merge.
@@ -524,7 +535,7 @@ jobs:
     name: Cognitive Safety Evaluation
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-safety-eval')
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-safety-eval') || (github.event_name == 'workflow_dispatch' && inputs.run_safety_eval)
     # INFORMATIONAL: Sapolsky evaluation suite is research/exploratory
     # This validates cognitive safety but is not a hard gate for CI
     # Failures here indicate areas for research/improvement, not blocking issues
