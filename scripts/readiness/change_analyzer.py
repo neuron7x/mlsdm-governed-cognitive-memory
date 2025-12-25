@@ -10,6 +10,9 @@ from typing import Dict, Iterable, List, Mapping, MutableMapping, Sequence
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 
+SRC_PREFIX = "src/"
+TESTS_PREFIX = "tests/"
+
 CATEGORIES: List[str] = [
     "security_critical",
     "functional_core",
@@ -19,14 +22,7 @@ CATEGORIES: List[str] = [
     "documentation",
 ]
 
-CATEGORY_PRIORITY: List[str] = [
-    "security_critical",
-    "functional_core",
-    "infrastructure",
-    "observability",
-    "test_coverage",
-    "documentation",
-]
+CATEGORY_PRIORITY: List[str] = CATEGORIES.copy()
 
 RISK_MAP: Mapping[str, str] = {
     "security_critical": "critical",
@@ -55,18 +51,18 @@ def classify_category(path: str) -> str:
     lower = normalized.lower()
     if "moral_filter" in lower:
         return "security_critical"
-    if normalized.startswith("src/security/"):
+    if normalized.startswith(f"{SRC_PREFIX}security/"):
         return "security_critical"
-    if normalized.startswith("src/") and "/security/" in normalized[4:]:
+    if normalized.startswith(SRC_PREFIX) and "/security/" in normalized[len(SRC_PREFIX) :]:
         return "security_critical"
-    if normalized.startswith("src/"):
+    if normalized.startswith(SRC_PREFIX):
         return "functional_core"
     if normalized.startswith(".github/workflows/") or normalized.startswith("deploy/") or normalized.startswith("config/"):
         return "infrastructure"
     if any(key in lower for key in ("observability", "metrics", "logging", "tracing")):
         return "observability"
     name = Path(normalized).name
-    if normalized.startswith("tests/") or (name.startswith("test_") and name.endswith(".py")):
+    if normalized.startswith(TESTS_PREFIX) or (name.startswith("test_") and name.endswith(".py")):
         return "test_coverage"
     if normalized.startswith("docs/") or normalized.endswith(".md"):
         return "documentation"
@@ -79,10 +75,10 @@ def risk_for_category(category: str) -> str:
 
 def module_name(path: str) -> str:
     normalized = normalize_path(path)
-    if normalized.startswith("src/"):
-        normalized = normalized[len("src/") :]
-    elif normalized.startswith("tests/"):
-        normalized = normalized[len("tests/") :]
+    if normalized.startswith(SRC_PREFIX):
+        normalized = normalized[len(SRC_PREFIX) :]
+    elif normalized.startswith(TESTS_PREFIX):
+        normalized = normalized[len(TESTS_PREFIX) :]
     without_suffix = Path(normalized).with_suffix("")
     return ".".join(without_suffix.parts)
 
@@ -188,10 +184,13 @@ def read_after_content(path: str, root: Path) -> str | None:
         return None
     try:
         return target.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        try:
+            return target.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return None
     except OSError:
         return None
-    except UnicodeDecodeError:
-        return target.read_text(encoding="utf-8", errors="replace")
 
 
 def diff_signatures(before: Mapping[str, str], after: Mapping[str, str]) -> Dict[str, List[str]]:
@@ -259,7 +258,7 @@ def analyze_paths(paths: Sequence[str], base_ref: str, root: Path = ROOT) -> Dic
         file_result = analyze_file(path, base_ref, root)
         category = file_result["category"]  # type: ignore[assignment]
         risk = file_result["risk"]  # type: ignore[assignment]
-        categories[category] = categories.get(category, 0) + 1
+        categories[category] += 1
         max_risk_rank = max(max_risk_rank, RISK_ORDER.get(risk, 0))
         files_block[path] = file_result
 
