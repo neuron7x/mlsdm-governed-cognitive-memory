@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 
 SRC_PREFIX = "src/"
 TESTS_PREFIX = "tests/"
+SECURITY_KEYWORD = "moral_filter"
 
 CATEGORIES: List[str] = [
     "security_critical",
@@ -49,7 +50,7 @@ def normalize_path(path: str) -> str:
 def classify_category(path: str) -> str:
     normalized = normalize_path(path)
     lower = normalized.lower()
-    if "moral_filter" in lower:
+    if SECURITY_KEYWORD in lower:
         return "security_critical"
     if normalized.startswith(f"{SRC_PREFIX}security/"):
         return "security_critical"
@@ -89,7 +90,7 @@ def decorator_names(node: ast.AST) -> List[str]:
         for decorator in getattr(node, "decorator_list", []):
             try:
                 names.append(ast.unparse(decorator).strip())
-            except Exception:
+            except (TypeError, ValueError):
                 continue
     return sorted(names)
 
@@ -139,7 +140,7 @@ def canonical_class_signature(node: ast.ClassDef, module: str) -> str:
     for base in node.bases:
         try:
             bases.append(ast.unparse(base).strip())
-        except Exception:
+        except (TypeError, ValueError):
             continue
     bases_part = f"[bases={','.join(sorted(bases))}]" if bases else ""
     decorators = decorator_names(node)
