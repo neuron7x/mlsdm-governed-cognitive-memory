@@ -45,8 +45,9 @@ def main() -> int:
     print(f"Port: {port}")
     print()
 
-    # Use a constant argv; pass host/port/config via environment variables
-    # This avoids Semgrep dangerous-subprocess-use-tainted-env-args
+    # Use a constant argv; pass host/port/config via environment variables.
+    # This avoids passing environment-derived values as command-line arguments,
+    # which prevents Semgrep dangerous-subprocess-use-tainted-env-args finding.
     cmd = [sys.executable, "-m", "mlsdm.cli", "serve"]
 
     # Build subprocess environment with explicit overrides
@@ -57,6 +58,7 @@ def main() -> int:
         "CONFIG_PATH": config_path,
     }
 
+    # Use check=False and return the exit code to propagate errors correctly
     result = subprocess.run(cmd, env=env, check=False)
     return result.returncode
 
