@@ -638,23 +638,12 @@ class LLMPipeline:
             try:
                 result = pre_filter.evaluate(prompt, context)
                 stage_duration = (perf() - stage_start) * 1000
-                result_payload: Any = result
-                if isinstance(result, FilterResult):
-                    result_payload = {
-                        "decision": result.decision,
-                        "reason": result.reason,
-                    }
-                    if result.modified_content is not None:
-                        result_payload["modified_content"] = result.modified_content
-                    if result.metadata:
-                        result_payload["metadata"] = result.metadata
-
                 stages.append(
                     PipelineStageResult(
                         stage_name=filter_name,
                         success=True,
                         duration_ms=stage_duration,
-                        result=result_payload,
+                        result=result,
                     )
                 )
 
@@ -740,23 +729,12 @@ class LLMPipeline:
             try:
                 result = post_filter.evaluate(current_text, context)
                 stage_duration = (perf() - stage_start) * 1000
-                result_payload: Any = result
-                if isinstance(result, FilterResult):
-                    result_payload = {
-                        "decision": result.decision,
-                        "reason": result.reason,
-                    }
-                    if result.modified_content is not None:
-                        result_payload["modified_content"] = result.modified_content
-                    if result.metadata:
-                        result_payload["metadata"] = result.metadata
-
                 stages.append(
                     PipelineStageResult(
                         stage_name=filter_name,
                         success=True,
                         duration_ms=stage_duration,
-                        result=result_payload,
+                        result=result,
                     )
                 )
 

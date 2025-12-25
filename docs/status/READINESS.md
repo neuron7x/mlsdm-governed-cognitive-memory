@@ -57,6 +57,10 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-25 — **Preserve filter results in pipeline stage metadata** — PR: #???
+  - Updated `src/mlsdm/core/llm_pipeline.py`: keep `PipelineStageResult.result` as `FilterResult` to preserve integration expectations
+  - **Behavior unchanged**: pipeline output and decision logic remain the same; metadata format restored
+  - **Evidence impact**: readiness check required due to src/ changes; no additional tests run here
 - 2025-12-25 — **Readiness change analyzer unit tests updated** — PR: #395
   - Updated `tests/unit/test_readiness_change_analyzer.py`: Added cases for scope prefix matching and workflow file detection assertions
   - **Evidence impact**: Improved test coverage for readiness gate validation logic
