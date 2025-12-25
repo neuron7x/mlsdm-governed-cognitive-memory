@@ -647,11 +647,7 @@ class LLMPipeline:
                         stage_name=filter_name,
                         success=True,
                         duration_ms=stage_duration,
-                        result={
-                            "filter_result": result,
-                            "decision": result.decision.value,
-                            "reason": result.reason,
-                        },
+                        result=result,
                     )
                 )
 
@@ -743,11 +739,7 @@ class LLMPipeline:
                         stage_name=filter_name,
                         success=True,
                         duration_ms=stage_duration,
-                        result={
-                            "filter_result": result,
-                            "decision": result.decision.value,
-                            "reason": result.reason,
-                        },
+                        result=result,
                     )
                 )
 
