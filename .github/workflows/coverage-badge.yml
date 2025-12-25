@@ -46,6 +46,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-py3.11-
             ${{ runner.os }}-
+          fail-on-cache-errors: false
       
       - name: Install dependencies
         run: |
