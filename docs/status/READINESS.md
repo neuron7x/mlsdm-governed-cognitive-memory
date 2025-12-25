@@ -56,6 +56,11 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-25 — **Emergency observability hooks in CognitiveController** — PR: #???
+  - Updated `src/mlsdm/core/cognitive_controller.py`: centralized emergency shutdown and auto-recovery metrics recording
+  - Added structured logging for emergency entry, auto-recovery outcomes, and manual reset actions
+  - **Behavior unchanged**: decision logic and recovery conditions remain the same; observability only
+  - **Evidence impact**: readiness check required due to src/ changes; no additional tests run here
 - 2025-12-25 — **PELM retrieve performance + observability** — PR: #???
   - Updated `src/mlsdm/memory/phase_entangled_lattice_memory.py`: preallocated confidence mask to reduce temporary allocations during retrieval
   - Added optional `return_indices` to `retrieve()` for internal index access without repeating lookups
