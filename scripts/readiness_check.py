@@ -7,7 +7,10 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable, List, NamedTuple, Optional
+from typing import TYPE_CHECKING, NamedTuple
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 ROOT = Path(__file__).resolve().parent.parent
 READINESS_PATH = ROOT / "docs" / "status" / "READINESS.md"
@@ -23,16 +26,16 @@ MAX_LISTED_FILES = 10
 
 
 class GitDiffResult(NamedTuple):
-    files: List[str]
+    files: list[str]
     success: bool
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class DiffOutcome(NamedTuple):
-    files: List[str]
+    files: list[str]
     base_ref: str
     success: bool
-    error: Optional[str] = None
+    error: str | None = None
 
 
 def log_error(message: str) -> None:
@@ -46,7 +49,7 @@ def ensure_readiness_file() -> bool:
     return False
 
 
-def parse_last_updated() -> Optional[datetime]:
+def parse_last_updated() -> datetime | None:
     content = READINESS_PATH.read_text(encoding="utf-8")
     match = re.search(LAST_UPDATED_PATTERN, content)
     if not match:
@@ -112,8 +115,8 @@ def ref_exists(ref: str) -> bool:
 
 def collect_changed_files() -> DiffOutcome:
     had_git_errors = False
-    last_error: Optional[str] = None
-    refs_to_try: List[str] = []
+    last_error: str | None = None
+    refs_to_try: list[str] = []
     event_name = os.environ.get("GITHUB_EVENT_NAME", "")
     base_ref_env = os.environ.get("GITHUB_BASE_REF")
     ref_name = os.environ.get("GITHUB_REF_NAME")
@@ -158,11 +161,9 @@ def collect_changed_files() -> DiffOutcome:
 
 def is_scoped(path: str) -> bool:
     normalized = path.replace("\\", "/")
-    if any(normalized.startswith(prefix) for prefix in SCOPED_PREFIXES):
-        return True
-    if Path(normalized).name.startswith("Dockerfile"):
-        return True
-    return False
+    return any(normalized.startswith(prefix) for prefix in SCOPED_PREFIXES) or Path(normalized).name.startswith(
+        "Dockerfile"
+    )
 
 
 def readiness_updated(changed_files: Iterable[str]) -> bool:

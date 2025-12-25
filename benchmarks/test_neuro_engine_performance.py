@@ -224,7 +224,7 @@ def test_benchmark_pre_flight_latency():
     p95_values = [s['p95'] for s in all_stats]
     median_p95 = sorted(p95_values)[len(p95_values) // 2]
 
-    print(f"\nMedian Results across 3 runs:")
+    print("\nMedian Results across 3 runs:")
     print(f"  P95 (median): {median_p95:.3f}ms")
     print()
 
@@ -260,7 +260,7 @@ def test_benchmark_end_to_end_small_load():
     p95_values = [s['p95'] for s in all_stats]
     median_p95 = sorted(p95_values)[len(p95_values) // 2]
 
-    print(f"\nMedian Results across 3 runs (based on 250 measurements per run):")
+    print("\nMedian Results across 3 runs (based on 250 measurements per run):")
     print(f"  P95 (median): {median_p95:.3f}ms")
     print()
 
@@ -287,7 +287,7 @@ def test_benchmark_end_to_end_heavy_load():
 
     # Run 3 times and take median to reduce variance
     all_results = []
-    for run in range(3):
+    for _run in range(3):
         results = benchmark_end_to_end_latency_heavy_load()
         all_results.append(results)
 
@@ -302,7 +302,6 @@ def test_benchmark_end_to_end_heavy_load():
     for token_key in token_keys:
         p95_values = [run[token_key]['p95'] for run in all_results]
         median_p95 = sorted(p95_values)[len(p95_values) // 2]
-        
         token_count = token_key.split("_")[1]
         print(f"\nmax_tokens={token_count}:")
         print(f"  Median P95: {median_p95:.3f}ms")

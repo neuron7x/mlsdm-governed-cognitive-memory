@@ -237,8 +237,8 @@ class TestCLIServe:
 
     def test_serve_applies_config_before_import(self, tmp_path, monkeypatch):
         """Ensure CONFIG_PATH from CLI is applied before importing serve/app."""
-        from mlsdm.config.constants import DEFAULT_CONFIG_PATH
         from mlsdm import cli
+        from mlsdm.config.constants import DEFAULT_CONFIG_PATH
 
         temp_config = tmp_path / "temp_config.yaml"
         temp_config.write_text(Path(DEFAULT_CONFIG_PATH).read_text(), encoding="utf-8")

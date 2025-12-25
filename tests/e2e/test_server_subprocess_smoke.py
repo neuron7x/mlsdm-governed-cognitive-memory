@@ -11,6 +11,7 @@ from typing import Any
 
 import pytest
 import requests
+
 from mlsdm.config.constants import DEFAULT_CONFIG_PATH
 
 
@@ -20,7 +21,7 @@ def _get_free_port() -> int:
         return sock.getsockname()[1]
 
 
-def _wait_for_health(url: str, timeout: float = 30.0) -> dict[str, Any]:
+def _wait_for_health(url: str, timeout: float = 20.0) -> dict[str, Any]:
     deadline = time.time() + timeout
     last_error: Exception | None = None
     while time.time() < deadline:
@@ -30,7 +31,7 @@ def _wait_for_health(url: str, timeout: float = 30.0) -> dict[str, Any]:
                 return response.json()
         except Exception as exc:  # pragma: no cover - diagnostics only
             last_error = exc
-        time.sleep(0.5)
+        time.sleep(0.25)
     raise AssertionError(f"Health endpoint did not become ready: {last_error}")
 
 
@@ -49,6 +50,7 @@ def test_cloud_entrypoint_smoke(tmp_path) -> None:
             "OTEL_SDK_DISABLED": "true",
         }
     )
+    assert os.path.exists(DEFAULT_CONFIG_PATH), f"Config not found: {DEFAULT_CONFIG_PATH}"
 
     stdout_path = tmp_path.joinpath("stdout.log")
     stderr_path = tmp_path.joinpath("stderr.log")
@@ -64,9 +66,18 @@ def test_cloud_entrypoint_smoke(tmp_path) -> None:
         try:
             health = _wait_for_health(f"http://127.0.0.1:{port}/health/ready")
             assert health["status"] in {"ready", "healthy"}
+        except AssertionError as err:
+            stdout.flush()
+            stderr.flush()
+            stdout_tail = stdout_path.read_text(encoding="utf-8").splitlines()[-20:]
+            stderr_tail = stderr_path.read_text(encoding="utf-8").splitlines()[-20:]
+            raise AssertionError(
+                f"{err}\nSTDOUT (tail):\n" + "\n".join(stdout_tail) + "\nSTDERR (tail):\n" + "\n".join(stderr_tail)
+            ) from err
         finally:
             proc.terminate()
             try:
-                proc.wait(timeout=10)
+                proc.wait(timeout=3)
             except subprocess.TimeoutExpired:
                 proc.kill()
+                proc.wait(timeout=3)
