@@ -56,6 +56,11 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-24 — **Pipeline observability enhancements** — PR: #???
+  - Updated `src/mlsdm/core/llm_pipeline.py`: cache `time.perf_counter` in hot paths
+  - Added `stage_durations_ms` to `PipelineResult.metadata` for per-stage timing visibility
+  - Included filter decision/reason in pre/post `PipelineStageResult.result` without altering behavior
+  - **Evidence impact**: Observability metadata expanded; no runtime verification added in this PR
 - 2025-12-24 — **Fixed coverage badge workflow orphan branch artifact loss** — PR: #376
   - Updated `.github/workflows/coverage-badge.yml`: Preserve `coverage.svg` through branch operations
   - **Problem**: `git checkout --orphan badges` + `git rm -rf .` deleted generated badge before commit
