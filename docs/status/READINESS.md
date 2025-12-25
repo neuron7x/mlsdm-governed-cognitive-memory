@@ -56,6 +56,14 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-25 — **MoralFilterV2 observability enhancements** — PR: #387
+  - Updated `src/mlsdm/cognition/moral_filter_v2.py`: Added boundary-case DEBUG logging
+  - Added `_log_boundary_cases()` helper to log moral values near MIN/MAX/threshold boundaries (±0.01) when DEBUG level enabled
+  - Extended `get_state()` to expose `min_threshold`, `max_threshold`, `dead_band` as read-only fields for inspection
+  - Expanded `compute_moral_value()` signature with optional `metadata` and `context` parameters to record `harmful_count`/`positive_count` for telemetry
+  - **Behavior unchanged**: No changes to decision logic, score computation, or thresholds—only added side-effect telemetry
+  - **Evidence impact**: Improved debugging visibility for moral filter boundary decisions; no functional tests required
+  - **Testing posture**: Code compiles; existing property tests (`tests/property/test_moral_filter_properties.py`) continue to validate core behavior
 - 2025-12-24 — **Pipeline observability enhancements** — PR: #???
   - Updated `src/mlsdm/core/llm_pipeline.py`: cache `time.perf_counter` in hot paths
   - Added `stage_durations_ms` to `PipelineResult.metadata` for per-stage timing visibility
