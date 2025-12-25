@@ -393,6 +393,7 @@ def log_pelm_retrieve(
     phase_tolerance: float,
     top_k: int,
     results_count: int,
+    avg_resonance: float | None = None,
     latency_ms: float | None = None,
     correlation_id: str | None = None,
 ) -> None:
@@ -405,6 +406,7 @@ def log_pelm_retrieve(
         phase_tolerance: Phase tolerance used
         top_k: Maximum results requested
         results_count: Number of results returned
+        avg_resonance: Average resonance score for returned results
         latency_ms: Operation latency in milliseconds
         correlation_id: Optional correlation ID for request tracking
     """
@@ -419,6 +421,8 @@ def log_pelm_retrieve(
             "top_k": top_k,
             "results_count": results_count,
         }
+        if avg_resonance is not None:
+            metrics["avg_resonance"] = round(avg_resonance, 6)
         if latency_ms is not None:
             metrics["latency_ms"] = round(latency_ms, 3)
 
@@ -714,6 +718,7 @@ def record_pelm_retrieve(
     phase_tolerance: float,
     top_k: int,
     results_count: int,
+    avg_resonance: float | None = None,
     latency_ms: float | None = None,
     correlation_id: str | None = None,
 ) -> None:
@@ -724,6 +729,7 @@ def record_pelm_retrieve(
         phase_tolerance: Phase tolerance used
         top_k: Maximum results requested
         results_count: Number of results returned
+        avg_resonance: Average resonance score for returned results
         latency_ms: Operation latency in milliseconds
         correlation_id: Optional correlation ID
     """
@@ -736,7 +742,13 @@ def record_pelm_retrieve(
             exporter.observe_pelm_retrieve_latency(latency_ms)
 
         log_pelm_retrieve(
-            query_phase, phase_tolerance, top_k, results_count, latency_ms, correlation_id
+            query_phase,
+            phase_tolerance,
+            top_k,
+            results_count,
+            avg_resonance,
+            latency_ms,
+            correlation_id,
         )
     except Exception:
         logger.debug("Failed to record PELM retrieve event", exc_info=True)

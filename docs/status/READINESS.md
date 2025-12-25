@@ -1,5 +1,5 @@
 # System Readiness Status
-Last updated: 2025-12-24
+Last updated: 2025-12-25
 Owner: neuron7x / MLSDM maintainers
 Scope: MLSDM cognitive engine repository (src/, tests/, deploy/, workflows)
 
@@ -56,6 +56,12 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-25 — **PELM retrieve performance + observability** — PR: #???
+  - Updated `src/mlsdm/memory/phase_entangled_lattice_memory.py`: preallocated confidence mask to reduce temporary allocations during retrieval
+  - Added optional `return_indices` to `retrieve()` for internal index access without repeating lookups
+  - Updated `src/mlsdm/observability/memory_telemetry.py`: logged average resonance for PELM retrieve operations
+  - **Behavior unchanged**: retrieval selection logic and public behavior remain the same when `return_indices=False`
+  - **Evidence impact**: no new runtime verification in this PR
 - 2025-12-25 — **MoralFilterV2 observability enhancements** — PR: #387
   - Updated `src/mlsdm/cognition/moral_filter_v2.py`: Added boundary-case DEBUG logging
   - Added `_log_boundary_cases()` helper to log moral values near MIN/MAX/threshold boundaries (±0.01) when DEBUG level enabled
