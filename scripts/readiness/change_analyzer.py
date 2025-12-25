@@ -87,12 +87,11 @@ def module_name(path: str) -> str:
 
 def decorator_names(node: ast.AST) -> List[str]:
     names: List[str] = []
-    if hasattr(node, "decorator_list"):
-        for decorator in getattr(node, "decorator_list", []):
-            try:
-                names.append(ast.unparse(decorator).strip())
-            except (TypeError, ValueError):
-                continue
+    for decorator in getattr(node, "decorator_list", []):
+        try:
+            names.append(ast.unparse(decorator).strip())
+        except (TypeError, ValueError):
+            continue
     return sorted(names)
 
 
@@ -188,12 +187,9 @@ def read_after_content(path: str, root: Path) -> str | None:
     if not target.exists():
         return None
     try:
-        return target.read_text(encoding="utf-8")
-    except (UnicodeDecodeError, OSError):
-        try:
-            return target.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            return None
+        return target.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
 
 
 def diff_signatures(before: Mapping[str, str], after: Mapping[str, str]) -> Dict[str, List[str]]:
