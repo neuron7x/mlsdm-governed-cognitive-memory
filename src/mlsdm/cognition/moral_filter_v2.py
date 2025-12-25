@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from mlsdm.config import MoralFilterCalibration
@@ -77,6 +77,7 @@ class MoralFilterV2:
     # Pre-computed constants for optimization
     _ONE_MINUS_ALPHA = 1.0 - EMA_ALPHA
     _ADAPT_DELTA = 0.05
+    _BOUNDARY_EPS = 0.01
 
     def __init__(
         self, initial_threshold: float | None = None, filter_id: str = "default"
@@ -113,6 +114,9 @@ class MoralFilterV2:
         )
 
     def evaluate(self, moral_value: float) -> bool:
+        if logger.isEnabledFor(logging.DEBUG):
+            self._log_boundary_cases(moral_value)
+
         # Optimize: fast-path for clear accept/reject cases
         if moral_value >= self.MAX_THRESHOLD:
             return True
@@ -146,7 +150,28 @@ class MoralFilterV2:
             self._record_drift(old_threshold, self.threshold)
 
     def get_state(self) -> dict[str, float]:
-        return {"threshold": float(self.threshold), "ema": float(self.ema_accept_rate)}
+        return {
+            "threshold": float(self.threshold),
+            "ema": float(self.ema_accept_rate),
+            "min_threshold": float(self.MIN_THRESHOLD),
+            "max_threshold": float(self.MAX_THRESHOLD),
+            "dead_band": float(self.DEAD_BAND),
+        }
+
+    def _log_boundary_cases(self, moral_value: float) -> None:
+        """Log boundary cases for moral evaluation at DEBUG level."""
+        is_near_min = abs(moral_value - self.MIN_THRESHOLD) <= self._BOUNDARY_EPS
+        is_near_max = abs(moral_value - self.MAX_THRESHOLD) <= self._BOUNDARY_EPS
+        is_near_threshold = abs(moral_value - self.threshold) <= self._BOUNDARY_EPS
+
+        if is_near_min or is_near_max or is_near_threshold:
+            logger.debug(
+                "MoralFilterV2 boundary case: value=%.3f threshold=%.3f min=%.3f max=%.3f",
+                moral_value,
+                self.threshold,
+                self.MIN_THRESHOLD,
+                self.MAX_THRESHOLD,
+            )
 
     def _record_drift(self, old: float, new: float) -> None:
         """Record and analyze threshold drift.
@@ -246,7 +271,12 @@ class MoralFilterV2:
         """
         return float(self.ema_accept_rate)
 
-    def compute_moral_value(self, text: str) -> float:
+    def compute_moral_value(
+        self,
+        text: str,
+        metadata: dict[str, Any] | None = None,
+        context: dict[str, Any] | None = None,
+    ) -> float:
         """Compute a moral value score for the given text.
 
         This is a heuristic-based scoring method that analyzes text for
@@ -282,6 +312,14 @@ class MoralFilterV2:
 
         harmful_count = len(harmful_matches)
         positive_count = len(positive_matches)
+        if metadata is not None:
+            metadata["harmful_count"] = harmful_count
+            metadata["positive_count"] = positive_count
+        if context is not None:
+            context_metadata = context.setdefault("metadata", {})
+            if isinstance(context_metadata, dict):
+                context_metadata["harmful_count"] = harmful_count
+                context_metadata["positive_count"] = positive_count
 
         # Base score is high (0.8) - "innocent until proven guilty"
         # This ensures neutral text passes normal moral thresholds
