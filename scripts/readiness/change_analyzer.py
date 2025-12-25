@@ -14,15 +14,24 @@ if TYPE_CHECKING:
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 
-BIDI_PATTERN = re.compile(r"[\u202A-\u202E\u2066-\u2069]")
+_BIDI_PATTERN = re.compile(r"[\u202A-\u202E\u2066-\u2069]")
+_SECURITY_MARKERS = (
+    "moral_filter",
+    "/security/",
+    "auth",
+    "crypto",
+    "encryption",
+    "permission",
+)
+_OBSERVABILITY_MARKERS = ("observability", "metrics", "logging", "tracing")
 
 CATEGORY_PRIORITY: list[str] = [
     "security_critical",
-    "functional_core",
-    "infrastructure",
-    "observability",
     "test_coverage",
     "documentation",
+    "infrastructure",
+    "observability",
+    "functional_core",
 ]
 
 RISK_MAP: dict[str, str] = {
@@ -44,6 +53,7 @@ RISK_ORDER: dict[str, int] = {
 
 
 def normalize_path(path: str) -> str:
+    """Normalize a file path to use forward slashes and drop redundant prefixes."""
     normalized = path.replace("\\", "/")
     while "//" in normalized:
         normalized = normalized.replace("//", "/")
@@ -53,35 +63,30 @@ def normalize_path(path: str) -> str:
 
 
 def _ensure_no_bidi(text: str, context: str) -> None:
-    if BIDI_PATTERN.search(text):
+    if _BIDI_PATTERN.search(text):
         raise ValueError(f"Bidirectional control character detected in {context}")
 
 
 def classify_category(path: str) -> str:
+    """Classify a path into a readiness category following priority rules."""
     normalized = normalize_path(path)
     lower = normalized.lower()
-    is_src = normalized.startswith("src/")
-    if (
-        "moral_filter" in lower
-        or normalized.startswith("src/security/")
-        or (is_src and "/security/" in normalized[4:])
-    ):
-        return "security_critical"
     name = Path(normalized).name
+
+    if any(marker in lower for marker in _SECURITY_MARKERS):
+        return "security_critical"
+    if normalized.startswith("src/security/") or (normalized.startswith("src/") and "/security/" in normalized[4:]):
+        return "security_critical"
     if normalized.startswith("tests/") or name.startswith("test_"):
         return "test_coverage"
     if normalized.startswith("docs/") or name.endswith((".md", ".rst", ".txt")):
         return "documentation"
-    if (
-        normalized.startswith(".github/workflows/")
-        or normalized.startswith("deploy/")
-        or normalized.startswith("config/")
+    if normalized.startswith(".github/workflows/") or normalized.startswith("deploy/") or normalized.startswith(
+        "config/"
     ):
         return "infrastructure"
-    if any(keyword in lower for keyword in ("observability", "metrics", "logging", "tracing")):
+    if any(marker in lower for marker in _OBSERVABILITY_MARKERS):
         return "observability"
-    if normalized.startswith("src/"):
-        return "functional_core"
     return "functional_core"
 
 
@@ -159,11 +164,13 @@ def _class_sig(node: ast.ClassDef, module: str) -> str:
 
 
 def parse_python_signatures(source: str, module: str) -> dict[str, str]:
+    """Extract canonical signatures for top-level functions/classes and class methods."""
     try:
         _ensure_no_bidi(source, module)
         tree = ast.parse(source)
     except (SyntaxError, ValueError):
         return {}
+
     signatures: dict[str, str] = {}
     for node in tree.body:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -177,18 +184,18 @@ def parse_python_signatures(source: str, module: str) -> dict[str, str]:
     return signatures
 
 
-def semantic_diff(before: str, after: str, module: str) -> dict[str, object]:
+def semantic_diff(before: str | None, after: str | None, module: str) -> dict[str, object]:
     before_sigs = parse_python_signatures(before, module) if before else {}
     after_sigs = parse_python_signatures(after, module) if after else {}
     before_keys = set(before_sigs)
     after_keys = set(after_sigs)
+
     added = sorted(after_sigs[k] for k in after_keys - before_keys)
     removed = sorted(before_sigs[k] for k in before_keys - after_keys)
     modified = sorted(
-        f"{before_sigs[k]} -> {after_sigs[k]}"
-        for k in before_keys & after_keys
-        if before_sigs[k] != after_sigs[k]
+        f"{before_sigs[k]} -> {after_sigs[k]}" for k in before_keys & after_keys if before_sigs[k] != after_sigs[k]
     )
+
     return {
         "added_functions": added,
         "removed_functions": removed,
@@ -197,42 +204,19 @@ def semantic_diff(before: str, after: str, module: str) -> dict[str, object]:
     }
 
 
-def get_file_at_ref(path: str, ref: str, root: Path) -> str | None:
-    _ = ref  # intentionally unused placeholder for future git integration
-    target = root / path
-    if not target.exists() or not target.is_file():
+def _read_file(path: Path) -> str | None:
+    if not path.exists() or not path.is_file():
         return None
     try:
-        content = target.read_text(encoding="utf-8", errors="replace")
-        _ensure_no_bidi(content, path)
+        content = path.read_text(encoding="utf-8", errors="replace")
+        _ensure_no_bidi(content, str(path))
         return content
     except OSError:
         return None
 
 
-def _primary_category(counts: dict[str, int]) -> str:
-    if not counts:
-        return CATEGORY_PRIORITY[0]
-    max_count = max(counts.values())
-    candidates = [cat for cat, count in counts.items() if count == max_count]
-    for cat in CATEGORY_PRIORITY:
-        if cat in candidates:
-            return cat
-    return CATEGORY_PRIORITY[0]
-
-
-def _aggregate_counts(categories: list[str], risks: list[str]) -> dict[str, dict[str, int]]:
-    cat_counts: dict[str, int] = dict.fromkeys(CATEGORY_PRIORITY, 0)  # type: ignore[arg-type]
-    risk_counts: dict[str, int] = dict.fromkeys(RISK_ORDER, 0)  # type: ignore[arg-type]
-    for cat in categories:
-        cat_counts[cat] = cat_counts.get(cat, 0) + 1
-    for risk in risks:
-        risk_counts[risk] = risk_counts.get(risk, 0) + 1
-    return {"categories": cat_counts, "risks": risk_counts}
-
-
 def analyze_paths(paths: Sequence[str], base_ref: str, root: Path = ROOT) -> dict[str, object]:
-    normalized_paths = [normalize_path(p) for p in paths if normalize_path(p)]
+    normalized_paths = sorted({normalize_path(p) for p in paths if normalize_path(p)})
     categories: list[str] = []
     risks: list[str] = []
     files: list[dict[str, object]] = []
@@ -242,9 +226,12 @@ def analyze_paths(paths: Sequence[str], base_ref: str, root: Path = ROOT) -> dic
         risk = risk_for_category(category)
         categories.append(category)
         risks.append(risk)
-        mod = module_name(path) if path.endswith(".py") else ""
+
+        module = module_name(path) if path.endswith(".py") else ""
+        after_content = _read_file(root / path) if path.endswith(".py") else None
+        before_content = None  # base-ref integration deferred; present for future compatibility
         semantic = (
-            semantic_diff("", "", mod)
+            semantic_diff(before_content, after_content, module)
             if path.endswith(".py")
             else {
                 "added_functions": [],
@@ -253,32 +240,56 @@ def analyze_paths(paths: Sequence[str], base_ref: str, root: Path = ROOT) -> dic
                 "summary": {"added": 0, "removed": 0, "modified": 0},
             }
         )
+
         files.append(
             {
                 "path": path,
                 "category": category,
                 "risk": risk,
                 "details": {
-                    "module": mod,
+                    "module": module,
                     "semantic": semantic,
                 },
             }
         )
 
-    counts = _aggregate_counts(categories, risks)
-    primary = _primary_category(counts["categories"])
-    max_risk_rank = max((RISK_ORDER[r] for r in risks), default=0)
-    max_risk = next(
-        (name for name, rank in RISK_ORDER.items() if rank == max_risk_rank), "informational"
-    )
+    cat_counts = dict.fromkeys(CATEGORY_PRIORITY, 0)  # type: ignore[arg-type]
+    risk_counts = dict.fromkeys(RISK_ORDER, 0)  # type: ignore[arg-type]
+    for cat in categories:
+        cat_counts[cat] = cat_counts.get(cat, 0) + 1
+    for risk in risks:
+        risk_counts[risk] = risk_counts.get(risk, 0) + 1
+
+    primary = _select_primary_category(cat_counts)
+    max_risk = _max_risk(risks)
 
     return {
         "base_ref": base_ref,
         "primary_category": primary,
         "max_risk": max_risk,
-        "counts": counts,
+        "counts": {"categories": cat_counts, "risks": risk_counts},
         "files": files,
     }
+
+
+def _select_primary_category(counts: dict[str, int]) -> str:
+    max_count = max(counts.values()) if counts else 0
+    candidates = [cat for cat, count in counts.items() if count == max_count]
+    for cat in CATEGORY_PRIORITY:
+        if cat in candidates:
+            return cat
+    return CATEGORY_PRIORITY[-1]
+
+
+def _max_risk(risks: list[str]) -> str:
+    max_rank = -1
+    max_name = "informational"
+    for name in risks:
+        rank = RISK_ORDER.get(name, -1)
+        if rank > max_rank:
+            max_rank = rank
+            max_name = name
+    return max_name
 
 
 def _read_paths_file(path_arg: str) -> list[str]:
@@ -289,16 +300,10 @@ def _read_paths_file(path_arg: str) -> list[str]:
 
 def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Semantic change analyzer")
-    parser.add_argument(
-        "--files", required=True, help="Path to file containing list of changed files"
-    )
-    parser.add_argument(
-        "--base-ref", default="origin/main", help="Git base reference (accepted for compatibility)"
-    )
+    parser.add_argument("--files", required=True, help="Path to file containing list of changed files")
+    parser.add_argument("--base-ref", default="origin/main", help="Git base reference (metadata only)")
     parser.add_argument("--output", default="-", help="Output path or '-' for stdout")
-    parser.add_argument(
-        "--format", default="json", choices=["json"], help="Output format (json only)"
-    )
+    parser.add_argument("--format", default="json", choices=["json"], help="Output format (json only)")
     args = parser.parse_args(argv)
     files_path = Path(args.files) if args.files != "-" else None
     if files_path is not None:
