@@ -56,6 +56,10 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-25 — **Readiness change analyzer unit tests** — PR: #395
+  - Updated `tests/unit/test_readiness_change_analyzer.py`: Added or improved unit tests for readiness gate change detection logic
+  - **Evidence impact**: Strengthens test coverage for readiness enforcement; ensures change analyzer correctly identifies touched files in scope
+  - **Testing posture**: Unit tests validate analyzer behavior; readiness gate itself verified by this update
 - 2025-12-25 — **Rate limiter observability and aggregation helpers** — PR: #392
   - Updated `src/mlsdm/utils/rate_limiter.py`: Added `get_all_stats()` method returning `{"client_count": int, "average_tokens": float}` for monitoring
   - Extended `cleanup_old_entries(max_age_seconds=3600.0, return_keys=False)` to optionally return `(count, [client_ids])` when `return_keys=True`
