@@ -35,6 +35,14 @@ except ImportError:
     INVALID_SPAN_ID = 0
     INVALID_TRACE_ID = 0
 
+# Optional NumPy support for safe JSON serialization of numeric types
+try:
+    import numpy as np
+
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
+
 # ---------------------------------------------------------------------------
 # Trace Context Helpers
 # ---------------------------------------------------------------------------
@@ -157,6 +165,21 @@ def scrub_for_log(value: Any, max_length: int = 50) -> str:
     if isinstance(value, dict):
         return f"[dict:{len(value)} keys]"
     return f"[{type(value).__name__}]"
+
+
+def _coerce_json_value(value: Any) -> Any:
+    """Coerce values into JSON-serializable representations."""
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, dict):
+        return {str(key): _coerce_json_value(val) for key, val in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_coerce_json_value(item) for item in value]
+    if NUMPY_AVAILABLE and isinstance(value, np.generic):
+        return value.item()
+    if hasattr(value, "to_json") and callable(value.to_json):
+        return value.to_json()
+    return scrub_for_log(value)
 
 
 class EventType(Enum):
@@ -304,7 +327,7 @@ class JSONFormatter(logging.Formatter):
             ]:
                 log_entry[key] = value
 
-        return json.dumps(log_entry)
+        return json.dumps(_coerce_json_value(log_entry))
 
 
 class ObservabilityLogger:
