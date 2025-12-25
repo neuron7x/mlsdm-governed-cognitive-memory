@@ -1,3 +1,1 @@
-"""
-Readiness tooling package.
-"""
+"""Readiness tooling package."""

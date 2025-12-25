@@ -4,18 +4,24 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import re
 import subprocess
+import sys
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping, MutableMapping, Sequence
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 
 SRC_PREFIX = "src/"
 TESTS_PREFIX = "tests/"
-SECURITY_KEYWORD = "moral_filter"  # Security-sensitive subsystem marker
+SECURITY_KEYWORD = "moral_filter"
 INFRA_PREFIXES = (".github/workflows/", "deploy/", "config/")
+OBSERVABILITY_KEYWORDS = ("observability", "metrics", "logging", "tracing")
 
-CATEGORIES: List[str] = [
+CATEGORIES: list[str] = [
     "security_critical",
     "functional_core",
     "infrastructure",
@@ -24,7 +30,7 @@ CATEGORIES: List[str] = [
     "documentation",
 ]
 
-CATEGORY_PRIORITY: List[str] = CATEGORIES.copy()
+CATEGORY_PRIORITY: list[str] = CATEGORIES.copy()
 
 RISK_MAP: Mapping[str, str] = {
     "security_critical": "critical",
@@ -43,9 +49,19 @@ RISK_ORDER: Mapping[str, int] = {
     "critical": 4,
 }
 
+BIDI_PATTERN = re.compile(r"[\u202A-\u202E\u2066-\u2069]")
+
 
 def normalize_path(path: str) -> str:
-    return path.replace("\\", "/")
+    normalized = path.replace("\\", "/")
+    while "//" in normalized:
+        normalized = normalized.replace("//", "/")
+    return normalized
+
+
+def ensure_no_bidi(text: str, context: str) -> None:
+    if BIDI_PATTERN.search(text):
+        raise ValueError(f"Bidirectional control character detected in {context}")
 
 
 def classify_category(path: str) -> str:
@@ -53,15 +69,15 @@ def classify_category(path: str) -> str:
     lower = normalized.lower()
     if SECURITY_KEYWORD in lower:
         return "security_critical"
-    if normalized.startswith(f"{SRC_PREFIX}security/"):
-        return "security_critical"
-    if normalized.startswith(SRC_PREFIX) and "/security/" in normalized[len(SRC_PREFIX) :]:
+    if normalized.startswith(f"{SRC_PREFIX}security/") or (
+        normalized.startswith(SRC_PREFIX) and "/security/" in normalized[len(SRC_PREFIX) :]
+    ):
         return "security_critical"
     if normalized.startswith(SRC_PREFIX):
         return "functional_core"
     if normalized.startswith(INFRA_PREFIXES):
         return "infrastructure"
-    if any(key in lower for key in ("observability", "metrics", "logging", "tracing")):
+    if any(keyword in lower for keyword in OBSERVABILITY_KEYWORDS):
         return "observability"
     name = Path(normalized).name
     if normalized.startswith(TESTS_PREFIX) or (name.startswith("test_") and name.endswith(".py")):
@@ -85,18 +101,8 @@ def module_name(path: str) -> str:
     return ".".join(without_suffix.parts)
 
 
-def decorator_names(node: ast.AST) -> List[str]:
-    names: List[str] = []
-    for decorator in getattr(node, "decorator_list", []):
-        try:
-            names.append(ast.unparse(decorator).strip())
-        except (TypeError, ValueError):
-            continue
-    return sorted(names)
-
-
-def format_args(args: ast.arguments) -> str:
-    parts: List[str] = []
+def _format_args(args: ast.arguments) -> str:
+    parts: list[str] = []
     for arg in args.posonlyargs:
         parts.append(arg.arg)
     if args.posonlyargs:
@@ -114,65 +120,91 @@ def format_args(args: ast.arguments) -> str:
     return ",".join(parts)
 
 
-def format_return_annotation(node: ast.AST) -> str:
+def _format_returns(node: ast.AST) -> str:
     returns = getattr(node, "returns", None)
-    if returns is not None:
+    if returns is None:
+        return "None"
+    try:
+        return ast.unparse(returns)
+    except (TypeError, ValueError):
+        return "None"
+
+
+def _decorator_suffix(node: ast.AST) -> str:
+    decorators: list[str] = []
+    for decorator in getattr(node, "decorator_list", []):
         try:
-            return ast.unparse(returns)
+            decorators.append(ast.unparse(decorator).strip())
         except (TypeError, ValueError):
-            return "None"
-    return "None"
+            continue
+    return f"|decorators={','.join(sorted(decorators))}" if decorators else ""
 
 
-def canonical_function_signature(
-    node: ast.FunctionDef | ast.AsyncFunctionDef, module: str, class_name: str | None = None
-) -> str:
-    """Build canonical signature for a top-level function or class method."""
+def _function_signature(node: ast.FunctionDef | ast.AsyncFunctionDef, module: str, class_name: str | None = None) -> str:
     qualname = f"{class_name}.{node.name}" if class_name else node.name
-    args = format_args(node.args)
-    ret = format_return_annotation(node)
-    decorators = decorator_names(node)
-    decorator_suffix = f"|decorators={','.join(decorators)}" if decorators else ""
-    return f"{module}:{qualname}({args})->{ret}{decorator_suffix}"
+    args = _format_args(node.args)
+    ret = _format_returns(node)
+    return f"{module}:{qualname}({args})->{ret}{_decorator_suffix(node)}"
 
 
-def canonical_class_signature(node: ast.ClassDef, module: str) -> str:
-    bases: List[str] = []
+def _class_signature(node: ast.ClassDef, module: str) -> str:
+    bases: list[str] = []
     for base in node.bases:
         try:
             bases.append(ast.unparse(base).strip())
         except (TypeError, ValueError):
             continue
     bases_part = f"[bases={','.join(sorted(bases))}]" if bases else ""
-    decorators = decorator_names(node)
-    decorator_suffix = f"|decorators={','.join(decorators)}" if decorators else ""
-    return f"{module}:{node.name}{bases_part}{decorator_suffix}"
+    return f"{module}:{node.name}{bases_part}{_decorator_suffix(node)}"
 
 
-def extract_signatures(source: str | None, path: str) -> Dict[str, str]:
-    if source is None:
-        return {}
+def parse_python_signatures(source: str, module: str) -> dict[str, str]:
     try:
+        ensure_no_bidi(source, f"module {module}")
         tree = ast.parse(source)
-    except SyntaxError:
+    except (SyntaxError, ValueError):
         return {}
-    module = module_name(path)
-    signatures: Dict[str, str] = {}
+    signatures: dict[str, str] = {}
     for node in tree.body:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            signatures[node.name] = canonical_function_signature(node, module)
+            signatures[node.name] = _function_signature(node, module)
         elif isinstance(node, ast.ClassDef):
-            signatures[node.name] = canonical_class_signature(node, module)
+            signatures[node.name] = _class_signature(node, module)
             for child in node.body:
                 if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    qualname = f"{node.name}.{child.name}"
-                    signatures[qualname] = canonical_function_signature(child, module, class_name=node.name)
+                    qual = f"{node.name}.{child.name}"
+                    signatures[qual] = _function_signature(child, module, class_name=node.name)
     return signatures
 
 
-def git_show(path: str, base_ref: str, root: Path) -> str | None:
+def semantic_diff(before: str | None, after: str | None, module: str) -> dict[str, list[str] | dict[str, int]]:
+    before_signatures = parse_python_signatures(before, module) if before else {}
+    after_signatures = parse_python_signatures(after, module) if after else {}
+    before_keys = set(before_signatures.keys())
+    after_keys = set(after_signatures.keys())
+
+    added = sorted(after_signatures[k] for k in after_keys - before_keys)
+    removed = sorted(before_signatures[k] for k in before_keys - after_keys)
+    modified = sorted(
+        f"{before_signatures[k]} -> {after_signatures[k]}"
+        for k in before_keys & after_keys
+        if before_signatures[k] != after_signatures[k]
+    )
+    return {
+        "summary": {
+            "added": len(added),
+            "removed": len(removed),
+            "modified": len(modified),
+        },
+        "added_functions": added,
+        "removed_functions": removed,
+        "modified_functions": modified,
+    }
+
+
+def get_file_at_ref(path: str, ref: str, root: Path) -> str | None:
     result = subprocess.run(
-        ["git", "show", f"{base_ref}:{path}"],
+        ["git", "show", f"{ref}:{path}"],
         cwd=root,
         capture_output=True,
         text=True,
@@ -182,64 +214,31 @@ def git_show(path: str, base_ref: str, root: Path) -> str | None:
     return result.stdout
 
 
-def read_after_content(path: str, root: Path) -> str | None:
+def _read_working_tree(path: str, root: Path) -> str | None:
     target = root / path
-    if not target.exists():
+    if not target.exists() or not target.is_file():
         return None
     try:
-        return target.read_text(encoding="utf-8", errors="replace")
+        content = target.read_text(encoding="utf-8", errors="replace")
+        ensure_no_bidi(content, f"working tree file {path}")
+        return content
     except OSError:
         return None
 
 
-def diff_signatures(before: Mapping[str, str], after: Mapping[str, str]) -> Dict[str, List[str]]:
-    before_keys = set(before.keys())
-    after_keys = set(after.keys())
-    added = sorted(after[k] for k in after_keys - before_keys)
-    removed = sorted(before[k] for k in before_keys - after_keys)
-    modified = sorted(
-        f"{before[k]} -> {after[k]}" for k in before_keys & after_keys if before[k] != after[k]
-    )
+def _empty_semantic() -> dict[str, list[str] | dict[str, int]]:
     return {
-        "functions_added": added,
-        "functions_removed": removed,
-        "functions_modified": modified,
+        "summary": {"added": 0, "removed": 0, "modified": 0},
+        "added_functions": [],
+        "removed_functions": [],
+        "modified_functions": [],
     }
 
 
-def semantic_for_python(path: str, base_ref: str, root: Path) -> Dict[str, List[str]]:
-    before_content = git_show(path, base_ref, root)
-    after_content = read_after_content(path, root)
-    before_signatures = extract_signatures(before_content, path)
-    after_signatures = extract_signatures(after_content, path)
-    return diff_signatures(before_signatures, after_signatures)
-
-
-def empty_semantic() -> Dict[str, List[str]]:
-    return {
-        "functions_added": [],
-        "functions_removed": [],
-        "functions_modified": [],
-    }
-
-
-def analyze_file(path: str, base_ref: str, root: Path) -> Dict[str, object]:
-    category = classify_category(path)
-    risk = risk_for_category(category)
-    semantic = (
-        semantic_for_python(path, base_ref, root)
-        if normalize_path(path).endswith(".py")
-        else empty_semantic()
-    )
-    return {
-        "category": category,
-        "risk": risk,
-        "semantic": semantic,
-    }
-
-
-def primary_category(counts: Mapping[str, int]) -> str:
-    max_count = max(counts.values()) if counts else 0
+def _primary_category(counts: Mapping[str, int]) -> str:
+    if not counts:
+        return CATEGORY_PRIORITY[0]
+    max_count = max(counts.values())
     candidates = [cat for cat, count in counts.items() if count == max_count]
     for cat in CATEGORY_PRIORITY:
         if cat in candidates:
@@ -247,51 +246,57 @@ def primary_category(counts: Mapping[str, int]) -> str:
     return CATEGORY_PRIORITY[0]
 
 
-def analyze_paths(paths: Sequence[str], base_ref: str, root: Path = ROOT) -> Dict[str, object]:
-    categories: MutableMapping[str, int] = {category: 0 for category in CATEGORIES}
-    files_block: Dict[str, object] = {}
-    files_analyzed = len(paths)
+def analyze_paths(paths: Sequence[str], base_ref: str, root: Path = ROOT) -> dict[str, object]:
+    categories: dict[str, int] = cast("dict[str, int]", dict.fromkeys(CATEGORIES, 0))
+    files: dict[str, object] = {}
     max_risk_rank = 0
 
-    for path in paths:
-        file_result = analyze_file(path, base_ref, root)
-        category = file_result["category"]  # type: ignore[assignment]
-        risk = file_result["risk"]  # type: ignore[assignment]
+    for raw_path in paths:
+        path = normalize_path(raw_path)
+        category = classify_category(path)
+        risk = risk_for_category(category)
         categories[category] += 1
         max_risk_rank = max(max_risk_rank, RISK_ORDER.get(risk, 0))
-        files_block[path] = file_result
 
-    summary = {
-        "files_analyzed": files_analyzed,
-        "categories": dict(sorted(categories.items())),
-    }
+        module = module_name(path)
+        before_src = get_file_at_ref(path, base_ref, root)
+        after_src = _read_working_tree(path, root)
+        semantic = (
+            semantic_diff(before_src, after_src, module) if path.endswith(".py") else _empty_semantic()
+        )
 
-    result = {
-        "primary_category": primary_category(categories),
-        "max_risk": next(
-            (name for name, rank in RISK_ORDER.items() if rank == max_risk_rank), "informational"
-        ),
+        files[path] = {
+            "path": path,
+            "category": category,
+            "risk": risk,
+            "module": module,
+            "semantic_diff": semantic["summary"],
+            "functions_added": semantic["added_functions"],
+            "functions_removed": semantic["removed_functions"],
+            "functions_modified": semantic["modified_functions"],
+        }
+
+    summary = {"files_analyzed": len(paths), "categories": dict(sorted(categories.items()))}
+    max_risk = next((name for name, rank in RISK_ORDER.items() if rank == max_risk_rank), "informational")
+
+    return {
+        "primary_category": _primary_category(categories),
+        "max_risk": max_risk,
         "summary": summary,
-        "files": files_block,
+        "files": files,
     }
-    return result
 
 
-def read_file_list(file_path: Path) -> List[str]:
-    content = file_path.read_text(encoding="utf-8")
+def _read_paths_file(paths_file: Path) -> list[str]:
+    content = paths_file.read_text(encoding="utf-8")
+    ensure_no_bidi(content, "--files")
     return [line.strip() for line in content.splitlines() if line.strip()]
 
 
-def write_output(result: Mapping[str, object], output_path: Path) -> None:
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with output_path.open("w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2, sort_keys=True)
-
-
-def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Semantic change analyzer")
     parser.add_argument("--files", required=True, type=Path, help="Path to file containing list of changed files")
-    parser.add_argument("--base-ref", required=False, default="origin/main", help="Git base reference")
+    parser.add_argument("--base-ref", default="origin/main", help="Git base reference")
     parser.add_argument("--output", required=True, type=Path, help="Path to write JSON output")
     args = parser.parse_args(argv)
     if not args.files.exists():
@@ -301,12 +306,25 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return args
 
 
+def _write_output(result: Mapping[str, object], output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", encoding="utf-8") as handle:
+        json.dump(result, handle, indent=2, sort_keys=True)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
-    args = parse_args(argv)
-    paths = read_file_list(args.files)
-    result = analyze_paths(paths, args.base_ref, ROOT)
-    write_output(result, args.output)
-    return 0
+    try:
+        args = _parse_args(argv)
+        paths = _read_paths_file(args.files)
+        result = analyze_paths(paths, args.base_ref, ROOT)
+        _write_output(result, args.output)
+        return 0
+    except SystemExit:
+        # argparse already handled exit code 2
+        raise
+    except Exception as exc:  # noqa: BLE001
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
