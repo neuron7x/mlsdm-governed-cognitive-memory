@@ -7,7 +7,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from threading import Lock
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, overload
 
 import numpy as np
 
@@ -435,6 +435,7 @@ class PhaseEntangledLatticeMemory:
 
             return indices
 
+    @overload
     def retrieve(
         self,
         query_vector: list[float],
@@ -443,7 +444,31 @@ class PhaseEntangledLatticeMemory:
         top_k: int | None = None,
         correlation_id: str | None = None,
         min_confidence: float = 0.0,
-    ) -> list[MemoryRetrieval]:
+        return_indices: Literal[False] = False,
+    ) -> list[MemoryRetrieval]: ...
+
+    @overload
+    def retrieve(
+        self,
+        query_vector: list[float],
+        current_phase: float,
+        phase_tolerance: float | None = None,
+        top_k: int | None = None,
+        correlation_id: str | None = None,
+        min_confidence: float = 0.0,
+        return_indices: Literal[True] = True,
+    ) -> tuple[list[MemoryRetrieval], list[int]]: ...
+
+    def retrieve(
+        self,
+        query_vector: list[float],
+        current_phase: float,
+        phase_tolerance: float | None = None,
+        top_k: int | None = None,
+        correlation_id: str | None = None,
+        min_confidence: float = 0.0,
+        return_indices: bool = False,
+    ) -> list[MemoryRetrieval] | tuple[list[MemoryRetrieval], list[int]]:
         # Use calibration defaults if not specified
         if phase_tolerance is None:
             phase_tolerance = self.DEFAULT_PHASE_TOLERANCE
@@ -465,9 +490,12 @@ class PhaseEntangledLatticeMemory:
                         phase_tolerance=phase_tolerance,
                         top_k=top_k,
                         results_count=0,
+                        avg_resonance=None,
                         latency_ms=latency_ms,
                         correlation_id=correlation_id,
                     )
+                if return_indices:
+                    return [], []
                 return []
 
             # Optimization: Use pre-allocated buffer with numpy copy
@@ -488,12 +516,12 @@ class PhaseEntangledLatticeMemory:
             phase_mask = phase_diff <= phase_tolerance
 
             # Add confidence filtering
-            confidence_mask = np.array(
-                [
-                    (i < len(self._provenance) and self._provenance[i].confidence >= min_confidence)
-                    for i in range(self.size)
-                ]
-            )
+            confidence_mask = np.empty(self.size, dtype=bool)
+            provenance_size = len(self._provenance)
+            for i in range(self.size):
+                confidence_mask[i] = (
+                    i < provenance_size and self._provenance[i].confidence >= min_confidence
+                )
 
             # Combine phase and confidence masks
             valid_mask = phase_mask & confidence_mask
@@ -507,9 +535,12 @@ class PhaseEntangledLatticeMemory:
                         phase_tolerance=phase_tolerance,
                         top_k=top_k,
                         results_count=0,
+                        avg_resonance=None,
                         latency_ms=latency_ms,
                         correlation_id=correlation_id,
                     )
+                if return_indices:
+                    return [], []
                 return []
 
             candidates_idx = np.nonzero(valid_mask)[0]
@@ -533,8 +564,12 @@ class PhaseEntangledLatticeMemory:
 
             # Optimize: pre-allocate results list
             results: list[MemoryRetrieval] = []
+            indices: list[int] = []
+            resonance_sum = 0.0
             for loc in top_local:
                 glob = candidates_idx[loc]
+                resonance_value = float(cosine_sims[loc])
+                resonance_sum += resonance_value
                 # Get provenance (use default if not available for backward compatibility)
                 if glob < len(self._provenance):
                     prov = self._provenance[glob]
@@ -550,11 +585,14 @@ class PhaseEntangledLatticeMemory:
                     MemoryRetrieval(
                         vector=self.memory_bank[glob],
                         phase=self.phase_bank[glob],
-                        resonance=float(cosine_sims[loc]),
+                        resonance=resonance_value,
                         provenance=prov,
                         memory_id=mem_id,
                     )
                 )
+                indices.append(int(glob))
+
+            avg_resonance = resonance_sum / len(results) if results else None
 
             # Record successful retrieval
             if _OBSERVABILITY_AVAILABLE and start_time is not None:
@@ -564,10 +602,13 @@ class PhaseEntangledLatticeMemory:
                     phase_tolerance=phase_tolerance,
                     top_k=top_k,
                     results_count=len(results),
+                    avg_resonance=avg_resonance,
                     latency_ms=latency_ms,
                     correlation_id=correlation_id,
                 )
 
+            if return_indices:
+                return results, indices
             return results
 
     def get_state_stats(self) -> dict[str, int | float]:
