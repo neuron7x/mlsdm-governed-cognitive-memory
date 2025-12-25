@@ -111,6 +111,16 @@ These checks run but **DO NOT BLOCK** CI (with justification):
 | **TestPyPI Publishing** | `release.yml` | `publish-to-testpypi` | Optional publishing step | ✅ `continue-on-error: true` |
 | **SARIF Uploads** | All workflows | Upload SARIF steps | Reporting after scan completes | ✅ `continue-on-error: true` |
 
+## Performance & Resilience Workflow Alignment
+
+**Workflow:** `.github/workflows/perf-resilience.yml`
+
+- **Change detection:** `dorny/paths-filter` gates on `src/**`, `tests/**`, `examples/**`, configs, workflows, and dependency manifests so docs-only PRs do not schedule jobs.
+- **resilience-fast (blocking when scheduled):** Runs on `main`, scheduled nightly, workflow_dispatch `run_fast_resilience`, or PRs with relevant code changes. `continue-on-error: false`.
+- **performance-slo (label-gated blocking):** Runs on `main`, scheduled nightly, workflow_dispatch `run_performance_slo`, or PRs with `perf`/`resilience` label **and** relevant code changes. `continue-on-error: false`.
+- **resilience-comprehensive (informational):** Scheduled or workflow_dispatch `run_comprehensive_resilience`, marked `continue-on-error: true`.
+- **perf-resilience-gate:** Fails if `resilience-fast` is skipped for relevant code, or if `performance-slo` is expected (main/schedule/explicit label+relevant/dispatch) but skipped. Emits a notice when both jobs are skipped because no relevant code changes were detected.
+
 ### 1. Chaos Engineering Tests
 **Workflow:** `.github/workflows/chaos-tests.yml`
 

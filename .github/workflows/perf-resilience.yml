@@ -37,19 +37,51 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  changes:
+    name: Detect relevant changes
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Detect code changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            relevant:
+              - 'src/**'
+              - 'tests/**'
+              - 'examples/**'
+              - 'config/**'
+              - 'configs/**'
+              - '.github/workflows/**'
+              - 'pyproject.toml'
+              - 'requirements*.txt'
+              - 'uv.lock'
+              - 'Dockerfile*'
+              - 'Makefile'
+              - 'scripts/**'
+
   # Fast resilience tests (run on all PRs)
   resilience-fast:
     name: Fast Resilience Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: changes
 
     # Run on: main branch, PRs with 'resilience' label, or nightly
     if: |
-      github.ref == 'refs/heads/main' ||
-      contains(github.event.pull_request.labels.*.name, 'resilience') ||
-      contains(github.event.pull_request.labels.*.name, 'perf') ||
+      github.event_name == 'workflow_dispatch' && inputs.run_fast_resilience ||
       github.event_name == 'schedule' ||
-      (github.event_name == 'workflow_dispatch' && inputs.run_fast_resilience)
+      github.ref == 'refs/heads/main' ||
+      (github.event_name == 'pull_request' && needs.changes.outputs.relevant == 'true') ||
+      (github.event_name == 'pull_request' && (
+        contains(github.event.pull_request.labels.*.name, 'resilience') ||
+        contains(github.event.pull_request.labels.*.name, 'perf')
+      ))
 
     steps:
       - name: Checkout code
@@ -106,13 +138,16 @@ jobs:
     name: Performance & SLO Validation
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: changes
 
     if: |
-      github.ref == 'refs/heads/main' ||
-      contains(github.event.pull_request.labels.*.name, 'perf') ||
-      contains(github.event.pull_request.labels.*.name, 'resilience') ||
+      github.event_name == 'workflow_dispatch' && inputs.run_performance_slo ||
       github.event_name == 'schedule' ||
-      (github.event_name == 'workflow_dispatch' && inputs.run_performance_slo)
+      github.ref == 'refs/heads/main' ||
+      (github.event_name == 'pull_request' && needs.changes.outputs.relevant == 'true' && (
+        contains(github.event.pull_request.labels.*.name, 'perf') ||
+        contains(github.event.pull_request.labels.*.name, 'resilience')
+      ))
 
     steps:
       - name: Checkout code
@@ -256,17 +291,42 @@ jobs:
   perf-resilience-gate:
     name: Performance & Resilience Gate
     runs-on: ubuntu-latest
-    needs: [resilience-fast, performance-slo]
+    needs: [changes, resilience-fast, performance-slo]
     if: always()
 
     steps:
       - name: Check job results
+        env:
+          RELEVANT: ${{ needs.changes.outputs.relevant }}
+          IS_PR: ${{ github.event_name == 'pull_request' }}
+          HAS_PERF_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'perf') || contains(github.event.pull_request.labels.*.name, 'resilience') }}
+          RUN_DISPATCH_PERF: ${{ github.event_name == 'workflow_dispatch' && inputs.run_performance_slo }}
+          IS_MAIN: ${{ github.ref == 'refs/heads/main' }}
+          IS_SCHEDULE: ${{ github.event_name == 'schedule' }}
         run: |
           RES_FAST="${{ needs.resilience-fast.result }}"
           PERF_SLO="${{ needs.performance-slo.result }}"
 
+          echo "Relevant changes detected: ${RELEVANT}"
           echo "Resilience-fast result: ${RES_FAST}"
           echo "Performance-slo result: ${PERF_SLO}"
+
+          if [ "${RELEVANT}" = "true" ] && [ "${RES_FAST}" = "skipped" ]; then
+            echo "::error::Resilience-fast was skipped despite relevant code changes."
+            exit 1
+          fi
+
+          PERF_EXPECTED="false"
+          if [ "${IS_MAIN}" = "true" ] || [ "${IS_SCHEDULE}" = "true" ] || [ "${RUN_DISPATCH_PERF}" = "true" ]; then
+            PERF_EXPECTED="true"
+          elif [ "${IS_PR}" = "true" ] && [ "${HAS_PERF_LABEL}" = "true" ] && [ "${RELEVANT}" = "true" ]; then
+            PERF_EXPECTED="true"
+          fi
+
+          if [ "${PERF_EXPECTED}" = "true" ] && [ "${PERF_SLO}" = "skipped" ]; then
+            echo "::error::Performance & SLO validation was expected but skipped."
+            exit 1
+          fi
 
           # If any scheduled job failed or was cancelled → hard failure
           if { [ "${RES_FAST}" = "failure" ] || [ "${RES_FAST}" = "cancelled" ]; } || \
@@ -277,7 +337,11 @@ jobs:
 
           # If both jobs were skipped → this PR simply didn't request perf/resilience tests
           if [ "${RES_FAST}" = "skipped" ] && [ "${PERF_SLO}" = "skipped" ]; then
-            echo "::notice::Performance/resilience test jobs were skipped (no perf/resilience label, non-main branch, or not scheduled)."
+            if [ "${RELEVANT}" = "true" ]; then
+              echo "::error::Relevant changes detected but both jobs were skipped."
+              exit 1
+            fi
+            echo "::notice::Performance/resilience test jobs were skipped because no relevant code changes were detected."
             exit 0
           fi
 
