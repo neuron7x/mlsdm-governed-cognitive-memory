@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path  # noqa: TC003
 
 import pytest  # noqa: TC002
 
@@ -32,7 +32,8 @@ def test_generator_insertion_and_determinism(tmp_path: Path):
         "max_risk": "high",
     }
 
-    fixed_now = lambda: datetime(2025, 1, 1, tzinfo=timezone.utc)
+    def fixed_now():
+        return datetime(2025, 1, 1, tzinfo=timezone.utc)
     path, updated = cg.generate_update(
         "Test Entry",
         "origin/main",
