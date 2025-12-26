@@ -115,13 +115,14 @@ def evaluate_policy(change_analysis: dict[str, Any], evidence: dict[str, Any]) -
     recommendations: list[str] = []
 
     categories = []
-    for file_entry in change_analysis.get("files", []) or []:
+    for file_entry in change_analysis.get("files", []):
         category = file_entry.get("category")
         if category:
             categories.append(str(category))
         else:
             categories.append(ca.classify_category(str(file_entry.get("path", ""))))
     categories = sorted({c for c in categories if c})
+    is_critical_change = change_analysis.get("max_risk") == "critical"
 
     tests_totals = evidence.get("tests", {}).get("totals", {})
     tests_measured = bool(evidence.get("sources", {}).get("junit", {}).get("found")) and (
@@ -177,7 +178,7 @@ def evaluate_policy(change_analysis: dict[str, Any], evidence: dict[str, Any]) -
         }
         matched_rules.append(rule)
         max_risk = _highest_risk([max_risk, rule["risk"]])
-        if core_missing and change_analysis.get("max_risk") == "critical":
+        if core_missing and is_critical_change:
             blocking.append("Critical core change without passing tests")
 
     if security_changed:
@@ -232,7 +233,7 @@ def evaluate_policy(change_analysis: dict[str, Any], evidence: dict[str, Any]) -
         verdict = "approve_with_conditions"
     if blocking:
         verdict = "reject"
-    elif change_analysis.get("max_risk") == "critical" and (core_changed or security_changed):
+    elif is_critical_change and (core_changed or security_changed):
         verdict = "manual_review"
     if infra_changed and security_measured and (security_high > 0 or security_medium > 0):
         verdict = "reject"

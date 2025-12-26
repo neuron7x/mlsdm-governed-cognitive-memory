@@ -33,6 +33,8 @@ SECURITY_MARKERS: tuple[str, ...] = (
     "scrubber",
     "policy",
     "secrets",
+    "moral_filter",
+    "memory/phase",
 )
 OBSERVABILITY_MARKERS: tuple[str, ...] = ("observability", "metrics", "logging", "tracing")
 
@@ -76,12 +78,7 @@ def normalize_path(path: str) -> str:
 
 def classify_category(path: str) -> str:
     normalized = normalize_path(path).lower()
-    if (
-        any(marker in normalized for marker in SECURITY_MARKERS)
-        or "/security/" in normalized
-        or "moral_filter" in normalized
-        or "memory/phase" in normalized
-    ):
+    if any(marker in normalized for marker in SECURITY_MARKERS) or "/security/" in normalized:
         return "security_critical"
     name = Path(normalized).name
     if normalized.startswith("tests/") or name.startswith("test_"):
