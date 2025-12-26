@@ -1,5 +1,5 @@
 # System Readiness Status
-Last updated: 2025-12-25
+Last updated: 2025-12-26
 Owner: neuron7x / MLSDM maintainers
 Scope: MLSDM cognitive engine repository (src/, tests/, deploy/, workflows)
 
@@ -57,6 +57,11 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-26 — **Readiness tooling hardening** — Base: origin/main
+  - Changed files (5): `Makefile`, `scripts/readiness/change_analyzer.py`, `scripts/readiness/changelog_generator.py`, `tests/unit/test_readiness_change_analyzer.py`, `tests/unit/test_readiness_changelog_generator.py`
+  - Primary category: mixed; Max risk: high
+  - Category counts: {"documentation": 0, "functional_core": 3, "infrastructure": 0, "mixed": 0, "observability": 0, "security_critical": 0, "test_coverage": 2}
+  - Risk counts: {"critical": 0, "high": 3, "info": 2, "low": 0, "medium": 0}
 - 2025-12-25 — **Preserve filter results in pipeline stage metadata** — PR: #???
   - Updated `src/mlsdm/core/llm_pipeline.py`: keep `PipelineStageResult.result` as `FilterResult` to preserve integration expectations
   - **Behavior unchanged**: pipeline output and decision logic remain the same; metadata format restored

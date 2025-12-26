@@ -63,35 +63,138 @@ def test_semantic_diff_added_removed_modified_functions():
 
 
 def test_json_structure_and_counts(tmp_path: Path):
-    files_file = tmp_path / "files.txt"
-    files_file.write_text("src/a.py\ntests/test_b.py\ndocs/readme.rst\nobservability/logger.py\n", encoding="utf-8")
-    paths = ca._read_paths_file(str(files_file))
+    (tmp_path / ".github/workflows").mkdir(parents=True)
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "observability").mkdir()
+    (tmp_path / "src/security").mkdir(parents=True)
+    (tmp_path / "src/core").mkdir(parents=True)
+    (tmp_path / "tests").mkdir()
+
+    (tmp_path / ".github/workflows/ci.yaml").write_text("name: ci\n", encoding="utf-8")
+    (tmp_path / "docs/readme.md").write_text("docs\n", encoding="utf-8")
+    (tmp_path / "observability/logs.py").write_text("def log():\n    return True\n", encoding="utf-8")
+    (tmp_path / "src/core/app.py").write_text("def foo():\n    return 1\n", encoding="utf-8")
+    (tmp_path / "src/security/auth.py").write_text("def bar(x):\n    return x\n", encoding="utf-8")
+    (tmp_path / "tests/test_app.py").write_text("def test_sample():\n    assert True\n", encoding="utf-8")
+
+    paths = [
+        ".github/workflows/ci.yaml",
+        "docs/readme.md",
+        "observability/logs.py",
+        "src/core/app.py",
+        "src/security/auth.py",
+        "tests/test_app.py",
+    ]
+
     result = ca.analyze_paths(paths, base_ref="origin/main", root=tmp_path)
 
-    assert set(result.keys()) >= {"primary_category", "max_risk", "counts", "files", "base_ref"}
-    counts = result["counts"]
-    assert counts["categories"]["functional_core"] == 1
-    assert counts["categories"]["test_coverage"] == 1
-    assert counts["categories"]["documentation"] == 1
-    assert counts["categories"]["observability"] == 1
-    assert counts["risks"]["high"] == 1
-    assert counts["risks"]["info"] == 2
-    assert counts["risks"]["low"] == 1
+    expected_counts = {
+        "categories": {
+            "security_critical": 1,
+            "test_coverage": 1,
+            "documentation": 1,
+            "infrastructure": 1,
+            "observability": 1,
+            "functional_core": 1,
+            "mixed": 0,
+        },
+        "risks": {"info": 2, "low": 1, "medium": 1, "high": 1, "critical": 1},
+    }
 
-    files = result["files"]
-    assert isinstance(files, list) and len(files) == 4
-    assert [f["path"] for f in files] == sorted([f["path"] for f in files])
-    for entry in files:
-        assert set(entry.keys()) == {
-            "path",
-            "category",
-            "risk",
-            "metadata",
-            "semantic_diff",
-            "functions_added",
-            "functions_removed",
-            "yaml_diff",
-        }
+    expected_files = [
+        {
+            "path": ".github/workflows/ci.yaml",
+            "category": "infrastructure",
+            "risk": "medium",
+            "metadata": {"missing": False, "new_file": True, "parse_error": False},
+            "semantic_diff": None,
+            "functions_added": [],
+            "functions_removed": [],
+            "yaml_diff": {"added_keys": ["name"], "changed_keys": [], "removed_keys": [], "parse_error": False},
+        },
+        {
+            "path": "docs/readme.md",
+            "category": "documentation",
+            "risk": "info",
+            "metadata": {"missing": False, "new_file": False, "parse_error": False},
+            "semantic_diff": None,
+            "functions_added": [],
+            "functions_removed": [],
+            "yaml_diff": None,
+        },
+        {
+            "path": "observability/logs.py",
+            "category": "observability",
+            "risk": "low",
+            "metadata": {"missing": False, "new_file": True, "parse_error": False},
+            "semantic_diff": {
+                "added_functions": ["observability.logs:log()->None"],
+                "removed_functions": [],
+                "modified_functions": [],
+                "summary": {"added": 1, "removed": 0, "modified": 0},
+                "parse_error": False,
+            },
+            "functions_added": ["observability.logs:log()->None"],
+            "functions_removed": [],
+            "yaml_diff": None,
+        },
+        {
+            "path": "src/core/app.py",
+            "category": "functional_core",
+            "risk": "high",
+            "metadata": {"missing": False, "new_file": True, "parse_error": False},
+            "semantic_diff": {
+                "added_functions": ["core.app:foo()->None"],
+                "removed_functions": [],
+                "modified_functions": [],
+                "summary": {"added": 1, "removed": 0, "modified": 0},
+                "parse_error": False,
+            },
+            "functions_added": ["core.app:foo()->None"],
+            "functions_removed": [],
+            "yaml_diff": None,
+        },
+        {
+            "path": "src/security/auth.py",
+            "category": "security_critical",
+            "risk": "critical",
+            "metadata": {"missing": False, "new_file": True, "parse_error": False},
+            "semantic_diff": {
+                "added_functions": ["security.auth:bar(x)->None"],
+                "removed_functions": [],
+                "modified_functions": [],
+                "summary": {"added": 1, "removed": 0, "modified": 0},
+                "parse_error": False,
+            },
+            "functions_added": ["security.auth:bar(x)->None"],
+            "functions_removed": [],
+            "yaml_diff": None,
+        },
+        {
+            "path": "tests/test_app.py",
+            "category": "test_coverage",
+            "risk": "info",
+            "metadata": {"missing": False, "new_file": True, "parse_error": False},
+            "semantic_diff": {
+                "added_functions": ["test_app:test_sample()->None"],
+                "removed_functions": [],
+                "modified_functions": [],
+                "summary": {"added": 1, "removed": 0, "modified": 0},
+                "parse_error": False,
+            },
+            "functions_added": ["test_app:test_sample()->None"],
+            "functions_removed": [],
+            "yaml_diff": None,
+        },
+    ]
+
+    assert result == {
+        "base_ref": "origin/main",
+        "primary_category": "mixed",
+        "max_risk": "critical",
+        "counts": expected_counts,
+        "files": expected_files,
+    }
 
 
 def test_analyze_paths_handles_missing_and_invalid_files(tmp_path: Path):
@@ -159,3 +262,14 @@ def test_no_control_characters_present():
             if unicodedata.category(ch) == "Cf":
                 bad.append(f"{file}: U+{ord(ch):04X}")
     assert not bad, f"Control characters found: {bad}"
+
+
+def test_read_paths_file_rejects_bidi(tmp_path: Path):
+    files_file = tmp_path / "files.txt"
+    files_file.write_text("normal.py\n", encoding="utf-8")
+    assert ca._read_paths_file(str(files_file)) == ["normal.py"]
+
+    bad_file = tmp_path / "bad.txt"
+    bad_file.write_text("good.py\n\u202e", encoding="utf-8")
+    with pytest.raises(ValueError):
+        ca._read_paths_file(str(bad_file))

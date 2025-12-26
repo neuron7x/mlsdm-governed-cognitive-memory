@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Sequence
 
 import yaml
 
@@ -36,14 +36,15 @@ SECURITY_MARKERS: tuple[str, ...] = (
 )
 OBSERVABILITY_MARKERS: tuple[str, ...] = ("observability", "metrics", "logging", "tracing")
 
-CATEGORY_PRIORITY: list[str] = [
+CATEGORY_PRIORITY: tuple[str, ...] = (
     "security_critical",
     "test_coverage",
     "documentation",
     "infrastructure",
     "observability",
     "functional_core",
-]
+    "mixed",
+)
 
 RISK_MAP: dict[str, str] = {
     "security_critical": "critical",
@@ -54,13 +55,9 @@ RISK_MAP: dict[str, str] = {
     "documentation": "info",
 }
 
-RISK_ORDER: dict[str, int] = {
-    "info": 0,
-    "low": 1,
-    "medium": 2,
-    "high": 3,
-    "critical": 4,
-}
+RISK_LEVELS: tuple[str, ...] = ("info", "low", "medium", "high", "critical")
+
+RISK_ORDER: dict[str, int] = {name: idx for idx, name in enumerate(RISK_LEVELS)}
 
 
 def _ensure_no_bidi(text: str, label: str) -> None:
@@ -266,13 +263,6 @@ def _select_primary_category(categories: Sequence[str]) -> str:
     return next(iter(unique))
 
 
-def _count(items: Iterable[str]) -> dict[str, int]:
-    counts: dict[str, int] = {}
-    for item in items:
-        counts[item] = counts.get(item, 0) + 1
-    return dict(sorted(counts.items()))
-
-
 def analyze_paths(paths: Sequence[str], base_ref: str, root: Path = ROOT) -> dict[str, object]:
     """Analyze a list of file paths and return categorized, risk-rated results."""
     normalized_paths = sorted({normalize_path(p) for p in paths if normalize_path(p)})
@@ -329,8 +319,16 @@ def analyze_paths(paths: Sequence[str], base_ref: str, root: Path = ROOT) -> dic
             }
         )
 
-    cat_counts = _count(categories)
-    risk_counts = _count(risks)
+    cat_counts = {name: 0 for name in CATEGORY_PRIORITY}
+    for cat in categories:
+        if cat not in cat_counts:
+            raise ValueError(f"Unknown category: {cat}")
+        cat_counts[cat] += 1
+    risk_counts = {name: 0 for name in RISK_LEVELS}
+    for risk in risks:
+        if risk not in risk_counts:
+            raise ValueError(f"Unknown risk: {risk}")
+        risk_counts[risk] += 1
     primary = _select_primary_category(categories)
     max_risk = _max_risk(risks)
 
