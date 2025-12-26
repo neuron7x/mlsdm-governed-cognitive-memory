@@ -196,6 +196,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         path, updated = generate_update(args.title, args.base_ref)
         if args.mode in ("preview", "dry-run"):
+            if args.mode == "dry-run":
+                print("# DRY-RUN: no file writes", file=sys.stderr)
             print(updated, end="")
             return 0
         _write_atomic(path, updated)

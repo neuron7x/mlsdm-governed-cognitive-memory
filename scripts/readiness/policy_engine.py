@@ -143,7 +143,7 @@ def evaluate_policy(change_analysis: dict[str, Any], evidence: dict[str, Any]) -
 
     if infra_changed:
         missing: list[str] = []
-        workflow_paths = [p for p in paths if _is_infra(p)]
+        workflow_paths = [p for p in paths if _is_infra(p) and p.endswith((".yml", ".yaml"))]
         for wf in workflow_paths:
             missing.extend(_validate_workflow(ROOT / wf))
         if security_measured and (security_high > 0 or security_medium > 0):
@@ -235,9 +235,7 @@ def evaluate_policy(change_analysis: dict[str, Any], evidence: dict[str, Any]) -
         verdict = "reject"
     elif is_critical_change and (core_changed or security_changed):
         verdict = "manual_review"
-    if infra_changed and security_measured and (security_high > 0 or security_medium > 0):
-        verdict = "reject"
-    if security_changed and (security_high > 0 or security_medium > 0):
+    if (infra_changed or security_changed) and security_measured and (security_high > 0 or security_medium > 0):
         verdict = "reject"
 
     if not matched_rules:
