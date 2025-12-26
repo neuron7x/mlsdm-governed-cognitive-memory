@@ -59,6 +59,18 @@ def test_security_rule_requires_evidence(tmp_path, monkeypatch):
     policy = pe.evaluate_policy(change, evidence)
     assert policy["verdict"] in ("approve_with_conditions", "reject", "manual_review")
     assert any(rule["rule_id"] == "SEC-001" for rule in policy["matched_rules"])
+    assert list(policy) == ["verdict", "max_risk", "matched_rules", "blocking", "recommendations", "policy_hash"]
+
+
+def test_info_input_is_normalized():
+    change = _base_change(["src/core/app.py"], max_risk="info")
+    evidence = {
+        "sources": {"junit": {"found": False}},
+        "tests": {"totals": {"passed": 0, "failed": 0, "skipped": 0}},
+        "security": {"tools": [], "measured": False},
+    }
+    policy = pe.evaluate_policy(change, evidence)
+    assert policy["max_risk"] != "info"
 
 
 def test_infra_requires_pinned_actions(tmp_path, monkeypatch):

@@ -67,13 +67,13 @@ Blocking issues: 3
   - Changed files (8): `.github/workflows/readiness.yml`, `scripts/readiness/changelog_generator.py`, `scripts/readiness/evidence_collector.py`, `scripts/readiness/policy_engine.py`, `tests/readiness/test_changelog_generator_e2e.py`, `tests/readiness/test_evidence_collector_contract.py`, `tests/readiness/test_policy_engine_contract.py`, `tests/unit/test_readiness_changelog_generator.py`
   - Primary category: mixed; Max risk: critical
   - Category counts: {"documentation": 0, "functional_core": 2, "infrastructure": 1, "mixed": 0, "observability": 0, "security_critical": 2, "test_coverage": 3}
-  - Risk counts: {"critical": 2, "high": 2, "info": 3, "low": 0, "medium": 1}
+  - Risk counts: {"critical": 2, "high": 2, "informational": 3, "low": 0, "medium": 1}
   - Evidence hash: sha256-bfc04544d294cdf3; Policy verdict: approve_with_conditions
 - 2025-12-26 — **Readiness tooling hardening** — Base: origin/main
   - Changed files (5): `Makefile`, `scripts/readiness/change_analyzer.py`, `scripts/readiness/changelog_generator.py`, `tests/unit/test_readiness_change_analyzer.py`, `tests/unit/test_readiness_changelog_generator.py`
   - Primary category: mixed; Max risk: high
   - Category counts: {"documentation": 0, "functional_core": 3, "infrastructure": 0, "mixed": 0, "observability": 0, "security_critical": 0, "test_coverage": 2}
-  - Risk counts: {"critical": 0, "high": 3, "info": 2, "low": 0, "medium": 0}
+  - Risk counts: {"critical": 0, "high": 3, "informational": 2, "low": 0, "medium": 0}
 - 2025-12-25 — **Preserve filter results in pipeline stage metadata** — PR: #???
   - Updated `src/mlsdm/core/llm_pipeline.py`: keep `PipelineStageResult.result` as `FilterResult` to preserve integration expectations
   - **Behavior unchanged**: pipeline output and decision logic remain the same; metadata format restored

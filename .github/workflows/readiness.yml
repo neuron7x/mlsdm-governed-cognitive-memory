@@ -38,6 +38,8 @@ jobs:
             const labels = context.payload.pull_request?.labels?.map(l => l.name) || [];
             const apply = labels.includes('readiness-auto-apply');
             core.setOutput('apply', apply ? 'true' : 'false');
+            const sameRepo = (context.payload.pull_request?.head?.repo?.full_name === context.repo.owner + '/' + context.repo.repo);
+            core.setOutput('same_repo', sameRepo ? 'true' : 'false');
       - name: Compute changed files
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref || 'main' }}
@@ -62,14 +64,15 @@ jobs:
           BASE_REF: ${{ github.event.pull_request.base.ref || 'main' }}
           TITLE: ${{ github.event.pull_request.title || github.event.head_commit.message || 'Automated readiness update' }}
           APPLY: ${{ steps.apply.outputs.apply || (github.event_name != 'pull_request') }}
+          SAME_REPO: ${{ steps.apply.outputs.same_repo || 'false' }}
         run: |
           MODE="preview"
-          if [ "${APPLY}" = "true" ]; then
+          if [ "${APPLY}" = "true" ] && [ "${SAME_REPO}" = "true" ]; then
             MODE="apply"
           fi
           python scripts/readiness/changelog_generator.py --title "${TITLE}" --base-ref "origin/${BASE_REF}" --mode "${MODE}"
       - name: Commit readiness update
-        if: ${{ github.event_name == 'pull_request' && steps.apply.outputs.apply == 'true' }}
+        if: ${{ github.event_name == 'pull_request' && steps.apply.outputs.apply == 'true' && steps.apply.outputs.same_repo == 'true' }}
         env:
           BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |

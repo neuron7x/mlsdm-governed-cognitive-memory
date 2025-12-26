@@ -46,6 +46,15 @@ def test_collect_evidence_contract_and_hash_stability(tmp_path, monkeypatch):
     first = ec.collect_evidence(tmp_path)
     second = ec.collect_evidence(tmp_path)
 
+    assert list(first) == [
+        "timestamp_utc",
+        "sources",
+        "tests",
+        "coverage",
+        "security",
+        "performance",
+        "evidence_hash",
+    ]
     assert first["timestamp_utc"] == fixed_now.isoformat()
     assert first["sources"]["junit"]["found"] is True
     assert "junit-unit.xml" in first["sources"]["junit"]["files"][0]

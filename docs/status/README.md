@@ -29,5 +29,5 @@
 ## CI behaviour
 
 - `.github/workflows/readiness.yml` computes changes, collects evidence, evaluates policy, and updates `docs/status/READINESS.md`.
-- Auto-commit is gated by the `readiness-auto-apply` label on the PR; without it, the workflow runs in preview mode and posts a summary comment only.
+- Auto-commit is gated by the `readiness-auto-apply` label on the PR and only runs for same-repo PRs; without the label, the workflow stays in preview mode and posts a summary comment only.
 - Evidence sources are expected under `reports/` (e.g., `junit-*.xml`, `coverage.xml`, `bandit.json`, `semgrep.json`, `gitleaks.json`). Missing artifacts do not fail the run but reduce confidence and can produce `approve_with_conditions` or `reject` verdicts when required for rules.
