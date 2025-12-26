@@ -11,17 +11,22 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 ROOT = Path(__file__).resolve().parents[2]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
 
-from scripts.readiness import change_analyzer as ca
-from scripts.readiness.evidence_collector import collect_evidence
-from scripts.readiness.policy_engine import evaluate_policy
+
+def _imports():
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    import scripts.readiness.change_analyzer as ca  # type: ignore
+    from scripts.readiness.evidence_collector import collect_evidence
+    from scripts.readiness.policy_engine import evaluate_policy
+
+    return ca, collect_evidence, evaluate_policy
+
+
+ca, collect_evidence, evaluate_policy = _imports()
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
 
 
 def _ensure_no_bidi(text: str, label: str) -> None:

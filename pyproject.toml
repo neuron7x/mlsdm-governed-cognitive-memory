@@ -41,6 +41,7 @@ dependencies = [
     "fastapi>=0.115.0",
     "uvicorn>=0.32.0",
     "pyyaml>=6.0.2",
+    "defusedxml>=0.7.1",
     "pydantic>=2.10.0",
     "prometheus-client>=0.21.0",
     "tenacity>=9.0.0",

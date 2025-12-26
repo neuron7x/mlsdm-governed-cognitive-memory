@@ -9,7 +9,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-from xml.etree import ElementTree
+
+from defusedxml import ElementTree
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
