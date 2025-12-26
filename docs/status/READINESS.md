@@ -61,10 +61,6 @@ Blocking issues: 3
   - Updated `src/mlsdm/core/llm_pipeline.py`: keep `PipelineStageResult.result` as `FilterResult` to preserve integration expectations
   - **Behavior unchanged**: pipeline output and decision logic remain the same; metadata format restored
   - **Evidence impact**: readiness check required due to src/ changes; no additional tests run here
-- 2025-12-25 — **Readiness change analyzer unit tests updated** — PR: #395
-  - Updated `tests/unit/test_readiness_change_analyzer.py`: Added cases for scope prefix matching and workflow file detection assertions
-  - **Evidence impact**: Improved test coverage for readiness gate validation logic
-  - **Testing posture**: Gate validation tests now cover scope prefix matching and workflow detection scenarios
 - 2025-12-25 — **LLM pipeline telemetry metadata updates** — PR: #???
   - Updated `src/mlsdm/core/llm_pipeline.py`: cached `time.perf_counter` in pipeline stages for consistent timing reads
   - Added `stage_durations_ms` to `PipelineResult.metadata` for pre-filter blocks, LLM failures, and successful runs
@@ -72,6 +68,10 @@ Blocking issues: 3
   - Telemetry callback failures now log exceptions for visibility
   - **Behavior unchanged**: pipeline decision and output content remain the same; metadata only
   - **Evidence impact**: readiness check required due to src/ changes; no additional tests run here
+- 2025-12-25 — **Readiness change analyzer unit tests** — PR: #395
+  - Updated `tests/unit/test_readiness_change_analyzer.py`: Added cases for scope prefix matching and workflow file detection assertions
+  - **Evidence impact**: Improved test coverage for readiness gate validation logic; reduces false negatives/positives in scope/workflow detection
+  - **Testing posture**: Gate validation tests cover scope prefix matching and workflow detection scenarios
 - 2025-12-25 — **Rate limiter observability and aggregation helpers** — PR: #392
   - Updated `src/mlsdm/utils/rate_limiter.py`: Added `get_all_stats()` method returning `{"client_count": int, "average_tokens": float}` for monitoring
   - Extended `cleanup_old_entries(max_age_seconds=3600.0, return_keys=False)` to optionally return `(count, [client_ids])` when `return_keys=True`
@@ -141,24 +141,6 @@ Blocking issues: 3
   - Updated `src/mlsdm/observability/tracing.py`: No-op spans now capture attributes/events/exceptions for diagnostics
   - Updated `src/mlsdm/sdk/neuro_engine_client.py`, `src/mlsdm/state/system_state_store.py`, `src/mlsdm/security/payload_scrubber.py`, `src/mlsdm/utils/*`: removed silent `pass` placeholders and improved cleanup logging
   - **Evidence impact**: Targeted tracing gate passed (`pytest tests/observability/test_tracing_no_otel.py -q`); readiness check passes locally (`python scripts/readiness_check.py`)
-- 2025-12-23 — **Hardened CI neuro-cognitive-engine workflow for deterministic, auditable runs** — PR: #362
-  - **Determinism improvements**:
-    - Added `PYTHONHASHSEED: "0"` and `HYPOTHESIS_SEED: "1"` to test, coverage, e2e-tests jobs
-    - Disabled `fail-fast: false` in test matrix to report all Python version failures
-  - **Heavy-path governance**:
-    - Benchmarks job now runs on PRs only when labeled `run-benchmarks`
-    - Cognitive safety evaluation (`neuro-engine-eval`) gated behind `run-safety-eval` label for PRs
-    - Both jobs remain active for push/schedule/workflow_dispatch events
-  - **Scheduling & triggers**:
-    - Added nightly cron schedule: `'0 3 * * *'`
-    - Enabled `workflow_dispatch` for manual heavy runs
-  - **Strategy**: Fast PR feedback with blocking gates (lint, security, test, coverage, e2e), deferred heavy checks (benchmarks, safety-eval) to labels/schedule
-  - **Evidence impact**: Test determinism now seeded; Python 3.10/3.11/3.12 matrix failures will all report; benchmark/safety-eval runs tracked separately
-- 2025-12-23 — Fixed flaky benchmark test, improved CI structure (benchmarks non-blocking for PRs, added uv caching) — PR: copilot/extract-facts-from-failures
-- 2025-12-22 — Established structured readiness record and CI gate policy — PR: copilot/create-readiness-documentation
-- 2025-12-22 — Aligned readiness gate scope and workflow enforcement — PR: copilot/create-readiness-documentation
-- 2025-12-22 — Expanded auditor-grade readiness evidence and hardened gate — PR: #356
-- 2025-12-22 — Added readiness evidence workflow and readiness gate unit tests — PR: #356
 - 2025-12-23 — **Eliminated blocking I/O from /health/readiness endpoint** — PR: #359
   - Implemented async background CPU sampler with thread-safe cache (TTL: 2.0s, sample interval: 0.5s)
   - Optimized `_check_cpu_health()` to O(1) instant cache reads; fail-open policy with degraded states
@@ -166,3 +148,7 @@ Blocking issues: 3
   - **Performance impact**: P95 latency reduced 311ms → 23ms (-92.5%); throughput +94% (160 → 310 req/s)
   - **Safety posture**: Fail-open error handling ensures availability; monitoring status: "cached", "initializing", "degraded"
   - **Evidence required**: Re-run `tests/perf/test_slo_api_endpoints.py::TestHealthEndpointSLO::test_readiness_latency` to verify P95 < 300ms
+- 2025-12-22 — **Established structured readiness record and CI gate policy** — PR: copilot/create-readiness-documentation
+- 2025-12-22 — **Aligned readiness gate scope and workflow enforcement** — PR: copilot/create-readiness-documentation
+- 2025-12-22 — **Expanded auditor-grade readiness evidence and hardened gate** — PR: #356
+- 2025-12-22 — **Added readiness evidence workflow and readiness gate unit tests** — PR: #356
