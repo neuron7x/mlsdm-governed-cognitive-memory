@@ -18,6 +18,8 @@ import yaml
 
 BIDI_PATTERN = re.compile(r"[\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069]")
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 SECURITY_MARKERS: tuple[str, ...] = (
     "security",

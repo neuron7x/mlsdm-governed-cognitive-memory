@@ -11,12 +11,14 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from scripts.readiness import change_analyzer as ca
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-ROOT = Path(__file__).resolve().parents[2]
 
 RISK_ORDER = ["informational", "low", "medium", "high", "critical"]
 CATEGORY_ORDER = list(ca.CATEGORY_PRIORITY)

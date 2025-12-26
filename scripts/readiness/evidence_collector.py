@@ -12,6 +12,8 @@ from typing import Any
 from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 SUITE_MAP = {
     "junit-unit": "unit",
     "junit-integration": "integration",

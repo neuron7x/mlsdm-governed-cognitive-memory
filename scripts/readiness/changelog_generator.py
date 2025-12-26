@@ -10,15 +10,18 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from scripts.readiness import change_analyzer as ca
 from scripts.readiness.evidence_collector import collect_evidence
 from scripts.readiness.policy_engine import evaluate_policy
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
-
-
-ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 
 def _ensure_no_bidi(text: str, label: str) -> None:
