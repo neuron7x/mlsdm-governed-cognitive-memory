@@ -84,8 +84,10 @@ def validate_manifest(manifest_path: Path) -> list[str]:
 
     try:
         manifest = json.loads(manifest_path.read_text())
-    except Exception as exc:  # pragma: no cover - safety net
+    except json.JSONDecodeError as exc:
         return [f"Manifest is not valid JSON: {exc}"]
+    except OSError as exc:  # pragma: no cover - I/O failure
+        return [f"Manifest could not be read: {exc}"]
 
     for field in ("timestamp_utc", "git_sha", "python_version", "platform"):
         if field not in manifest:
@@ -99,8 +101,10 @@ def validate_benchmark_schema(benchmark_path: Path) -> list[str]:
     errors: list[str] = []
     try:
         payload = json.loads(benchmark_path.read_text())
-    except Exception as exc:  # pragma: no cover - safety net
+    except json.JSONDecodeError as exc:
         return [f"benchmark-metrics.json invalid JSON: {exc}"]
+    except OSError as exc:  # pragma: no cover - I/O failure
+        return [f"benchmark-metrics.json could not be read: {exc}"]
 
     required_top = ("timestamp", "commit", "metrics")
     for field in required_top:
@@ -116,7 +120,11 @@ def validate_benchmark_schema(benchmark_path: Path) -> list[str]:
 
 def parse_coverage(coverage_path: Path) -> CoverageStats:
     """Parse coverage.xml and return percent line rate."""
-    tree = ET.parse(coverage_path)
+    try:
+        tree = ET.parse(coverage_path)
+    except (ET.ParseError, OSError) as exc:
+        raise ValueError(f"Unable to parse coverage XML at {coverage_path}: {exc}") from exc
+
     root = tree.getroot()
     line_rate = root.attrib.get("line-rate")
     if line_rate is None:
@@ -126,7 +134,10 @@ def parse_coverage(coverage_path: Path) -> CoverageStats:
 
 def parse_junit(junit_path: Path) -> TestStats:
     """Parse junit.xml and return aggregate stats."""
-    tree = ET.parse(junit_path)
+    try:
+        tree = ET.parse(junit_path)
+    except (ET.ParseError, OSError) as exc:
+        raise ValueError(f"Unable to parse junit XML at {junit_path}: {exc}") from exc
     tests = failures = errors = skipped = 0
     for suite in tree.iterfind(".//testsuite"):
         tests += int(suite.attrib.get("tests", 0))
@@ -183,7 +194,7 @@ def extract_doc_claims(content: str) -> dict[str, object]:
         }
 
     path_match = re.search(
-        r"artifacts/evidence/\d{4}-\d{2}-\d{2}/[A-Za-z0-9]+",
+        r"artifacts/evidence/\d{4}-\d{2}-\d{2}/[a-fA-F0-9]{7,40}",
         content,
     )
     if path_match:
@@ -248,13 +259,16 @@ def compare_with_docs(
     return errors
 
 
-def validate_snapshot(snapshot: Path, fail_on_doc_mismatch: bool = True, max_size_mb: int = 20) -> tuple[bool, list[str]]:
-    """Validate a snapshot and return (ok, errors)."""
+def validate_snapshot(
+    snapshot: Path, fail_on_doc_mismatch: bool = True, max_size_mb: int = 20
+) -> tuple[bool, list[str], CoverageStats | None, TestStats | None]:
+    """Validate a snapshot and return (ok, errors, coverage, tests)."""
     errors: list[str] = []
 
     missing = check_required_files(snapshot)
     if missing:
         errors.append(f"Missing required files: {missing}")
+        return False, errors, None, None
 
     manifest_errors = validate_manifest(snapshot / "manifest.json")
     errors.extend(manifest_errors)
@@ -262,8 +276,17 @@ def validate_snapshot(snapshot: Path, fail_on_doc_mismatch: bool = True, max_siz
     benchmark_errors = validate_benchmark_schema(snapshot / "benchmarks" / "benchmark-metrics.json")
     errors.extend(benchmark_errors)
 
-    coverage = parse_coverage(snapshot / "coverage" / "coverage.xml")
-    tests = parse_junit(snapshot / "pytest" / "junit.xml")
+    try:
+        coverage = parse_coverage(snapshot / "coverage" / "coverage.xml")
+    except ValueError as exc:
+        errors.append(str(exc))
+        return False, errors, None, None
+
+    try:
+        tests = parse_junit(snapshot / "pytest" / "junit.xml")
+    except ValueError as exc:
+        errors.append(str(exc))
+        return False, errors, None, None
 
     errors.extend(compare_with_docs(get_repo_root(), snapshot, coverage, tests, fail_on_doc_mismatch))
 
@@ -271,7 +294,7 @@ def validate_snapshot(snapshot: Path, fail_on_doc_mismatch: bool = True, max_siz
     if forbidden:
         errors.append(f"Forbidden or oversized evidence files detected: {forbidden}")
 
-    return len(errors) == 0, errors
+    return len(errors) == 0, errors, coverage, tests
 
 
 def main(argv: Iterable[str] | None = None) -> int:
@@ -302,15 +325,13 @@ def main(argv: Iterable[str] | None = None) -> int:
     repo_root = get_repo_root()
     snapshot = args.snapshot or find_latest_snapshot(repo_root)
 
-    ok, errors = validate_snapshot(
+    ok, errors, coverage, tests = validate_snapshot(
         snapshot,
         fail_on_doc_mismatch=not args.allow_doc_mismatch,
         max_size_mb=args.max_size_mb,
     )
 
-    if args.print_summary:
-        coverage = parse_coverage(snapshot / "coverage" / "coverage.xml")
-        tests = parse_junit(snapshot / "pytest" / "junit.xml")
+    if args.print_summary and coverage and tests:
         print(
             f"Snapshot: {snapshot}\n"
             f"Coverage: {coverage.percent}%\n"

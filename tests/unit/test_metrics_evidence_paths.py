@@ -7,6 +7,7 @@ This test ensures that:
 
 from __future__ import annotations
 
+import importlib.util
 import re
 import sys
 from pathlib import Path
@@ -24,6 +25,17 @@ def get_repo_root() -> Path:
 
 class TestMetricsEvidencePaths:
     """Tests to prevent drift between docs and committed evidence."""
+
+    def _load_validator_module(self, repo_root: Path):
+        spec = importlib.util.spec_from_file_location(
+            "validate_evidence_snapshot", repo_root / "scripts" / "evidence" / "validate_evidence_snapshot.py"
+        )
+        if spec is None or spec.loader is None:
+            raise ImportError("Unable to load evidence validator module")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        return module
 
     def test_no_ci_workflow_links_in_metrics_source(self) -> None:
         """METRICS_SOURCE.md should not reference CI workflow URLs."""
@@ -132,11 +144,9 @@ class TestMetricsEvidencePaths:
     def test_evidence_has_no_forbidden_files(self) -> None:
         """Evidence snapshots must not contain secrets or oversized blobs."""
         repo_root = get_repo_root()
-        sys.path.append(str(repo_root / "scripts"))
-        from evidence import validate_evidence_snapshot as validator  # type: ignore
-
-        snapshot = validator.find_latest_snapshot(repo_root)
-        violations = validator.check_forbidden_files(snapshot, max_size_mb=25)
+        validator = self._load_validator_module(repo_root)
+        snapshot = validator.find_latest_snapshot(repo_root)  # type: ignore[attr-defined]
+        violations = validator.check_forbidden_files(snapshot, max_size_mb=20)  # type: ignore[attr-defined]
         assert not violations, (
             "Forbidden or oversized files detected in evidence: "
             f"{violations}. Remove and regenerate evidence."
