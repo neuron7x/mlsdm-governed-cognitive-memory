@@ -1,4 +1,5 @@
 .PHONY: test test-fast coverage-gate lint type cov bench bench-drift help run-dev run-cloud-local run-agent health-check eval-moral_filter test-memory-obs \
+        readiness-preview readiness-apply \
         build-package test-package docker-build-neuro-engine docker-run-neuro-engine docker-smoke-neuro-engine \
         docker-compose-up docker-compose-down lock sync
 
@@ -34,6 +35,10 @@ help:
 	@echo ""
 	@echo "Observability Tests:"
 	@echo "  make test-memory-obs - Run memory observability tests"
+	@echo ""
+	@echo "Readiness:"
+	@echo "  make readiness-preview TITLE=\"Message\" [BASE_REF=origin/main] - Preview readiness change log update"
+	@echo "  make readiness-apply   TITLE=\"Message\" [BASE_REF=origin/main] - Apply readiness change log update"
 	@echo ""
 	@echo "Evaluations:"
 	@echo "  make eval-moral_filter - Run moral filter evaluation suite"
@@ -85,6 +90,15 @@ bench-drift:
 		echo "Error: benchmark-metrics.json not found. Run 'make bench' first."; \
 		exit 1; \
 	fi
+
+TITLE ?=
+BASE_REF ?= origin/main
+
+readiness-preview:
+	python scripts/readiness/changelog_generator.py --title "$(TITLE)" --base-ref "$(BASE_REF)" --mode preview
+
+readiness-apply:
+	python scripts/readiness/changelog_generator.py --title "$(TITLE)" --base-ref "$(BASE_REF)" --mode apply
 
 # Package Building
 build-package:
