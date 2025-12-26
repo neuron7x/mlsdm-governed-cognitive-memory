@@ -207,6 +207,10 @@ def main(argv: list[str] | None = None) -> int:
         Exit code (0 for success, non-zero for failure)
     """
     import argparse
+    import json
+    import platform
+    import subprocess
+    from datetime import datetime, timezone
 
     parser = argparse.ArgumentParser(
         description="MLSDM Memory Footprint Benchmark",
@@ -217,7 +221,23 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Quick check for CI (verify empty PELM footprint only)",
     )
+    parser.add_argument(
+        "--json-out",
+        type=str,
+        default=None,
+        help="Path to write JSON output with memory metrics",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Random seed for numpy (for determinism)",
+    )
     args = parser.parse_args(argv)
+
+    # Set seed if provided for determinism
+    if args.seed is not None:
+        np.random.seed(args.seed)
 
     if args.quick:
         return quick_memory_check()
@@ -239,6 +259,31 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  CognitiveController (full): {controller_mb:.2f} MB")
         print("\n  Documented footprint: 29.37 MB")
         print("=" * 70)
+
+        # Write JSON output if requested
+        if args.json_out:
+            try:
+                git_sha = subprocess.run(
+                    ["git", "rev-parse", "HEAD"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                ).stdout.strip() or "unknown"
+            except Exception:
+                git_sha = "unknown"
+
+            output = {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "commit": git_sha,
+                "pelm_mb": round(pelm_mb, 2),
+                "controller_mb": round(controller_mb, 2),
+                "config": {"dim": 384, "cap": 20000},
+                "python": platform.python_version(),
+                "platform": platform.platform(),
+            }
+            with open(args.json_out, "w") as f:
+                json.dump(output, f, indent=2)
+            print(f"\nJSON output written to: {args.json_out}")
 
         return 0 if pelm_mb <= 35.0 else 1  # Allow some margin
 

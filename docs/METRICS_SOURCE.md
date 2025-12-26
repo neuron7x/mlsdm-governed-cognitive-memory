@@ -1,7 +1,27 @@
 # Metrics Source of Truth
 
-**Last Updated**: December 18, 2025
+**Last Updated**: December 26, 2025
 **Purpose**: Single source for test coverage and quality metrics to prevent documentation drift.
+
+---
+
+## Evidence Snapshots
+
+Metrics are sourced from **committed evidence snapshots** in the repository for reproducibility.
+
+| Artifact | Path |
+|----------|------|
+| **Coverage Report** | `artifacts/evidence/<date>/<sha>/coverage/coverage.xml` |
+| **JUnit Test Results** | `artifacts/evidence/<date>/<sha>/pytest/junit.xml` |
+| **Benchmark Metrics** | `artifacts/evidence/<date>/<sha>/benchmarks/benchmark-metrics.json` |
+| **Memory Footprint** | `artifacts/evidence/<date>/<sha>/memory/memory_footprint.json` |
+| **Manifest** | `artifacts/evidence/<date>/<sha>/manifest.json` |
+
+To regenerate evidence locally:
+
+```bash
+make evidence
+```
 
 ---
 
@@ -10,17 +30,17 @@
 | Metric | Value | Source |
 |--------|-------|--------|
 | **CI Coverage Threshold** | 65% | [ci-neuro-cognitive-engine.yml](../.github/workflows/ci-neuro-cognitive-engine.yml#L149) |
-| **Actual Coverage** | ~86% | [Latest CI run coverage.xml artifact](https://github.com/neuron7x/mlsdm/actions/workflows/ci-neuro-cognitive-engine.yml) |
+| **Actual Coverage** | See evidence snapshot | `artifacts/evidence/<date>/<sha>/coverage/coverage.xml` |
 | **Core Modules Coverage** | 90%+ | Critical modules (`core/`, `memory/`, `cognition/`) |
 
-### Why 65% Threshold When 86% Actual?
+### Why 65% Threshold When Actual is Higher?
 
-The CI coverage threshold (65%) is intentionally set below actual coverage (~86%) for several reasons:
+The CI coverage threshold (65%) is intentionally set below actual coverage for several reasons:
 
 1. **Anti-flap**: Prevents spurious CI failures from minor fluctuations in test coverage
 2. **Developer Experience**: Allows focused work without CI blocking every small change
 3. **Incremental Growth**: Threshold is increased when coverage consistently exceeds it by 5%+ for 2+ releases
-4. **Safety Margin**: Provides ~21% headroom for refactoring without breaking CI
+4. **Safety Margin**: Provides headroom for refactoring without breaking CI
 
 **Policy**: The threshold represents the *minimum acceptable* coverage, not the *target* coverage.
 
@@ -28,14 +48,31 @@ The CI coverage threshold (65%) is intentionally set below actual coverage (~86%
 
 ## Test Metrics
 
-| Metric | Value | Source |
-|--------|-------|--------|
-| **Total Tests** | ~3,600 | [Latest CI run](https://github.com/neuron7x/mlsdm/actions/workflows/ci-neuro-cognitive-engine.yml) |
-| **Unit Tests** | ~1,900 | `tests/unit/` |
-| **Integration Tests** | ~50 | `tests/integration/` |
-| **E2E Tests** | ~28 | `tests/e2e/` |
-| **Property Tests** | ~50 | `tests/property/` |
-| **Security Tests** | ~38 | `tests/security/` |
+Test counts are derived from the committed JUnit evidence:
+
+| Metric | Source |
+|--------|--------|
+| **Test Results** | `artifacts/evidence/<date>/<sha>/pytest/junit.xml` |
+
+To get exact counts, parse the JUnit XML or run `make evidence`.
+
+---
+
+## Benchmark Metrics
+
+Performance metrics are captured in the evidence snapshot:
+
+| Metric | Source |
+|--------|--------|
+| **Benchmark Results** | `artifacts/evidence/<date>/<sha>/benchmarks/benchmark-metrics.json` |
+| **Raw Latency Data** | `artifacts/evidence/<date>/<sha>/benchmarks/raw_neuro_engine_latency.json` |
+| **Baseline** | `benchmarks/baseline.json` |
+
+To check for benchmark drift:
+
+```bash
+python scripts/check_benchmark_drift.py artifacts/evidence/<date>/<sha>/benchmarks/benchmark-metrics.json
+```
 
 ---
 
@@ -55,11 +92,11 @@ pytest --cov=src/mlsdm --cov-report=xml --cov-report=term-missing \
 
 ## Updating This Document
 
-When coverage improves significantly:
+When evidence is regenerated:
 
-1. Run the CI and check the coverage artifact
-2. Update the "Actual Coverage" value above with the new figure
-3. Update the "Last Updated" date
+1. Run `make evidence` to capture a new snapshot
+2. Commit the new evidence folder under `artifacts/evidence/`
+3. Update the "Last Updated" date above
 4. If coverage exceeds threshold by 5%+ for 2+ releases, consider raising the threshold
 
 ---
@@ -69,3 +106,4 @@ When coverage improves significantly:
 - [TESTING_GUIDE.md](../TESTING_GUIDE.md) - How to write and run tests
 - [CI_GUIDE.md](../CI_GUIDE.md) - CI/CD configuration overview
 - [TEST_STRATEGY.md](../TEST_STRATEGY.md) - Test organization and priorities
+- [Evidence README](../artifacts/evidence/README.md) - Evidence snapshot policy

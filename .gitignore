@@ -41,3 +41,9 @@ evals/*_report.json
 
 # Downloaded tools and binaries
 conftest
+
+# Evidence artifacts (allow committed snapshots)
+!artifacts/evidence/**/*
+!artifacts/**/coverage.xml
+!artifacts/**/coverage.json
+!artifacts/**/*.log

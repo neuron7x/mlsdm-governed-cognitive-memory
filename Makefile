@@ -1,7 +1,7 @@
 .PHONY: test test-fast coverage-gate lint type cov bench bench-drift help run-dev run-cloud-local run-agent health-check eval-moral_filter test-memory-obs \
         readiness-preview readiness-apply \
         build-package test-package docker-build-neuro-engine docker-run-neuro-engine docker-smoke-neuro-engine \
-        docker-compose-up docker-compose-down lock sync
+        docker-compose-up docker-compose-down lock sync evidence
 
 export PYTHONPATH := $(PYTHONPATH):$(CURDIR)/src
 
@@ -181,3 +181,8 @@ health-check:
 # Evaluation Suites
 eval-moral_filter:
 	python -m evals.moral_filter_runner
+
+# Evidence Snapshot
+evidence:
+	@echo "Capturing evidence snapshot..."
+	uv run python scripts/evidence/capture_evidence.py
