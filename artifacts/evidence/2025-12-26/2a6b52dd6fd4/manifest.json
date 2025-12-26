@@ -1,0 +1,23 @@
+{
+  "timestamp_utc": "2025-12-26T17:33:37.319140+00:00",
+  "git_sha": "2a6b52dd6fd466e471c81a2670e2698c74a67044",
+  "python_version": "3.12.3",
+  "platform": "Linux-6.11.0-1018-azure-x86_64-with-glibc2.39",
+  "commands": [
+    "bash ./coverage_gate.sh",
+    "pytest tests/unit tests/state -q --junitxml=... --maxfail=1",
+    "benchmarks/test_neuro_engine_performance.py (imported functions)",
+    "benchmarks/measure_memory_footprint.py --json-out ... --seed 42"
+  ],
+  "files": [
+    "benchmarks/benchmark-metrics.json",
+    "benchmarks/raw_neuro_engine_latency.json",
+    "coverage/coverage.log",
+    "coverage/coverage.xml",
+    "env/python_version.txt",
+    "env/uname.txt",
+    "env/uv_lock_sha256.txt",
+    "memory/memory_footprint.json",
+    "pytest/junit.xml"
+  ]
+}

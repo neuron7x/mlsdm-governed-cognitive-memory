@@ -133,10 +133,6 @@ def measure_cognitive_controller_memory() -> float:
     dimension = 384  # Standard embedding dimension
     controller = CognitiveController(
         dim=dimension,
-        capacity=20_000,
-        wake_duration=8,
-        sleep_duration=3,
-        initial_moral_threshold=0.50,
     )
 
     current, peak = tracemalloc.get_traced_memory()

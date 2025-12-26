@@ -85,7 +85,7 @@ def run_coverage_gate(repo_root: Path, evidence_dir: Path) -> bool:
     src_coverage = repo_root / "coverage.xml"
     if src_coverage.exists():
         shutil.copy(src_coverage, coverage_dir / "coverage.xml")
-        print(f"✓ Captured coverage.xml")
+        print("✓ Captured coverage.xml")
     else:
         print("⚠ coverage.xml not found")
 
@@ -209,7 +209,7 @@ def generate_benchmark_metrics(repo_root: Path, evidence_dir: Path) -> bool:
         metrics_path = benchmarks_dir / "benchmark-metrics.json"
         with open(metrics_path, "w") as f:
             json.dump(metrics_json, f, indent=2)
-        print(f"✓ Generated benchmark-metrics.json")
+        print("✓ Generated benchmark-metrics.json")
 
         # Save raw latency data too
         raw_path = benchmarks_dir / "raw_neuro_engine_latency.json"
@@ -221,7 +221,7 @@ def generate_benchmark_metrics(repo_root: Path, evidence_dir: Path) -> bool:
                 "small_load": small_load_stats,
                 "heavy_load": heavy_load_results,
             }, f, indent=2)
-        print(f"✓ Generated raw_neuro_engine_latency.json")
+        print("✓ Generated raw_neuro_engine_latency.json")
 
         if slo_compliant:
             print(f"✓ SLO compliant (max P95: {max_p95:.3f}ms < {slo_threshold_ms}ms)")
@@ -264,7 +264,7 @@ def measure_memory(repo_root: Path, evidence_dir: Path) -> bool:
     )
 
     if json_path.exists():
-        print(f"✓ Generated memory_footprint.json")
+        print("✓ Generated memory_footprint.json")
     else:
         print("⚠ memory_footprint.json not generated")
         print(f"  stdout: {result.stdout[-500:]}")
@@ -325,7 +325,7 @@ def create_manifest(evidence_dir: Path) -> None:
     with open(manifest_path, "w") as f:
         json.dump(manifest, f, indent=2)
 
-    print(f"✓ Created manifest.json")
+    print("✓ Created manifest.json")
     print(f"  Timestamp: {timestamp}")
     print(f"  Git SHA: {git_sha}")
     print(f"  Files captured: {len(manifest['files'])}")
