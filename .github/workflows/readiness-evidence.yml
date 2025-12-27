@@ -153,15 +153,36 @@ jobs:
           python -m pip install -U pip
           pip install uv
           uv sync --frozen --extra test --extra dev
-      - name: Capture evidence snapshot
+      - name: Compute evidence dir
+        id: evidence_dir
+        shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
+          DATE="$(date -u +%F)"
+          SHA="$(git rev-parse --short=12 HEAD)"
+          EVIDENCE_DIR="artifacts/evidence/${DATE}/${SHA}"
+          mkdir -p "${EVIDENCE_DIR}"
+          echo "evidence_dir=${EVIDENCE_DIR}" >> "$GITHUB_OUTPUT"
+          echo "EVIDENCE_DIR=${EVIDENCE_DIR}" >> "$GITHUB_ENV"
+      - name: Capture evidence snapshot
+        id: capture
+        shell: bash
+        continue-on-error: true
+        env:
+          EVIDENCE_DIR: ${{ steps.evidence_dir.outputs.evidence_dir }}
+        run: |
+          set -euo pipefail
           make evidence
-          echo "EVIDENCE_DIR=$(ls -1d artifacts/evidence/*/* | sort | tail -n 1)" >> "$GITHUB_ENV"
       - name: Verify evidence integrity
+        if: steps.capture.outcome == 'success'
+        env:
+          EVIDENCE_DIR: ${{ steps.evidence_dir.outputs.evidence_dir }}
         run: |
           python scripts/evidence/verify_evidence_snapshot.py --evidence-dir "$EVIDENCE_DIR"
       - name: Check drift against baseline
+        if: steps.capture.outcome == 'success'
+        env:
+          EVIDENCE_DIR: ${{ steps.evidence_dir.outputs.evidence_dir }}
         run: |
           python scripts/evidence/check_drift.py --baseline benchmarks/baseline.json --evidence-dir "$EVIDENCE_DIR"
       - name: Upload evidence artifact
@@ -169,4 +190,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: evidence-truth-judge
-          path: ${{ env.EVIDENCE_DIR }}
+          path: ${{ steps.evidence_dir.outputs.evidence_dir }}
+      - name: Fail if capture failed
+        if: steps.capture.outcome != 'success'
+        run: |
+          echo "Evidence capture failed; see uploaded artifact for logs." >&2
+          exit 1

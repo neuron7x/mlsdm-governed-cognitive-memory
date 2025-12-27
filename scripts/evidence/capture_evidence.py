@@ -360,10 +360,17 @@ def main() -> int:
     git_sha = get_git_sha()
     short_sha = git_sha[:12] if git_sha != "unknown" else "unknown"
 
-    evidence_dir = repo_root / "artifacts" / "evidence" / date_str / short_sha
+    env_evidence_dir = os.environ.get("EVIDENCE_DIR")
+    if env_evidence_dir:
+        evidence_dir = Path(env_evidence_dir)
+        if not evidence_dir.is_absolute():
+            evidence_dir = repo_root / evidence_dir
+    else:
+        evidence_dir = repo_root / "artifacts" / "evidence" / date_str / short_sha
     evidence_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"\nEvidence directory: {evidence_dir.relative_to(repo_root)}")
+    relative_path = evidence_dir.relative_to(repo_root) if evidence_dir.is_relative_to(repo_root) else evidence_dir
+    print(f"\nEvidence directory: {relative_path}")
     print(f"Date: {date_str}")
     print(f"Git SHA: {git_sha}")
 
