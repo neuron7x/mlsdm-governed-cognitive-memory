@@ -57,12 +57,12 @@ The test coverage implementation follows a staged approach:
 
 | Stage | Line Coverage | Branch Coverage | Status |
 |-------|---------------|-----------------|--------|
-| Legacy Baseline | 65% | Not enforced | ✅ Exceeded |
-| **Current Gate** | **75%** | **70%** | ✅ Active |
+| Historical Baseline (deprecated) | 65% | Not enforced | ✅ Superseded |
+| **Current Gate** | **75%** | **70%** | ✅ Active (coverage_gate.sh, CI workflow) |
 | Target (Phase 2) | 85% | 80% | 🔄 Planned |
 | Target (Final) | 90% | 80% | 📋 Goal |
 
-> See [pyproject.toml](pyproject.toml) `[tool.coverage.report]` for current fail_under setting.
+> Single source of truth: `coverage_gate.sh` (default 75%) and `.github/workflows/ci-neuro-cognitive-engine.yml` (coverage job) enforce the active gate. See [pyproject.toml](pyproject.toml) `[tool.coverage.report]` for reporting settings.
 
 ### Current Metrics
 

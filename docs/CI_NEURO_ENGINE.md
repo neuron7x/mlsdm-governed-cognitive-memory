@@ -481,7 +481,7 @@ chmod +x scripts/run_local_ci.sh
 - ✅ Added pip caching to all jobs
 - ✅ Fixed security scan to use `--requirement requirements.txt`
 - ✅ Fixed timestamp generation in benchmark metrics
-- ✅ Added coverage gate job (90% threshold)
+- ✅ Added coverage gate job (75% threshold, aligned with `coverage_gate.sh` and CI)
 - ✅ Verified Python 3.10/3.11 compatibility
 - ✅ Updated all-ci-passed gate logic
 - ✅ Comprehensive documentation updates
