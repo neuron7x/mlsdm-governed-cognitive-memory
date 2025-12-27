@@ -30,6 +30,8 @@ COVERAGE_MIN="${COVERAGE_MIN:-75}"
 
 # Additional pytest arguments (can be extended via environment variable)
 PYTEST_ARGS="${PYTEST_ARGS:-}"
+# Python executable (allows callers to pin interpreter)
+PYTHON_BIN="${PYTHON_BIN:-python}"
 
 # Colors for output (disabled if not a terminal)
 if [ -t 1 ]; then
@@ -77,7 +79,7 @@ echo ""
 # just organized in a separate directory for clarity.
 #
 # shellcheck disable=SC2086
-python -m pytest tests/unit/ tests/state/ \
+"${PYTHON_BIN}" -m pytest tests/unit/ tests/state/ \
     --cov=src/mlsdm \
     --cov-report=term-missing \
     --cov-report=xml:coverage.xml \

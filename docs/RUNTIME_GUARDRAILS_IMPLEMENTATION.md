@@ -16,7 +16,7 @@ This document summarizes the implementation of the Runtime Guardrails & Governan
 ✅ **OpenTelemetry Integration**: Full instrumentation with traces, metrics, and log correlation
 ✅ **Policy-as-Code**: Declarative policies with deterministic evaluation
 ✅ **Comprehensive Testing**: 38 new tests with 100% STRIDE coverage
-✅ **Readiness Tracking**: Quality checks passing (ruff, mypy, pytest, coverage ≥65%); readiness recorded in [status/READINESS.md](status/READINESS.md)
+✅ **Readiness Tracking**: Quality checks passing (ruff, mypy, pytest, coverage ≥75%); readiness recorded in [status/READINESS.md](status/READINESS.md)
 ✅ **Backward Compatible**: No breaking changes to existing APIs
 
 ---
@@ -138,7 +138,7 @@ All guardrail decisions logged with:
 ### Test Coverage
 
 ✅ **Tests**: 38/38 passing (100%)
-✅ **Coverage**: ≥65% (meets threshold)
+✅ **Coverage**: ≥75% (meets threshold)
 ✅ **STRIDE Coverage**: All 6 categories tested
 
 ### CI/CD Integration

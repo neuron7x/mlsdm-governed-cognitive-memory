@@ -57,6 +57,12 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-26 — **Evidence integrity verification and artifact safety guards** — PR: #403
+  - Added `tests/unit/test_evidence_guard.py`: Validates evidence snapshots avoid forbidden patterns (`*.env`, `*.pem`, `id_rsa*`, `token*`, `*.key`, `*.p12`) and enforces 5MB per-file cap.
+  - Added `tests/unit/test_verify_evidence_snapshot.py`: Runs `scripts/evidence/verify_evidence_snapshot.py` against committed evidence and asserts failures when required files (e.g., manifest.json) are missing.
+  - **Purpose**: Prevent accidental secret/large-file commits in evidence and ensure evidence snapshots remain complete and verifiable.
+  - **Evidence impact**: Guard tests enforce evidence safety policy; verifier tests validate snapshot completeness.
+  - **Testing posture**: Unit tests cover forbidden pattern detection, size limits, and snapshot integrity verification.
 - 2025-12-26 — **Metrics evidence sanity-check test** — PR: #401
   - Added `tests/unit/test_metrics_evidence_paths.py`: Validates `docs/METRICS_SOURCE.md` references in-repo evidence paths (not CI workflow links) and verifies evidence snapshots exist
   - **Purpose**: Prevents documentation drift by enforcing committed reproducible evidence over ephemeral CI artifacts

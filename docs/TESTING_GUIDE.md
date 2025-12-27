@@ -5,7 +5,7 @@
 **Last Updated:** December 2025
 **Metrics Source:** [docs/METRICS_SOURCE.md](docs/METRICS_SOURCE.md)
 
-> **Coverage Summary**: CI Threshold: 65% | Actual: ~86% | Core Modules: 90%+
+> **Coverage Summary**: CI Threshold: 75% | Actual: 80.04% (see `artifacts/evidence/2025-12-26/2a6b52dd6fd4/coverage/coverage.xml`)
 > See [METRICS_SOURCE.md](docs/METRICS_SOURCE.md) for rationale and current figures.
 
 ## Table of Contents
@@ -24,11 +24,11 @@
 
 ## Overview
 
-This guide provides comprehensive instructions for testing MLSDM Governed Cognitive Memory. The project maintains solid test coverage (86% overall, 90%+ for core modules) and follows industry best practices for unit, integration, and validation testing.
+This guide provides comprehensive instructions for testing MLSDM Governed Cognitive Memory. The project maintains solid test coverage (80.04% from the latest evidence) and follows industry best practices for unit, integration, and validation testing.
 
 ### Testing Philosophy
 
-1. **Pragmatic Coverage**: Maintain ≥65% overall coverage (CI enforced), 90%+ for core modules
+1. **Pragmatic Coverage**: Maintain ≥75% overall coverage (CI enforced)
 2. **Test Pyramid**: More unit tests, fewer integration tests
 3. **Fast Execution**: Unit tests < 1ms, integration tests < 1s
 4. **Reproducibility**: Deterministic tests with fixed seeds
@@ -104,7 +104,7 @@ The MLSDM test suite is organized by scope and purpose to support different vali
 | `tests/security/` | Security tests | ~38 | STRIDE controls |
 | `tests/e2e/` | End-to-end scenarios | ~28 | Full workflows |
 | `tests/load/` | Load tests (Locust) | ~3 | Throughput |
-| **Total** | **Full Suite** | **~3,600** | **86% coverage** |
+| **Total** | **Full Suite** | **~3,600** | **80.04% coverage (evidence)** |
 
 ### Test Scopes
 
@@ -122,7 +122,7 @@ pytest tests/unit/test_cognitive_controller.py \
 **Full Coverage Suite** (used in coverage_gate.sh):
 ```bash
 pytest tests/unit/ tests/state/ --cov=src/mlsdm
-# Result: ~1,900 tests, 86% coverage
+# Result: ~1,900 tests, 80.04% coverage (from latest evidence)
 ```
 
 ### Directory Structure
@@ -161,8 +161,8 @@ tests/
 
 ## Coverage Requirements
 
-- **Minimum Coverage Threshold:** 65% (enforced by CI workflow)
-- **Current Overall Coverage:** ~86% (measured on full test suite)
+- **Minimum Coverage Threshold:** 75% (enforced by CI workflow)
+- **Current Overall Coverage:** 80.04% (measured from latest evidence snapshot)
 - **Core Modules Coverage:** 90%+ (cognitive controller, memory, moral filter)
 - **Critical Modules:** Near 100% coverage achieved for:
   - `src/mlsdm/core/cognitive_controller.py` (97.05%)
@@ -257,8 +257,8 @@ src/mlsdm/utils/input_validator.py    87     12    86%   42, 59-60, 95-96, 131, 
 ### Pre-commit Checks
 
 ```bash
-# Run before committing (CI threshold is 65%)
-pytest --cov=src/mlsdm --cov-fail-under=65 tests/ -m "not slow"
+# Run before committing (CI threshold is 75%)
+pytest --cov=src/mlsdm --cov-fail-under=75 tests/ -m "not slow"
 ```
 
 ### Coverage Threshold
@@ -266,13 +266,13 @@ pytest --cov=src/mlsdm --cov-fail-under=65 tests/ -m "not slow"
 The coverage threshold is enforced by CI workflow in `.github/workflows/ci-neuro-cognitive-engine.yml`:
 
 ```bash
-# CI Coverage Gate (currently 65%, actual coverage is ~86%)
+# CI Coverage Gate (currently 75%, actual coverage is 80.04% from latest evidence)
 pytest --cov=src/mlsdm --cov-report=xml --cov-report=term-missing \
-  --cov-fail-under=65 --ignore=tests/load -m "not slow and not benchmark" -v
+  --cov-fail-under=75 --ignore=tests/load -m "not slow and not benchmark" -v
 ```
 
-> **Note**: The threshold is set conservatively at 65% to allow minor fluctuations.
-> Actual coverage is ~86%. The threshold may be increased as coverage stabilizes.
+> **Note**: The threshold is set at 75% to match CI and the committed evidence snapshot. Raise only after sustained headroom.
+> Actual coverage is 80.04% (latest evidence). The threshold may be increased as coverage stabilizes.
 
 ## Troubleshooting
 

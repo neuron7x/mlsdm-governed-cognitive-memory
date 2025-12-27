@@ -1119,7 +1119,7 @@ All PRs must pass the following security checks before merge:
    - Failure: Blocks PR merge
 
 5. **Coverage Gate** (`./coverage_gate.sh`)
-   - Minimum: 65% code coverage (matches CI and policy/security-baseline.yaml)
+   - Minimum: 75% code coverage (matches CI and policy/security-baseline.yaml)
    - Ensures security-critical paths are tested
    - Failure: Blocks PR merge
 

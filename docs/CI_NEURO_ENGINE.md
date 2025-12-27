@@ -116,7 +116,7 @@ DISABLE_RATE_LIMIT=1 LLM_BACKEND=local_stub \
 1. Checkout code
 2. Set up Python with pip cache
 3. Install dependencies (requirements.txt + test extras)
-4. Run `pytest --cov=src/mlsdm --cov-report=xml --cov-report=term-missing --cov-fail-under=65 --ignore=tests/load -v`
+4. Run `pytest --cov=src/mlsdm --cov-report=xml --cov-report=term-missing --cov-fail-under=75 --ignore=tests/load -v`
 5. Upload coverage.xml as artifact
 
 **Environment Variables**:
@@ -124,10 +124,10 @@ DISABLE_RATE_LIMIT=1 LLM_BACKEND=local_stub \
 - `LLM_BACKEND=local_stub`
 
 **Success Criteria**:
-- Coverage ≥ 65% on src/mlsdm (current: ~86%)
+- Coverage ≥ 75% on src/mlsdm (current evidence: ~80.04%)
 - Exit code 0
 
-**Note**: Threshold set at 65% for stability. Current coverage is ~86%, providing significant headroom. Threshold may be increased in future releases.
+**Note**: Threshold set at 75% to match the committed evidence gate. The gate rises only after sustained headroom is demonstrated.
 
 **Artifacts**:
 - `coverage.xml` (90 day retention)
@@ -136,7 +136,7 @@ DISABLE_RATE_LIMIT=1 LLM_BACKEND=local_stub \
 ```bash
 DISABLE_RATE_LIMIT=1 LLM_BACKEND=local_stub \
   pytest --cov=src/mlsdm --cov-report=xml --cov-report=term-missing \
-  --cov-fail-under=65 --ignore=tests/load -v
+  --cov-fail-under=75 --ignore=tests/load -v
 ```
 
 ---
@@ -387,7 +387,7 @@ Access artifacts from workflow run page in GitHub Actions.
 | Ruff violations | 0 | lint |
 | Mypy errors | 0 | lint |
 | Security vulnerabilities | 0 | security |
-| Code coverage | ≥65% (current: ~86%) | coverage |
+| Code coverage | ≥75% (current evidence: ~80.04%) | coverage |
 | E2E tests | 68/68 pass | e2e-tests |
 | Pre-flight P95 latency | <20ms | benchmarks |
 | End-to-end P95 latency | <500ms | benchmarks |
@@ -402,7 +402,7 @@ Access artifacts from workflow run page in GitHub Actions.
 # Run locally to debug
 DISABLE_RATE_LIMIT=1 LLM_BACKEND=local_stub \
   pytest --cov=src/mlsdm --cov-report=term-missing \
-  --cov-fail-under=65 --ignore=tests/load -v
+  --cov-fail-under=75 --ignore=tests/load -v
 ```
 
 #### Security Scan False Positives
@@ -481,7 +481,7 @@ chmod +x scripts/run_local_ci.sh
 - ✅ Added pip caching to all jobs
 - ✅ Fixed security scan to use `--requirement requirements.txt`
 - ✅ Fixed timestamp generation in benchmark metrics
-- ✅ Added coverage gate job (90% threshold)
+- ✅ Added coverage gate job (75% threshold, aligned with `coverage_gate.sh` and CI)
 - ✅ Verified Python 3.10/3.11 compatibility
 - ✅ Updated all-ci-passed gate logic
 - ✅ Comprehensive documentation updates

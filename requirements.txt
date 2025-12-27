@@ -15,6 +15,7 @@ prometheus-client>=0.21.0
 tenacity>=9.0.0
 requests>=2.32.3
 psutil>=6.1.0
+defusedxml>=0.7.1
 
 # Optional Embeddings (from pyproject.toml [project.optional-dependencies].embeddings)
 # Install with: pip install ".[embeddings]" when semantic embeddings are needed

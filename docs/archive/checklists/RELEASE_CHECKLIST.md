@@ -62,8 +62,8 @@ mypy src/mlsdm --ignore-missing-imports
 
 # 11. Gate: Coverage Check
 # Uses same command as CI (see docs/METRICS_SOURCE.md for current metrics)
-# Threshold: 65% (policy) | Actual: ~86% (see CI artifacts)
-pytest --cov=src/mlsdm --cov-report=term-missing --cov-fail-under=65 \
+# Threshold: 75% (policy) | Actual: 80.04% (see artifacts/evidence/2025-12-26/2a6b52dd6fd4)
+pytest --cov=src/mlsdm --cov-report=term-missing --cov-fail-under=75 \
   --ignore=tests/load -m "not slow and not benchmark" -q
 ```
 

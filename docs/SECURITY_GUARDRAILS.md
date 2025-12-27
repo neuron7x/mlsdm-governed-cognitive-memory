@@ -719,7 +719,7 @@ Verify observability instrumentation:
 
 ### Coverage
 
-Verify test coverage (must maintain ≥65%):
+Verify test coverage (must maintain ≥75%):
 
 ```bash
 pytest --cov=src/mlsdm/security/guardrails --cov-report=term-missing

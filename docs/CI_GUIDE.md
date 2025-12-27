@@ -207,7 +207,7 @@ ci-neuro-cognitive-engine (REQUIRED)
   ├── lint (with pip caching)
   ├── security (pip-audit on requirements.txt only)
   ├── test (matrix: Python 3.10, 3.11 with pip caching)
-  ├── coverage (65% threshold, current: ~86%, with pip caching)
+  ├── coverage (75% threshold, current evidence: ~80.04%, with pip caching)
   ├── e2e-tests (with pip caching)
   ├── effectiveness-validation (with pip caching)
   ├── benchmarks (SLO validation, accurate timestamps)
@@ -296,10 +296,10 @@ bandit -r src/
 ### Run Coverage Tests
 
 ```bash
-# Run tests with coverage (65% threshold, current: ~86%)
+# Run tests with coverage (75% threshold, current evidence: ~80.04%)
 DISABLE_RATE_LIMIT=1 LLM_BACKEND=local_stub \
   pytest --cov=src/mlsdm --cov-report=xml --cov-report=term-missing \
-  --cov-fail-under=65 --ignore=tests/load -v
+  --cov-fail-under=75 --ignore=tests/load -v
 ```
 
 ### Run E2E and Effectiveness Tests
@@ -351,7 +351,7 @@ The CI pipeline was hardened with the following improvements:
    - Ensures proper time tracking in benchmark reports
 
 4. **Coverage Gate Addition**
-   - Added dedicated `coverage` job with 65% threshold (current: ~86%)
+  - Added dedicated `coverage` job with 75% threshold (current evidence: ~80.04%)
    - Generates and uploads coverage reports as CI artifacts
    - Included in `all-ci-passed` gate for quality enforcement
    - Threshold may be increased as coverage continues to improve
@@ -366,7 +366,7 @@ The CI pipeline was hardened with the following improvements:
 Current CI pipeline ensures:
 - **Lint**: Zero ruff/mypy violations
 - **Security**: Zero known vulnerabilities in project dependencies
-- **Coverage**: ≥65% threshold (actual: ~86%) - see [docs/METRICS_SOURCE.md](docs/METRICS_SOURCE.md)
+- **Coverage**: ≥75% threshold (actual evidence: ~80.04%) - see [docs/METRICS_SOURCE.md](docs/METRICS_SOURCE.md)
 - **E2E**: 68 end-to-end tests passing
 - **Effectiveness**: SLO validation passing
 - **Benchmarks**: P95 latency within SLO (< 500ms)

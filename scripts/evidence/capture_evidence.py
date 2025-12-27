@@ -66,11 +66,14 @@ def run_coverage_gate(repo_root: Path, evidence_dir: Path) -> bool:
     coverage_dir.mkdir(parents=True, exist_ok=True)
 
     log_path = coverage_dir / "coverage.log"
+    env = os.environ.copy()
+    env["PYTHON_BIN"] = sys.executable
     result = subprocess.run(
         ["bash", "./coverage_gate.sh"],
         cwd=repo_root,
         capture_output=True,
         text=True,
+        env=env,
     )
 
     # Write log

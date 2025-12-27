@@ -43,7 +43,4 @@ evals/*_report.json
 conftest
 
 # Evidence artifacts (allow committed snapshots)
-!artifacts/evidence/**/*
-!artifacts/**/coverage.xml
-!artifacts/**/coverage.json
-!artifacts/**/*.log
+!artifacts/evidence/**

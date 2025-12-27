@@ -29,20 +29,12 @@ make evidence
 
 | Metric | Value | Source |
 |--------|-------|--------|
-| **CI Coverage Threshold** | 65% | [ci-neuro-cognitive-engine.yml](../.github/workflows/ci-neuro-cognitive-engine.yml#L149) |
-| **Actual Coverage** | See evidence snapshot | `artifacts/evidence/<date>/<sha>/coverage/coverage.xml` |
-| **Core Modules Coverage** | 90%+ | Critical modules (`core/`, `memory/`, `cognition/`) |
+| **CI Coverage Threshold** | 75% | `coverage_gate.sh` + `.github/workflows/ci-neuro-cognitive-engine.yml` |
+| **Actual Coverage** | 80.04% | `artifacts/evidence/2025-12-26/2a6b52dd6fd4/coverage/coverage.xml` |
 
-### Why 65% Threshold When Actual is Higher?
+### Why 75% Threshold?
 
-The CI coverage threshold (65%) is intentionally set below actual coverage for several reasons:
-
-1. **Anti-flap**: Prevents spurious CI failures from minor fluctuations in test coverage
-2. **Developer Experience**: Allows focused work without CI blocking every small change
-3. **Incremental Growth**: Threshold is increased when coverage consistently exceeds it by 5%+ for 2+ releases
-4. **Safety Margin**: Provides headroom for refactoring without breaking CI
-
-**Policy**: The threshold represents the *minimum acceptable* coverage, not the *target* coverage.
+The CI coverage threshold (75%) is set to match the enforced gate in CI and `pyproject.toml`. It tracks the latest committed evidence and is raised only when sustained coverage exceeds the gate with comfortable headroom.
 
 ---
 
@@ -81,9 +73,9 @@ python scripts/check_benchmark_drift.py artifacts/evidence/<date>/<sha>/benchmar
 The canonical coverage command used in CI:
 
 ```bash
-# From .github/workflows/ci-neuro-cognitive-engine.yml (coverage job, lines 148-149)
+# Canonical coverage gate (also used by CI)
 pytest --cov=src/mlsdm --cov-report=xml --cov-report=term-missing \
-  --cov-fail-under=65 --ignore=tests/load -m "not slow and not benchmark" -v
+  --cov-fail-under=75 --ignore=tests/load -m "not slow and not benchmark" -v
 ```
 
 **Use this exact command for local verification to match CI behavior.**

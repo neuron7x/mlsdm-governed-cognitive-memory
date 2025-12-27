@@ -1,4 +1,4 @@
-.PHONY: test test-fast coverage-gate lint type cov bench bench-drift help run-dev run-cloud-local run-agent health-check eval-moral_filter test-memory-obs \
+.PHONY: test test-fast coverage-gate verify-metrics lint type cov bench bench-drift help run-dev run-cloud-local run-agent health-check eval-moral_filter test-memory-obs \
         readiness-preview readiness-apply \
         build-package test-package docker-build-neuro-engine docker-run-neuro-engine docker-smoke-neuro-engine \
         docker-compose-up docker-compose-down lock sync evidence
@@ -12,6 +12,7 @@ help:
 	@echo "  make test          - Run all tests (uses pytest.ini config)"
 	@echo "  make test-fast     - Run fast unit tests (excludes slow/comprehensive)"
 	@echo "  make coverage-gate - Run coverage gate with threshold check"
+	@echo "  make verify-metrics - Validate latest evidence snapshot integrity"
 	@echo "  make lint          - Run ruff linter on src and tests"
 	@echo "  make type          - Run mypy type checker on src/mlsdm"
 	@echo "  make cov           - Run tests with coverage report"
@@ -67,6 +68,15 @@ coverage-gate:
 		exit 1; \
 	fi
 	@echo "✓ coverage.xml generated successfully"
+
+verify-metrics:
+	@LATEST_SNAPSHOT=$$(ls -1d artifacts/evidence/*/* 2>/dev/null | sort | tail -n 1); \
+	if [ -z "$$LATEST_SNAPSHOT" ]; then \
+		echo "No evidence snapshot found under artifacts/evidence"; \
+		exit 1; \
+	fi; \
+	echo "Validating evidence snapshot: $$LATEST_SNAPSHOT"; \
+	python scripts/evidence/verify_evidence_snapshot.py --evidence-dir "$$LATEST_SNAPSHOT"
 
 lint:
 	@echo "Running ruff linter (src + tests)..."
