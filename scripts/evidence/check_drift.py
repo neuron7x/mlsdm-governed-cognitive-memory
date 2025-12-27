@@ -8,6 +8,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from scripts.evidence.verify_evidence_snapshot import (
     _load_json,
     _parse_coverage_percent,
