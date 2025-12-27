@@ -8,7 +8,7 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 
 
 REQUIRED_FILES = [
