@@ -22,6 +22,7 @@ on:
 
 permissions:
   contents: read
+  actions: write # enable artifact and cache operations with minimal scope
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -46,10 +47,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6 - pinned for supply chain integrity
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6 - pinned for supply chain integrity
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
@@ -58,7 +59,7 @@ jobs:
             pyproject.toml
 
       - name: Restore Python cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4 - pinned for reproducible caching
         with:
           path: |
             ~/.cache/pip
@@ -98,7 +99,7 @@ jobs:
 
       - name: Upload property test results
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6 - pinned for artifact integrity
         with:
           name: property-test-results-py${{ matrix.python-version }}
           path: |
@@ -113,10 +114,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6 - pinned for supply chain integrity
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6 - pinned for supply chain integrity
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -125,7 +126,7 @@ jobs:
             pyproject.toml
 
       - name: Restore Python cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4 - pinned for reproducible caching
         with:
           path: |
             ~/.cache/pip
@@ -154,7 +155,7 @@ jobs:
 
       - name: Upload counterexamples report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6 - pinned for artifact integrity
         with:
           name: counterexamples-report
           path: |
@@ -168,7 +169,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6 - pinned for supply chain integrity
 
       - name: Check invariants documentation
         run: |
@@ -210,7 +211,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6 - pinned for artifact integrity
         with:
           name: invariant-coverage
           path: invariant_coverage.md

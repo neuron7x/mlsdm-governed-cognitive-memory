@@ -20,6 +20,7 @@ on:
 # Least privilege: read-only access (Invariant A, STRIDE: Elevation of Privilege)
 permissions:
   contents: read
+  actions: write # required for pip cache token while keeping least privilege
 
 jobs:
   aphasia-neurolang:
@@ -28,10 +29,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6 - pinned for supply chain integrity
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6 - pinned for supply chain integrity
         with:
           python-version: "3.11"
           cache: 'pip'

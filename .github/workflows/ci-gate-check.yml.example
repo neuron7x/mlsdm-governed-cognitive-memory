@@ -9,19 +9,25 @@ on:
 permissions:
   contents: read
   pull-requests: write  # For posting comments
+  actions: write # needed for cached setup while limiting scope
 
 jobs:
   ci-gate-analysis:
     name: CI Performance & Resilience Gate
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: write
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6 - pinned for supply chain integrity
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6 - pinned for supply chain integrity
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -55,7 +61,7 @@ jobs:
 
       - name: Upload Gate Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6 - pinned for artifact integrity
         with:
           name: ci-gate-report
           path: gate-report.md
@@ -63,7 +69,7 @@ jobs:
 
       - name: Post Report as Comment (Optional)
         if: always() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7 - pinned for supply chain integrity
         with:
           script: |
             const fs = require('fs');
