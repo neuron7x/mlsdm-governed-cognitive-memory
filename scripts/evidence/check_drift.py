@@ -216,6 +216,9 @@ def main() -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
     except Exception as exc:  # pragma: no cover - defensive
+        import traceback
+
+        traceback.print_exc()
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
 

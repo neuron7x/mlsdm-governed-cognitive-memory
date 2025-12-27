@@ -151,7 +151,7 @@ def _validate_raw_samples(path: Path, sample_cap: int = 2000) -> None:
     if not isinstance(samples, dict):
         raise EvidenceError("raw_neuro_engine_latency.json missing 'samples' object")
 
-    def _validate_entry(name: str, entry: Any) -> None:
+    def _validate_entry(name: str, entry: dict[str, Any]) -> None:
         if not isinstance(entry, dict):
             raise EvidenceError(f"samples entry for '{name}' must be an object")
         samples_ms = entry.get("samples_ms")

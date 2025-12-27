@@ -80,7 +80,7 @@ def test_check_drift_passes_within_thresholds(tmp_path: Path) -> None:
     (evidence_dir / "benchmarks").mkdir()
     (evidence_dir / "memory").mkdir()
 
-    _write_coverage_xml(evidence_dir / "coverage" / "coverage.xml", 0.799)
+    _write_coverage_xml(evidence_dir / "coverage" / "coverage.xml", 0.80 - 0.001)
     _write_junit(evidence_dir / "pytest" / "junit.xml", tests=100, failures=0)
     _write_benchmarks(evidence_dir / "benchmarks" / "benchmark-metrics.json", max_p95=1.05)
     _write_memory(evidence_dir / "memory" / "memory_footprint.json", pelm=31.0, controller=21.0)

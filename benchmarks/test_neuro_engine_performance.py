@@ -16,6 +16,12 @@ import pytest
 from mlsdm.engine.neuro_cognitive_engine import NeuroCognitiveEngine, NeuroEngineConfig
 
 
+Stats = dict[str, float]
+SampleChunk = dict[str, float | list[float] | bool]
+TokenSamples = dict[str, SampleChunk]
+Samples = dict[str, SampleChunk | TokenSamples]
+
+
 def stub_llm_generate(prompt: str, max_tokens: int) -> str:
     """Stub LLM function for consistent performance testing.
 
@@ -98,7 +104,7 @@ def create_engine(enable_metrics: bool = False) -> NeuroCognitiveEngine:
 
 def benchmark_pre_flight_latency(
     return_samples: bool = False, sample_cap: int = SAMPLE_CAP
-) -> dict[str, float] | tuple[dict[str, float], dict[str, float | list[float] | bool]]:
+) -> Stats | tuple[Stats, SampleChunk]:
     """Benchmark pre-flight check latency.
 
     Measures only the moral precheck step, which should be very fast.
@@ -145,7 +151,7 @@ def benchmark_pre_flight_latency(
 
 def benchmark_end_to_end_latency_small_load(
     return_samples: bool = False, sample_cap: int = SAMPLE_CAP
-) -> dict[str, float] | tuple[dict[str, float], dict[str, float | list[float] | bool]]:
+) -> Stats | tuple[Stats, SampleChunk]:
     """Benchmark end-to-end latency with small load.
 
     Tests basic generation with moderate token counts.
@@ -185,7 +191,7 @@ def benchmark_end_to_end_latency_small_load(
 
 def benchmark_end_to_end_latency_heavy_load(
     return_samples: bool = False, sample_cap: int = SAMPLE_CAP
-) -> dict[str, dict[str, float]] | tuple[dict[str, dict[str, float]], dict[str, dict[str, float | list[float] | bool]]]:
+) -> dict[str, Stats] | tuple[dict[str, Stats], TokenSamples]:
     """Benchmark end-to-end latency with heavy load.
 
     Tests with varying max_tokens values to see scaling behavior.
@@ -206,7 +212,7 @@ def benchmark_end_to_end_latency_heavy_load(
     # Test different token counts
     token_counts = [100, 250, 500, 1000]
     results: dict[str, dict[str, float]] = {}
-    sample_info: dict[str, dict[str, float | list[float] | bool]] = {}
+    sample_info: TokenSamples = {}
 
     for max_tokens in token_counts:
         latencies: list[float] = []
