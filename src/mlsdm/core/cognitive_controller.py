@@ -265,6 +265,16 @@ class CognitiveController:
                 # Optimization: Invalidate state cache when processing
                 self._state_cache_valid = False
 
+                # Short-circuit during sleep phase to avoid unnecessary computation
+                if not self.rhythm.is_wake():
+                    event_span.set_attribute("mlsdm.rejected", True)
+                    event_span.set_attribute("mlsdm.rejected_reason", "sleep_phase")
+                    event_span.set_attribute("mlsdm.phase", self.rhythm.get_current_phase())
+                    state = self._build_state(rejected=True, note="sleep phase")
+                    # Advance rhythm even when sleeping to resume wake phase after cooldown
+                    self.rhythm.step()
+                    return state
+
                 # Check memory usage before processing (psutil-based, legacy)
                 memory_mb = self._check_memory_usage()
                 if memory_mb > self.memory_threshold_mb:
@@ -296,13 +306,6 @@ class CognitiveController:
                         event_span.set_attribute("mlsdm.rejected", True)
                         event_span.set_attribute("mlsdm.rejected_reason", "morally_rejected")
                         return self._build_state(rejected=True, note="morally rejected")
-
-                # Check cognitive phase
-                if not self.rhythm.is_wake():
-                    event_span.set_attribute("mlsdm.rejected", True)
-                    event_span.set_attribute("mlsdm.rejected_reason", "sleep_phase")
-                    event_span.set_attribute("mlsdm.phase", "sleep")
-                    return self._build_state(rejected=True, note="sleep phase")
 
                 event_span.set_attribute("mlsdm.phase", "wake")
 
