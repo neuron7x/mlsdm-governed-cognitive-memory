@@ -30,6 +30,7 @@ def _ensure_parent_dir(path: Path) -> None:
 
 def _atomic_write(path: Path, suffix: str, writer: Callable[[str], None]) -> None:
     """Write data to a temporary file and atomically replace the target."""
+    _ensure_parent_dir(path)
     temp_file = tempfile.NamedTemporaryFile(
         suffix=suffix, dir=path.parent, delete=False
     )
@@ -46,7 +47,6 @@ def _atomic_write(path: Path, suffix: str, writer: Callable[[str], None]) -> Non
 @retry(stop=stop_after_attempt(3))
 def _save_data(data: dict[str, Any], filepath: str) -> None:
     path = Path(filepath)
-    _ensure_parent_dir(path)
     ext = path.suffix.lower()
     if ext == ".json":
         def _write_json(temp_name: str) -> None:
