@@ -41,7 +41,7 @@ def _save_data(data: dict[str, Any], filepath: str) -> None:
             ) as tmp:
                 json.dump(data, tmp, indent=2)
                 temp_path = tmp.name
-            os.replace(temp_path, path)
+            os.replace(temp_path, str(path))
             temp_path = None
         finally:
             if temp_path and os.path.exists(temp_path):
@@ -58,16 +58,18 @@ def _save_data(data: dict[str, Any], filepath: str) -> None:
                 processed[key] = np.asarray(value)
         # Use cast to work around numpy's imprecise savez signature
         save_fn = cast("Any", np.savez)
-        temp_path = tempfile.NamedTemporaryFile(
-            suffix=".npz", dir=path.parent, delete=False
-        )
-        temp_path.close()
+        temp_path: str | None = None
         try:
-            save_fn(temp_path.name, **processed)
-            os.replace(temp_path.name, path)
+            with tempfile.NamedTemporaryFile(
+                suffix=".npz", dir=path.parent, delete=False
+            ) as tmp:
+                temp_path = tmp.name
+                save_fn(tmp, **processed)
+            os.replace(temp_path, str(path))
+            temp_path = None
         finally:
-            if os.path.exists(temp_path.name):
-                os.unlink(temp_path.name)
+            if temp_path and os.path.exists(temp_path):
+                os.unlink(temp_path)
     else:
         raise ValueError(f"Unsupported format: {ext}")
 
