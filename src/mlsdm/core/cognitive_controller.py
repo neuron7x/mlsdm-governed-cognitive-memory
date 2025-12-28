@@ -265,11 +265,14 @@ class CognitiveController:
                 # Optimization: Invalidate state cache when processing
                 self._state_cache_valid = False
 
+                current_phase = self.rhythm.phase
+                is_wake_phase = self.rhythm.is_wake()
+
                 # Short-circuit during sleep phase to avoid unnecessary computation
-                if not self.rhythm.is_wake():
+                if not is_wake_phase:
                     event_span.set_attribute("mlsdm.rejected", True)
                     event_span.set_attribute("mlsdm.rejected_reason", "sleep_phase")
-                    event_span.set_attribute("mlsdm.phase", self.rhythm.get_current_phase())
+                    event_span.set_attribute("mlsdm.phase", current_phase)
                     state = self._build_state(rejected=True, note="sleep phase")
                     # Advance rhythm even when sleeping to resume wake phase after cooldown
                     self.rhythm.step()
@@ -307,23 +310,24 @@ class CognitiveController:
                         event_span.set_attribute("mlsdm.rejected_reason", "morally_rejected")
                         return self._build_state(rejected=True, note="morally rejected")
 
-                event_span.set_attribute("mlsdm.phase", "wake")
+                event_span.set_attribute("mlsdm.phase", current_phase)
 
                 # Memory update with tracing
                 with tracer_manager.start_span(
                     "cognitive_controller.memory_update",
                     attributes={
-                        "mlsdm.phase": self.rhythm.phase,
+                        "mlsdm.phase": current_phase,
                     },
                 ) as memory_span:
                     self.synaptic.update(vector)
                     # Optimization: use cached phase value
-                    phase_val = self._phase_cache[self.rhythm.phase]
+                    phase_val = self._phase_cache[current_phase]
                     self.pelm.entangle(vector.tolist(), phase=phase_val)
                     memory_span.set_attribute(
                         "mlsdm.pelm_used", self.pelm.get_state_stats()["used"]
                     )
 
+                # Only reached for wake processing; sleep branch returns earlier
                 self.rhythm.step()
 
                 # Check global memory bound (CORE-04) after memory-modifying operations

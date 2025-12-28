@@ -147,6 +147,28 @@ class TestCognitiveControllerProcessEvent:
         controller.process_event(vector, moral_value=0.8)
         assert controller.step_counter == initial_count + 2
 
+    def test_sleep_phase_advances_rhythm(self):
+        """Sleep rejections should still advance the rhythm back to wake."""
+        controller = CognitiveController()
+        controller.rhythm = controller.rhythm.__class__(wake_duration=1, sleep_duration=2)
+        vector = np.random.randn(controller.dim).astype(np.float32)
+
+        # Initial wake processing transitions into sleep
+        first = controller.process_event(vector, moral_value=0.8)
+        assert first["accepted"] is True
+        assert controller.rhythm.is_sleep()
+
+        sleep1 = controller.process_event(vector, moral_value=0.8)
+        sleep2 = controller.process_event(vector, moral_value=0.8)
+        assert sleep1["rejected"] is True
+        assert sleep2["rejected"] is True
+        assert "sleep" in sleep1["note"]
+        assert "sleep" in sleep2["note"]
+
+        # Rhythm should return to wake after configured sleep duration
+        wake_again = controller.process_event(vector, moral_value=0.8)
+        assert wake_again["accepted"] is True
+
 
 class TestCognitiveControllerMemoryLeak:
     """Test memory leak detection with high volume of events."""
