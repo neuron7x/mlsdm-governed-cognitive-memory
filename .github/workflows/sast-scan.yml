@@ -279,3 +279,34 @@ jobs:
             gitleaks-results.sarif
           retention-days: 30
         continue-on-error: true
+
+  security-gate:
+    name: Security Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [bandit, semgrep, dependency-audit, secrets-scan]
+    if: always()
+
+    steps:
+      - name: Check security scan results
+        run: |
+          echo "Checking security scan results..."
+          echo "Bandit: ${{ needs.bandit.result }}"
+          echo "Semgrep: ${{ needs.semgrep.result }}"
+          echo "Dependency Audit: ${{ needs.dependency-audit.result }}"
+          echo "Secrets Scan: ${{ needs.secrets-scan.result }}"
+
+          # Fail if any required security job failed or was cancelled
+          if [[ "${{ needs.bandit.result }}" == "failure" ]] || \
+             [[ "${{ needs.bandit.result }}" == "cancelled" ]] || \
+             [[ "${{ needs.semgrep.result }}" == "failure" ]] || \
+             [[ "${{ needs.semgrep.result }}" == "cancelled" ]] || \
+             [[ "${{ needs.dependency-audit.result }}" == "failure" ]] || \
+             [[ "${{ needs.dependency-audit.result }}" == "cancelled" ]] || \
+             [[ "${{ needs.secrets-scan.result }}" == "failure" ]] || \
+             [[ "${{ needs.secrets-scan.result }}" == "cancelled" ]]; then
+            echo "❌ Security gate failed: One or more security checks failed"
+            exit 1
+          fi
+
+          echo "✅ Security gate passed: All security checks successful"

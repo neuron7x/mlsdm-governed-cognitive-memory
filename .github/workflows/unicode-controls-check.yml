@@ -6,11 +6,9 @@ on:
       - main
       - 'feature/*'
       - 'copilot/*'
-  pull_request:
-    branches:
-      - main
-      - 'feature/*'
-      - 'copilot/*'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly on Monday at 6 AM UTC
 
 permissions:
   contents: read
