@@ -83,3 +83,26 @@ def test_identifiers_missing_fields_are_reported(tmp_path):
     assert any("canonical_url must use https" in err for err in identifier_errors), (
         f"canonical_url https check missing: {identifier_errors}"
     )
+
+
+def test_duplicate_normalized_work_is_flagged(tmp_path):
+    bib_content = """
+@article{first_key,
+  author = {Smith, John},
+  title = {Attention Is All You Need},
+  year = {2017},
+  doi = {10.1111/unique-one}
+}
+
+@article{second_key,
+  author = {Smith, John},
+  title = {Attention is all you need},
+  year = {2017},
+  doi = {10.2222/unique-two}
+}
+"""
+    _write(tmp_path, "docs/bibliography/REFERENCES.bib", bib_content)
+
+    errors, _, _ = check_bibtex(tmp_path)
+
+    assert any("Duplicate work detected" in err for err in errors), errors
