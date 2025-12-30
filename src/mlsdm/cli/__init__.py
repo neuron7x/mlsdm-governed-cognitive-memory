@@ -177,9 +177,13 @@ def cmd_demo(args: argparse.Namespace) -> int:
 
 def cmd_serve(args: argparse.Namespace) -> int:
     """Start the HTTP API server."""
+    from mlsdm.config.env_compat import apply_env_compat
     from mlsdm.entrypoints.serve import serve
 
-    # Set environment variables from args
+    # Apply legacy environment variable compatibility layer
+    apply_env_compat()
+
+    # Set canonical environment variables from args
     if args.config:
         os.environ["CONFIG_PATH"] = args.config
 
@@ -187,6 +191,9 @@ def cmd_serve(args: argparse.Namespace) -> int:
         os.environ["LLM_BACKEND"] = args.backend
 
     if args.disable_rate_limit:
+        # Use canonical approach: set MLSDM_RATE_LIMIT_ENABLED=0
+        os.environ["MLSDM_RATE_LIMIT_ENABLED"] = "0"
+        # Also set legacy for backward compatibility with components that still read it
         os.environ["DISABLE_RATE_LIMIT"] = "1"
 
     print("=" * 60)

@@ -47,7 +47,27 @@ import sys
 
 
 def main() -> int:
-    """Run the agent/API server."""
+    """Run the agent/API server.
+
+    DEPRECATED: Use `mlsdm serve` (CLI) instead.
+    This entrypoint is maintained for backward compatibility.
+    """
+    import warnings
+
+    # Emit deprecation warning
+    warnings.warn(
+        "Direct execution of 'python -m mlsdm.entrypoints.agent' is deprecated. "
+        "Use 'mlsdm serve' or 'python -m mlsdm.cli serve' instead. "
+        "This entrypoint will be maintained for backward compatibility.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    # Apply environment compatibility layer
+    from mlsdm.config.env_compat import apply_env_compat
+
+    apply_env_compat()
+
     # Set runtime mode
     os.environ["MLSDM_RUNTIME_MODE"] = "agent-api"
 
