@@ -1,5 +1,5 @@
 # System Readiness Status
-Last updated: 2025-12-30
+Last updated: 2025-12-30 (Literature Map v1)
 Owner: neuron7x / MLSDM maintainers
 Scope: MLSDM cognitive engine repository (src/, tests/, deploy/, workflows)
 
@@ -57,6 +57,10 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2025-12-30 — **Literature Map v1: subsystem-to-citation map + CI enforcement** — PR: #???
+  - Added `docs/bibliography/LITERATURE_MAP.md` as the canonical subsystem-to-citation bridge.
+  - Introduced offline validator (`scripts/docs/validate_literature_map.py`) and wired it into citation integrity CI.
+  - Documented the requirement in bibliography guidelines.
 - 2025-12-30 — **Bibliography Bible-grade v1: single source, offline truth anchor, CI enforcement** — PR: #???
   - Added `docs/bibliography/metadata/identifiers.json` and regenerated `VERIFICATION.md` as the committed offline cache of canonical identifiers.
   - Hardened `scripts/validate_bibliography.py` to enforce one-source BibTeX, deduplication, frozen metadata checks, and APA key coverage; added unit tests for duplicate DOI and missing identifier detection.

@@ -23,3 +23,8 @@ Root:
    - `python scripts/validate_bibliography.py`
    - `cffconvert --validate -i CITATION.cff`
 5) Open PR; CI blocks invalid metadata.
+
+## Literature map (CI-enforced)
+- `docs/bibliography/LITERATURE_MAP.md` is required and validated in CI.
+- Each subsystem entry must list 1–5 repo paths and **3+ citations** using `[@key]` from `REFERENCES.bib`.
+- To add a subsystem: append a `## Subsystem Name` block with `paths:`, `citations:`, and a short rationale, then run `python scripts/docs/validate_literature_map.py`.

@@ -8,6 +8,7 @@ on:
       - 'docs/bibliography/**'
       - 'scripts/validate_bibliography.py'
       - 'scripts/check_bidi.py'
+      - 'scripts/docs/validate_literature_map.py'
   pull_request:
     paths:
       - 'CITATION.cff'
@@ -15,6 +16,7 @@ on:
       - 'docs/bibliography/**'
       - 'scripts/validate_bibliography.py'
       - 'scripts/check_bidi.py'
+      - 'scripts/docs/validate_literature_map.py'
 
 permissions:
   contents: read
@@ -49,6 +51,10 @@ jobs:
       - name: Validate bibliography
         run: |
           python scripts/validate_bibliography.py
+
+      - name: Validate literature map
+        run: |
+          python scripts/docs/validate_literature_map.py
 
       - name: Validate documentation citations
         run: |
