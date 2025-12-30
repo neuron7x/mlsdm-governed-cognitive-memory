@@ -15,6 +15,9 @@ This table provides the audit trail for every reference in the bibliography. Eac
 | hastings2018_circadian | neuroscience-memory | peer_reviewed | 10.1038/s41583-018-0026-z | https://doi.org/10.1038/s41583-018-0026-z | Crossref | 2025-12-19 | SCN circadian rhythm generation |
 | mendoza2009_clocks | neuroscience-memory | peer_reviewed | 10.1177/1073858408327808 | https://doi.org/10.1177/1073858408327808 | Crossref | 2025-12-19 | Brain clock network coordination |
 | olafsdottir2018_replay | neuroscience-memory | peer_reviewed | 10.1016/j.cub.2017.10.073 | https://doi.org/10.1016/j.cub.2017.10.073 | Crossref | 2025-12-19 | Hippocampal replay and planning |
+| bassett2017_network | neuroscience-network | peer_reviewed | 10.1038/nn.4502 | https://doi.org/10.1038/nn.4502 | Crossref | 2025-12-30 | Network neuroscience review |
+| bassett2017_smallworld | neuroscience-network | peer_reviewed | 10.1177/1073858416667720 | https://doi.org/10.1177/1073858416667720 | Crossref | 2025-12-30 | Small-world brain networks |
+| jensen2024_replayplanning | neuroscience-memory | peer_reviewed | 10.1038/s41593-024-01675-7 | https://doi.org/10.1038/s41593-024-01675-7 | Publisher page | 2025-12-30 | Planning-linked hippocampal replay |
 | hebb1949_organization | neuroscience-memory | peer_reviewed | 9780471362728 | https://archive.org/details/organizationofbe00hebb | Internet Archive | 2025-12-19 | Classic: Hebbian learning theory (ISBN) |
 | hopfield1982_neural | neuroscience-memory | peer_reviewed | 10.1073/pnas.79.8.2554 | https://doi.org/10.1073/pnas.79.8.2554 | Crossref | 2025-12-19 | Classic: Hopfield networks |
 | masuyama2014_qibam | neuroscience-memory | peer_reviewed | 10.1142/S0219843614500066 | https://doi.org/10.1142/S0219843614500066 | Crossref | 2025-12-19 | Quantum-inspired BAM |
@@ -29,6 +32,7 @@ This table provides the audit trail for every reference in the bibliography. Eac
 | touvron2023_llama2 | LLM-memory/RAG | preprint | arXiv:2307.09288 | https://arxiv.org/abs/2307.09288 | arXiv | 2025-12-19 | Llama 2 foundation and chat models |
 | vaswani2017_attention | LLM-memory/RAG | preprint | arXiv:1706.03762 | https://arxiv.org/abs/1706.03762 | arXiv | 2025-12-19 | Transformer architecture |
 | wu2022_memorizing | LLM-memory/RAG | preprint | arXiv:2203.08913 | https://arxiv.org/abs/2203.08913 | arXiv | 2025-12-19 | kNN memory in Transformers |
+| wang2024_clllm | LLM-continual-learning | preprint | arXiv:2402.01364 | https://arxiv.org/abs/2402.01364 | arXiv | 2025-12-30 | Survey of continual learning for LLMs |
 | hong2025_agents | LLM-memory/RAG | peer_reviewed | 10.3389/fpsyg.2025.1591618 | https://doi.org/10.3389/fpsyg.2025.1591618 | Crossref | 2025-12-19 | Memory retrieval in generative agents |
 | park2023_generative | LLM-memory/RAG | peer_reviewed | 10.1145/3586183.3606763 | https://doi.org/10.1145/3586183.3606763 | Crossref | 2025-12-19 | Generative agents (CHI) |
 | schick2023_toolformer | LLM-memory/RAG | preprint | arXiv:2302.04761 | https://arxiv.org/abs/2302.04761 | arXiv | 2025-12-19 | LLMs learning to use tools |
@@ -44,14 +48,17 @@ This table provides the audit trail for every reference in the bibliography. Eac
 | openssf2023_slsa | safety/standards | standard | SLSA v1.0 | https://slsa.dev/spec/v1.0/ | Official org page | 2025-12-19 | Supply chain security levels |
 | torresarias2019_intoto | safety/standards | peer_reviewed | https://www.usenix.org/conference/usenixsecurity19/presentation/torres-arias | https://www.usenix.org/conference/usenixsecurity19/presentation/torres-arias | USENIX | 2025-12-19 | in-toto supply chain integrity |
 | elkishky2022_sigstore | safety/standards | peer_reviewed | 10.1145/3548606.3560596 | https://doi.org/10.1145/3548606.3560596 | Crossref | 2025-12-19 | Sigstore software signing |
+| hbp2024_assessment | infrastructure/EBRAINS | standard | 10.2759/6494125 | https://digital-strategy.ec.europa.eu/en/library/human-brain-project-10-years-assessment | Official org page | 2025-12-30 | Human Brain Project 10-year assessment |
+| davies2018_loihi | neuromorphic-hardware | peer_reviewed | 10.1109/MM.2018.112130359 | https://doi.org/10.1109/MM.2018.112130359 | Crossref | 2025-12-30 | Intel Loihi neuromorphic processor |
+| vasylenko2025_mlsdm | software | standard | mlsdm-governed-cognitive-memory | https://github.com/neuron7x/mlsdm-governed-cognitive-memory | Official repo | 2025-12-30 | Legacy MLSDM software artifact |
 | brady2016_aphasia | aphasia/clinical | peer_reviewed | 10.1002/14651858.CD000425.pub4 | https://doi.org/10.1002/14651858.CD000425.pub4 | Crossref | 2025-12-19 | Cochrane review: aphasia therapy |
 | fedorenko2023_agrammatic | aphasia/clinical | peer_reviewed | 10.1080/02687038.2022.2143233 | https://doi.org/10.1080/02687038.2022.2143233 | Crossref | 2025-12-19 | Agrammatic output in Broca's aphasia |
 | asha_aphasia | aphasia/clinical | standard | https://www.asha.org/practice-portal/clinical-topics/aphasia/ | https://www.asha.org/practice-portal/clinical-topics/aphasia/ | Official org page | 2025-12-19 | ASHA aphasia practice portal |
 
 **Legend:**
-- **category**: neuroscience-memory | LLM-memory/RAG | alignment/governance | safety/standards | aphasia/clinical
+- **category**: neuroscience-memory | neuroscience-network | LLM-memory/RAG | LLM-continual-learning | alignment/governance | safety/standards | infrastructure/EBRAINS | neuromorphic-hardware | software | aphasia/clinical
 - **evidence_type**: peer_reviewed (journal/conference) | preprint (arXiv) | standard (official body)
-- **verification_method**: Crossref (DOI lookup) | arXiv (preprint server) | Official org page | PubMed | Publisher page
+- **verification_method**: Crossref (DOI lookup) | arXiv (preprint server) | Official org page | PubMed | Publisher page | Official repo
 
 ---
 
@@ -108,6 +115,12 @@ The following sources are NOT permitted:
 - **ACM**: Must link to dl.acm.org or doi.org
 
 ## File Consistency Requirements
+
+### Deduplication policy
+
+- Bibliography must be single-source: `docs/bibliography/REFERENCES.bib` is canonical.
+- CI fails if any non-archived `.bib` exists outside `docs/bibliography/` (archives allowed under `docs/archive/`).
+- Duplicate works are forbidden: identical DOI across different keys or normalized `(title + year + first author)` collisions are treated as errors.
 
 ### BibTeX and APA 7 Synchronization
 

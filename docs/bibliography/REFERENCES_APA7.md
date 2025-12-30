@@ -1,6 +1,6 @@
 # MLSDM Bibliography (APA 7)
 
-**Last updated:** 2025-12-19  
+**Last updated:** 2025-12-30  
 **Standard:** APA 7
 
 Each entry includes a BibTeX key comment for cross-reference with `REFERENCES.bib`.
@@ -27,6 +27,15 @@ Mendoza, J., & Challet, E. (2009). Brain clocks: From the suprachiasmatic nuclei
 
 <!-- key: olafsdottir2018_replay -->
 Olafsdottir, H. F., Bush, D., & Barry, C. (2018). The role of hippocampal replay in memory and planning. *Current Biology, 28*(1), R37-R50. https://doi.org/10.1016/j.cub.2017.10.073
+
+<!-- key: bassett2017_network -->
+Bassett, D. S., & Sporns, O. (2017). Network neuroscience. *Nature Neuroscience, 20*(3), 353-364. https://doi.org/10.1038/nn.4502
+
+<!-- key: bassett2017_smallworld -->
+Bassett, D. S., & Bullmore, E. (2017). Small-world brain networks revisited. *The Neuroscientist, 23*(5), 499-516. https://doi.org/10.1177/1073858416667720
+
+<!-- key: jensen2024_replayplanning -->
+Jensen, K. T., Hennequin, G., & Mattar, M. G. (2024). A recurrent network model of planning explains hippocampal replay and human behavior. *Nature Neuroscience, 27*(7), 1340-1348. https://doi.org/10.1038/s41593-024-01675-7
 
 ## B. Associative memory foundations (classics)
 
@@ -75,6 +84,9 @@ Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Ka
 
 <!-- key: wu2022_memorizing -->
 Wu, Y., Rabe, M. N., Hutchins, D., & Szegedy, C. (2022). Memorizing Transformers. arXiv:2203.08913. https://arxiv.org/abs/2203.08913
+
+<!-- key: wang2024_clllm -->
+Wang, Y., Xu, Y., Zhou, S., She, Q., Hu, W., Xia, J., Yang, Y., Lin, X., & Long, G. (2024). Continual learning for large language models: A survey. arXiv:2402.01364. https://arxiv.org/abs/2402.01364
 
 ## E. Agents, tools, and memory retrieval in agents
 
@@ -137,3 +149,14 @@ Fedorenko, E., Ryskin, R., & Gibson, E. (2023). Agrammatic output in non-fluent,
 
 <!-- key: asha_aphasia -->
 American Speech-Language-Hearing Association. (n.d.). Aphasia (Practice Portal). https://www.asha.org/practice-portal/clinical-topics/aphasia/
+
+## I. Infrastructure and neuromorphic hardware
+
+<!-- key: hbp2024_assessment -->
+European Commission. (2024). *Human Brain Project -- 10 years assessment* (Report). https://digital-strategy.ec.europa.eu/en/library/human-brain-project-10-years-assessment
+
+<!-- key: davies2018_loihi -->
+Davies, M., Srinivasa, N., Lin, T.-H., Chinya, G., Cao, Y., Choday, S. H., Dimou, G., Joshi, P., Imam, N., Jain, S., Liao, H., Lin, C., Liu, A., Mathaikutty, D., McCoy, S., Paul, A., Tse, J., Venkataramana, V., Wild, A., ... Zhang, H. (2018). Loihi: A neuromorphic manycore processor with on-chip learning. *IEEE Micro, 38*(1), 82-99. https://doi.org/10.1109/MM.2018.112130359
+
+<!-- key: vasylenko2025_mlsdm -->
+Vasylenko, Y. (2025). *MLSDM Governed Cognitive Memory* (Version 1.0.0) [Computer software]. GitHub. https://github.com/neuron7x/mlsdm-governed-cognitive-memory

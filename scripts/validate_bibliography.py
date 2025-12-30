@@ -60,6 +60,23 @@ def is_placeholder_domain(host: str) -> bool:
     )
 
 
+def normalize_string(value: str) -> str:
+    """Lowercase and strip non-alphanumeric characters for robust comparisons."""
+    return re.sub(r"[^a-z0-9]+", "", value.lower())
+
+
+def normalize_title(value: str) -> str:
+    """Remove braces and normalize title for duplicate detection."""
+    return normalize_string(value.replace("{", "").replace("}", ""))
+
+
+def extract_first_author(author_field: str) -> str:
+    """Extract and normalize the first author from a BibTeX author field."""
+    cleaned = author_field.replace("{", "").replace("}", "")
+    first = re.split(r"\s+and\s+", cleaned, flags=re.IGNORECASE)[0].strip()
+    return normalize_string(first)
+
+
 def find_repo_root() -> Path:
     """Find repository root by looking for CITATION.cff or pyproject.toml."""
     current = Path(__file__).resolve().parent
@@ -317,6 +334,8 @@ def check_bibtex(repo_root: Path) -> tuple[list[str], set[str]]:
 
     # Check for unique keys
     seen_keys: set[str] = set()
+    doi_to_key: dict[str, str] = {}
+    normalized_work_to_key: dict[tuple[str, str, str], str] = {}
     for entry in entries:
         key = entry["key"]
         if key in seen_keys:
@@ -351,15 +370,39 @@ def check_bibtex(repo_root: Path) -> tuple[list[str], set[str]]:
         if not has_identifier:
             errors.append(f"Entry '{key}' must have at least one of: doi, url, eprint")
 
-        # Validate DOI format if present
-        doi = fields.get("doi", "")
-        if doi and not validate_doi(doi):
-            errors.append(f"Entry '{key}' has invalid DOI format: {doi}")
+        # Validate DOI format if present and enforce uniqueness
+        doi = fields.get("doi", "").strip()
+        if doi:
+            if not validate_doi(doi):
+                errors.append(f"Entry '{key}' has invalid DOI format: {doi}")
+            doi_key = doi.lower()
+            if doi_key in doi_to_key and doi_to_key[doi_key] != key:
+                errors.append(
+                    f"Duplicate DOI across entries: {doi} used by '{doi_to_key[doi_key]}' and '{key}'"
+                )
+            doi_to_key[doi_key] = key
 
         # Validate URL if present
         url = fields.get("url", "")
         if url and not validate_url(url):
             errors.append(f"Entry '{key}' has invalid URL (must be HTTPS, not example.com): {url}")
+
+        # Deduplicate by normalized (title + year + first author)
+        title = fields.get("title", "")
+        author = fields.get("author", "")
+        norm_tuple = (
+            normalize_title(title) if title else "",
+            year.strip(),
+            extract_first_author(author) if author else "",
+        )
+        if all(norm_tuple):
+            existing = normalized_work_to_key.get(norm_tuple)
+            if existing and existing != key:
+                errors.append(
+                    "Duplicate work detected by normalized (title, year, first author): "
+                    f"'{existing}' and '{key}'"
+                )
+            normalized_work_to_key[norm_tuple] = key
 
     print(f"Validated {len(entries)} BibTeX entries")
     return errors, bib_keys
@@ -496,6 +539,31 @@ def check_bib_apa_consistency(bib_keys: set[str], apa_keys: set[str]) -> list[st
     return errors
 
 
+def check_extra_bib_files(repo_root: Path) -> list[str]:
+    """Fail if unarchived .bib files exist outside docs/bibliography/."""
+    errors: list[str] = []
+    allowed_files = {
+        repo_root / "docs" / "bibliography" / "REFERENCES.bib",
+        repo_root / "CITATION.bib",
+    }
+    allowed_prefixes = [
+        repo_root / "docs" / "bibliography",
+        repo_root / "docs" / "archive",
+    ]
+
+    for path in repo_root.rglob("*.bib"):
+        if path in allowed_files:
+            continue
+        if any(path.is_relative_to(prefix) for prefix in allowed_prefixes):
+            # Archived bibliography files are allowed but ignored.
+            continue
+        errors.append(
+            f"Unexpected BibTeX file outside canonical paths: {path.relative_to(repo_root)} "
+            "(delete or move to docs/archive/)"
+        )
+    return errors
+
+
 def main() -> int:
     """Run all validation checks."""
     repo_root = find_repo_root()
@@ -503,7 +571,7 @@ def main() -> int:
 
     all_errors: list[str] = []
 
-    print("\n[1/6] Running parser self-checks...")
+    print("\n[1/7] Running parser self-checks...")
     parser_errors = run_parser_self_checks()
     all_errors.extend(parser_errors)
     if parser_errors:
@@ -513,7 +581,7 @@ def main() -> int:
         print("  OK: parser self-checks passed")
 
     # Check CITATION.cff
-    print("\n[2/6] Checking CITATION.cff...")
+    print("\n[2/7] Checking CITATION.cff...")
     cff_errors = check_citation_cff(repo_root)
     all_errors.extend(cff_errors)
     if cff_errors:
@@ -522,8 +590,18 @@ def main() -> int:
     else:
         print("  OK: CITATION.cff is valid")
 
+    # Check for stray .bib files
+    print("\n[3/7] Checking for stray .bib files...")
+    extra_bib_errors = check_extra_bib_files(repo_root)
+    all_errors.extend(extra_bib_errors)
+    if extra_bib_errors:
+        for err in extra_bib_errors:
+            print(f"  ERROR: {err}")
+    else:
+        print("  OK: no unexpected .bib files found")
+
     # Check REFERENCES.bib
-    print("\n[3/6] Checking REFERENCES.bib...")
+    print("\n[4/7] Checking REFERENCES.bib...")
     bib_errors, bib_keys = check_bibtex(repo_root)
     all_errors.extend(bib_errors)
     if bib_errors:
@@ -533,7 +611,7 @@ def main() -> int:
         print("  OK: REFERENCES.bib is valid")
 
     # Check REFERENCES_APA7.md
-    print("\n[4/6] Checking REFERENCES_APA7.md...")
+    print("\n[5/7] Checking REFERENCES_APA7.md...")
     apa_errors, apa_keys = extract_apa_keys(repo_root)
     all_errors.extend(apa_errors)
     if apa_errors:
@@ -543,7 +621,7 @@ def main() -> int:
         print("  OK: REFERENCES_APA7.md is valid")
 
     # Check BibTeX-APA consistency
-    print("\n[5/6] Checking BibTeX-APA consistency...")
+    print("\n[6/7] Checking BibTeX-APA consistency...")
     consistency_errors = check_bib_apa_consistency(bib_keys, apa_keys)
     all_errors.extend(consistency_errors)
     if consistency_errors:
@@ -552,7 +630,7 @@ def main() -> int:
     else:
         print("  OK: BibTeX and APA files are consistent")
 
-    print("\n[6/6] Checking VERIFICATION.md coverage...")
+    print("\n[7/7] Checking VERIFICATION.md coverage...")
     verification_errors = check_verification_table(repo_root, bib_keys)
     all_errors.extend(verification_errors)
     if verification_errors:
