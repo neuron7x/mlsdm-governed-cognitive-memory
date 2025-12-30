@@ -1,7 +1,5 @@
-from pathlib import Path
 import textwrap
-
-import pytest
+from pathlib import Path
 
 from scripts.docs.validate_literature_map import validate_literature_map
 
