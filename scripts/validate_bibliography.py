@@ -6,12 +6,15 @@ Validates:
 - CITATION.cff exists and has required fields
 - docs/bibliography/REFERENCES.bib parses successfully
 - BibTeX keys are unique
-- Each entry has title + year + author + at least one of (doi, url, eprint)
+- Each entry has title + year + author + at least one of (doi, url, eprint, isbn)
 - Year is 4 digits within range [1850..2026]
 - DOI format is valid (basic regex)
 - URLs use HTTPS protocol
 - No forbidden content (TODO, example.com, placeholder text)
 - BibTeX and APA files have 1:1 key mapping
+- identifiers.json covers all keys with canonical identifiers
+- VERIFICATION.md aligns with identifiers.json
+- Frozen metadata (title/year/first author/venue) matches identifiers.json
 
 No network requests are made.
 Exit code 0 on success, non-zero on failure.
@@ -19,6 +22,7 @@ Exit code 0 on success, non-zero on failure.
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -49,7 +53,8 @@ MAX_YEAR = 2026  # current_year + 1
 YEAR_PATTERN = re.compile(r"^\d{4}$")
 
 ISO_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-ALLOWED_EVIDENCE_TYPES = {"peer_reviewed", "preprint", "standard"}
+ALLOWED_CANONICAL_ID_TYPES = {"doi", "arxiv", "isbn", "url"}
+REQUIRED_IDENTIFIER_FIELDS = ("doi", "url", "eprint", "isbn")
 PLACEHOLDER_DOMAINS = {"example.com", "example.org"}
 
 
@@ -75,6 +80,39 @@ def extract_first_author(author_field: str) -> str:
     cleaned = author_field.replace("{", "").replace("}", "")
     first = re.split(r"\s+and\s+", cleaned, flags=re.IGNORECASE)[0].strip()
     return normalize_string(first)
+
+
+def extract_first_author_family(author_field: str) -> str:
+    """
+    Extract first author family name without normalization for frozen metadata.
+
+    Supports both "Last, First" and "First Last" formats; when no comma is present,
+    the last token is treated as the family name.
+    """
+    cleaned = author_field.replace("{", "").replace("}", "").strip()
+    if not cleaned:
+        return ""
+    first = re.split(r"\s+and\s+", cleaned, flags=re.IGNORECASE)[0].strip()
+    if "," in first:
+        return first.split(",", 1)[0].strip()
+    parts = first.split()
+    return parts[-1] if parts else ""
+
+
+def extract_venue_field(fields: dict[str, str]) -> str:
+    """Derive venue/publisher string from BibTeX fields."""
+    for field_name in ("journal", "booktitle", "institution", "publisher"):
+        if fields.get(field_name):
+            return fields[field_name]
+    if fields.get("eprint"):
+        return "arXiv"
+    author_value = fields.get("author", "")
+    if author_value and " and " not in author_value.lower():
+        # Standards/software entries sometimes omit journal/booktitle but list a single
+        # issuing organization (or author) in the author field. When no venue fields
+        # are available, treat that single issuer as the venue/publisher fallback.
+        return author_value.replace("{", "").replace("}", "")
+    return ""
 
 
 def find_repo_root() -> Path:
@@ -307,30 +345,32 @@ def check_forbidden_content(content: str, context: str, patterns: list[str] | No
     return errors
 
 
-def check_bibtex(repo_root: Path) -> tuple[list[str], set[str]]:
+def check_bibtex(repo_root: Path) -> tuple[list[str], set[str], list[dict]]:
     """Check that REFERENCES.bib is valid and entries meet requirements.
 
-    Returns (errors, bib_keys) where bib_keys is the set of all BibTeX keys.
+    Returns (errors, bib_keys, entries) where bib_keys is the set of all BibTeX keys.
     """
     errors: list[str] = []
     bib_keys: set[str] = set()
+    entries: list[dict] = []
     bib_path = repo_root / "docs" / "bibliography" / "REFERENCES.bib"
 
     if not bib_path.exists():
         errors.append(f"REFERENCES.bib not found at {bib_path}")
-        return errors, bib_keys
+        return errors, bib_keys, entries
 
     content = bib_path.read_text(encoding="utf-8")
 
     # Check for forbidden patterns
     errors.extend(check_forbidden_content(content, "REFERENCES.bib"))
 
-    entries, parse_errors = parse_bibtex_entries(content)
+    parsed_entries, parse_errors = parse_bibtex_entries(content)
+    entries.extend(parsed_entries)
     errors.extend(parse_errors)
 
     if not entries:
         errors.append("No BibTeX entries found in REFERENCES.bib")
-        return errors, bib_keys
+        return errors, bib_keys, entries
 
     # Check for unique keys
     seen_keys: set[str] = set()
@@ -365,10 +405,11 @@ def check_bibtex(repo_root: Path) -> tuple[list[str], set[str]]:
             if not year_valid:
                 errors.append(f"Entry '{key}' has invalid year: {year_error}")
 
-        # Must have at least one of: doi, url, eprint
-        has_identifier = any(fields.get(f) for f in ["doi", "url", "eprint"])
+        # Must have at least one of: doi, url, eprint, isbn
+        has_identifier = any(fields.get(f) for f in REQUIRED_IDENTIFIER_FIELDS)
         if not has_identifier:
-            errors.append(f"Entry '{key}' must have at least one of: doi, url, eprint")
+            required_list = ", ".join(REQUIRED_IDENTIFIER_FIELDS)
+            errors.append(f"Entry '{key}' must have at least one of: {required_list}")
 
         # Validate DOI format if present and enforce uniqueness
         doi = fields.get("doi", "").strip()
@@ -405,7 +446,7 @@ def check_bibtex(repo_root: Path) -> tuple[list[str], set[str]]:
             normalized_work_to_key[norm_tuple] = key
 
     print(f"Validated {len(entries)} BibTeX entries")
-    return errors, bib_keys
+    return errors, bib_keys, entries
 
 
 def extract_apa_keys(repo_root: Path) -> tuple[list[str], set[str]]:
@@ -434,6 +475,35 @@ def extract_apa_keys(repo_root: Path) -> tuple[list[str], set[str]]:
             errors.append(f"Duplicate APA key comment: {key}")
         apa_keys.add(key)
 
+    # Enforce that each entry block starts with a key marker
+    marker_pending = False
+    in_entry = False
+    has_seen_marker = False
+    for idx, line in enumerate(content.splitlines(), start=1):
+        stripped = line.strip()
+        if not stripped:
+            if in_entry:
+                in_entry = False
+            continue
+        if stripped.startswith("#"):
+            marker_pending = False
+            in_entry = False
+            continue
+        if key_pattern.match(stripped):
+            marker_pending = True
+            in_entry = False
+            has_seen_marker = True
+            continue
+        if stripped.startswith("<!--"):
+            # Ignore other comments
+            continue
+        if not has_seen_marker:
+            continue
+        if not marker_pending and not in_entry:
+            errors.append(f"Line {idx}: APA entry text not preceded by <!-- key: ... --> marker")
+        in_entry = True
+        marker_pending = False
+
     print(f"Found {len(apa_keys)} key comments in APA file")
     return errors, apa_keys
 
@@ -450,31 +520,29 @@ def parse_verification_table(repo_root: Path) -> tuple[list[str], list[dict]]:
     content = verification_path.read_text(encoding="utf-8")
     table_started = False
     for line in content.splitlines():
-        if line.strip().startswith("| key"):
+        stripped = line.strip()
+        if stripped.startswith("| key"):
             table_started = True
             continue
         if not table_started:
             continue
-        if line.strip().startswith("|---"):
+        if stripped.startswith("|---"):
             continue
-        if not line.strip().startswith("|"):
-            # stop when table section ends
+        if not stripped.startswith("|"):
             if table_started:
                 break
             continue
 
-        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
-        if len(cells) < 8:
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if len(cells) < 6:
             continue
         row = {
             "key": cells[0],
-            "category": cells[1],
-            "evidence_type": cells[2],
-            "canonical_id": cells[3],
-            "canonical_url": cells[4],
+            "canonical_id_type": cells[1],
+            "canonical_id": cells[2],
+            "canonical_url": cells[3],
+            "verified_on": cells[4],
             "verification_method": cells[5],
-            "verified_on": cells[6],
-            "notes": cells[7],
         }
         rows.append(row)
 
@@ -483,7 +551,9 @@ def parse_verification_table(repo_root: Path) -> tuple[list[str], list[dict]]:
     return errors, rows
 
 
-def check_verification_table(repo_root: Path, bib_keys: set[str]) -> list[str]:
+def check_verification_table(
+    repo_root: Path, bib_keys: set[str], identifiers: dict[str, dict] | None = None
+) -> list[str]:
     """Ensure verification table covers all BibTeX keys exactly once and is well-formed."""
     errors: list[str] = []
     parse_errors, rows = parse_verification_table(repo_root)
@@ -497,18 +567,28 @@ def check_verification_table(repo_root: Path, bib_keys: set[str]) -> list[str]:
         if key in table_keys:
             errors.append(f"Duplicate key in VERIFICATION.md: {key}")
         table_keys.add(key)
-
-        if row["evidence_type"] not in ALLOWED_EVIDENCE_TYPES:
+        if row["canonical_id_type"] not in ALLOWED_CANONICAL_ID_TYPES:
             errors.append(
-                f"Row '{key}' has invalid evidence_type '{row['evidence_type']}' "
-                f"(allowed: {sorted(ALLOWED_EVIDENCE_TYPES)})"
+                f"Row '{key}' has invalid canonical_id_type '{row['canonical_id_type']}' "
+                f"(allowed: {sorted(ALLOWED_CANONICAL_ID_TYPES)})"
             )
-        if not row["canonical_url"].startswith("https://"):
-            errors.append(f"Row '{key}' canonical_url must use https: {row['canonical_url']}")
         if not row["canonical_id"]:
             errors.append(f"Row '{key}' missing canonical_id")
+        if not row["canonical_url"].startswith("https://"):
+            errors.append(f"Row '{key}' canonical_url must use https: {row['canonical_url']}")
         if not ISO_DATE_PATTERN.match(row["verified_on"]):
             errors.append(f"Row '{key}' verified_on must be ISO date (YYYY-MM-DD)")
+        if identifiers and key in identifiers:
+            id_entry = identifiers[key]
+            for field in ("canonical_id_type", "canonical_id", "canonical_url", "verification_method"):
+                if str(row[field]) != str(id_entry.get(field, "")):
+                    errors.append(
+                        f"Row '{key}' mismatch for {field}: table='{row[field]}' identifiers='{id_entry.get(field, '')}'"
+                    )
+            if row["verified_on"] != identifiers[key].get("verified_on"):
+                errors.append(
+                    f"Row '{key}' mismatch for verified_on: table='{row['verified_on']}' identifiers='{identifiers[key].get('verified_on', '')}'"
+                )
 
     missing = bib_keys - table_keys
     extra = table_keys - bib_keys
@@ -518,6 +598,123 @@ def check_verification_table(repo_root: Path, bib_keys: set[str]) -> list[str]:
     if extra:
         for key in sorted(extra):
             errors.append(f"VERIFICATION.md contains key not present in BibTeX: {key}")
+    if identifiers:
+        id_keys = set(identifiers.keys())
+        missing_from_table = id_keys - table_keys
+        extra_in_table = table_keys - id_keys
+        for key in sorted(missing_from_table):
+            errors.append(f"VERIFICATION.md missing key from identifiers.json: {key}")
+        for key in sorted(extra_in_table):
+            errors.append(f"VERIFICATION.md includes key not present in identifiers.json: {key}")
+
+    return errors
+
+
+def load_identifiers_json(repo_root: Path) -> tuple[list[str], dict[str, dict]]:
+    """Load identifiers.json and perform basic schema validation."""
+    errors: list[str] = []
+    path = repo_root / "docs" / "bibliography" / "metadata" / "identifiers.json"
+    if not path.exists():
+        return [f"identifiers.json not found at {path}"], {}
+
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        return [f"identifiers.json is not valid JSON: {exc}"], {}
+
+    if not isinstance(data, dict):
+        return ["identifiers.json must contain a JSON object keyed by BibTeX key"], {}
+
+    return errors, data
+
+
+def check_identifiers_against_bib(
+    bib_entries: list[dict], identifiers: dict[str, dict]
+) -> list[str]:
+    """Ensure identifiers.json covers all BibTeX keys and has required fields."""
+    errors: list[str] = []
+    bib_keys = {entry["key"] for entry in bib_entries}
+    seen_canonical: dict[tuple[str, str], str] = {}
+
+    for key, payload in identifiers.items():
+        if key not in bib_keys:
+            errors.append(f"identifiers.json contains key not present in BibTeX: {key}")
+        canonical_type = payload.get("canonical_id_type")
+        canonical_id = str(payload.get("canonical_id", "")).strip()
+        canonical_url = str(payload.get("canonical_url", "")).strip()
+        verified_on = str(payload.get("verified_on", "")).strip()
+        verification_method = str(payload.get("verification_method", "")).strip()
+        frozen = payload.get("frozen_metadata") or {}
+
+        if canonical_type not in ALLOWED_CANONICAL_ID_TYPES:
+            errors.append(
+                f"Key '{key}' has invalid canonical_id_type '{canonical_type}' "
+                f"(allowed: {sorted(ALLOWED_CANONICAL_ID_TYPES)})"
+            )
+        if not canonical_id:
+            errors.append(f"Key '{key}' missing canonical_id in identifiers.json")
+        if not canonical_url or not canonical_url.startswith("https://"):
+            errors.append(f"Key '{key}' canonical_url must use https: {canonical_url}")
+        if not verification_method:
+            errors.append(f"Key '{key}' missing verification_method in identifiers.json")
+        if not verified_on or not ISO_DATE_PATTERN.match(verified_on):
+            errors.append(f"Key '{key}' verified_on must be ISO date (YYYY-MM-DD)")
+
+        for frozen_field in ("title", "year", "first_author_family", "venue"):
+            if not str(frozen.get(frozen_field, "")).strip():
+                errors.append(f"Key '{key}' missing frozen_metadata.{frozen_field}")
+
+        canonical_key = (canonical_type or "", canonical_id.lower())
+        if canonical_key[1]:
+            if canonical_key in seen_canonical and seen_canonical[canonical_key] != key:
+                errors.append(
+                    "Duplicate canonical identifier detected: "
+                    f"{canonical_key[0]} '{canonical_id}' used by '{seen_canonical[canonical_key]}' and '{key}'"
+                )
+            seen_canonical[canonical_key] = key
+
+    missing = bib_keys - set(identifiers.keys())
+    for key in sorted(missing):
+        errors.append(f"BibTeX key '{key}' missing from identifiers.json")
+
+    return errors
+
+
+def check_frozen_metadata(bib_entries: list[dict], identifiers: dict[str, dict]) -> list[str]:
+    """Ensure BibTeX metadata matches frozen_metadata in identifiers.json."""
+    errors: list[str] = []
+    bib_by_key = {entry["key"]: entry["fields"] for entry in bib_entries}
+
+    for key, payload in identifiers.items():
+        if key not in bib_by_key:
+            continue
+        fields = bib_by_key[key]
+        frozen = payload.get("frozen_metadata") or {}
+        bib_title_raw = fields.get("title", "")
+        frozen_title_raw = str(frozen.get("title", ""))
+        if normalize_title(bib_title_raw) != normalize_title(frozen_title_raw):
+            errors.append(
+                f"Title mismatch for '{key}': bib='{bib_title_raw}' vs frozen='{frozen_title_raw}'"
+            )
+
+        bib_year = str(fields.get("year", "")).strip()
+        frozen_year = str(frozen.get("year", "")).strip()
+        if bib_year != frozen_year:
+            errors.append(f"Year mismatch for '{key}': bib='{bib_year}' vs frozen='{frozen_year}'")
+
+        bib_first_raw = extract_first_author_family(fields.get("author", ""))
+        frozen_first_raw = str(frozen.get("first_author_family", ""))
+        if normalize_string(bib_first_raw) != normalize_string(frozen_first_raw):
+            errors.append(
+                f"First author mismatch for '{key}': bib='{bib_first_raw}' vs frozen='{frozen_first_raw}'"
+            )
+
+        bib_venue_raw = extract_venue_field(fields)
+        frozen_venue_raw = str(frozen.get("venue", ""))
+        if normalize_string(bib_venue_raw) != normalize_string(frozen_venue_raw):
+            errors.append(
+                f"Venue/publisher mismatch for '{key}': bib='{bib_venue_raw}' vs frozen='{frozen_venue_raw}'"
+            )
 
     return errors
 
@@ -571,7 +768,7 @@ def main() -> int:
 
     all_errors: list[str] = []
 
-    print("\n[1/7] Running parser self-checks...")
+    print("\n[1/8] Running parser self-checks...")
     parser_errors = run_parser_self_checks()
     all_errors.extend(parser_errors)
     if parser_errors:
@@ -581,7 +778,7 @@ def main() -> int:
         print("  OK: parser self-checks passed")
 
     # Check CITATION.cff
-    print("\n[2/7] Checking CITATION.cff...")
+    print("\n[2/8] Checking CITATION.cff...")
     cff_errors = check_citation_cff(repo_root)
     all_errors.extend(cff_errors)
     if cff_errors:
@@ -591,7 +788,7 @@ def main() -> int:
         print("  OK: CITATION.cff is valid")
 
     # Check for stray .bib files
-    print("\n[3/7] Checking for stray .bib files...")
+    print("\n[3/8] Checking for stray .bib files...")
     extra_bib_errors = check_extra_bib_files(repo_root)
     all_errors.extend(extra_bib_errors)
     if extra_bib_errors:
@@ -601,8 +798,8 @@ def main() -> int:
         print("  OK: no unexpected .bib files found")
 
     # Check REFERENCES.bib
-    print("\n[4/7] Checking REFERENCES.bib...")
-    bib_errors, bib_keys = check_bibtex(repo_root)
+    print("\n[4/8] Checking REFERENCES.bib...")
+    bib_errors, bib_keys, bib_entries = check_bibtex(repo_root)
     all_errors.extend(bib_errors)
     if bib_errors:
         for err in bib_errors:
@@ -610,8 +807,27 @@ def main() -> int:
     else:
         print("  OK: REFERENCES.bib is valid")
 
+    id_schema_errors: list[str] = []
+    frozen_errors: list[str] = []
+    # Check identifiers.json and frozen metadata
+    print("\n[5/8] Checking identifiers.json...")
+    id_load_errors, identifiers = load_identifiers_json(repo_root)
+    all_errors.extend(id_load_errors)
+    if id_load_errors:
+        for err in id_load_errors:
+            print(f"  ERROR: {err}")
+    else:
+        id_schema_errors = check_identifiers_against_bib(bib_entries, identifiers)
+        frozen_errors = check_frozen_metadata(bib_entries, identifiers)
+        all_errors.extend(id_schema_errors + frozen_errors)
+        if id_schema_errors or frozen_errors:
+            for err in id_schema_errors + frozen_errors:
+                print(f"  ERROR: {err}")
+        else:
+            print("  OK: identifiers.json coverage and frozen metadata are valid")
+
     # Check REFERENCES_APA7.md
-    print("\n[5/7] Checking REFERENCES_APA7.md...")
+    print("\n[6/8] Checking REFERENCES_APA7.md...")
     apa_errors, apa_keys = extract_apa_keys(repo_root)
     all_errors.extend(apa_errors)
     if apa_errors:
@@ -621,7 +837,7 @@ def main() -> int:
         print("  OK: REFERENCES_APA7.md is valid")
 
     # Check BibTeX-APA consistency
-    print("\n[6/7] Checking BibTeX-APA consistency...")
+    print("\n[7/8] Checking BibTeX-APA consistency...")
     consistency_errors = check_bib_apa_consistency(bib_keys, apa_keys)
     all_errors.extend(consistency_errors)
     if consistency_errors:
@@ -630,8 +846,8 @@ def main() -> int:
     else:
         print("  OK: BibTeX and APA files are consistent")
 
-    print("\n[7/7] Checking VERIFICATION.md coverage...")
-    verification_errors = check_verification_table(repo_root, bib_keys)
+    print("\n[8/8] Checking VERIFICATION.md coverage...")
+    verification_errors = check_verification_table(repo_root, bib_keys, identifiers)
     all_errors.extend(verification_errors)
     if verification_errors:
         for err in verification_errors:
