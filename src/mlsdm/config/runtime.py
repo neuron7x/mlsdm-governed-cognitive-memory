@@ -304,12 +304,16 @@ def get_runtime_config(mode: RuntimeMode | None = None) -> RuntimeConfig:
     # Note: DISABLE_RATE_LIMIT is part of stable API (not legacy)
     # It's a convenience variable that inverts to rate_limit_enabled
     # This is separate from MLSDM_* prefix which is reserved for SystemConfig overrides
-    disable_rate_limit = _get_env_bool("DISABLE_RATE_LIMIT", False)
+    
+    # Determine rate_limit_enabled: prioritize DISABLE_RATE_LIMIT if set, otherwise use default
+    if "DISABLE_RATE_LIMIT" in os.environ:
+        rate_limit_enabled = not _get_env_bool("DISABLE_RATE_LIMIT", False)
+    else:
+        rate_limit_enabled = defaults["security"]["rate_limit_enabled"]
+    
     security = SecurityConfig(
         api_key=os.environ.get("API_KEY", defaults["security"]["api_key"]),
-        rate_limit_enabled=not disable_rate_limit
-        if "DISABLE_RATE_LIMIT" in os.environ
-        else defaults["security"]["rate_limit_enabled"],
+        rate_limit_enabled=rate_limit_enabled,
         rate_limit_requests=_get_env_int(
             "RATE_LIMIT_REQUESTS", defaults["security"]["rate_limit_requests"]
         ),

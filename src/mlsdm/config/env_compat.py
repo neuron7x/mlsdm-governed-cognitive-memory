@@ -21,7 +21,6 @@ This separation maintains clear boundaries between:
 from __future__ import annotations
 
 import os
-import warnings
 
 
 def apply_env_compat() -> None:
