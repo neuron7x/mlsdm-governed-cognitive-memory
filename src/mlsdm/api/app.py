@@ -90,9 +90,9 @@ _manager = MemoryManager(ConfigLoader.load_config(_config_path))
 # Initialize rate limiter (5 RPS per client as per SECURITY_POLICY.md)
 # Can be disabled in testing with DISABLE_RATE_LIMIT=true/1
 _secure_mode_enabled = _get_env_bool("MLSDM_SECURE_MODE", False)
-_rate_limiting_enabled = _get_env_bool(
-    "MLSDM_RATE_LIMIT_ENABLED", True
-) and not _get_env_bool("DISABLE_RATE_LIMIT", False)
+# Note: DISABLE_RATE_LIMIT is part of RuntimeConfig (not SystemConfig)
+# Using MLSDM_ prefix is reserved for SystemConfig environment overrides
+_rate_limiting_enabled = not _get_env_bool("DISABLE_RATE_LIMIT", False)
 _rate_limit_requests = _get_env_int("RATE_LIMIT_REQUESTS", 5)
 _rate_limit_window = _get_env_int("RATE_LIMIT_WINDOW", 1)
 

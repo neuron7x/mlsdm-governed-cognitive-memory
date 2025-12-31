@@ -29,17 +29,34 @@ MLSDM supports multiple configuration methods with the following precedence (hig
 
 All configurations are validated against a strict schema to prevent runtime errors.
 
-### Environment Variable Compatibility
+### Environment Variables
 
-MLSDM uses a canonical `MLSDM_*` namespace for environment variables. Legacy environment variables are automatically mapped for backward compatibility:
+MLSDM provides two distinct configuration namespaces:
 
-| Legacy Variable | Canonical Variable | Mapping |
-|:---------------|:-------------------|:--------|
-| `DISABLE_RATE_LIMIT=1` | `MLSDM_RATE_LIMIT_ENABLED=0` | Inverted (disable → enabled=false) |
-| `CONFIG_PATH` | `CONFIG_PATH` | Direct (already canonical) |
-| `LLM_BACKEND` | `LLM_BACKEND` | Direct (already canonical) |
+#### RuntimeConfig Environment Variables (Deployment/Server)
 
-**Important:** Canonical variables take precedence over legacy variables. If both are set, the canonical variable is used.
+These control server behavior, security, and observability:
+
+| Variable | Purpose | Default | Notes |
+|:---------|:--------|:--------|:------|
+| `DISABLE_RATE_LIMIT` | Disable rate limiting | `0` (enabled) | Set to `1` to disable |
+| `CONFIG_PATH` | Path to cognitive engine config | `config/default_config.yaml` | YAML file |
+| `LLM_BACKEND` | LLM backend to use | `local_stub` | Options: `local_stub`, `openai` |
+| `HOST` | Server host | `0.0.0.0` | |
+| `PORT` | Server port | `8000` | |
+| `MLSDM_RUNTIME_MODE` | Runtime mode | `dev` | Options: `dev`, `local-prod`, `cloud-prod`, `agent-api` |
+
+#### SystemConfig Environment Variables (Cognitive Engine)
+
+These control cognitive engine parameters and use the `MLSDM_*` prefix:
+
+| Variable | Purpose | Example |
+|:---------|:--------|:--------|
+| `MLSDM_DIMENSION` | Vector embedding dimension | `MLSDM_DIMENSION=768` |
+| `MLSDM_STRICT_MODE` | Enable strict validation | `MLSDM_STRICT_MODE=true` |
+| `MLSDM_MORAL_FILTER__THRESHOLD` | Moral filter threshold | `MLSDM_MORAL_FILTER__THRESHOLD=0.7` |
+
+**Design Note:** The `MLSDM_*` prefix is reserved for SystemConfig overrides (cognitive engine parameters loaded from YAML files). RuntimeConfig parameters (server, security, observability) use their own variable names to maintain clear separation of concerns.
 
 ### Runtime Modes
 

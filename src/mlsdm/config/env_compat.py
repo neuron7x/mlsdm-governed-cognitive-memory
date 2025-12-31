@@ -1,15 +1,21 @@
 """
 Environment Variable Compatibility Layer.
 
-Provides backward compatibility for legacy environment variables by mapping them
-to the canonical MLSDM_* namespace defined in runtime.py.
+Provides backward compatibility for legacy environment variables.
 
-Legacy → Canonical Mapping:
-- CONFIG_PATH → MLSDM_CONFIG_PATH (then used as CONFIG_PATH in runtime)
-- LLM_BACKEND → MLSDM_LLM_BACKEND (then used as LLM_BACKEND in runtime)
-- DISABLE_RATE_LIMIT → MLSDM_RATE_LIMIT_ENABLED (inverted)
+Note: This module is currently a placeholder for future compatibility needs.
+Most environment variables (CONFIG_PATH, LLM_BACKEND, DISABLE_RATE_LIMIT) are
+already part of the stable API and handled directly by RuntimeConfig in runtime.py.
 
-This module ensures a single source of truth while maintaining backward compatibility.
+DISABLE_RATE_LIMIT is handled natively by RuntimeConfig and does not need mapping
+to MLSDM_RATE_LIMIT_ENABLED because:
+1. MLSDM_* prefix is reserved for SystemConfig env overrides (cognitive engine config)
+2. DISABLE_RATE_LIMIT is part of RuntimeConfig (deployment/server config)
+3. RuntimeConfig handles the inversion logic directly (see runtime.py line 305-311)
+
+This separation maintains clear boundaries between:
+- SystemConfig: Cognitive engine configuration (embeddings, memory, etc.)
+- RuntimeConfig: Runtime/deployment configuration (server, security, observability)
 """
 
 from __future__ import annotations
@@ -21,42 +27,18 @@ import warnings
 def apply_env_compat() -> None:
     """Apply environment variable compatibility mapping.
 
-    Maps legacy environment variables to their canonical equivalents.
-    Does NOT overwrite canonical variables if already set (canonical takes precedence).
+    Currently a no-op as all environment variables are handled directly
+    by their respective configuration systems:
+    - CONFIG_PATH, LLM_BACKEND: Used directly by RuntimeConfig
+    - DISABLE_RATE_LIMIT: Handled by RuntimeConfig (inverted to rate_limit_enabled)
+    - MLSDM_*: Handled by SystemConfig._apply_env_overrides()
 
-    This function should be called early in the application startup, before
-    loading runtime configuration.
-
-    Side effects:
-        Sets environment variables to ensure compatibility.
-
-    Example:
-        >>> import os
-        >>> os.environ["CONFIG_PATH"] = "config/custom.yaml"
-        >>> apply_env_compat()
-        >>> # CONFIG_PATH is preserved for runtime.py consumption
-        >>> os.environ["CONFIG_PATH"]
-        'config/custom.yaml'
+    This function is kept for potential future compatibility needs and to
+    maintain the API contract established in entrypoints and CLI.
     """
-    # Map CONFIG_PATH to canonical (it's already canonical in runtime.py)
-    # Legacy: CONFIG_PATH → stays as CONFIG_PATH (already used in runtime.py)
-    # This is already canonical, no mapping needed
-
-    # Map LLM_BACKEND to canonical (it's already canonical in runtime.py)
-    # Legacy: LLM_BACKEND → stays as LLM_BACKEND (already used in runtime.py)
-    # This is already canonical, no mapping needed
-
-    # Map DISABLE_RATE_LIMIT to canonical rate limit enabled
-    # Legacy: DISABLE_RATE_LIMIT=1 → means rate limiting is disabled
-    # Canonical: MLSDM_RATE_LIMIT_ENABLED=0 → means rate limiting is disabled
-    # Note: Boolean parsing logic matches runtime.py's _get_env_bool() function
-    if "DISABLE_RATE_LIMIT" in os.environ and "MLSDM_RATE_LIMIT_ENABLED" not in os.environ:
-        disable_rate_limit = os.environ.get("DISABLE_RATE_LIMIT", "0")
-        # If DISABLE_RATE_LIMIT is truthy, set MLSDM_RATE_LIMIT_ENABLED to 0
-        if disable_rate_limit.lower() in ("1", "true", "yes", "on"):
-            os.environ["MLSDM_RATE_LIMIT_ENABLED"] = "0"
-        else:
-            os.environ["MLSDM_RATE_LIMIT_ENABLED"] = "1"
+    # No-op: All environment variables are handled directly by runtime.py
+    # and config_loader.py without needing intermediate mapping.
+    pass
 
 
 def warn_if_legacy_vars_used() -> list[str]:
@@ -64,62 +46,41 @@ def warn_if_legacy_vars_used() -> list[str]:
 
     Returns:
         List of legacy variable names that are currently set.
+        Currently returns empty list as all variables are part of stable API.
 
-    Example:
-        >>> import os
-        >>> os.environ["DISABLE_RATE_LIMIT"] = "1"
-        >>> legacy = warn_if_legacy_vars_used()
-        >>> "DISABLE_RATE_LIMIT" in legacy
-        True
+    Note:
+        DISABLE_RATE_LIMIT, CONFIG_PATH, and LLM_BACKEND are all part of the
+        stable, documented API and are not considered legacy. No deprecation
+        warnings are needed.
     """
-    legacy_vars: list[str] = []
-
-    # Check for legacy vars that have canonical alternatives
-    if "DISABLE_RATE_LIMIT" in os.environ:
-        legacy_vars.append("DISABLE_RATE_LIMIT")
-        if "MLSDM_RATE_LIMIT_ENABLED" not in os.environ:
-            warnings.warn(
-                "DISABLE_RATE_LIMIT is deprecated. Use MLSDM_RATE_LIMIT_ENABLED=0 instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
-    # Note: CONFIG_PATH and LLM_BACKEND are canonical and used directly by runtime.py,
-    # so they don't need warnings or mapping. They're part of the stable, documented API.
-    # Only DISABLE_RATE_LIMIT needs a warning because it's being phased out in favor of
-    # the more explicit MLSDM_RATE_LIMIT_ENABLED (with clearer semantics: enabled vs disabled).
-
-    return legacy_vars
+    # No legacy variables to warn about - all environment variables
+    # (DISABLE_RATE_LIMIT, CONFIG_PATH, LLM_BACKEND) are part of stable API
+    return []
 
 
 def get_env_compat_info() -> dict[str, dict[str, str | None]]:
-    """Get information about environment variable compatibility.
+    """Get information about environment variables.
 
     Returns:
-        Dictionary mapping legacy variable names to their status and canonical equivalents.
+        Dictionary mapping variable names to their status and usage.
 
-    Example:
-        >>> info = get_env_compat_info()
-        >>> "DISABLE_RATE_LIMIT" in info
-        True
+    Note:
+        All listed variables are part of the stable API, not legacy.
     """
     return {
         "DISABLE_RATE_LIMIT": {
-            "canonical": "MLSDM_RATE_LIMIT_ENABLED",
+            "status": "stable",
             "current_value": os.environ.get("DISABLE_RATE_LIMIT"),
-            "canonical_value": os.environ.get("MLSDM_RATE_LIMIT_ENABLED"),
-            "note": "Set MLSDM_RATE_LIMIT_ENABLED=0 to disable rate limiting (replaces DISABLE_RATE_LIMIT=1)",
+            "note": "Part of RuntimeConfig. Set to '1' to disable rate limiting.",
         },
         "CONFIG_PATH": {
-            "canonical": "CONFIG_PATH",
+            "status": "stable",
             "current_value": os.environ.get("CONFIG_PATH"),
-            "canonical_value": os.environ.get("CONFIG_PATH"),
-            "note": "CONFIG_PATH is already canonical (used directly by runtime.py)",
+            "note": "Part of RuntimeConfig. Specifies cognitive engine config file path.",
         },
         "LLM_BACKEND": {
-            "canonical": "LLM_BACKEND",
+            "status": "stable",
             "current_value": os.environ.get("LLM_BACKEND"),
-            "canonical_value": os.environ.get("LLM_BACKEND"),
-            "note": "LLM_BACKEND is already canonical (used directly by runtime.py)",
+            "note": "Part of RuntimeConfig. Specifies LLM backend (e.g., 'local_stub', 'openai').",
         },
     }

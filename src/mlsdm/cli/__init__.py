@@ -187,7 +187,7 @@ def cmd_serve(args: argparse.Namespace) -> int:
     if hasattr(args, "mode") and args.mode:
         os.environ["MLSDM_RUNTIME_MODE"] = args.mode
 
-    # Set canonical environment variables from args
+    # Set environment variables from args
     if args.config:
         os.environ["CONFIG_PATH"] = args.config
 
@@ -195,9 +195,8 @@ def cmd_serve(args: argparse.Namespace) -> int:
         os.environ["LLM_BACKEND"] = args.backend
 
     if args.disable_rate_limit:
-        # Use canonical approach: set MLSDM_RATE_LIMIT_ENABLED=0
-        os.environ["MLSDM_RATE_LIMIT_ENABLED"] = "0"
-        # Also set legacy for backward compatibility with components that still read it
+        # Set DISABLE_RATE_LIMIT (part of RuntimeConfig, not SystemConfig)
+        # Do NOT use MLSDM_* prefix as that's reserved for SystemConfig overrides
         os.environ["DISABLE_RATE_LIMIT"] = "1"
 
     print("=" * 60)
