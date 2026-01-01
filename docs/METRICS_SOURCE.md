@@ -16,12 +16,14 @@ Metrics are sourced from **committed evidence snapshots** in the repository for 
 | **Logs** | `artifacts/evidence/<date>/<sha>/logs/` |
 | **Manifest** | `artifacts/evidence/<date>/<sha>/manifest.json` |
 
-To regenerate evidence locally:
+Regenerate and validate locally:
 
 ```bash
-make evidence
-python scripts/evidence/verify_evidence_snapshot.py --evidence-dir artifacts/evidence/<date>/<sha>
+python scripts/evidence/capture_evidence.py --mode build
+python scripts/evidence/verify_evidence_snapshot.py --evidence-dir artifacts/evidence/<date>/<sha>/
+ls artifacts/evidence/*/*
 ```
+Latest evidence lives under: `artifacts/evidence/<date>/<sha>/`
 
 ---
 

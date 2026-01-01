@@ -57,6 +57,10 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2026-01-02 — **Evidence subsystem hardened (contract v1, deterministic pack/verify)** — PR: #418
+  - Evidence contract versioned (`schema_version=evidence-v1`) with manifest invariants (relative paths, size cap, secret scan, sha256 index).
+  - Capture tooling split into build vs pack; CI packs existing outputs once and marks partial on failures while still uploading.
+  - Verifier enforces schema, integrity, size/secret limits, path safety, and recomputable metrics; docs reference repo paths only.
 - 2026-01-01 — **Evidence/Audit v1: repo-reproducible evidence snapshot tooling** — PR: (this)
   - Added `scripts/evidence/capture_evidence.py` (coverage + unit evidence), `scripts/evidence/verify_evidence_snapshot.py` validator, and unit tests.
   - Updated `.github/workflows/readiness-evidence.yml` to package evidence snapshots and docs to point to in-repo evidence paths.

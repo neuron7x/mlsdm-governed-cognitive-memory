@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 """Capture reproducible evidence snapshot (coverage + JUnit logs only).
 
-Writes artifacts to: artifacts/evidence/YYYY-MM-DD/<short_sha>/
-Required outputs:
-  - coverage/coverage.xml
-  - pytest/junit.xml
-  - logs/*.log
-  - manifest.json (schema_version: evidence-v1)
+Modes:
+- build: run commands locally if outputs are missing, then pack.
+- pack: never re-run tests; only package provided outputs.
 """
 
 from __future__ import annotations
@@ -14,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import mimetypes
 import os
 import shutil
 import subprocess
@@ -21,9 +19,16 @@ import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable, List
+from typing import Iterable, List, Mapping, MutableMapping
 
 SCHEMA_VERSION = "evidence-v1"
+REQUIRED_OUTPUT_KEYS = ("coverage_xml", "junit_xml")
+DEFAULT_INPUTS = {
+    "coverage_xml": "coverage.xml",
+    "coverage_log": "coverage-gate.log",
+    "junit_xml": "reports/junit.xml",
+    "unit_log": "reports/unit-tests.log",
+}
 
 
 class CaptureError(Exception):
@@ -43,6 +48,20 @@ def git_sha() -> str:
         check=False,
     )
     return result.stdout.strip() if result.returncode == 0 else "unknown"
+
+
+def source_ref() -> str:
+    ref = os.getenv("GITHUB_REF")
+    if ref:
+        return ref
+    result = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        cwd=repo_root(),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.stdout.strip() or "unknown"
 
 
 def _prefer_uv(command: List[str]) -> List[str]:
@@ -84,10 +103,23 @@ def _uv_lock_sha256() -> str:
         return "unreadable"
 
 
+def _hash_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _guess_mime(path: Path) -> str:
+    mime, _ = mimetypes.guess_type(str(path))
+    return mime or "application/octet-stream"
+
+
 def capture_coverage(
     evidence_dir: Path,
-    commands: list[str],
     produced: list[Path],
+    outputs: MutableMapping[str, str],
     coverage_path: Path,
     coverage_log: Path | None,
 ) -> None:
@@ -95,20 +127,23 @@ def capture_coverage(
     dest_dir.mkdir(parents=True, exist_ok=True)
     if not coverage_path.exists():
         raise CaptureError("coverage.xml not found at expected path")
-    shutil.copy(coverage_path, dest_dir / "coverage.xml")
-    produced.append(dest_dir / "coverage.xml")
+    dest_cov = dest_dir / "coverage.xml"
+    shutil.copy(coverage_path, dest_cov)
+    produced.append(dest_cov)
+    outputs["coverage_xml"] = str(dest_cov.relative_to(evidence_dir))
     if coverage_log and coverage_log.exists():
         logs_dir = evidence_dir / "logs"
         logs_dir.mkdir(parents=True, exist_ok=True)
         dest_log = logs_dir / "coverage_gate.log"
         shutil.copy(coverage_log, dest_log)
         produced.append(dest_log)
+        outputs["coverage_log"] = str(dest_log.relative_to(evidence_dir))
 
 
 def capture_pytest_junit(
     evidence_dir: Path,
-    commands: list[str],
     produced: list[Path],
+    outputs: MutableMapping[str, str],
     junit_path: Path,
     unit_log: Path | None,
 ) -> None:
@@ -116,17 +151,20 @@ def capture_pytest_junit(
     dest_dir.mkdir(parents=True, exist_ok=True)
     if not junit_path.exists():
         raise CaptureError("junit.xml not found at expected path")
-    shutil.copy(junit_path, dest_dir / "junit.xml")
-    produced.append(dest_dir / "junit.xml")
+    dest_junit = dest_dir / "junit.xml"
+    shutil.copy(junit_path, dest_junit)
+    produced.append(dest_junit)
+    outputs["junit_xml"] = str(dest_junit.relative_to(evidence_dir))
     if unit_log and unit_log.exists():
         logs_dir = evidence_dir / "logs"
         logs_dir.mkdir(parents=True, exist_ok=True)
         dest_log = logs_dir / "unit_tests.log"
         shutil.copy(unit_log, dest_log)
         produced.append(dest_log)
+        outputs["unit_log"] = str(dest_log.relative_to(evidence_dir))
 
 
-def capture_env(evidence_dir: Path, produced: list[Path]) -> None:
+def capture_env(evidence_dir: Path, produced: list[Path], outputs: MutableMapping[str, str]) -> None:
     env_dir = evidence_dir / "env"
     env_dir.mkdir(parents=True, exist_ok=True)
     py_path = env_dir / "python_version.txt"
@@ -134,32 +172,48 @@ def capture_env(evidence_dir: Path, produced: list[Path]) -> None:
     py_path.write_text(sys.version.split()[0] + "\n", encoding="utf-8")
     uv_lock_path.write_text(_uv_lock_sha256() + "\n", encoding="utf-8")
     produced.extend([py_path, uv_lock_path])
+    outputs["python_version"] = str(py_path.relative_to(evidence_dir))
+    outputs["uv_lock_sha256"] = str(uv_lock_path.relative_to(evidence_dir))
+
+
+def _build_file_index(evidence_dir: Path) -> list[dict[str, object]]:
+    entries: list[dict[str, object]] = []
+    for path in sorted(p for p in evidence_dir.rglob("*") if p.is_file()):
+        rel = path.relative_to(evidence_dir)
+        entries.append(
+            {
+                "path": str(rel),
+                "sha256": _hash_file(path),
+                "bytes": path.stat().st_size,
+                "mime_guess": _guess_mime(path),
+            }
+        )
+    return entries
 
 
 def write_manifest(
     evidence_dir: Path,
     sha: str,
+    short_sha: str,
     commands: Iterable[str],
-    produced: Iterable[Path],
-    ok: bool,
-    errors: list[str],
+    outputs: Mapping[str, str],
+    failures: list[str],
 ) -> None:
-    produced_paths = {path for path in produced if path.exists()}
-    produced_paths.add(evidence_dir / "manifest.json")
-    all_files = sorted({str(path.relative_to(evidence_dir)) for path in evidence_dir.rglob("*") if path.is_file()})
+    file_index = _build_file_index(evidence_dir)
     manifest = {
         "schema_version": SCHEMA_VERSION,
         "git_sha": sha,
-        "date_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-        "python_version": sys.version.split()[0],
+        "short_sha": short_sha,
+        "created_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "source_ref": source_ref(),
         "commands": list(commands),
-        "produced_files": sorted(
-            {str(path.relative_to(evidence_dir)) for path in produced_paths}
-        ),
-        "files": all_files,
-        "ok": ok,
-        "partial": not ok,
-        "errors": errors,
+        "outputs": dict(outputs),
+        "status": {
+            "ok": len(failures) == 0,
+            "partial": len(failures) > 0,
+            "failures": failures,
+        },
+        "file_index": file_index,
     }
     (evidence_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
@@ -167,51 +221,81 @@ def write_manifest(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Capture evidence snapshot")
     parser.add_argument(
-        "--from-ci",
-        action="store_true",
-        help="Reuse artifacts already produced by CI steps instead of re-running coverage/tests",
+        "--mode",
+        required=True,
+        choices=["build", "pack"],
+        help="build: run commands locally if outputs missing; pack: never rerun tests",
     )
     parser.add_argument(
-        "--coverage-path",
+        "--inputs",
         type=Path,
-        default=repo_root() / "coverage.xml",
-        help="Path to coverage.xml generated earlier in the job",
+        help="JSON file describing existing outputs (coverage_xml, junit_xml, logs)",
     )
     parser.add_argument(
-        "--coverage-log",
-        type=Path,
-        default=repo_root() / "coverage-gate.log",
-        help="Path to coverage gate log to include if present",
-    )
-    parser.add_argument(
-        "--junit-path",
-        type=Path,
-        default=repo_root() / "reports" / "junit.xml",
-        help="Path to JUnit XML generated earlier in the job",
-    )
-    parser.add_argument(
-        "--unit-log",
-        type=Path,
-        default=None,
-        help="Optional path to unit test log to include",
+        "--partial-reason",
+        action="append",
+        default=[],
+        help="Mark snapshot partial with the given reason (may be repeated)",
     )
     return parser.parse_args()
 
 
-def _run_commands_when_needed(args: argparse.Namespace, commands: list[str], produced: list[Path], evidence_dir: Path) -> None:
-    if args.from_ci:
+def _load_inputs(inputs_path: Path | None) -> dict[str, Path]:
+    data = dict(DEFAULT_INPUTS)
+    if inputs_path:
+        loaded = json.loads(inputs_path.read_text(encoding="utf-8"))
+        if not isinstance(loaded, dict):
+            raise CaptureError("--inputs JSON must be an object")
+        for key, value in loaded.items():
+            if not isinstance(value, str):
+                raise CaptureError(f"--inputs value for {key} must be a string")
+            data[key] = value
+    resolved: dict[str, Path] = {}
+    for key, value in data.items():
+        resolved[key] = (repo_root() / value).resolve() if not os.path.isabs(value) else Path(value).resolve()
+    return resolved
+
+
+def _ensure_outputs_present(inputs: Mapping[str, Path]) -> None:
+    missing = []
+    for key in REQUIRED_OUTPUT_KEYS:
+        path = inputs.get(key)
+        if path is None or not Path(path).exists():
+            missing.append(key)
+    if missing:
+        raise CaptureError(f"Required inputs missing: {', '.join(missing)}")
+
+
+def _maybe_run_commands(
+    mode: str,
+    commands: list[str],
+    produced: list[Path],
+    outputs: MutableMapping[str, str],
+    inputs: MutableMapping[str, Path],
+    evidence_dir: Path,
+    failures: list[str],
+) -> None:
+    if mode == "pack":
+        return
+
+    coverage_path = inputs["coverage_xml"]
+    junit_path = inputs["junit_xml"]
+
+    # Avoid re-running expensive commands if outputs already exist
+    if coverage_path.exists() and junit_path.exists():
         return
 
     coverage_log = evidence_dir / "logs" / "coverage_gate.log"
     command = _prefer_uv(["bash", "./coverage_gate.sh"])
     commands.append(" ".join(command))
     result_cov = run_command(command, coverage_log)
+    produced.append(coverage_log)
+    inputs["coverage_xml"] = repo_root() / "coverage.xml"
+    inputs["coverage_log"] = coverage_log
 
     reports_dir = repo_root() / "reports"
     reports_dir.mkdir(exist_ok=True)
-    junit_path = reports_dir / "junit-unit.xml"
-    if junit_path.exists():
-        junit_path.unlink()
+    junit_path = reports_dir / "junit.xml"
     unit_log = evidence_dir / "logs" / "unit_tests.log"
     command_unit = _prefer_uv(
         [
@@ -227,19 +311,14 @@ def _run_commands_when_needed(args: argparse.Namespace, commands: list[str], pro
     )
     commands.append(" ".join(command_unit))
     result_unit = run_command(command_unit, unit_log)
-
-    # Update paths for downstream copy
-    args.coverage_path = repo_root() / "coverage.xml"
-    args.coverage_log = coverage_log
-    args.junit_path = junit_path
-    args.unit_log = unit_log
-
-    produced.extend([coverage_log, unit_log])
+    produced.append(unit_log)
+    inputs["junit_xml"] = junit_path
+    inputs["unit_log"] = unit_log
 
     if result_cov.returncode != 0:
-        raise CaptureError(f"coverage gate failed; see {coverage_log.relative_to(evidence_dir)}")
+        failures.append(f"coverage gate failed (exit {result_cov.returncode})")
     if result_unit.returncode != 0:
-        raise CaptureError(f"unit tests failed; see {unit_log.relative_to(evidence_dir)}")
+        failures.append(f"unit tests failed (exit {result_unit.returncode})")
 
 
 def main() -> int:
@@ -250,35 +329,33 @@ def main() -> int:
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     sha_full = git_sha()
     short_sha = sha_full[:12] if sha_full != "unknown" else "unknown"
-    base_dir = root / "artifacts" / "evidence"
+    base_dir = root / "artifacts" / "evidence" / date_str
     base_dir.mkdir(parents=True, exist_ok=True)
     temp_dir = Path(tempfile.mkdtemp(prefix="evidence-", dir=base_dir))
     evidence_dir = temp_dir
 
     commands: list[str] = []
     produced: list[Path] = []
-    errors: list[str] = ["capture not completed"]
-    # Write initial manifest to ensure partial snapshots exist
-    write_manifest(evidence_dir, sha_full, commands, produced, ok=False, errors=errors)
+    outputs: dict[str, str] = {}
+    failures: list[str] = list(args.partial_reason)
 
     try:
-        _run_commands_when_needed(args, commands, produced, evidence_dir)
-        capture_coverage(evidence_dir, commands, produced, args.coverage_path, args.coverage_log)
-        capture_pytest_junit(evidence_dir, commands, produced, args.junit_path, args.unit_log)
-        capture_env(evidence_dir, produced)
-        errors = []
-        ok = True
-    except CaptureError as exc:
-        ok = False
-        errors = [str(exc)]
+        inputs = _load_inputs(args.inputs)
+        _maybe_run_commands(args.mode, commands, produced, outputs, inputs, evidence_dir, failures)
+        _ensure_outputs_present(inputs)
+        capture_coverage(evidence_dir, produced, outputs, inputs["coverage_xml"], inputs.get("coverage_log"))
+        capture_pytest_junit(evidence_dir, produced, outputs, inputs["junit_xml"], inputs.get("unit_log"))
+        capture_env(evidence_dir, produced, outputs)
+    except Exception as exc:  # noqa: BLE001
+        failures.append(str(exc))
         print(f"ERROR: {exc}", file=sys.stderr)
-        print(f"Logs preserved at {temp_dir}", file=sys.stderr)
     finally:
-        write_manifest(evidence_dir, sha_full, commands, produced, ok=ok, errors=errors)
+        try:
+            write_manifest(evidence_dir, sha_full, short_sha, commands, outputs, failures)
+        except Exception as exc:  # noqa: BLE001
+            print(f"ERROR writing manifest: {exc}", file=sys.stderr)
 
-    final_parent = root / "artifacts" / "evidence" / date_str
-    final_parent.mkdir(parents=True, exist_ok=True)
-    final_dir = final_parent / short_sha
+    final_dir = base_dir / short_sha
     if final_dir.exists():
         shutil.rmtree(final_dir)
     shutil.move(str(temp_dir), final_dir)

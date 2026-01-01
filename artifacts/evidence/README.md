@@ -1,50 +1,39 @@
 # Evidence Snapshots
 
-## Policy
-
-This directory contains committed evidence snapshots for reproducibility and auditability.
-
-### Structure
+Evidence is a repository-level contract. Snapshots live under:
 
 ```
-evidence/
-  YYYY-MM-DD/<git_sha>/
-    manifest.json          # Metadata (schema_version, sha, date, commands, produced_files, status)
-    coverage/
-      coverage.xml         # Coverage report
-    pytest/
-      junit.xml            # JUnit test results
-    logs/
-      coverage_gate.log    # coverage gate stdout/stderr (if present)
-      unit_tests.log       # unit test stdout/stderr (if present)
-    benchmarks/            # Optional if benchmarks are collected
-      benchmark-metrics.json
-    env/
-      python_version.txt
-      uv_lock_sha256.txt
+artifacts/evidence/YYYY-MM-DD/<short_sha>/
 ```
 
-### Rules
+## Evidence Contract (v1)
 
-1. **Small files only** — Keep evidence compact; no large dumps or binary blobs.
-2. **No secrets** — Never commit credentials, tokens, .env files, or API keys.
-3. **Dated folders** — Each snapshot lives in a dated subfolder; do NOT overwrite previous snapshots.
-4. **Reproducible** — Evidence is regenerated via `make evidence` (runs `python scripts/evidence/capture_evidence.py`).
-5. **Read-only archive** — Treat committed snapshots as immutable historical records.
+- **Manifest**: `manifest.json` with `schema_version="evidence-v1"`, `git_sha`, `short_sha`,
+  `created_utc`, `source_ref`, `commands`, `outputs`, `status`, and `file_index`.
+- **Required files** (relative to the snapshot directory):
+  - `manifest.json`
+  - `coverage/coverage.xml`
+  - `pytest/junit.xml`
+- **Optional**:
+  - `logs/*.log`
+  - `benchmarks/*`
+  - `env/python_version.txt`, `env/uv_lock_sha256.txt`
+- **Outputs mapping**: `coverage_xml` → `coverage/coverage.xml`, `junit_xml` → `pytest/junit.xml`.
+- **Status**: `{ok: bool, partial: bool, failures: [...]}` — partial is allowed when tests fail but evidence exists.
+- **File index**: every file except `manifest.json` must appear in `file_index` with `{path, sha256, bytes, mime_guess}`.
 
-### Regenerating Evidence
+### Invariants
 
-```bash
-make evidence
-```
+1. All manifest paths are relative and resolve **inside** the snapshot directory (no path traversal).
+2. Size bounds: single file ≤ 2 MB; total snapshot ≤ 5 MB.
+3. Secret guard: reject `PRIVATE KEY`, AWS keys, GitHub tokens, and `Authorization: Bearer` patterns.
+4. Deterministic assembly: `capture_evidence.py --mode pack` never re-runs tests; it packages provided outputs.
+5. Integrity: verifier recomputes sha256/size for every indexed file.
 
-This runs `uv run python scripts/evidence/capture_evidence.py` which:
-- Creates a new dated folder under `artifacts/evidence/`
-- Runs the coverage gate and captures `coverage.xml`
-- Reuses previously generated JUnit XML when invoked with `--from-ci`
-- Captures command logs (if present) and writes `manifest.json`
+## Tooling
 
-### Retention
+- Capture (local build): `python scripts/evidence/capture_evidence.py --mode build`
+- Capture (CI pack): `python scripts/evidence/capture_evidence.py --mode pack --inputs <paths.json>`
+- Verify: `python scripts/evidence/verify_evidence_snapshot.py --evidence-dir artifacts/evidence/<date>/<sha>/`
 
-Snapshots are kept for historical reference. To clean up old snapshots, manually delete
-dated folders that are no longer needed for audit trails.
+Snapshots are immutable once committed. Do not overwrite prior dates; add a new dated folder instead.
