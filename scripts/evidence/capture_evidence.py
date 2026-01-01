@@ -178,7 +178,8 @@ def capture_pytest_junit(
         logs_dir = evidence_dir / "logs"
         logs_dir.mkdir(parents=True, exist_ok=True)
         dest_log = logs_dir / "unit_tests.log"
-        shutil.copy(unit_log, dest_log)
+        if unit_log.resolve() != dest_log.resolve():
+            shutil.copy(unit_log, dest_log)
         produced.append(dest_log)
         outputs["unit_log"] = str(dest_log.relative_to(evidence_dir))
 
@@ -376,7 +377,6 @@ def main() -> int:
     sha_full = git_sha()
     short_sha = sha_full[:12] if sha_full != "unknown" else "unknown"
     base_dir = root / "artifacts" / "evidence" / date_str
-    base_dir.mkdir(parents=True, exist_ok=True)
     temp_dir = Path(tempfile.mkdtemp(prefix="evidence-"))
     evidence_dir = temp_dir
 
