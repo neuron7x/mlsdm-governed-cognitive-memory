@@ -1,5 +1,5 @@
 # System Readiness Status
-Last updated: 2026-01-01 (Neuro-AI Contract Layer v1)
+Last updated: 2026-01-01 (Neuro-AI Contract Layer v2)
 Owner: neuron7x / MLSDM maintainers
 Scope: MLSDM cognitive engine repository (src/, tests/, deploy/, workflows)
 
@@ -60,6 +60,16 @@ Blocking issues: 3
 7. Neuro-AI adapters not integrated: `SynapticMemoryAdapter`, `PredictionErrorAdapter`, `RegimeController` implemented but not wired into `NeuroCognitiveEngine` or live system paths; need integration tests + real-world usage evidence.
 
 ## Change Log
+- 2026-01-01 — **Neuro-AI hybrid contracts v2: config, adapters, prediction-error engine** — PR: #421
+  - Added `src/mlsdm/neuro_ai/{__init__.py,config.py,contract_api.py,prediction_error.py}` with `NeuroHybridConfig`, `NeuroHybridFlags`, `NeuroSignalPack`, `NeuroOutputPack`, `NeuroContractMetadata`, `compute_delta`, `update_bounded`, `PredictorEMA`.
+  - Added `src/mlsdm/neuro_ai/adapters.py` with `NeuroModuleAdapter`, `SynapticMemoryAdapter`, `PredictionErrorAdapter`, `RegimeController`.
+  - Added `tests/neuro_ai/{test_neuro_hybrid_contracts.py,test_neuro_hybrid_metrics.py}` with 6 contract tests: golden compatibility, Δ-learning residual reduction, regime hysteresis flip cap, risk-modulated inhibition, oscillation damping, bounded update enforcement.
+  - Added `docs/neuro_ai/{MODULE_MAP.md,CONTRACTS.md,HYBRID_TRUTH.md}` documenting biomimetic surface, functional contracts (synaptic memory, PELM, rhythm, synergy), and bio-grounding vs engineering rationale.
+  - Added `mlsdm_config.example.sh` with `MLSDM_NEURO_HYBRID_ENABLE`, `MLSDM_NEURO_LEARNING_ENABLE`, `MLSDM_NEURO_REGIME_ENABLE` env exports.
+  - Updated `src/mlsdm/utils/config_schema.py` to include `NeuroHybridConfig` in the system schema.
+  - **Behavior impact**: Default behavior UNCHANGED (all flags default off); opt-in prediction-error-driven adaptation, regime switching, bounded Δ-learning.
+  - **Testing posture**: 6 deterministic contract tests; adapters preserve legacy behavior when disabled (golden compatibility); hysteresis/oscillation/bound enforcement tested; CI-friendly assertions.
+  - **Evidence impact**: Neuro-AI layer formalized with measurable M1–M4 metrics; no breaking changes; adapters testable in isolation; readiness gate satisfied.
 - 2026-01-01 — **Neuro-AI contract layer with prediction-error adapters and documented regimes** — PR: #420
   - Added `src/mlsdm/neuro_ai/{__init__.py,adapters.py,contracts.py}` with `PredictionErrorAdapter`, `RegimeController`, `SynapticMemoryAdapter`.
   - Added `tests/neuro_ai/test_neuro_ai_contract_layer.py` with 6 deterministic tests: golden compatibility, Δ-learning residual reduction, regime hysteresis flip cap, risk-modulated inhibition, bounded oscillation metrics.
