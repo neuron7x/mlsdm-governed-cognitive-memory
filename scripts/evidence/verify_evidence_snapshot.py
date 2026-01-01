@@ -18,6 +18,13 @@ REQUIRED_OUTPUTS = {
     "coverage_xml": "coverage/coverage.xml",
     "junit_xml": "pytest/junit.xml",
 }
+OPTIONAL_OUTPUT_PREFIXES = {
+    "benchmark_metrics": "benchmarks/benchmark-metrics.json",
+    "raw_latency": "benchmarks/raw_neuro_engine_latency.json",
+    "memory_footprint": "memory/memory_footprint.json",
+    "uname": "env/uname.txt",
+    "iteration_metrics": "iteration/iteration-metrics.jsonl",
+}
 MAX_FILE_BYTES = 2 * 1024 * 1024  # 2 MB per file
 MAX_TOTAL_BYTES = 5 * 1024 * 1024  # 5 MB total snapshot
 SECRET_PATTERNS = [
@@ -171,17 +178,30 @@ def _resolve_under(evidence_dir: Path, rel: str) -> Path:
 
 
 def _ensure_outputs_valid(evidence_dir: Path, outputs: dict[str, str]) -> None:
+    allowed_optional = {
+        "coverage_log",
+        "unit_log",
+        "python_version",
+        "uv_lock_sha256",
+        *OPTIONAL_OUTPUT_PREFIXES.keys(),
+    }
+    allowed_prefixes = tuple(OPTIONAL_OUTPUT_PREFIXES.values())
     for key, expected_rel in REQUIRED_OUTPUTS.items():
         if key not in outputs:
             raise EvidenceError(f"manifest.outputs missing required key '{key}'")
         if outputs[key] != expected_rel:
             raise EvidenceError(f"manifest.outputs.{key} must be '{expected_rel}' (got '{outputs[key]}')")
-    for rel in outputs.values():
+
+    for key, rel in outputs.items():
         if Path(rel).is_absolute():
             raise EvidenceError(f"manifest.outputs contains absolute path: {rel}")
         target = _resolve_under(evidence_dir, rel)
         if not target.exists():
             raise EvidenceError(f"manifest.outputs references missing file: {rel}")
+        if key not in REQUIRED_OUTPUTS and key not in allowed_optional and not any(
+            rel.startswith(prefix) for prefix in allowed_prefixes
+        ):
+            raise EvidenceError(f"manifest.outputs contains unexpected key '{key}'")
 
 
 def _check_file_index(evidence_dir: Path, file_index: list[dict[str, Any]]) -> None:
@@ -217,6 +237,13 @@ def _check_file_index(evidence_dir: Path, file_index: list[dict[str, Any]]) -> N
         raise EvidenceError(f"Evidence snapshot too large (> {MAX_TOTAL_BYTES} bytes total)")
 
 
+def _ensure_outputs_indexed(outputs: dict[str, str], file_index: list[dict[str, Any]]) -> None:
+    indexed_paths = {entry["path"] for entry in file_index}
+    for rel in outputs.values():
+        if rel not in indexed_paths:
+            raise EvidenceError(f"manifest.outputs path not found in file_index: {rel}")
+
+
 def _scan_secrets(evidence_dir: Path) -> None:
     for file_path in evidence_dir.rglob("*"):
         if not file_path.is_file():
@@ -241,6 +268,7 @@ def verify_snapshot(evidence_dir: Path) -> None:
     outputs = manifest["outputs"]
     _ensure_outputs_valid(evidence_dir, outputs)
     _check_file_index(evidence_dir, manifest["file_index"])
+    _ensure_outputs_indexed(outputs, manifest["file_index"])
     _scan_secrets(evidence_dir)
 
     coverage_percent = _parse_coverage_percent(_resolve_under(evidence_dir, outputs["coverage_xml"]))

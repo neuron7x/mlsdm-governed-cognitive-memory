@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import pathlib  # noqa: TC003 - used at runtime for Path operations
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Protocol
@@ -143,6 +145,7 @@ class IterationLoop:
         safety_multiplier: float = 1.5,
         tau_decay: float = 0.9,
         tau_max: float = 5.0,
+        metrics_emitter: IterationMetricsEmitter | None = None,
     ) -> None:
         self.enabled = enabled
         self.delta_max = delta_max
@@ -154,6 +157,7 @@ class IterationLoop:
         self.safety_multiplier = safety_multiplier
         self.tau_decay = tau_decay
         self.tau_max = tau_max
+        self.metrics_emitter = metrics_emitter
 
     def propose_action(self, state: IterationState, ctx: IterationContext) -> tuple[ActionProposal, PredictionBundle]:
         predicted = _to_vector(state.parameter)
@@ -300,4 +304,37 @@ class IterationLoop:
                 "regime": safety.regime.value,
             },
         }
+        if self.metrics_emitter and self.metrics_emitter._should_emit():
+            self.metrics_emitter.emit(ctx, trace)
         return new_state, trace, safety
+
+
+@dataclass
+class IterationMetricsEmitter:
+    enabled: bool = False
+    output_path: pathlib.Path | None = None
+    _prepared: bool = False
+
+    def emit(self, ctx: IterationContext, trace: dict[str, Any]) -> None:
+        if not self._should_emit():
+            return
+        if not self._prepared:
+            self.output_path.parent.mkdir(parents=True, exist_ok=True)
+            self._prepared = True
+        record = {
+            "timestamp": ctx.timestamp,
+            "dt": ctx.dt,
+            "seed": ctx.seed,
+            "threat": ctx.threat,
+            "risk": ctx.risk,
+            "regime": trace.get("regime"),
+            "prediction_error": trace.get("prediction_error"),
+            "action": trace.get("action", {}),
+            "dynamics": trace.get("dynamics", {}),
+            "safety": trace.get("safety", {}),
+        }
+        with self.output_path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    def _should_emit(self) -> bool:
+        return self.enabled and self.output_path is not None

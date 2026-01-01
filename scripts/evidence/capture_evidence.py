@@ -23,11 +23,24 @@ from typing import Iterable, List, Mapping, MutableMapping
 
 SCHEMA_VERSION = "evidence-v1"
 REQUIRED_OUTPUT_KEYS = ("coverage_xml", "junit_xml")
+OPTIONAL_INPUT_KEYS = {
+    "benchmark_metrics": "benchmark-metrics.json",
+    "raw_latency": "raw_neuro_engine_latency.json",
+    "memory_footprint": "memory_footprint.json",
+    "iteration_metrics": "iteration-metrics.jsonl",
+}
+OPTIONAL_DESTS = {
+    "benchmark_metrics": Path("benchmarks") / "benchmark-metrics.json",
+    "raw_latency": Path("benchmarks") / "raw_neuro_engine_latency.json",
+    "memory_footprint": Path("memory") / "memory_footprint.json",
+    "iteration_metrics": Path("iteration") / "iteration-metrics.jsonl",
+}
 DEFAULT_INPUTS = {
     "coverage_xml": "coverage.xml",
     "coverage_log": "coverage-gate.log",
     "junit_xml": "reports/junit.xml",
     "unit_log": "reports/unit-tests.log",
+    **OPTIONAL_INPUT_KEYS,
 }
 
 
@@ -164,16 +177,40 @@ def capture_pytest_junit(
         outputs["unit_log"] = str(dest_log.relative_to(evidence_dir))
 
 
+def _copy_optional(
+    evidence_dir: Path,
+    produced: list[Path],
+    outputs: MutableMapping[str, str],
+    key: str,
+    source_path: Path,
+    dest_rel: Path,
+) -> None:
+    if not source_path.exists():
+        return
+    dest_path = evidence_dir / dest_rel
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy(source_path, dest_path)
+    produced.append(dest_path)
+    outputs[key] = str(dest_path.relative_to(evidence_dir))
+
+
 def capture_env(evidence_dir: Path, produced: list[Path], outputs: MutableMapping[str, str]) -> None:
     env_dir = evidence_dir / "env"
     env_dir.mkdir(parents=True, exist_ok=True)
     py_path = env_dir / "python_version.txt"
     uv_lock_path = env_dir / "uv_lock_sha256.txt"
+    uname_path = env_dir / "uname.txt"
     py_path.write_text(sys.version.split()[0] + "\n", encoding="utf-8")
     uv_lock_path.write_text(_uv_lock_sha256() + "\n", encoding="utf-8")
+    try:
+        uname_output = subprocess.run(["uname", "-a"], capture_output=True, text=True, check=False).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        uname_output = "unknown"
+    uname_path.write_text(uname_output + "\n", encoding="utf-8")
     produced.extend([py_path, uv_lock_path])
     outputs["python_version"] = str(py_path.relative_to(evidence_dir))
     outputs["uv_lock_sha256"] = str(uv_lock_path.relative_to(evidence_dir))
+    outputs["uname"] = str(uname_path.relative_to(evidence_dir))
 
 
 def _build_file_index(evidence_dir: Path) -> list[dict[str, object]]:
@@ -349,6 +386,8 @@ def main() -> int:
         capture_coverage(evidence_dir, produced, outputs, inputs["coverage_xml"], inputs.get("coverage_log"))
         capture_pytest_junit(evidence_dir, produced, outputs, inputs["junit_xml"], inputs.get("unit_log"))
         capture_env(evidence_dir, produced, outputs)
+        for key, dest in OPTIONAL_DESTS.items():
+            _copy_optional(evidence_dir, produced, outputs, key, inputs[key], dest)
     except (CaptureError, OSError, ValueError) as exc:
         failures.append(str(exc))
         print(f"ERROR: {exc}", file=sys.stderr)
