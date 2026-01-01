@@ -92,7 +92,7 @@ class EnvironmentAdapter(Protocol):
 
 
 def _to_vector(value: float | Sequence[float]) -> list[float]:
-    if isinstance(value, (list, tuple)):
+    if not isinstance(value, (int, float)):
         return [float(v) for v in value]
     return [float(value)]
 
