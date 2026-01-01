@@ -1,5 +1,5 @@
 # System Readiness Status
-Last updated: 2025-12-30 (Literature Map v1)
+Last updated: 2026-01-01 (Evidence/Audit v1)
 Owner: neuron7x / MLSDM maintainers
 Scope: MLSDM cognitive engine repository (src/, tests/, deploy/, workflows)
 
@@ -57,6 +57,10 @@ Blocking issues: 3
 6. Config and calibration paths unvalidated: `pytest tests/integration/test_public_api.py -v` or equivalent config validation has not been recorded.
 
 ## Change Log
+- 2026-01-01 — **Evidence/Audit v1: repo-reproducible evidence snapshot tooling** — PR: (this)
+  - Added `scripts/evidence/capture_evidence.py` (coverage + unit evidence), `scripts/evidence/verify_evidence_snapshot.py` validator, and unit tests.
+  - Updated `.github/workflows/readiness-evidence.yml` to package evidence snapshots and docs to point to in-repo evidence paths.
+  - Metrics source of truth now references committed evidence under `artifacts/evidence/` with verify/capture commands.
 - 2026-01-01 — **Unified Runtime Contract + TracingConfig Test Isolation** — PR: #417
   - Changed files: src/mlsdm/api/app.py, src/mlsdm/cli/__init__.py, src/mlsdm/config/env_compat.py, src/mlsdm/config/runtime.py, src/mlsdm/entrypoints/{dev,cloud,agent}_entry.py, src/mlsdm/observability/tracing.py, tests/conftest.py, tests/integration/test_ci_environment.py, tests/unit/test_{entrypoint_deprecations,env_compat,tracing}.py
   - **Purpose**: Eliminate configuration drift by establishing `mlsdm serve --mode <MODE>` as single source of truth; fix CI test failures from environment variable pollution in tracing tests; resolve MLSDM_RATE_LIMIT_ENABLED conflicts between RuntimeConfig and SystemConfig

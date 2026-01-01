@@ -1,26 +1,26 @@
 # Metrics Source of Truth
 
-**Last Updated**: December 26, 2025
+**Last Updated**: January 1, 2026
 **Purpose**: Single source for test coverage and quality metrics to prevent documentation drift.
 
 ---
 
 ## Evidence Snapshots
 
-Metrics are sourced from **committed evidence snapshots** in the repository for reproducibility.
+Metrics are sourced from **committed evidence snapshots** in the repository for reproducibility. Latest snapshot: `artifacts/evidence/2025-12-26/2a6b52dd6fd4/`.
 
 | Artifact | Path |
 |----------|------|
 | **Coverage Report** | `artifacts/evidence/<date>/<sha>/coverage/coverage.xml` |
 | **JUnit Test Results** | `artifacts/evidence/<date>/<sha>/pytest/junit.xml` |
-| **Benchmark Metrics** | `artifacts/evidence/<date>/<sha>/benchmarks/benchmark-metrics.json` |
-| **Memory Footprint** | `artifacts/evidence/<date>/<sha>/memory/memory_footprint.json` |
+| **Logs** | `artifacts/evidence/<date>/<sha>/logs/` |
 | **Manifest** | `artifacts/evidence/<date>/<sha>/manifest.json` |
 
 To regenerate evidence locally:
 
 ```bash
 make evidence
+python scripts/evidence/verify_evidence_snapshot.py --evidence-dir artifacts/evidence/<date>/<sha>
 ```
 
 ---
@@ -29,7 +29,7 @@ make evidence
 
 | Metric | Value | Source |
 |--------|-------|--------|
-| **CI Coverage Threshold** | 75% | `coverage_gate.sh` + `.github/workflows/ci-neuro-cognitive-engine.yml` |
+| **CI Coverage Threshold** | 75% | `coverage_gate.sh` + `.github/workflows/readiness-evidence.yml` |
 | **Actual Coverage** | 80.04% | `artifacts/evidence/2025-12-26/2a6b52dd6fd4/coverage/coverage.xml` |
 
 ### Why 75% Threshold?
@@ -52,19 +52,10 @@ To get exact counts, parse the JUnit XML or run `make evidence`.
 
 ## Benchmark Metrics
 
-Performance metrics are captured in the evidence snapshot:
+Benchmark outputs are optional in evidence snapshot v1. When collected, they live under:
 
-| Metric | Source |
-|--------|--------|
-| **Benchmark Results** | `artifacts/evidence/<date>/<sha>/benchmarks/benchmark-metrics.json` |
-| **Raw Latency Data** | `artifacts/evidence/<date>/<sha>/benchmarks/raw_neuro_engine_latency.json` |
-| **Baseline** | `benchmarks/baseline.json` |
-
-To check for benchmark drift:
-
-```bash
-python scripts/check_benchmark_drift.py artifacts/evidence/<date>/<sha>/benchmarks/benchmark-metrics.json
-```
+- `artifacts/evidence/<date>/<sha>/benchmarks/benchmark-metrics.json`
+- `artifacts/evidence/<date>/<sha>/benchmarks/raw_neuro_engine_latency.json`
 
 ---
 

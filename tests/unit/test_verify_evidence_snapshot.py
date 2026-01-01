@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 import sys
@@ -17,8 +18,9 @@ def _repo_root() -> Path:
 
 def _latest_snapshot() -> Path:
     evidence_root = _repo_root() / "artifacts" / "evidence"
+    date_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}$")
     dated_dirs = sorted(
-        [p for p in evidence_root.iterdir() if p.is_dir()],
+        [p for p in evidence_root.iterdir() if p.is_dir() and date_pattern.match(p.name)],
         key=lambda path: datetime.strptime(path.name, "%Y-%m-%d"),
     )
     if not dated_dirs:
