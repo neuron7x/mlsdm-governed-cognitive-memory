@@ -113,6 +113,34 @@ def random_seed() -> Callable[[int], None]:
 
 
 # ============================================================
+# Environment Isolation Fixtures
+# ============================================================
+
+
+@pytest.fixture(scope="function", autouse=False)
+def isolate_environment() -> Any:
+    """Isolate environment variables for test function.
+
+    This fixture snapshots os.environ before each test and restores it after,
+    preventing environment pollution between tests.
+
+    Note: Not autouse to avoid interfering with existing tests. Tests that need
+    isolation should explicitly request this fixture or use the _env parameter
+    in TracingConfig for better control.
+    """
+    import copy
+
+    # Snapshot current environment
+    original_env = copy.deepcopy(dict(os.environ))
+
+    yield
+
+    # Restore original environment
+    os.environ.clear()
+    os.environ.update(original_env)
+
+
+# ============================================================
 # Mock LLM and Embedding Fixtures
 # ============================================================
 

@@ -10,7 +10,6 @@ Tests the tracing functionality including:
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import patch
 
 import pytest
 
@@ -35,7 +34,8 @@ class TestTracingConfig:
 
     def test_default_config(self) -> None:
         """Test default configuration values."""
-        config = TracingConfig()
+        # Use explicit empty env to ensure defaults
+        config = TracingConfig(_env={})
         assert config.service_name == "mlsdm"
         assert config.enabled is True
         assert config.exporter_type == "console"
@@ -48,6 +48,7 @@ class TestTracingConfig:
             enabled=False,
             exporter_type="otlp",
             sample_rate=0.5,
+            _env={},
         )
         assert config.service_name == "test-service"
         assert config.enabled is False
@@ -56,20 +57,40 @@ class TestTracingConfig:
 
     def test_config_from_env(self) -> None:
         """Test configuration from environment variables."""
-        with patch.dict(
-            "os.environ",
-            {
-                "OTEL_SERVICE_NAME": "env-service",
-                "OTEL_SDK_DISABLED": "true",
-                "OTEL_EXPORTER_TYPE": "jaeger",
-                "OTEL_TRACES_SAMPLER_ARG": "0.25",
-            },
-        ):
-            config = TracingConfig()
-            assert config.service_name == "env-service"
-            assert config.enabled is False
-            assert config.exporter_type == "jaeger"
-            assert config.sample_rate == 0.25
+        # Use explicit env dict instead of monkeypatch
+        test_env = {
+            "OTEL_SERVICE_NAME": "env-service",
+            "OTEL_SDK_DISABLED": "true",
+            "OTEL_EXPORTER_TYPE": "jaeger",
+            "OTEL_TRACES_SAMPLER_ARG": "0.25",
+        }
+        config = TracingConfig(_env=test_env)
+        assert config.service_name == "env-service"
+        assert config.enabled is False
+        assert config.exporter_type == "jaeger"
+        assert config.sample_rate == 0.25
+
+    def test_config_isolation_regression(self) -> None:
+        """Regression test: ensure config reads don't leak between instances.
+
+        This test verifies that creating multiple TracingConfig instances
+        with different settings doesn't cause state pollution.
+        """
+        # First config with explicit disabled
+        config1 = TracingConfig(enabled=False, _env={})
+        assert config1.enabled is False
+
+        # Second config should get defaults (enabled=True)
+        config2 = TracingConfig(_env={})
+        assert config2.enabled is True
+
+        # Third config with env override
+        config3 = TracingConfig(_env={"OTEL_SDK_DISABLED": "true"})
+        assert config3.enabled is False
+
+        # Fourth config should still get defaults
+        config4 = TracingConfig(_env={})
+        assert config4.enabled is True
 
 
 class TestTracerManager:

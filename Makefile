@@ -177,13 +177,13 @@ test-memory-obs:
 
 # Runtime Modes
 run-dev:
-	python -m mlsdm.entrypoints.dev
+	mlsdm serve --mode dev --reload --log-level debug --disable-rate-limit
 
 run-cloud-local:
-	python -m mlsdm.entrypoints.cloud
+	mlsdm serve --mode cloud-prod
 
 run-agent:
-	python -m mlsdm.entrypoints.agent
+	mlsdm serve --mode agent-api
 
 health-check:
 	python -m mlsdm.entrypoints.health

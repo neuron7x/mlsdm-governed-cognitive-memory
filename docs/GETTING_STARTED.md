@@ -236,14 +236,28 @@ wrapper = NeuroLangWrapper(
 
 ## Running as a Service
 
-Start MLSDM as a FastAPI service:
+Start MLSDM as a FastAPI service using the canonical CLI:
 
 ```bash
-# Development mode (with hot reload)
-python -m mlsdm.entrypoints.dev
+# Development mode (recommended)
+mlsdm serve --mode dev --reload --log-level debug
 
-# OR use make
+# OR use make targets (internally calls mlsdm serve)
 make run-dev
+
+# Cloud production mode
+mlsdm serve --mode cloud-prod
+
+# Agent/API mode
+mlsdm serve --mode agent-api
+```
+
+**Legacy entrypoints** (deprecated but still supported):
+```bash
+# Deprecated (shows deprecation warning)
+python -m mlsdm.entrypoints.dev
+python -m mlsdm.entrypoints.cloud
+python -m mlsdm.entrypoints.agent
 ```
 
 Then access the API at `http://localhost:8000`:
@@ -253,6 +267,16 @@ curl -X POST http://localhost:8000/generate \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Hello world", "moral_value": 0.8}'
 ```
+
+### Runtime Modes
+
+MLSDM provides three runtime modes optimized for different scenarios:
+
+- **dev**: Hot reload, debug logging, rate limiting disabled
+- **cloud-prod**: Multiple workers, secure mode, structured logging
+- **agent-api**: Optimized for LLM platform integration
+
+See the [Runtime Modes section in README](../README.md#runtime-modes) for details.
 
 ## Next Steps
 

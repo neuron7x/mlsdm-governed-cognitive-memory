@@ -226,35 +226,52 @@ class TracingConfig:
         batch_max_queue_size: int = 2048,
         batch_max_export_batch_size: int = 512,
         batch_schedule_delay_millis: int = 5000,
+        _env: dict[str, str] | None = None,
     ) -> None:
-        """Initialize tracing configuration from environment or parameters."""
-        self.service_name: str = service_name or os.getenv("OTEL_SERVICE_NAME", "mlsdm") or "mlsdm"
+        """Initialize tracing configuration from environment or parameters.
+
+        Args:
+            service_name: Service name for tracing
+            enabled: Enable/disable tracing
+            exporter_type: Type of exporter to use
+            otlp_endpoint: OTLP endpoint URL
+            otlp_protocol: OTLP protocol type
+            sample_rate: Sampling rate (0.0 to 1.0)
+            batch_max_queue_size: Maximum queue size for batch processor
+            batch_max_export_batch_size: Maximum batch size for export
+            batch_schedule_delay_millis: Delay between batch exports in milliseconds
+            _env: Environment variables dict (for testing only). If None, uses os.environ.
+        """
+        # Use injected env or fall back to os.environ
+        env = _env if _env is not None else os.environ
+
+        self.service_name: str = service_name or env.get("OTEL_SERVICE_NAME", "mlsdm") or "mlsdm"
 
         # Check for MLSDM-specific enable flag first, then fall back to OTEL standard
-        mlsdm_enabled = os.getenv("MLSDM_OTEL_ENABLED")
+        mlsdm_enabled = env.get("MLSDM_OTEL_ENABLED")
         if enabled is not None:
             self.enabled = enabled
         elif mlsdm_enabled is not None:
             self.enabled = _is_truthy(mlsdm_enabled)
         else:
-            self.enabled = not _is_truthy(os.getenv("OTEL_SDK_DISABLED", "false"))
+            self.enabled = not _is_truthy(env.get("OTEL_SDK_DISABLED", "false"))
 
-        self.exporter_type = exporter_type or os.getenv("OTEL_EXPORTER_TYPE", "console")
+        self.exporter_type = exporter_type or env.get("OTEL_EXPORTER_TYPE", "console")
 
         # Check for MLSDM-specific endpoint first, then fall back to OTEL standard
-        mlsdm_endpoint = os.getenv("MLSDM_OTEL_ENDPOINT")
+        mlsdm_endpoint = env.get("MLSDM_OTEL_ENDPOINT")
         self.otlp_endpoint = (
             otlp_endpoint
             or mlsdm_endpoint
-            or os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318")
+            or env.get("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318")
         )
 
-        self.otlp_protocol = otlp_protocol or os.getenv(
+        self.otlp_protocol = otlp_protocol or env.get(
             "OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf"
         )
 
         # Parse sample rate
-        sample_rate_str = os.getenv("OTEL_TRACES_SAMPLER_ARG", "1.0")
+        sample_rate_str = env.get("OTEL_TRACES_SAMPLER_ARG", "1.0")
         try:
             self.sample_rate = sample_rate if sample_rate is not None else float(sample_rate_str)
         except ValueError:

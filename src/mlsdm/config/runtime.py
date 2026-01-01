@@ -112,9 +112,8 @@ class RuntimeConfig:
             "MLSDM_RELOAD": "1" if self.server.reload else "0",
             "MLSDM_LOG_LEVEL": self.server.log_level,
             "MLSDM_TIMEOUT_KEEP_ALIVE": str(self.server.timeout_keep_alive),
-            # Security
-            "MLSDM_RATE_LIMIT_ENABLED": "1" if self.security.rate_limit_enabled else "0",
-            "DISABLE_RATE_LIMIT": "0" if self.security.rate_limit_enabled else "1",
+            # Security (use DISABLE_RATE_LIMIT as canonical for deployment config)
+            "DISABLE_RATE_LIMIT": "1" if not self.security.rate_limit_enabled else "0",
             "RATE_LIMIT_REQUESTS": str(self.security.rate_limit_requests),
             "RATE_LIMIT_WINDOW": str(self.security.rate_limit_window),
             "MLSDM_SECURE_MODE": "1" if self.security.secure_mode else "0",
@@ -302,13 +301,19 @@ def get_runtime_config(mode: RuntimeMode | None = None) -> RuntimeConfig:
     )
 
     # Security config with env overrides
-    disable_rate_limit = _get_env_bool("DISABLE_RATE_LIMIT", False)
+    # Note: DISABLE_RATE_LIMIT is part of stable API (not legacy)
+    # It's a convenience variable that inverts to rate_limit_enabled
+    # This is separate from MLSDM_* prefix which is reserved for SystemConfig overrides
+
+    # Determine rate_limit_enabled: prioritize DISABLE_RATE_LIMIT if set, otherwise use default
+    if "DISABLE_RATE_LIMIT" in os.environ:
+        rate_limit_enabled = not _get_env_bool("DISABLE_RATE_LIMIT", False)
+    else:
+        rate_limit_enabled = defaults["security"]["rate_limit_enabled"]
+
     security = SecurityConfig(
         api_key=os.environ.get("API_KEY", defaults["security"]["api_key"]),
-        rate_limit_enabled=_get_env_bool(
-            "MLSDM_RATE_LIMIT_ENABLED", defaults["security"]["rate_limit_enabled"]
-        )
-        and not disable_rate_limit,
+        rate_limit_enabled=rate_limit_enabled,
         rate_limit_requests=_get_env_int(
             "RATE_LIMIT_REQUESTS", defaults["security"]["rate_limit_requests"]
         ),

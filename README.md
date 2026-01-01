@@ -488,46 +488,94 @@ conftest test .github/workflows/*.yml -p policies/ci/
 
 MLSDM supports three runtime profiles for different deployment scenarios:
 
-| Mode | Command | Use Case |
-|:-----|:--------|:---------|
-| **Development** | `make run-dev` | Local development with hot reload |
-| **Cloud** | `make run-cloud-local` | Docker/k8s production deployment |
-| **Agent/API** | `make run-agent` | External LLM/client integration |
+| Mode | Canonical Command | Make Target | Use Case |
+|:-----|:-----------------|:------------|:---------|
+| **Development** | `mlsdm serve --mode dev --reload` | `make run-dev` | Local development with hot reload |
+| **Cloud** | `mlsdm serve --mode cloud-prod` | `make run-cloud-local` | Docker/k8s production deployment |
+| **Agent/API** | `mlsdm serve --mode agent-api` | `make run-agent` | External LLM/client integration |
+
+#### Canonical CLI Interface (Recommended)
 
 ```bash
 # Development mode (hot reload, debug logging, no rate limit)
-make run-dev
+mlsdm serve --mode dev --reload --log-level debug --disable-rate-limit
 
 # Cloud production mode (multiple workers, secure mode)
-make run-cloud-local
+mlsdm serve --mode cloud-prod
 
 # Agent/API mode (for LLM platform integration)
-make run-agent
+mlsdm serve --mode agent-api
 
-# Health check
-make health-check
+# Custom configuration
+mlsdm serve --config config/custom.yaml --backend openai --port 9000
 ```
 
-Or run directly with Python:
+#### Make Targets (Convenience)
 
 ```bash
-# Development mode
-python -m mlsdm.entrypoints.dev
-
-# Cloud mode
-python -m mlsdm.entrypoints.cloud
-
-# Agent mode
-python -m mlsdm.entrypoints.agent
+# Using Make targets (internally call mlsdm serve)
+make run-dev         # Development mode
+make run-cloud-local # Cloud production mode
+make run-agent       # Agent/API mode
+make health-check    # Health check
 ```
 
-See [env.dev.example](env.dev.example), [env.cloud.example](env.cloud.example), and [env.agent.example](env.agent.example) for configuration options.
+#### Legacy Entrypoints (Deprecated)
 
-### Configuration Source of Truth
+The following entrypoints are still supported but deprecated. Use the CLI instead:
 
-- **Precedence:** Environment variables (`MLSDM_*`) → Config file (`config/*.yaml`) → Defaults (schema). See [Configuration Guide](CONFIGURATION_GUIDE.md#overview).
-- **Validation:** Configs are schema-validated via `ConfigLoader` (examples in [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md#loading-configuration)).
-- **Runtime policy:** Stub/local providers are for dev/test only; production deployments must supply real endpoints and keys (never stored in CI).
+```bash
+# Deprecated (still works with deprecation warning)
+python -m mlsdm.entrypoints.dev
+python -m mlsdm.entrypoints.cloud
+python -m mlsdm.entrypoints.agent
+
+# Preferred
+mlsdm serve --mode dev
+mlsdm serve --mode cloud-prod
+mlsdm serve --mode agent-api
+```
+
+### Environment Variables & Configuration
+
+#### Canonical Environment Variable Namespace
+
+MLSDM uses the `MLSDM_*` prefix for all canonical configuration:
+
+```bash
+# Runtime mode
+export MLSDM_RUNTIME_MODE=dev           # dev | local-prod | cloud-prod | agent-api
+
+# Server configuration  
+export MLSDM_WORKERS=4                  # Number of worker processes
+export MLSDM_RELOAD=1                   # Enable hot reload (dev only)
+export MLSDM_LOG_LEVEL=info             # Log level
+export MLSDM_RATE_LIMIT_ENABLED=1       # Enable rate limiting (0 to disable)
+
+# Engine configuration (also read as CONFIG_PATH, LLM_BACKEND for compatibility)
+export CONFIG_PATH=config/custom.yaml   # Config file path
+export LLM_BACKEND=openai               # LLM backend (openai | local_stub)
+```
+
+#### Legacy Environment Variables (Backward Compatibility)
+
+Legacy environment variables are automatically mapped to canonical equivalents:
+
+| Legacy | Canonical | Notes |
+|:-------|:----------|:------|
+| `DISABLE_RATE_LIMIT=1` | `MLSDM_RATE_LIMIT_ENABLED=0` | Inverted logic |
+| `CONFIG_PATH` | `CONFIG_PATH` | Already canonical |
+| `LLM_BACKEND` | `LLM_BACKEND` | Already canonical |
+
+**Configuration Precedence:**
+1. Environment variables (`MLSDM_*` and legacy vars)
+2. Config file (`config/*.yaml`)
+3. Mode-specific defaults
+4. Base defaults
+
+See [CONFIGURATION_GUIDE.md](docs/CONFIGURATION_GUIDE.md) for complete configuration reference.
+
+See [env.dev.example](env.dev.example), [env.cloud.example](env.cloud.example), and [env.agent.example](env.agent.example) for configuration examples.
 
 ---
 

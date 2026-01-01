@@ -22,11 +22,57 @@ Complete guide to configuring MLSDM Governed Cognitive Memory for different depl
 
 MLSDM supports multiple configuration methods with the following precedence (highest to lowest):
 
-1. **Environment variables** (prefixed with `MLSDM_`)
+1. **Environment variables** (canonical `MLSDM_*` and legacy compatibility)
 2. **Configuration file** (YAML or INI format)
-3. **Default values** (defined in schema)
+3. **Mode-specific defaults** (based on runtime mode)
+4. **Base defaults** (defined in schema)
 
 All configurations are validated against a strict schema to prevent runtime errors.
+
+### Environment Variables
+
+MLSDM provides two distinct configuration namespaces:
+
+#### RuntimeConfig Environment Variables (Deployment/Server)
+
+These control server behavior, security, and observability:
+
+| Variable | Purpose | Default | Notes |
+|:---------|:--------|:--------|:------|
+| `DISABLE_RATE_LIMIT` | Disable rate limiting | `0` (enabled) | Set to `1` to disable |
+| `CONFIG_PATH` | Path to cognitive engine config | `config/default_config.yaml` | YAML file |
+| `LLM_BACKEND` | LLM backend to use | `local_stub` | Options: `local_stub`, `openai` |
+| `HOST` | Server host | `0.0.0.0` | |
+| `PORT` | Server port | `8000` | |
+| `MLSDM_RUNTIME_MODE` | Runtime mode | `dev` | Options: `dev`, `local-prod`, `cloud-prod`, `agent-api` |
+
+#### SystemConfig Environment Variables (Cognitive Engine)
+
+These control cognitive engine parameters and use the `MLSDM_*` prefix:
+
+| Variable | Purpose | Example |
+|:---------|:--------|:--------|
+| `MLSDM_DIMENSION` | Vector embedding dimension | `MLSDM_DIMENSION=768` |
+| `MLSDM_STRICT_MODE` | Enable strict validation | `MLSDM_STRICT_MODE=true` |
+| `MLSDM_MORAL_FILTER__THRESHOLD` | Moral filter threshold | `MLSDM_MORAL_FILTER__THRESHOLD=0.7` |
+
+**Design Note:** The `MLSDM_*` prefix is reserved for SystemConfig overrides (cognitive engine parameters loaded from YAML files). RuntimeConfig parameters (server, security, observability) use their own variable names to maintain clear separation of concerns.
+
+### Runtime Modes
+
+Runtime modes provide pre-configured defaults for different deployment scenarios:
+
+- **dev**: Development mode (hot reload, debug logging, rate limiting disabled)
+- **local-prod**: Local production mode (multiple workers, rate limiting enabled)
+- **cloud-prod**: Cloud production mode (secure mode, tracing, structured logging)
+- **agent-api**: Agent/API mode (optimized for LLM integration)
+
+Set the mode via:
+```bash
+export MLSDM_RUNTIME_MODE=dev
+# or
+mlsdm serve --mode dev
+```
 
 ## Configuration Files
 
