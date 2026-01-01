@@ -113,6 +113,8 @@ class TestMetricsEvidencePaths:
             "manifest.json",
             "coverage/coverage.xml",
             "pytest/junit.xml",
+            "env/python_version.txt",
+            "env/uv_lock_sha256.txt",
         ]
 
         missing = []

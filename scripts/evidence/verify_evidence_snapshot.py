@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any, Iterable, Tuple
@@ -15,7 +16,22 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for minimal environme
     import xml.etree.ElementTree as ET  # type: ignore
 
 SCHEMA_VERSION = "evidence-v1"
-REQUIRED_FILES = ("manifest.json", "coverage/coverage.xml", "pytest/junit.xml")
+REQUIRED_FILES = (
+    "manifest.json",
+    "coverage/coverage.xml",
+    "pytest/junit.xml",
+    "env/python_version.txt",
+    "env/uv_lock_sha256.txt",
+)
+MAX_FILE_BYTES = 2 * 1024 * 1024  # 2 MB per file
+MAX_TOTAL_BYTES = 5 * 1024 * 1024  # 5 MB total snapshot
+SECRET_PATTERNS = [
+    re.compile(r"AKIA[0-9A-Z]{16}"),  # AWS access key
+    re.compile(r"(?i)aws_secret_access_key"),
+    re.compile(r"ghp_[A-Za-z0-9]{36}"),  # GitHub token
+    re.compile(r"-----BEGIN PRIVATE KEY-----"),
+    re.compile(r"api[_-]?key\s*[:=]\s*[A-Za-z0-9_\-]{10,}"),
+]
 
 
 class EvidenceError(Exception):
@@ -31,7 +47,18 @@ def _load_json(path: Path) -> dict[str, Any]:
 
 def _validate_manifest(path: Path) -> dict[str, Any]:
     data = _load_json(path)
-    required_keys = ("schema_version", "git_sha", "date_utc", "python_version", "commands", "produced_files")
+    required_keys = (
+        "schema_version",
+        "git_sha",
+        "date_utc",
+        "python_version",
+        "commands",
+        "produced_files",
+        "files",
+        "ok",
+        "partial",
+        "errors",
+    )
     for key in required_keys:
         if key not in data:
             raise EvidenceError(f"manifest.json missing required key '{key}'")
@@ -48,6 +75,15 @@ def _validate_manifest(path: Path) -> dict[str, Any]:
         isinstance(path, str) for path in data["produced_files"]
     ):
         raise EvidenceError("manifest.json 'produced_files' must be a list of relative paths")
+
+    if not isinstance(data.get("files"), list) or not all(isinstance(path, str) for path in data["files"]):
+        raise EvidenceError("manifest.json 'files' must be a list of relative paths")
+
+    for status_key in ("ok", "partial"):
+        if not isinstance(data.get(status_key), bool):
+            raise EvidenceError(f"manifest.json '{status_key}' must be a boolean")
+    if not isinstance(data.get("errors"), list) or not all(isinstance(err, str) for err in data["errors"]):
+        raise EvidenceError("manifest.json 'errors' must be a list of strings")
 
     return data
 
@@ -118,12 +154,53 @@ def _check_required_files(evidence_dir: Path) -> None:
         raise EvidenceError(f"Missing required evidence files: {', '.join(missing)}")
 
 
+def _ensure_paths_within_evidence(evidence_dir: Path, paths: Iterable[str]) -> None:
+    for rel in paths:
+        candidate = (evidence_dir / rel).resolve()
+        if not str(candidate).startswith(str(evidence_dir.resolve())):
+            raise EvidenceError(f"Manifest path escapes evidence directory: {rel}")
+        if not candidate.exists():
+            raise EvidenceError(f"Manifest lists missing file: {rel}")
+
+
+def _check_sizes(evidence_dir: Path) -> None:
+    total = 0
+    for file_path in evidence_dir.rglob("*"):
+        if not file_path.is_file():
+            continue
+        size = file_path.stat().st_size
+        total += size
+        if size > MAX_FILE_BYTES:
+            raise EvidenceError(f"Evidence file too large (> {MAX_FILE_BYTES} bytes): {file_path}")
+    if total > MAX_TOTAL_BYTES:
+        raise EvidenceError(f"Evidence snapshot too large (> {MAX_TOTAL_BYTES} bytes total)")
+
+
+def _scan_secrets(evidence_dir: Path) -> None:
+    for file_path in evidence_dir.rglob("*"):
+        if not file_path.is_file():
+            continue
+        try:
+            text = file_path.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        for pattern in SECRET_PATTERNS:
+            if pattern.search(text):
+                raise EvidenceError(f"Secret-like pattern found in {file_path}")
+
+
 def verify_snapshot(evidence_dir: Path) -> None:
     if not evidence_dir.is_dir():
         raise EvidenceError(f"Evidence directory not found: {evidence_dir}")
 
     _check_required_files(evidence_dir)
     manifest = _validate_manifest(evidence_dir / "manifest.json")
+    if not manifest.get("ok"):
+        raise EvidenceError("manifest marks snapshot as not ok/complete")
+    _ensure_paths_within_evidence(evidence_dir, manifest["produced_files"])
+    _ensure_paths_within_evidence(evidence_dir, manifest["files"])
+    _check_sizes(evidence_dir)
+    _scan_secrets(evidence_dir)
     coverage_percent = _parse_coverage_percent(evidence_dir / "coverage" / "coverage.xml")
     tests, failures, errors, skipped = _parse_junit(evidence_dir / "pytest" / "junit.xml")
 

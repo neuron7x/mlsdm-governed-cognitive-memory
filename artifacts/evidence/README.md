@@ -9,17 +9,19 @@ This directory contains committed evidence snapshots for reproducibility and aud
 ```
 evidence/
   YYYY-MM-DD/<git_sha>/
-    manifest.json          # Metadata (schema_version, sha, date, commands, produced_files)
+    manifest.json          # Metadata (schema_version, sha, date, commands, produced_files, status)
     coverage/
       coverage.xml         # Coverage report
     pytest/
       junit.xml            # JUnit test results
-    pytest/
     logs/
-      coverage_gate.log    # coverage gate stdout/stderr
-      unit_tests.log       # unit test stdout/stderr
+      coverage_gate.log    # coverage gate stdout/stderr (if present)
+      unit_tests.log       # unit test stdout/stderr (if present)
     benchmarks/            # Optional if benchmarks are collected
       benchmark-metrics.json
+    env/
+      python_version.txt
+      uv_lock_sha256.txt
 ```
 
 ### Rules
@@ -39,8 +41,8 @@ make evidence
 This runs `uv run python scripts/evidence/capture_evidence.py` which:
 - Creates a new dated folder under `artifacts/evidence/`
 - Runs the coverage gate and captures `coverage.xml`
-- Runs unit tests with JUnit output
-- Captures command logs and writes `manifest.json`
+- Reuses previously generated JUnit XML when invoked with `--from-ci`
+- Captures command logs (if present) and writes `manifest.json`
 
 ### Retention
 

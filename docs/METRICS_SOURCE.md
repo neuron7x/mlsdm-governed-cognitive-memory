@@ -19,7 +19,7 @@ Metrics are sourced from **committed evidence snapshots** in the repository for 
 To regenerate evidence locally:
 
 ```bash
-python scripts/evidence/capture_evidence.py
+make evidence
 python scripts/evidence/verify_evidence_snapshot.py --evidence-dir artifacts/evidence/<date>/<sha>
 ```
 

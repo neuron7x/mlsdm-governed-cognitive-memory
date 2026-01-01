@@ -89,7 +89,7 @@ jobs:
     needs: deps_smoke
     timeout-minutes: 30
     env:
-      PYTEST_ARGS: "--ignore=tests/gpu --ignore=tests/neurolang --ignore=tests/embeddings"
+      PYTEST_ARGS: "--ignore=tests/gpu --ignore=tests/neurolang --ignore=tests/embeddings --junitxml=reports/junit.xml --maxfail=1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -115,6 +115,7 @@ jobs:
           uv sync --frozen --extra test --extra dev
       - name: Run coverage gate
         run: |
+          mkdir -p reports
           set -o pipefail
           uv run bash ./coverage_gate.sh | tee coverage-gate.log
       - name: Upload coverage artifacts
@@ -126,13 +127,31 @@ jobs:
             coverage-gate.log
             coverage.xml
       - name: Capture evidence snapshot
-        run: uv run python scripts/evidence/capture_evidence.py
+        if: always()
+        run: |
+          uv run python scripts/evidence/capture_evidence.py \
+            --from-ci \
+            --coverage-path coverage.xml \
+            --coverage-log coverage-gate.log \
+            --junit-path reports/junit.xml
       - name: Locate latest evidence snapshot
+        if: always()
         id: evidence_path
         run: |
-          LATEST=$(ls -1d artifacts/evidence/*/* | sort | tail -n 1)
+          set -euo pipefail
+          ROOT="artifacts/evidence"
+          if [ ! -d "$ROOT" ]; then
+            echo "No evidence directory found" >&2
+            exit 1
+          fi
+          LATEST=$(LC_ALL=C ls -1d "$ROOT"/*/* 2>/dev/null | LC_ALL=C sort | tail -n 1 || true)
+          if [ -z "$LATEST" ]; then
+            echo "No evidence snapshots found" >&2
+            exit 1
+          fi
           echo "path=${LATEST}" >> "$GITHUB_OUTPUT"
       - name: Verify evidence snapshot
+        if: always()
         run: uv run python scripts/evidence/verify_evidence_snapshot.py --evidence-dir "${{ steps.evidence_path.outputs.path }}"
       - name: Upload evidence snapshot
         if: always()

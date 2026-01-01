@@ -20,7 +20,8 @@
     "env/uname.txt",
     "env/uv_lock_sha256.txt",
     "memory/memory_footprint.json",
-    "pytest/junit.xml"
+    "pytest/junit.xml",
+    "manifest.json"
   ],
   "files": [
     "benchmarks/benchmark-metrics.json",
@@ -31,6 +32,10 @@
     "env/uname.txt",
     "env/uv_lock_sha256.txt",
     "memory/memory_footprint.json",
-    "pytest/junit.xml"
-  ]
+    "pytest/junit.xml",
+    "manifest.json"
+  ],
+  "ok": true,
+  "partial": false,
+  "errors": []
 }
