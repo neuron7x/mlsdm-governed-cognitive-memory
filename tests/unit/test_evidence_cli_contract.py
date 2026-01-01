@@ -6,6 +6,10 @@ import mimetypes
 import subprocess
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pytest
 
 import scripts.evidence.capture_evidence as capture_evidence
 
@@ -34,7 +38,7 @@ def test_makefile_evidence_target_passes_mode_build() -> None:
     assert "scripts/evidence/capture_evidence.py --mode build" in makefile
 
 
-def test_capture_evidence_default_mode_build(monkeypatch: "pytest.MonkeyPatch") -> None:
+def test_capture_evidence_default_mode_build(monkeypatch: pytest.MonkeyPatch) -> None:
     script_path = str(_repo_root() / "scripts" / "evidence" / "capture_evidence.py")
     monkeypatch.setattr(sys, "argv", [script_path])
     args = capture_evidence.parse_args()
