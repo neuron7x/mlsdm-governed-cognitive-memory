@@ -314,6 +314,7 @@ def test_deterministic_instability_triggers_kill_switch() -> None:
     assert kill_switch_state.kill_switch_active is True
     assert kill_switch_state.regime == Regime.DEFENSIVE
     assert kill_switch_trace["update"]["applied"] is False
+    assert kill_switch_trace["safety"]["stability_guard"]["instability_events_count"] == baseline_instability_events + 1
     assert kill_switch_state.instability_events_count == baseline_instability_events + 1
     assert kill_switch_state.time_to_kill_switch is not None
     assert kill_switch_state.time_to_kill_switch == kill_switch_state.steps
@@ -332,6 +333,8 @@ def test_cooldown_recovery_reenables_learning() -> None:
         if state.kill_switch_active:
             kill_switch_seen = True
             assert trace["update"]["applied"] is False
+        if kill_switch_seen and state.cooldown_remaining > 0:
+            assert trace["update"]["applied"] is False
         if kill_switch_seen and not state.kill_switch_active:
             recovered_seen = True
             assert trace["update"]["applied"] is True
@@ -340,6 +343,33 @@ def test_cooldown_recovery_reenables_learning() -> None:
 
     assert kill_switch_seen is True
     assert recovered_seen is True
+
+
+def test_guard_metrics_capture_kill_switch_and_recovery() -> None:
+    loop = IterationLoop(enabled=True, delta_max=1.0)
+    outcomes = [3.0, -3.0, 3.0, -3.0] + [0.05] * 6
+    env = ToyEnvironment(outcomes=outcomes)
+    state = IterationState(parameter=0.0, learning_rate=0.05)
+
+    kill_switch_trace: dict[str, Any] | None = None
+    recovery_trace: dict[str, Any] | None = None
+    for i in range(len(outcomes)):
+        state, trace, _ = loop.step(state, env, _ctx(i))
+        if state.kill_switch_active and kill_switch_trace is None:
+            kill_switch_trace = trace
+        if kill_switch_trace and not state.kill_switch_active:
+            recovery_trace = trace
+            break
+
+    assert kill_switch_trace is not None
+    kill_switch_guard = kill_switch_trace["safety"]["stability_guard"]
+    assert kill_switch_guard["time_to_kill_switch"] is not None
+    assert kill_switch_guard["max_abs_delta"] >= 3.0
+    assert kill_switch_guard["recovered"] is False
+
+    assert recovery_trace is not None
+    recovery_guard = recovery_trace["safety"]["stability_guard"]
+    assert recovery_guard["recovered"] is True
 
 
 def test_default_off_regression_no_update_neutral_metrics() -> None:
