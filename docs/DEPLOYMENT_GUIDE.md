@@ -1184,15 +1184,28 @@ The `main` branch should have branch protection rules configured to ensure code 
 
 ### Required Status Checks
 
-| Check Name | Description |
-|------------|-------------|
-| `Lint and Type Check` | Ruff linting and mypy type checking |
-| `Security Vulnerability Scan` | pip-audit dependency scanning |
-| `test (3.10)` | Unit tests on Python 3.10 |
-| `test (3.11)` | Unit tests on Python 3.11 |
-| `End-to-End Tests` | E2E integration tests |
-| `Effectiveness Validation` | SLO and effectiveness validation |
-| `All CI Checks Passed` | Gate job requiring all checks |
+Require the key CI jobs from these workflows: `ci-neuro-cognitive-engine`, `ci-smoke`, `property-tests`, `dependency-review`, `sast-scan`.
+
+| Check Name | Workflow | Description |
+|------------|----------|-------------|
+| `Lint and Type Check` | `ci-neuro-cognitive-engine.yml` | Ruff linting and mypy type checking |
+| `Security Vulnerability Scan` | `ci-neuro-cognitive-engine.yml` | pip-audit dependency scanning |
+| `test (3.11)` | `ci-neuro-cognitive-engine.yml` | Unit tests on Python 3.11 (default PR matrix) |
+| `Code Coverage Gate` | `ci-neuro-cognitive-engine.yml` | Coverage threshold + core module coverage |
+| `End-to-End Tests` | `ci-neuro-cognitive-engine.yml` | E2E integration tests |
+| `Effectiveness Validation` | `ci-neuro-cognitive-engine.yml` | SLO and effectiveness validation |
+| `Smoke Tests` | `ci-smoke.yml` | Fast unit smoke suite |
+| `Coverage Gate` | `ci-smoke.yml` | Coverage gate quick check |
+| `Ablation Smoke Test` | `ci-smoke.yml` | Ablation baseline smoke checks |
+| `Policy Check` | `ci-smoke.yml` | CI policy conftest validation |
+| `Property-Based Invariants Tests (3.11)` | `property-tests.yml` | Property-based invariants (default matrix) |
+| `Counterexamples Regression Tests` | `property-tests.yml` | Counterexample regression suite |
+| `Invariant Coverage Check` | `property-tests.yml` | Invariant documentation coverage |
+| `Dependency Review` | `dependency-review.yml` | Dependency diff/vulnerability review |
+| `Bandit SAST Scan` | `sast-scan.yml` | Bandit static analysis |
+| `Semgrep SAST Scan` | `sast-scan.yml` | Semgrep security analysis |
+| `Dependency Vulnerability Scan` | `sast-scan.yml` | pip-audit vulnerability gate |
+| `Secrets Scanning` | `sast-scan.yml` | Gitleaks secrets scan |
 
 ### Configuration via GitHub CLI
 
@@ -1200,7 +1213,7 @@ The `main` branch should have branch protection rules configured to ensure code 
 # Enable branch protection with required status checks
 gh api repos/{owner}/{repo}/branches/main/protection \
   --method PUT \
-  --field required_status_checks='{"strict":true,"contexts":["Lint and Type Check","Security Vulnerability Scan","test (3.10)","test (3.11)","End-to-End Tests","Effectiveness Validation","All CI Checks Passed"]}' \
+  --field required_status_checks='{"strict":true,"contexts":["Lint and Type Check","Security Vulnerability Scan","test (3.11)","Code Coverage Gate","End-to-End Tests","Effectiveness Validation","Smoke Tests","Coverage Gate","Ablation Smoke Test","Policy Check","Property-Based Invariants Tests (3.11)","Counterexamples Regression Tests","Invariant Coverage Check","Dependency Review","Bandit SAST Scan","Semgrep SAST Scan","Dependency Vulnerability Scan","Secrets Scanning"]}' \
   --field enforce_admins=true \
   --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true}' \
   --field restrictions=null
@@ -1215,7 +1228,21 @@ gh api repos/{owner}/{repo}/branches/main/protection
 - ✅ Require branches to be up to date before merging
 - ✅ Require at least 1 approval
 - ✅ Dismiss stale pull request approvals when new commits are pushed
+- ✅ Require approval for workflow runs from forked repositories
 - ❌ Do not allow bypassing the above settings
+
+### Trusted PR Auto-Approval (Forks)
+
+To avoid `action_required` runs for trusted contributors, enable the auto-approval workflow:
+
+1. Ensure `.github/workflows/trusted-pr-auto-approve.yml` is present.
+2. Set the repository variable `TRUSTED_PR_ACTORS` to a comma-separated list of GitHub logins that are allowed to auto-approve forked PR workflows.
+3. Trusted authors with association `OWNER`, `MEMBER`, or `COLLABORATOR` are auto-approved without manual intervention; all other forked PRs still require manual approval.
+
+**Verification**
+
+- Open a PR from a fork by an untrusted contributor → workflows remain `action_required` until a maintainer approves.
+- Open a PR from a trusted contributor (or one listed in `TRUSTED_PR_ACTORS`) → workflows auto-approve and start running shortly after the PR event.
 
 ---
 

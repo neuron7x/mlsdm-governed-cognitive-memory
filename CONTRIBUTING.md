@@ -438,7 +438,7 @@ Brief description of changes
 
 ### Branch Protection (CICD-002)
 
-The `main` branch has branch protection rules that require the following status checks to pass before merging:
+The `main` branch has branch protection rules that require the following status checks to pass before merging. These checks cover the key workflows: `ci-neuro-cognitive-engine`, `ci-smoke`, `property-tests`, `dependency-review`, `sast-scan`.
 
 **Required Status Checks:**
 
@@ -446,11 +446,22 @@ The `main` branch has branch protection rules that require the following status 
 |------------|----------|-------------|
 | `Lint and Type Check` | `ci-neuro-cognitive-engine.yml` | Ruff linting and mypy type checking |
 | `Security Vulnerability Scan` | `ci-neuro-cognitive-engine.yml` | pip-audit dependency scanning |
-| `test (3.10)` | `ci-neuro-cognitive-engine.yml` | Unit tests on Python 3.10 |
-| `test (3.11)` | `ci-neuro-cognitive-engine.yml` | Unit tests on Python 3.11 |
+| `test (3.11)` | `ci-neuro-cognitive-engine.yml` | Unit tests on Python 3.11 (default PR matrix) |
+| `Code Coverage Gate` | `ci-neuro-cognitive-engine.yml` | Coverage threshold + core module coverage |
 | `End-to-End Tests` | `ci-neuro-cognitive-engine.yml` | E2E integration tests |
 | `Effectiveness Validation` | `ci-neuro-cognitive-engine.yml` | SLO and effectiveness validation |
-| `All CI Checks Passed` | `ci-neuro-cognitive-engine.yml` | Gate job requiring all checks |
+| `Smoke Tests` | `ci-smoke.yml` | Fast unit smoke suite |
+| `Coverage Gate` | `ci-smoke.yml` | Coverage gate quick check |
+| `Ablation Smoke Test` | `ci-smoke.yml` | Ablation baseline smoke checks |
+| `Policy Check` | `ci-smoke.yml` | CI policy conftest validation |
+| `Property-Based Invariants Tests (3.11)` | `property-tests.yml` | Property-based invariants (default matrix) |
+| `Counterexamples Regression Tests` | `property-tests.yml` | Counterexample regression suite |
+| `Invariant Coverage Check` | `property-tests.yml` | Invariant documentation coverage |
+| `Dependency Review` | `dependency-review.yml` | Dependency diff/vulnerability review |
+| `Bandit SAST Scan` | `sast-scan.yml` | Bandit static analysis |
+| `Semgrep SAST Scan` | `sast-scan.yml` | Semgrep security analysis |
+| `Dependency Vulnerability Scan` | `sast-scan.yml` | pip-audit vulnerability gate |
+| `Secrets Scanning` | `sast-scan.yml` | Gitleaks secrets scan |
 
 **Additional Branch Protection Settings:**
 
@@ -458,6 +469,7 @@ The `main` branch has branch protection rules that require the following status 
 - ✅ Require branches to be up to date before merging
 - ✅ Require at least 1 approval (recommended)
 - ✅ Dismiss stale pull request approvals when new commits are pushed
+- ✅ Require approval for workflow runs from forked repositories
 - ❌ Do not allow bypassing the above settings
 
 **Configure via GitHub CLI:**
@@ -468,7 +480,7 @@ Repository administrators can configure branch protection using the GitHub CLI:
 # Enable branch protection with required status checks
 gh api repos/{owner}/{repo}/branches/main/protection \
   --method PUT \
-  --field required_status_checks='{"strict":true,"contexts":["Lint and Type Check","Security Vulnerability Scan","test (3.10)","test (3.11)","End-to-End Tests","Effectiveness Validation","All CI Checks Passed"]}' \
+  --field required_status_checks='{"strict":true,"contexts":["Lint and Type Check","Security Vulnerability Scan","test (3.11)","Code Coverage Gate","End-to-End Tests","Effectiveness Validation","Smoke Tests","Coverage Gate","Ablation Smoke Test","Policy Check","Property-Based Invariants Tests (3.11)","Counterexamples Regression Tests","Invariant Coverage Check","Dependency Review","Bandit SAST Scan","Semgrep SAST Scan","Dependency Vulnerability Scan","Secrets Scanning"]}' \
   --field enforce_admins=true \
   --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true}' \
   --field restrictions=null
@@ -476,6 +488,14 @@ gh api repos/{owner}/{repo}/branches/main/protection \
 # Verify branch protection is configured
 gh api repos/{owner}/{repo}/branches/main/protection
 ```
+
+**Trusted PR Auto-Approval (Forks)**
+
+To prevent trusted fork PRs from staying in `action_required`, configure the auto-approval workflow:
+
+1. Ensure `.github/workflows/trusted-pr-auto-approve.yml` is enabled.
+2. Set the repository variable `TRUSTED_PR_ACTORS` with a comma-separated list of GitHub logins to auto-approve.
+3. Contributors with association `OWNER`, `MEMBER`, or `COLLABORATOR` auto-approve without manual intervention; other forks still require manual approval.
 
 ### Aphasia / NeuroLang CI Gate
 
