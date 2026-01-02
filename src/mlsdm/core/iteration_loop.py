@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence  # noqa: TC003 - needed at runtime for type guard in _to_vector
+from collections import deque
+from collections.abc import (  # noqa: TC003 - needed at runtime for type guard in _to_vector
+    Iterable,
+    Sequence,
+)
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Protocol
@@ -14,6 +18,12 @@ class Regime(str, Enum):
     NORMAL = "normal"
     CAUTION = "caution"
     DEFENSIVE = "defensive"
+
+
+GUARD_WINDOW = 10
+MAX_ABS_DELTA = 1.5
+MAX_SIGN_FLIP_RATE = 0.6
+MAX_REGIME_FLIP_RATE = 0.5
 
 
 @dataclass
@@ -87,6 +97,8 @@ class IterationState:
     regime_flips: int = 0
     sign_flips: int = 0
     frozen: bool = False
+    recent_delta_signs: deque[int] = field(default_factory=lambda: deque(maxlen=GUARD_WINDOW))
+    recent_regime_flips: deque[int] = field(default_factory=lambda: deque(maxlen=GUARD_WINDOW))
     last_envelope_metrics: dict[str, float] = field(default_factory=dict)
 
 
@@ -100,6 +112,29 @@ def _to_vector(value: float | Sequence[float]) -> list[float]:
     if not isinstance(value, (int, float)):
         return [float(v) for v in value]
     return [float(value)]
+
+
+def _sign(value: float) -> int:
+    if value > 0:
+        return 1
+    if value < 0:
+        return -1
+    return 0
+
+
+def _sign_flip_rate(signs: Iterable[int]) -> float:
+    signs_list = signs if isinstance(signs, list) else list(signs)
+    if len(signs_list) < 2:
+        return 0.0
+    flips = 0
+    comparisons = 0
+    for prev, current in zip(signs_list, signs_list[1:], strict=False):
+        if prev == 0 or current == 0:
+            continue
+        comparisons += 1
+        if prev != current:
+            flips += 1
+    return flips / max(1, comparisons)
 
 
 class RegimeController:
@@ -206,6 +241,8 @@ class IterationLoop:
         ctx: IterationContext,
     ) -> tuple[IterationState, UpdateResult, dict[str, float]]:
         if not self.enabled or state.frozen:
+            sign_flip_rate = _sign_flip_rate(state.recent_delta_signs)
+            regime_flip_rate = sum(state.recent_regime_flips) / max(1, len(state.recent_regime_flips))
             frozen_state = replace(
                 state,
                 regime=Regime.DEFENSIVE if state.frozen else state.regime,
@@ -213,9 +250,14 @@ class IterationLoop:
                 frozen=state.frozen,
                 last_envelope_metrics={
                     "max_delta": max((abs(d) for d in pe.delta), default=0.0),
-                    "oscillation_index": state.sign_flips / max(1, state.steps),
-                    "regime_flip_rate": state.regime_flips / max(1, state.steps),
+                    "oscillation_index": sign_flip_rate,
+                    "regime_flip_rate": regime_flip_rate,
                     "convergence_time": float(state.steps) if abs(state.last_delta) <= self.delta_max else -1.0,
+                    "sign_flip_rate": sign_flip_rate,
+                    "guard_window": GUARD_WINDOW,
+                    "guard_max_abs_delta": MAX_ABS_DELTA,
+                    "guard_max_sign_flip_rate": MAX_SIGN_FLIP_RATE,
+                    "guard_max_regime_flip_rate": MAX_REGIME_FLIP_RATE,
                 },
             )
             return frozen_state, UpdateResult(parameter_deltas={}, bounded=state.frozen, applied=False), {
@@ -245,22 +287,32 @@ class IterationLoop:
         regime_flip = regime != state.regime
         # Detect oscillations via sign changes between consecutive delta means.
         sign_flip = state.last_delta != 0.0 and delta_mean != 0.0 and (delta_mean * state.last_delta) < 0
+        delta_sign = _sign(delta_mean)
         steps = state.steps + 1
         regime_flips = state.regime_flips + (1 if regime_flip else 0)
         sign_flips = state.sign_flips + (1 if sign_flip else 0)
-        oscillation_index = sign_flips / max(1, steps)
-        regime_flip_rate = regime_flips / max(1, steps)
         max_delta = max((abs(d) for d in pe.delta), default=0.0)
         convergence_time = float(steps) if abs(delta_mean) <= self.delta_max * self.convergence_tol else -1.0
+        recent_delta_signs = deque(state.recent_delta_signs, maxlen=GUARD_WINDOW)
+        recent_regime_flips = deque(state.recent_regime_flips, maxlen=GUARD_WINDOW)
+        recent_delta_signs.append(delta_sign)
+        recent_regime_flips.append(1 if regime_flip else 0)
+        sign_flip_rate = _sign_flip_rate(recent_delta_signs)
+        regime_flip_rate = sum(recent_regime_flips) / max(1, len(recent_regime_flips))
         envelope_metrics = {
             "max_delta": max_delta,
-            "oscillation_index": oscillation_index,
+            "oscillation_index": sign_flip_rate,
             "regime_flip_rate": regime_flip_rate,
             "convergence_time": convergence_time,
+            "sign_flip_rate": sign_flip_rate,
+            "guard_window": GUARD_WINDOW,
+            "guard_max_abs_delta": MAX_ABS_DELTA,
+            "guard_max_sign_flip_rate": MAX_SIGN_FLIP_RATE,
+            "guard_max_regime_flip_rate": MAX_REGIME_FLIP_RATE,
         }
-        delta_breach = max_delta > self.delta_max * self.safety_multiplier
-        regime_flip_breach = regime_flip_rate > self.max_regime_flip_rate
-        oscillation_breach = oscillation_index > self.max_oscillation_index
+        delta_breach = max_delta > MAX_ABS_DELTA
+        regime_flip_breach = regime_flip_rate > MAX_REGIME_FLIP_RATE
+        oscillation_breach = sign_flip_rate > MAX_SIGN_FLIP_RATE
         envelope_breach = delta_breach or regime_flip_breach or oscillation_breach
 
         new_state = replace(
@@ -277,6 +329,8 @@ class IterationLoop:
             regime_flips=regime_flips,
             sign_flips=sign_flips,
             frozen=envelope_breach,
+            recent_delta_signs=recent_delta_signs,
+            recent_regime_flips=recent_regime_flips,
             last_envelope_metrics=envelope_metrics,
         )
         if envelope_breach:
@@ -320,6 +374,7 @@ class IterationLoop:
             "tau": state.tau,
             "inhibition_gain": state.inhibition_gain,
             "oscillation_index": envelope_metrics.get("oscillation_index", 0.0),
+            "sign_flip_rate": envelope_metrics.get("sign_flip_rate", 0.0),
             "regime_flip_rate": envelope_metrics.get("regime_flip_rate", 0.0),
             "convergence_time": envelope_metrics.get("convergence_time", -1.0),
         }
