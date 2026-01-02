@@ -140,7 +140,16 @@ def capture_coverage(
     coverage_log: Path | None,
     failures: list[str],
 ) -> None:
-    """Capture coverage XML and log if available."""
+    """Capture coverage XML and log if available.
+    
+    Args:
+        evidence_dir: Directory to store evidence artifacts
+        produced: List to append produced file paths to
+        outputs: Mapping to record output file paths
+        coverage_path: Path to coverage.xml file, or None if not available
+        coverage_log: Path to coverage log file, or None if not available
+        failures: List to append failure messages to when files are missing
+    """
     if coverage_path is None or not coverage_path.exists():
         failures.append("coverage.xml missing - partial snapshot")
         return  # Skip gracefully
@@ -322,7 +331,7 @@ def _load_inputs(inputs_path: Path | None) -> dict[str, Path | None]:
             if value is None:
                 data[key] = None  # Allow explicit None values
             elif not isinstance(value, str):
-                raise CaptureError(f"--inputs value for {key} must be a string or null")
+                raise CaptureError(f"--inputs value for {key} must be a string or JSON null")
             else:
                 data[key] = value
     resolved: dict[str, Path | None] = {}
@@ -335,7 +344,15 @@ def _load_inputs(inputs_path: Path | None) -> dict[str, Path | None]:
 
 
 def _ensure_outputs_present(inputs: Mapping[str, Path | None], failures: list[str]) -> None:
-    """Validate required outputs present; warn on optional missing."""
+    """Validate required outputs present; warn on optional missing.
+    
+    Args:
+        inputs: Mapping of input keys to file paths (or None if not provided)
+        failures: List to append failure messages to for missing optional files
+        
+    Raises:
+        CaptureError: If any required inputs are missing
+    """
     missing_required = []
     for key in REQUIRED_OUTPUT_KEYS:
         path = inputs.get(key)
