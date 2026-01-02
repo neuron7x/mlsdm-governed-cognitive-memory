@@ -26,19 +26,13 @@ jobs:
     name: Validate Citation & Bibliography
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: CI setup
+        uses: ./.github/actions/ci-setup
         with:
           python-version: '3.12'
-          cache: 'pip'
-
-      - name: Install validation tools
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install cffconvert==2.0.0 bibtexparser==1.4.3
+          install-command: |
+            python -m pip install --upgrade pip
+            python -m pip install cffconvert==2.0.0 bibtexparser==1.4.3
 
       - name: Check for bidi/control Unicode characters
         run: |

@@ -21,39 +21,21 @@ jobs:
       contents: write
     
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: CI setup
+        uses: ./.github/actions/ci-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-      
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
+          checkout-fetch-depth: '0'
+          cache-paths: |
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-py3.11-
-            ${{ runner.os }}-
-          fail-on-cache-errors: false
-      
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e ".[test]"
-          pip install coverage-badge
+          cache-fail-on-errors: 'false'
+          install-command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install -e ".[test]"
+            pip install coverage-badge
       
       - name: Run coverage
         run: |

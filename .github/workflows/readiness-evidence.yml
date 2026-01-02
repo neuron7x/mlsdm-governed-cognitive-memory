@@ -19,28 +19,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: CI setup
+        uses: ./.github/actions/ci-setup
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
+          checkout-fetch-depth: '0'
+          cache-key-prefix: uv
+          cache-paths: |
             ~/.cache/uv
             .venv
-          key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
-          restore-keys: |
-            uv-${{ runner.os }}-
-      - name: Install deps via uv (tests)
-        run: |
-          python -m pip install -U pip
-          pip install uv
-          uv sync --frozen --extra test --extra dev
+          install-command: |
+            python -m pip install -U pip
+            pip install uv
+            uv sync --frozen --extra test --extra dev
       - name: Import smoke
         run: |
           uv run python -c "import mlsdm; print('import ok')"
@@ -52,28 +43,19 @@ jobs:
     env:
       PYTEST_ARGS: "--ignore=tests/gpu --ignore=tests/neurolang --ignore=tests/embeddings --junitxml=reports/junit.xml --maxfail=1"
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: CI setup
+        uses: ./.github/actions/ci-setup
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
+          checkout-fetch-depth: '0'
+          cache-key-prefix: uv
+          cache-paths: |
             ~/.cache/uv
             .venv
-          key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
-          restore-keys: |
-            uv-${{ runner.os }}-
-      - name: Install deps via uv (tests)
-        run: |
-          python -m pip install -U pip
-          pip install uv
-          uv sync --frozen --extra test --extra dev
+          install-command: |
+            python -m pip install -U pip
+            pip install uv
+            uv sync --frozen --extra test --extra dev
       - name: Run coverage gate (tests + coverage once)
         id: coverage
         continue-on-error: true

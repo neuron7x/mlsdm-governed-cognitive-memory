@@ -1,0 +1,64 @@
+name: CI Setup
+description: Checkout, set up Python, cache dependencies, and install project requirements.
+inputs:
+  python-version:
+    description: Python version to install.
+    default: '3.11'
+    required: false
+  cache-dependency-path:
+    description: Files to use for pip cache dependencies.
+    default: |
+      requirements.txt
+      pyproject.toml
+      uv.lock
+    required: false
+  cache-key-prefix:
+    description: Prefix for the dependency cache key.
+    default: deps
+    required: false
+  cache-paths:
+    description: Paths to cache.
+    default: |
+      ~/.cache/pip
+      ~/.cache/uv
+    required: false
+  cache-fail-on-errors:
+    description: Whether to fail the workflow when caching fails.
+    default: 'false'
+    required: false
+  install-command:
+    description: Shell commands to install dependencies.
+    default: ''
+    required: false
+  checkout-fetch-depth:
+    description: Fetch depth for repository checkout.
+    default: '1'
+    required: false
+runs:
+  using: composite
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: ${{ inputs.checkout-fetch-depth }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: 'pip'
+        cache-dependency-path: ${{ inputs.cache-dependency-path }}
+
+    - name: Restore dependency cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ inputs.cache-paths }}
+        key: ${{ inputs.cache-key-prefix }}-${{ runner.os }}-py${{ inputs.python-version }}-${{ hashFiles(inputs.cache-dependency-path) }}
+        restore-keys: |
+          ${{ inputs.cache-key-prefix }}-${{ runner.os }}-py${{ inputs.python-version }}-
+        fail-on-cache-errors: ${{ inputs.cache-fail-on-errors }}
+
+    - name: Install dependencies
+      if: ${{ inputs.install-command != '' }}
+      shell: bash
+      run: ${{ inputs.install-command }}

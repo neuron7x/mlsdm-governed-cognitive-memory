@@ -23,34 +23,17 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+      - name: CI setup
+        uses: ./.github/actions/ci-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
+          cache-paths: |
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-py3.11-
-            ${{ runner.os }}-
-
-      - name: Install bandit
-        run: |
-          python -m pip install --upgrade pip
-          pip install bandit[sarif]
+          install-command: |
+            python -m pip install --upgrade pip
+            pip install bandit[sarif]
 
       - name: Run bandit scan for SARIF
         run: |
@@ -168,35 +151,18 @@ jobs:
     # SECURITY GATE: Blocks CI on known vulnerabilities in dependencies
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+      - name: CI setup
+        uses: ./.github/actions/ci-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
+          cache-paths: |
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-py3.11-
-            ${{ runner.os }}-
-
-      - name: Install dependencies and pip-audit
-        run: |
-          python -m pip install --upgrade pip
-          pip install pip-audit
-          pip install -r requirements.txt
+          install-command: |
+            python -m pip install --upgrade pip
+            pip install pip-audit
+            pip install -r requirements.txt
 
       - name: Run pip-audit (SECURITY GATE)
         run: |

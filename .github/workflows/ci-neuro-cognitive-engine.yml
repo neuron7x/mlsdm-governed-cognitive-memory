@@ -38,35 +38,18 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+      - name: CI setup
+        uses: ./.github/actions/ci-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
+          cache-paths: |
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-py3.11-
-            ${{ runner.os }}-
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e ".[dev]"
+          install-command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install -e ".[dev]"
 
       - name: Run ruff linter
         run: |
@@ -87,35 +70,18 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+      - name: CI setup
+        uses: ./.github/actions/ci-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
+          cache-paths: |
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-py3.11-
-            ${{ runner.os }}-
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pip-audit
-          pip install -r requirements.txt
+          install-command: |
+            python -m pip install --upgrade pip
+            pip install pip-audit
+            pip install -r requirements.txt
 
       - name: Run pip-audit for vulnerability scanning
         run: |
@@ -150,35 +116,18 @@ jobs:
           }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+      - name: CI setup
+        uses: ./.github/actions/ci-setup
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
+          cache-paths: |
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version }}-
-            ${{ runner.os }}-
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e ".[test]"
+          install-command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install -e ".[test]"
 
       - name: Run tests
         run: |
@@ -198,35 +147,18 @@ jobs:
       HYPOTHESIS_SEED: "1"
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+      - name: CI setup
+        uses: ./.github/actions/ci-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
+          cache-paths: |
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-py3.11-
-            ${{ runner.os }}-
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e ".[test]"
+          install-command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install -e ".[test]"
 
       - name: Run tests with coverage
         run: |
@@ -266,35 +198,18 @@ jobs:
       HYPOTHESIS_SEED: "1"
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+      - name: CI setup
+        uses: ./.github/actions/ci-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
+          cache-paths: |
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-py3.11-
-            ${{ runner.os }}-
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e ".[test]"
+          install-command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install -e ".[test]"
 
       - name: Run E2E tests
         run: |
@@ -309,35 +224,18 @@ jobs:
       LLM_BACKEND: "local_stub"
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+      - name: CI setup
+        uses: ./.github/actions/ci-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
+          cache-paths: |
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-py3.11-
-            ${{ runner.os }}-
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e ".[test]"
+          install-command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install -e ".[test]"
 
       - name: Run effectiveness suite with SLO validation
         run: |
@@ -373,35 +271,18 @@ jobs:
       LLM_BACKEND: "local_stub"
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+      - name: CI setup
+        uses: ./.github/actions/ci-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
+          cache-paths: |
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-py3.11-
-            ${{ runner.os }}-
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e ".[test]"
+          install-command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install -e ".[test]"
 
       - name: Run benchmarks with SLO assertions
         id: benchmarks
@@ -545,35 +426,18 @@ jobs:
       LLM_BACKEND: "local_stub"
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+      - name: CI setup
+        uses: ./.github/actions/ci-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
+          cache-paths: |
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-py3.11-
-            ${{ runner.os }}-
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e ".[test]"
+          install-command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install -e ".[test]"
 
       - name: Run Sapolsky Validation Suite tests
         run: |
@@ -601,35 +465,18 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+      - name: CI setup
+        uses: ./.github/actions/ci-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
+          cache-paths: |
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-py3.11-
-            ${{ runner.os }}-
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e ".[dev]"
+          install-command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install -e ".[dev]"
 
       - name: Generate OpenAPI spec
         run: |
