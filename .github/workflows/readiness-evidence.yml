@@ -96,24 +96,21 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-          # Generate inputs JSON with null handling for missing files
-          python3 << 'PYTHON'
-import json
-from pathlib import Path
 
-inputs = {
-    "coverage_xml": "coverage.xml" if Path("coverage.xml").exists() else None,
-    "coverage_log": "coverage-gate.log" if Path("coverage-gate.log").exists() else None,
-    "junit_xml": "reports/junit.xml",
-}
-Path("/tmp/evidence-inputs.json").write_text(json.dumps(inputs))
-PYTHON
+          # Generate evidence inputs with null handling
+          python3 scripts/ci/generate_evidence_inputs.py
 
+          # Build partial args if coverage failed
           PARTIAL_ARGS=()
           if [ "${{ steps.coverage.outputs.exit_code }}" != "0" ]; then
             PARTIAL_ARGS+=(--partial-reason "coverage gate failed (exit ${{ steps.coverage.outputs.exit_code }})")
           fi
-          uv run python scripts/evidence/capture_evidence.py --mode pack --inputs /tmp/evidence-inputs.json "${PARTIAL_ARGS[@]}"
+
+          # Capture evidence snapshot
+          uv run python scripts/evidence/capture_evidence.py \
+            --mode pack \
+            --inputs /tmp/evidence-inputs.json \
+            "${PARTIAL_ARGS[@]}"
       - name: Locate latest evidence snapshot
         if: always()
         id: evidence_path
