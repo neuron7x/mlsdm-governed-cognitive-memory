@@ -595,6 +595,64 @@ jobs:
             sapolsky_eval_results.json
           retention-days: 90
 
+  openapi-contract:
+    name: OpenAPI Contract Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Restore Python cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-py3.11-
+            ${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e ".[dev]"
+
+      - name: Generate OpenAPI spec
+        run: |
+          python scripts/export_openapi.py --output reports/openapi.generated.json --validate
+
+      - name: Diff OpenAPI spec against baseline
+        run: |
+          npx openapi-diff docs/openapi-baseline.json reports/openapi.generated.json --fail-on-incompatible
+
+      - name: Upload OpenAPI spec artifact
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: openapi-spec
+          path: |
+            reports/openapi.generated.json
+          retention-days: 30
+
   # Gate job that requires all critical CI jobs to pass
   # WHY: neuro-engine-eval and benchmarks are excluded because they have continue-on-error: true
   # Benchmarks are heavy-path (informational for PRs, blocking only on main push)
@@ -605,7 +663,7 @@ jobs:
     name: All CI Checks Passed
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [lint, security, test, coverage, e2e-tests, effectiveness-validation]
+    needs: [lint, security, test, coverage, e2e-tests, effectiveness-validation, openapi-contract]
     steps:
       - name: All checks passed
         run: echo "All CI checks passed successfully!"
