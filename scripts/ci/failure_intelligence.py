@@ -12,7 +12,9 @@ import re
 import textwrap
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
-from xml.etree import ElementTree as ET
+
+from defusedxml.ElementTree import ParseError, parse
+from defusedxml.common import DefusedXmlException
 
 
 DEFAULT_MAX_LINES = 300
@@ -44,8 +46,8 @@ def parse_junit(path: Optional[str], max_lines: int, max_bytes: int) -> List[Dic
     if not path or not os.path.isfile(path):
         return []
     try:
-        tree = ET.parse(path)
-    except ET.ParseError:
+        tree = parse(path)
+    except (ParseError, DefusedXmlException):
         return []
     root = tree.getroot()
     candidates: List[Dict[str, str]] = []
@@ -77,8 +79,8 @@ def parse_coverage(path: Optional[str]) -> Optional[float]:
     if not path or not os.path.isfile(path):
         return None
     try:
-        tree = ET.parse(path)
-    except ET.ParseError:
+        tree = parse(path)
+    except (ParseError, DefusedXmlException):
         return None
     root = tree.getroot()
     rate = root.attrib.get("line-rate")

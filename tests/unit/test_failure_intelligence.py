@@ -94,3 +94,32 @@ def test_handles_missing_inputs(tmp_path: Path):
     assert md_path.read_text(encoding="utf-8")
     loaded = json.loads(json_path.read_text(encoding="utf-8"))
     assert loaded["signal"] == "No failures detected"
+
+
+def test_rejects_malicious_xml(tmp_path: Path):
+    # Billion laughs style payload should be ignored safely
+    junit = tmp_path / "junit.xml"
+    junit.write_text(
+        """<?xml version="1.0"?>
+<!DOCTYPE lolz [
+ <!ENTITY lol "lol">
+ <!ENTITY lol1 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">
+]>
+<testsuite>
+  <testcase classname="pkg.test_sample" name="test_one" file="tests/unit/test_sample.py">
+    <failure message="boom">&lol1;</failure>
+  </testcase>
+</testsuite>
+""",
+        encoding="utf-8",
+    )
+    summary = generate_summary(
+        junit_path=str(junit),
+        coverage_path=None,
+        changed_files_path=None,
+        log_glob=None,
+        max_lines=50,
+        max_bytes=5_000,
+    )
+    # defusedxml should block entity expansion and return no failures
+    assert summary["top_failures"] == []
