@@ -322,11 +322,14 @@ class IterationLoop:
                 recent_delta_signs=recent_delta_signs,
                 recent_regime_flips=recent_regime_flips,
             )
-            if state.kill_switch_active:
-                base_cooldown = state.cooldown_remaining
+            if envelope_breach:
+                cooldown_remaining = COOLDOWN_STEPS
             else:
-                base_cooldown = max(state.cooldown_remaining, COOLDOWN_STEPS) if state.frozen else 0
-            cooldown_remaining = max(0, base_cooldown - 1)
+                if state.kill_switch_active:
+                    base_cooldown = state.cooldown_remaining
+                else:
+                    base_cooldown = max(state.cooldown_remaining, COOLDOWN_STEPS) if state.frozen else 0
+                cooldown_remaining = max(0, base_cooldown - 1)
             if cooldown_remaining > 0 or envelope_breach:
                 sign_flip = state.last_delta != 0.0 and delta_mean != 0.0 and (delta_mean * state.last_delta) < 0
                 steps = state.steps + 1
