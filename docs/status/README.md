@@ -1,6 +1,10 @@
-# Readiness Policy
+# Status Documentation
 
-- **What it is:** `docs/status/READINESS.md` is the single source of truth for the current, evidence-backed system status. Any conflicting claim elsewhere is superseded by that file.
-- **When to update:** Update `docs/status/READINESS.md` whenever changes touch `src/`, `tests/`, `config/`, `deploy/`, any `Dockerfile*`, or `.github/workflows/` (defaults mirrored in `scripts/readiness_check.py`, overridable via `READINESS_SCOPED_PREFIXES`). Include dated evidence (tests, CI jobs, commands) for any status shift.
-- **Why CI enforces it:** `.github/workflows/readiness.yml` runs `scripts/readiness_check.py` to ensure the file exists, is fresh (≤14 days), and is updated when scoped code or workflow changes occur. The workflow fails the build with a clear `::error::` message if the readiness record is stale or missing.
-- **Authority:** READINESS.md is authoritative for auditors and reviewers. If evidence is missing, mark the relevant area as NOT VERIFIED or PARTIAL rather than inferring readiness.
+This directory previously contained readiness documentation and policy enforcement tooling.
+
+The readiness gate workflow has been removed to streamline development for this solo maintainer project.
+
+For current project status and documentation, please refer to:
+- Project README
+- Individual component documentation in `docs/`
+- CI workflow results in GitHub Actions

@@ -25,11 +25,6 @@ paths: docs/METRICS_SOURCE.md, reports/, scripts/validate_bibliography.py, tests
 citations: [@openssf2023_slsa] [@torresarias2019_intoto] [@elkishky2022_sigstore]
 rationale: Supply-chain provenance (SLSA) and in-toto attestations map to evidence capture and reporting paths. Sigstore signing guidance ensures reproducible, verifiable artifacts and is enforced via bibliography validation and metrics evidence tests.
 
-## Readiness / CI Gates / Policy Engine
-paths: scripts/readiness/, .github/workflows/readiness-evidence.yml, scripts/readiness_check.py
-citations: [@iso2023_42001] [@nist2022_ssdf] [@nist2023_rmf]
-rationale: ISO 42001 governance and NIST SSDF/RMF controls justify readiness gates tied to scripted checks and workflow enforcement. These standards back the policy engine that blocks merges when assurance evidence is missing.
-
 ## Observability (logging/metrics/tracing)
 paths: src/mlsdm/observability/, deploy/grafana/, tests/observability/
 citations: [@ieee2020_7010] [@nist2023_rmf] [@hbp2024_assessment]
