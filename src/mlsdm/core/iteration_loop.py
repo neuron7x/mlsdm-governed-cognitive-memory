@@ -248,6 +248,7 @@ class IterationLoop:
     ) -> tuple[IterationState, UpdateResult, dict[str, float]]:
         delta_mean = sum(pe.clipped_delta) / len(pe.clipped_delta) if pe.clipped_delta else 0.0
         abs_max = max((abs(d) for d in pe.delta), default=0.0)
+        just_recovered = False
 
         def _apply_kill_switch_fields(target: IterationState, **updates: Any) -> IterationState:
             for key, value in updates.items():
@@ -398,6 +399,8 @@ class IterationLoop:
                 recovered=True,
                 frozen=False,
             )
+            # Track recovery for inclusion in dynamics
+            just_recovered = True
 
         regime, lr_scale, inhibition_scale, tau_scale, cooldown = self.regime_controller.update(state, ctx)
         risk_adjusted_lr = state.learning_rate * lr_scale * (1 - ctx.risk * self.risk_scale)
@@ -489,12 +492,16 @@ class IterationLoop:
                 **envelope_metrics,
             }
 
-        return new_state, UpdateResult(parameter_deltas={"parameter": new_param - state.parameter}, bounded=bounded, applied=True), {
+        dynamics_dict = {
             "effective_lr": base_lr,
             "inhibition_scale": inhibition_scale,
             "tau_scale": tau_scale,
             **envelope_metrics,
         }
+        if just_recovered:
+            dynamics_dict["recovered"] = True
+        
+        return new_state, UpdateResult(parameter_deltas={"parameter": new_param - state.parameter}, bounded=bounded, applied=True), dynamics_dict
 
     def evaluate_safety(self, state: IterationState, pe: PredictionError, ctx: IterationContext) -> SafetyDecision:
         abs_max = max((abs(d) for d in pe.delta), default=0.0)

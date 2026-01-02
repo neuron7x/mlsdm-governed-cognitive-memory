@@ -413,6 +413,46 @@ def test_kill_switch_recovery_after_cooldown() -> None:
     assert new_state.parameter != state.parameter
 
 
+def test_cooldown_holds_learning_off_until_recovery() -> None:
+    """Verify that kill-switch recovery sets recovered=True in trace dynamics."""
+    loop = IterationLoop(enabled=True, delta_max=0.5)
+    env = ToyEnvironment(outcomes=[0.1])  # Small error to avoid re-triggering kill-switch
+    
+    # Set up state in cooldown after kill-switch (COOLDOWN_STEPS = 2)
+    state = IterationState(parameter=0.0, learning_rate=0.2)
+    state.frozen = True
+    state.kill_switch_active = True
+    state.cooldown_remaining = iteration_loop.COOLDOWN_STEPS  # Start at max cooldown
+    state.regime = Regime.DEFENSIVE
+    state.regime_flips_window = deque(maxlen=iteration_loop.GUARD_WINDOW)
+    state.delta_signs = deque(maxlen=iteration_loop.GUARD_WINDOW)
+    
+    ctx = _ctx(0)
+    
+    # Step 1: cooldown = 2, decrements to 1, stays frozen
+    new_state, trace, _ = loop.step(state, env, ctx)
+    assert new_state.cooldown_remaining == 1
+    assert new_state.kill_switch_active is True
+    assert new_state.frozen is True
+    assert trace["update"]["applied"] is False
+    assert "recovered" not in trace["dynamics"] or trace["dynamics"].get("recovered") is False
+    
+    # Step 2: cooldown = 1, decrements to 0, should recover (if guard stable)
+    state = new_state
+    new_state, trace, _ = loop.step(state, env, ctx)
+    
+    # Verify recovery happened
+    assert new_state.cooldown_remaining == 0
+    assert new_state.kill_switch_active is False
+    assert new_state.recovered is True
+    assert new_state.frozen is False
+    assert trace["update"]["applied"] is True
+    
+    # Verify recovered flag is captured in trace dynamics - this is the critical assertion
+    assert "recovered" in trace["dynamics"], "recovered flag must be in trace dynamics dict"
+    assert trace["dynamics"]["recovered"] is True
+
+
 def test_kill_switch_recovery_requires_stable_guard_metrics() -> None:
     loop = IterationLoop(enabled=True, delta_max=0.5)
     state = IterationState(parameter=0.0, learning_rate=0.2)
