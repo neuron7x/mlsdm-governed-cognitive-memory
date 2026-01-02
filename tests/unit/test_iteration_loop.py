@@ -351,6 +351,7 @@ def test_default_off_regression_no_update_neutral_metrics() -> None:
 
     assert new_state.parameter == pytest.approx(state.parameter)
     assert trace["prediction"] == [state.parameter]
+    assert trace["observation"] == [0.8]
     assert trace["update"]["applied"] is False
     assert trace["update"]["parameter_deltas"] == {}
     assert trace["dynamics"]["effective_learning_rate"] == 0.0
@@ -360,6 +361,27 @@ def test_default_off_regression_no_update_neutral_metrics() -> None:
     assert trace["safety"]["stability_guard"]["instability_events_count"] == 0
     assert trace["safety"]["stability_guard"]["max_abs_delta"] == pytest.approx(0.5)
     assert trace["safety"]["stability_guard"]["time_to_kill_switch"] is None
+
+
+def test_guard_metrics_do_not_change_inference_trace() -> None:
+    loop = IterationLoop(enabled=False)
+    env = ToyEnvironment(outcomes=[0.4])
+    state = IterationState(parameter=0.25, learning_rate=0.2)
+    state.recent_delta_signs = deque([1, -1, 1], maxlen=iteration_loop.GUARD_WINDOW)
+    state.recent_regime_flips = deque([1, 0, 1], maxlen=iteration_loop.GUARD_WINDOW)
+    state.recent_abs_deltas = deque([0.1, 0.2, 0.3], maxlen=iteration_loop.GUARD_WINDOW)
+    state.max_abs_delta = 0.3
+
+    new_state, trace, _ = loop.step(state, env, _ctx(0))
+
+    assert new_state.parameter == pytest.approx(state.parameter)
+    assert trace["prediction"] == [state.parameter]
+    assert trace["observation"] == [0.4]
+    assert trace["update"]["applied"] is False
+    assert "stability_guard" in trace["safety"]
+    assert trace["safety"]["stability_guard"]["windowed_sign_flip_rate"] == pytest.approx(
+        trace["safety"]["stability_metrics"]["windowed_sign_flip_rate"]
+    )
 
 
 def test_kill_switch_recovery_after_cooldown() -> None:
