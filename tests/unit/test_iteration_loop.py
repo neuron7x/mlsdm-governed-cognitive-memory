@@ -322,6 +322,12 @@ def test_kill_switch_recovery_after_cooldown() -> None:
     assert result.applied is True
     assert new_state.parameter != state.parameter
 
+    state = new_state
+    new_state, result, _ = loop.apply_updates(state, pe, ctx)
+
+    assert new_state.recovered is False
+    assert result.applied is True
+
 
 def test_kill_switch_resets_cooldown_on_repeated_breach() -> None:
     loop = IterationLoop(enabled=True)

@@ -289,6 +289,7 @@ class IterationLoop:
                 state,
                 regime=Regime.DEFENSIVE if state.frozen else state.regime,
                 last_effective_lr=0.0,
+                recovered=False,
                 frozen=state.frozen,
                 last_envelope_metrics={
                     "max_delta": max((abs(d) for d in pe.delta), default=0.0),
@@ -308,6 +309,7 @@ class IterationLoop:
                 "tau_scale": 1.0,
             }
 
+        recovered_event = False
         if state.kill_switch_active or state.frozen:
             delta_sign = _sign(delta_mean)
             regime = Regime.DEFENSIVE
@@ -366,6 +368,7 @@ class IterationLoop:
             state = replace(
                 state,
             )
+            recovered_event = True
             state = _apply_kill_switch_fields(
                 state,
                 kill_switch_active=False,
@@ -434,7 +437,7 @@ class IterationLoop:
             cooldown_remaining=state.cooldown_remaining,
             instability_events_count=state.instability_events_count,
             time_to_kill_switch=state.time_to_kill_switch,
-            recovered=state.recovered,
+            recovered=recovered_event,
         )
         if envelope_breach:
             new_state = replace(

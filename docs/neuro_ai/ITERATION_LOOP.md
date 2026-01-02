@@ -21,6 +21,7 @@ Each phase returns typed artifacts in `mlsdm.core.iteration_loop`.
 - `ActionProposal`: action_id, payload, scores, confidence
 - `UpdateResult`: parameter_deltas, bounded, applied
 - `SafetyDecision`: allow_next, reason, stability_metrics, risk_metrics, regime
+- `IterationState`: `recovered` flags the single-step transition out of kill-switch enforcement (cleared on subsequent updates).
 
 ## Regimes & risk coupling
 - Regimes: **NORMAL**, **CAUTION**, **DEFENSIVE** (hysteresis + cooldown)
