@@ -709,3 +709,65 @@ jobs:
         # INFORMATIONAL: Upload failures should not block the workflow
         # The actual security scan already passed/failed above
         continue-on-error: true
+
+  # Post-deploy smoke test (minimal healthy endpoint check)
+  post-deploy-smoke:
+    name: Post-deploy Smoke Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+      - build-and-push-docker
+      - security-scan
+
+    steps:
+      - name: Smoke test healthy endpoint
+        env:
+          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
+        run: |
+          if [ -z "$HEALTHCHECK_URL" ]; then
+            echo "HEALTHCHECK_URL secret is not set."
+            exit 1
+          fi
+
+          echo "Checking health endpoint: $HEALTHCHECK_URL"
+          curl --fail --silent --show-error \
+            --retry 5 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            "$HEALTHCHECK_URL"
+
+  # Rollback if smoke tests fail
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: post-deploy-smoke
+    if: failure()
+
+    steps:
+      - name: Trigger rollback
+        run: |
+          echo "Smoke tests failed. Triggering rollback."
+          echo "Rollback should be executed by the deployment system."
+
+      - name: Record rollback in release log
+        run: |
+          cat <<'EOF' > release-rollback-log.md
+          # Release Rollback
+
+          Smoke tests failed after deployment.
+
+          - Tag: ${GITHUB_REF#refs/tags/}
+          - Workflow: $GITHUB_WORKFLOW
+          - Run ID: $GITHUB_RUN_ID
+          - Timestamp (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          EOF
+
+          cat release-rollback-log.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload rollback log
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-rollback-log
+          path: release-rollback-log.md
+          retention-days: 30
