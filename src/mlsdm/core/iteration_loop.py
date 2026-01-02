@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from collections import deque
-from collections.abc import Sequence  # noqa: TC003 - needed at runtime for type guard in _to_vector
+from collections.abc import Iterable, Sequence  # noqa: TC003 - needed at runtime for type guard in _to_vector
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Protocol
@@ -119,10 +119,10 @@ def _sign(value: float) -> int:
     return 0
 
 
-def _sign_flip_rate(signs: Sequence[int]) -> float:
-    if len(signs) < 2:
-        return 0.0
+def _sign_flip_rate(signs: Iterable[int]) -> float:
     signs_list = signs if isinstance(signs, list) else list(signs)
+    if len(signs_list) < 2:
+        return 0.0
     flips = 0
     comparisons = 0
     for prev, current in zip(signs_list, signs_list[1:], strict=False):
@@ -251,6 +251,10 @@ class IterationLoop:
                     "regime_flip_rate": regime_flip_rate,
                     "convergence_time": float(state.steps) if abs(state.last_delta) <= self.delta_max else -1.0,
                     "sign_flip_rate": sign_flip_rate,
+                    "guard_window": GUARD_WINDOW,
+                    "guard_max_abs_delta": MAX_ABS_DELTA,
+                    "guard_max_sign_flip_rate": MAX_SIGN_FLIP_RATE,
+                    "guard_max_regime_flip_rate": MAX_REGIME_FLIP_RATE,
                 },
             )
             return frozen_state, UpdateResult(parameter_deltas={}, bounded=state.frozen, applied=False), {
@@ -298,6 +302,10 @@ class IterationLoop:
             "regime_flip_rate": regime_flip_rate,
             "convergence_time": convergence_time,
             "sign_flip_rate": sign_flip_rate,
+            "guard_window": GUARD_WINDOW,
+            "guard_max_abs_delta": MAX_ABS_DELTA,
+            "guard_max_sign_flip_rate": MAX_SIGN_FLIP_RATE,
+            "guard_max_regime_flip_rate": MAX_REGIME_FLIP_RATE,
         }
         delta_breach = max_delta > MAX_ABS_DELTA
         regime_flip_breach = regime_flip_rate > MAX_REGIME_FLIP_RATE
