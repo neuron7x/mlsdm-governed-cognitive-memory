@@ -122,9 +122,10 @@ def _sign(value: float) -> int:
 def _sign_flip_rate(signs: Sequence[int]) -> float:
     if len(signs) < 2:
         return 0.0
+    signs_list = signs if isinstance(signs, list) else list(signs)
     flips = 0
     comparisons = 0
-    for prev, current in zip(signs, signs[1:], strict=False):
+    for prev, current in zip(signs_list, signs_list[1:], strict=False):
         if prev == 0 or current == 0:
             continue
         comparisons += 1
