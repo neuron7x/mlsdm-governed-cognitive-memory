@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import psutil
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, Field
@@ -185,6 +185,10 @@ app = FastAPI(
 def create_app() -> FastAPI:
     """Return the canonical FastAPI application instance."""
     return app
+
+# Versioned API routers for contract stability
+v1_router = APIRouter(prefix="/v1")
+v2_router = APIRouter(prefix="/v2")
 
 # Add production middleware (order matters: outer to inner)
 # 1. SecurityHeaders - adds security headers to all responses
@@ -404,7 +408,8 @@ class ErrorResponse(BaseModel):
     error: ErrorDetail
 
 
-@app.post("/v1/process_event/", response_model=StateResponse)
+@v1_router.post("/process_event/", response_model=StateResponse)
+@v2_router.post("/process_event/", response_model=StateResponse)
 async def process_event(
     event: EventInput, request: Request, user: str = Depends(get_current_user)
 ) -> StateResponse:
@@ -442,7 +447,8 @@ async def process_event(
     return await get_state(request, user)
 
 
-@app.get("/v1/state/", response_model=StateResponse)
+@v1_router.get("/state/", response_model=StateResponse)
+@v2_router.get("/state/", response_model=StateResponse)
 async def get_state(request: Request, user: str = Depends(get_current_user)) -> StateResponse:
     """Get system state with rate limiting."""
     client_id = _get_client_id(request)
@@ -467,6 +473,26 @@ async def get_state(request: Request, user: str = Depends(get_current_user)) -> 
 
 
 @app.post(
+    "/generate",
+    response_model=GenerateResponse,
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid input"},
+        429: {"model": ErrorResponse, "description": "Rate limit exceeded"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+    tags=["Generation"],
+)
+@v1_router.post(
+    "/generate",
+    response_model=GenerateResponse,
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid input"},
+        429: {"model": ErrorResponse, "description": "Rate limit exceeded"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+    tags=["Generation"],
+)
+@v2_router.post(
     "/generate",
     response_model=GenerateResponse,
     responses={
@@ -668,6 +694,26 @@ async def generate(
 
 
 @app.post(
+    "/infer",
+    response_model=InferResponse,
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid input"},
+        429: {"model": ErrorResponse, "description": "Rate limit exceeded"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+    tags=["Inference"],
+)
+@v1_router.post(
+    "/infer",
+    response_model=InferResponse,
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid input"},
+        429: {"model": ErrorResponse, "description": "Rate limit exceeded"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+    tags=["Inference"],
+)
+@v2_router.post(
     "/infer",
     response_model=InferResponse,
     responses={
@@ -886,6 +932,8 @@ async def infer(
 
 
 @app.get("/status", tags=["Health"])
+@v1_router.get("/status", tags=["Health"])
+@v2_router.get("/status", tags=["Health"])
 async def get_status() -> dict[str, Any]:
     """Get extended service status with system info.
 
@@ -910,3 +958,8 @@ async def get_status() -> dict[str, Any]:
             "secure_mode": _secure_mode_enabled,
         },
     }
+
+
+# Include versioned routers after all routes are defined
+app.include_router(v1_router)
+app.include_router(v2_router)
