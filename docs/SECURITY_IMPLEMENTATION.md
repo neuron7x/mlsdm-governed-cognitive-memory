@@ -295,6 +295,24 @@ This allows rate limiting and audit tracking without storing PII.
 
 The system includes automated dependency vulnerability scanning using `pip-audit`.
 
+### pip CVE Remediation (pip>=25.3)
+
+The current dependency risk register identifies a transitive CVE in `pip`
+(see TD-001 / CVE-2025-8869). We enforce a **minimum pip version of 25.3**
+across install paths to ensure the patched build is used.
+
+**Verification in CI:**
+1. `pip` is upgraded before audit runs.
+2. CI validates `pip.__version__ >= 25.3`.
+3. `pip-audit` is executed against both `requirements.txt` and
+   `requirements-neurolang.txt`.
+
+**Rollback plan (if incompatibilities appear):**
+1. Revert the `pip>=25.3` pin to the last known-good version.
+2. Add a temporary allowlist entry in the technical debt register.
+3. Open a follow-up security issue with the failing environment details.
+4. Re-enable the pin once an upstream fix is available.
+
 ### Running Security Audit
 
 ```bash

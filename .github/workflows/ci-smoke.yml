@@ -14,6 +14,18 @@ permissions:
   contents: read
 
 jobs:
+  workflow-lint:
+    name: Workflow Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Lint GitHub Actions workflows
+        uses: rhysd/actionlint@v1
+
   smoke:
     name: Smoke Tests
     runs-on: ubuntu-latest
@@ -33,6 +45,7 @@ jobs:
           cache: 'pip'
           cache-dependency-path: |
             requirements.txt
+            requirements-neurolang.txt
             pyproject.toml
 
       - name: Install dependencies
@@ -106,6 +119,7 @@ jobs:
           cache: 'pip'
           cache-dependency-path: |
             requirements.txt
+            requirements-neurolang.txt
             pyproject.toml
 
       - name: Install dependencies
@@ -143,6 +157,7 @@ jobs:
           cache: 'pip'
           cache-dependency-path: |
             requirements.txt
+            requirements-neurolang.txt
             pyproject.toml
 
       - name: Install dependencies

@@ -33,6 +33,7 @@ jobs:
           cache: 'pip'
           cache-dependency-path: |
             requirements.txt
+            requirements-neurolang.txt
             pyproject.toml
 
       - name: Restore Python cache
@@ -192,17 +193,33 @@ jobs:
             ${{ runner.os }}-py3.11-
             ${{ runner.os }}-
 
-      - name: Install dependencies and pip-audit
+      - name: Install pip-audit
         run: |
           python -m pip install --upgrade pip
           pip install pip-audit
-          pip install -r requirements.txt
+
+      - name: Confirm pip minimum version
+        run: |
+          python - <<'PY'
+          from packaging.version import Version
+          import pip
+
+          minimum = Version("25.3")
+          current = Version(pip.__version__)
+          if current < minimum:
+              raise SystemExit(f"pip {current} is below required {minimum}")
+          print(f"pip version OK: {current}")
+          PY
 
       - name: Run pip-audit (SECURITY GATE)
         run: |
           # SECURITY GATE: Fail on any known vulnerabilities
           # Uses --strict to fail on any vulnerability found
-          pip-audit --strict --progress-spinner=off
+          pip-audit \
+            --requirement requirements.txt \
+            --requirement requirements-neurolang.txt \
+            --strict \
+            --progress-spinner=off
 
       - name: Generate dependency report
         if: always()
@@ -211,8 +228,17 @@ jobs:
           echo "" >> dep-audit-summary.md
           echo "Generated at: $(date -u)" >> dep-audit-summary.md
           echo "" >> dep-audit-summary.md
-          pip-audit --format json > pip-audit-results.json 2>&1 || true
-          pip-audit >> dep-audit-summary.md 2>&1 || true
+          pip-audit \
+            --requirement requirements.txt \
+            --requirement requirements-neurolang.txt \
+            --format json \
+            --progress-spinner=off \
+            > pip-audit-results.json 2>&1 || true
+          pip-audit \
+            --requirement requirements.txt \
+            --requirement requirements-neurolang.txt \
+            --progress-spinner=off \
+            >> dep-audit-summary.md 2>&1 || true
 
       - name: Upload dependency report
         if: always()

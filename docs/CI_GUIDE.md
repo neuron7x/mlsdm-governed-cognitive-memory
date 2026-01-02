@@ -35,7 +35,7 @@ See **[docs/CI_SECURITY_GATING.md](docs/CI_SECURITY_GATING.md)** for complete se
 **Quick security check before pushing:**
 ```bash
 bandit -r src/mlsdm --severity-level high --confidence-level high
-pip-audit --requirement requirements.txt --strict
+pip-audit --requirement requirements.txt --requirement requirements-neurolang.txt --strict
 ```
 
 ## CI Workflows
@@ -85,6 +85,7 @@ make cov
 - Quick import tests
 - Basic API health checks
 - Configuration validation
+- GitHub Actions workflow linting (actionlint)
 
 **When to modify:**
 - Adding critical smoke tests
@@ -121,9 +122,24 @@ make cov
 - Adding new security checks
 - Updating security policies
 
+#### 5. **Scheduled Dependency Audit** (`pip-audit-scheduled.yml`)
+**Purpose:** Weekly dependency vulnerability scanning outside PR cadence
+**Triggers:** Weekly schedule, manual dispatch, PRs (validation)
+**Duration:** ~5-15 minutes
+
+**Jobs:**
+- pip-audit for `requirements.txt` and `requirements-neurolang.txt`
+- Minimum pip version guard (`pip>=25.3`)
+- Multi-version coverage (Python 3.10/3.11/3.12)
+- Issue creation on scheduled/manual failures
+
+**When to modify:**
+- Changing dependency audit scope
+- Adjusting supported Python versions
+
 ### Specialized CI Workflows
 
-#### 5. **Aphasia / NeuroLang CI** (`aphasia-ci.yml`)
+#### 6. **Aphasia / NeuroLang CI** (`aphasia-ci.yml`)
 **Purpose:** Test optional Aphasia/NeuroLang extension
 **Triggers:** Push to main/feature branches, PRs (manual dispatch)
 **Duration:** ~10 minutes
@@ -137,7 +153,7 @@ make cov
 - Changes to NeuroLang extension
 - Adding speech governance features
 
-#### 6. **Performance & Resilience Validation** (`perf-resilience.yml`)
+#### 7. **Performance & Resilience Validation** (`perf-resilience.yml`)
 **Purpose:** Load testing and stress testing
 **Triggers:** Scheduled (daily at 2 AM UTC), manual dispatch
 **Duration:** ~30-60 minutes
@@ -151,7 +167,7 @@ make cov
 - Changing performance requirements
 - Adding new performance tests
 
-#### 7. **Chaos Engineering Tests** (`chaos-tests.yml`)
+#### 8. **Chaos Engineering Tests** (`chaos-tests.yml`)
 **Purpose:** Test system resilience under adverse conditions
 **Triggers:** Scheduled (daily at 3 AM UTC), manual dispatch
 **Duration:** ~30-60 minutes
@@ -167,7 +183,7 @@ make cov
 
 ### Release Workflows
 
-#### 8. **Production Gate** (`prod-gate.yml`)
+#### 9. **Production Gate** (`prod-gate.yml`)
 **Purpose:** Pre-production validation and approval
 **Triggers:** Manual workflow dispatch
 **Duration:** ~30 minutes + manual approval time

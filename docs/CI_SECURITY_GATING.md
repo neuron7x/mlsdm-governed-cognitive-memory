@@ -66,6 +66,15 @@ These jobs **BLOCK** merges and releases if they fail:
 - **Blocks on:** CVEs in dependencies
 - **Exit behavior:** Non-zero exit code on vulnerabilities
 - **Status:** ✅ BLOCKING (no `continue-on-error`)
+- **Coverage:** `requirements.txt` and `requirements-neurolang.txt`
+- **Safety Guard:** CI asserts `pip>=25.3` before running pip-audit
+
+#### Scheduled Dependency Audit
+- **Workflow:** `.github/workflows/pip-audit-scheduled.yml`
+- **Schedule:** Weekly (Mon 03:00 UTC) + manual dispatch + PR validation
+- **Python Matrix:** 3.10 / 3.11 / 3.12
+- **Notification:** Opens a GitHub issue on failures in scheduled/manual runs
+- **Timeout:** 15 minutes (budget for multi-version installs and audit)
 
 **Additional Locations:**
 - `.github/workflows/ci-neuro-cognitive-engine.yml` - Security job
