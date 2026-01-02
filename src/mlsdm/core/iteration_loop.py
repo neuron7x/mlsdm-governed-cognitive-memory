@@ -516,7 +516,7 @@ def _compute_sign_flip_rate(values: list[float]) -> float:
         return 0.0
     signs = [_sign(value) for value in values]
     flips = 0
-    for prev, current in zip(signs, signs[1:]):
+    for prev, current in zip(signs, signs[1:], strict=True):
         if prev == 0 or current == 0:
             continue
         if prev != current:
@@ -527,7 +527,7 @@ def _compute_sign_flip_rate(values: list[float]) -> float:
 def _compute_regime_flip_rate(values: list[Regime]) -> float:
     if len(values) < 2:
         return 0.0
-    flips = sum(1 for prev, current in zip(values, values[1:]) if prev != current)
+    flips = sum(1 for prev, current in zip(values, values[1:], strict=True) if prev != current)
     return flips / max(1, len(values) - 1)
 
 
