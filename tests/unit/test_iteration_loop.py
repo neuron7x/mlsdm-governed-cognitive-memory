@@ -379,7 +379,7 @@ def test_kill_switch_recovery_after_cooldown() -> None:
 
     state = new_state
     state.cooldown_remaining = 0
-    state.regime = Regime.NORMAL
+    state.regime = Regime.DEFENSIVE
     state.recent_regime_flips = deque(maxlen=iteration_loop.GUARD_WINDOW)
     state.recent_delta_signs = deque(maxlen=iteration_loop.GUARD_WINDOW)
     new_state, result, _ = loop.apply_updates(state, pe, ctx)
@@ -389,6 +389,25 @@ def test_kill_switch_recovery_after_cooldown() -> None:
     assert new_state.frozen is False
     assert result.applied is True
     assert new_state.parameter != state.parameter
+
+
+def test_kill_switch_recovery_requires_stable_guard_metrics() -> None:
+    loop = IterationLoop(enabled=True, delta_max=0.5)
+    state = IterationState(parameter=0.0, learning_rate=0.2)
+    state.frozen = True
+    state.kill_switch_active = True
+    state.cooldown_remaining = 0
+    state.recent_delta_signs = deque([1, -1, 1, -1], maxlen=iteration_loop.GUARD_WINDOW)
+    state.recent_regime_flips = deque(maxlen=iteration_loop.GUARD_WINDOW)
+
+    ctx = _ctx(0)
+    pe = PredictionError(delta=[0.1], abs_delta=0.1, clipped_delta=[0.1])
+    new_state, result, _ = loop.apply_updates(state, pe, ctx)
+
+    assert new_state.kill_switch_active is True
+    assert new_state.recovered is False
+    assert new_state.frozen is True
+    assert result.applied is False
 
 
 def test_kill_switch_resets_cooldown_on_repeated_breach() -> None:

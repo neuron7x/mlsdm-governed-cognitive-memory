@@ -293,6 +293,13 @@ class IterationLoop:
             envelope_breach = delta_breach or regime_flip_breach or oscillation_breach
             return envelope_metrics, sign_flip_rate, regime_flip_rate, envelope_breach
 
+        def _guard_metrics_stable(metrics: dict[str, float]) -> bool:
+            return (
+                metrics.get("windowed_max_abs_delta", 0.0) <= MAX_ABS_DELTA
+                and metrics.get("windowed_sign_flip_rate", 0.0) <= MAX_SIGN_FLIP_RATE
+                and metrics.get("windowed_regime_flip_rate", 0.0) <= MAX_REGIME_FLIP_RATE
+            )
+
         if not self.enabled:
             recent_abs_deltas, max_abs_delta = _update_guard_window(state, abs_max)
             sign_flip_rate = _sign_flip_rate(state.recent_delta_signs)
@@ -341,6 +348,7 @@ class IterationLoop:
                 recent_regime_flips=recent_regime_flips,
                 windowed_abs_delta_max=max_abs_delta,
             )
+            guard_stable = _guard_metrics_stable(envelope_metrics)
             if envelope_breach:
                 cooldown_remaining = COOLDOWN_STEPS
             else:
@@ -349,7 +357,7 @@ class IterationLoop:
                 else:
                     base_cooldown = max(state.cooldown_remaining, COOLDOWN_STEPS) if state.frozen else 0
                 cooldown_remaining = max(0, base_cooldown - 1)
-            if cooldown_remaining > 0 or envelope_breach:
+            if cooldown_remaining > 0 or envelope_breach or not guard_stable:
                 steps = state.steps + 1
                 time_to_kill_switch = state.time_to_kill_switch if state.time_to_kill_switch is not None else steps
                 frozen_state = replace(
