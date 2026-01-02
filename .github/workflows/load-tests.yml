@@ -26,6 +26,9 @@ jobs:
   load-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      LOAD_USERS: ${{ inputs.users || '20' }}
+      LOAD_DURATION: ${{ inputs.duration || '30' }}
 
     steps:
       - name: Checkout repository
@@ -59,14 +62,10 @@ jobs:
 
       - name: Run standalone load test
         run: |
-          USERS="${{ inputs.users }}"
-          DURATION="${{ inputs.duration }}"
-          if [ -z "$USERS" ]; then USERS=20; fi
-          if [ -z "$DURATION" ]; then DURATION=30; fi
-          echo "Running load test with users=$USERS duration=$DURATION"
+          echo "Running load test with users=$LOAD_USERS duration=$LOAD_DURATION"
           python tests/load/standalone_server_load_test.py \
-            --users "$USERS" \
-            --duration "$DURATION" \
+            --users "$LOAD_USERS" \
+            --duration "$LOAD_DURATION" \
             --output load-test-report.json
 
       - name: Summarize load test report
