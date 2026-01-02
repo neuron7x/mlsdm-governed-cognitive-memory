@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
+from collections import deque
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
@@ -217,3 +219,199 @@ def test_long_sequence_converges_or_halts_safely() -> None:
         not state.frozen and abs(state.last_delta) <= loop.delta_max * loop.convergence_tol
     ) or state.frozen
     assert "convergence_time" in final_safety.stability_metrics
+
+
+def test_to_vector_handles_sequences() -> None:
+    _to_vector = iteration_loop._to_vector
+
+    assert _to_vector(5.0) == [5.0]
+    assert _to_vector(0) == [0.0]
+    assert _to_vector([1.0, 2.0, 3.0]) == [1.0, 2.0, 3.0]
+    assert _to_vector((4.0, 5.0)) == [4.0, 5.0]
+
+
+def test_sign_function_edge_cases() -> None:
+    _sign = iteration_loop._sign
+
+    assert _sign(10.0) == 1
+    assert _sign(-10.0) == -1
+    assert _sign(0.0) == 0
+    assert _sign(0.0001) == 1
+    assert _sign(-0.0001) == -1
+
+
+def test_regime_controller_normal_to_caution_transition() -> None:
+    controller = RegimeController(caution=0.4, defensive=0.7, cooldown=2)
+    state = IterationState(regime=Regime.NORMAL, cooldown_steps=0)
+    ctx = IterationContext(dt=1.0, timestamp=0.0, seed=0, threat=0.5, risk=0.3)
+
+    regime, lr_scale, inh_scale, tau_scale, cooldown = controller.update(state, ctx)
+
+    assert regime == Regime.CAUTION
+    assert cooldown == 2
+    assert lr_scale == 0.7
+    assert inh_scale == 1.1
+    assert tau_scale == 1.2
+
+
+def test_regime_controller_defensive_cooldown_expires() -> None:
+    controller = RegimeController(caution=0.4, defensive=0.7, cooldown=2)
+    state = IterationState(regime=Regime.DEFENSIVE, cooldown_steps=1)
+    ctx = IterationContext(dt=1.0, timestamp=0.0, seed=0, threat=0.5, risk=0.0)
+
+    regime, _, _, _, cooldown = controller.update(state, ctx)
+
+    assert regime == Regime.DEFENSIVE
+    assert cooldown == 0
+
+    state = replace(state, regime=regime, cooldown_steps=cooldown)
+    regime, _, _, _, cooldown = controller.update(state, ctx)
+    assert regime == Regime.CAUTION
+
+
+def test_kill_switch_activation_on_envelope_breach() -> None:
+    loop = IterationLoop(
+        enabled=True,
+        delta_max=0.3,
+        max_regime_flip_rate=0.3,
+        max_oscillation_index=0.3,
+    )
+    env = ToyEnvironment(outcomes=[2.0, -2.0, 2.0, -2.0, 2.0, -2.0])
+    state = IterationState(parameter=0.0, learning_rate=0.4)
+
+    kill_switch_triggered = False
+    for i in range(10):
+        state, trace, safety = loop.step(state, env, _ctx(i))
+
+        if state.kill_switch_active:
+            kill_switch_triggered = True
+            assert state.frozen is True
+            assert state.cooldown_remaining > 0
+            assert trace["update"]["applied"] is False
+            assert safety.allow_next is False
+            break
+
+    assert kill_switch_triggered
+
+
+def test_kill_switch_recovery_after_cooldown() -> None:
+    loop = IterationLoop(enabled=True, delta_max=0.5)
+    state = IterationState(parameter=0.0, learning_rate=0.2)
+    state.frozen = True
+    state.kill_switch_active = True
+    state.cooldown_remaining = 2
+
+    ctx = _ctx(0)
+
+    pe = PredictionError(delta=[0.1], abs_delta=0.1, clipped_delta=[0.1])
+    new_state, result, _ = loop.apply_updates(state, pe, ctx)
+
+    assert new_state.kill_switch_active is True
+    assert result.applied is False
+
+    state = new_state
+    state.cooldown_remaining = 0
+    state.regime = Regime.NORMAL
+    state.recent_regime_flips = deque(maxlen=iteration_loop.GUARD_WINDOW)
+    state.recent_delta_signs = deque(maxlen=iteration_loop.GUARD_WINDOW)
+    new_state, result, _ = loop.apply_updates(state, pe, ctx)
+
+    assert new_state.kill_switch_active is False
+    assert new_state.recovered is True
+    assert new_state.frozen is False
+
+
+def test_frozen_state_prevents_updates() -> None:
+    loop = IterationLoop(enabled=True)
+    state = IterationState(parameter=5.0, learning_rate=0.2, frozen=True)
+    state.kill_switch_active = True
+    state.cooldown_remaining = 3
+
+    env = ToyEnvironment(target=0.0)
+    ctx = _ctx(0)
+
+    new_state, trace, safety = loop.step(state, env, ctx)
+
+    assert new_state.regime == Regime.DEFENSIVE
+    assert trace["update"]["applied"] is False
+    assert safety.allow_next is False
+    assert safety.reason == "stability_envelope_breach"
+
+
+def test_metrics_emitter_writes_to_file(tmp_path: Path) -> None:
+    output_path = tmp_path / "metrics.jsonl"
+    emitter = iteration_loop.IterationMetricsEmitter(enabled=True, output_path=output_path)
+
+    loop = IterationLoop(enabled=True, metrics_emitter=emitter)
+    env = ToyEnvironment(target=1.0)
+    state = IterationState(parameter=0.0, learning_rate=0.2)
+
+    for i in range(3):
+        state, _, _ = loop.step(state, env, _ctx(i))
+
+    assert output_path.exists()
+
+    lines = output_path.read_text().strip().split("\n")
+    assert len(lines) == 3
+
+    for line in lines:
+        record = json.loads(line)
+        assert "timestamp" in record
+        assert "dt" in record
+        assert "seed" in record
+        assert "prediction_error" in record
+
+
+def test_metrics_emitter_disabled_does_not_write() -> None:
+    emitter = iteration_loop.IterationMetricsEmitter(enabled=False)
+
+    loop = IterationLoop(enabled=True, metrics_emitter=emitter)
+    env = ToyEnvironment(target=1.0)
+    state = IterationState(parameter=0.0, learning_rate=0.2)
+
+    state, _, _ = loop.step(state, env, _ctx(0))
+
+
+def test_metrics_emitter_creates_parent_directories(tmp_path: Path) -> None:
+    output_path = tmp_path / "nested" / "dir" / "metrics.jsonl"
+    emitter = iteration_loop.IterationMetricsEmitter(enabled=True, output_path=output_path)
+
+    loop = IterationLoop(enabled=True, metrics_emitter=emitter)
+    env = ToyEnvironment(target=1.0)
+    state = IterationState(parameter=0.0, learning_rate=0.2)
+
+    state, _, _ = loop.step(state, env, _ctx(0))
+
+    assert output_path.exists()
+    assert output_path.parent.exists()
+
+
+@pytest.mark.parametrize(
+    ("threat", "risk", "expected_regime"),
+    [
+        (0.8, 0.8, Regime.DEFENSIVE),
+        (0.5, 0.3, Regime.CAUTION),
+        (0.1, 0.1, Regime.NORMAL),
+        (0.75, 0.2, Regime.DEFENSIVE),
+        (0.3, 0.75, Regime.DEFENSIVE),
+    ],
+)
+def test_regime_selection_by_threat_risk(threat: float, risk: float, expected_regime: Regime) -> None:
+    loop = IterationLoop(enabled=True)
+    env = ToyEnvironment(target=0.5)
+    state = IterationState(parameter=0.0, learning_rate=0.2)
+
+    new_state, _, _ = loop.step(state, env, _ctx(0, threat=threat, risk=risk))
+
+    assert new_state.regime == expected_regime
+
+
+def test_sign_flip_rate_calculation_with_zeros() -> None:
+    _sign_flip_rate = iteration_loop._sign_flip_rate
+
+    assert _sign_flip_rate([0, 0, 0]) == 0.0
+
+    rate = _sign_flip_rate([1, -1, 1])
+    assert rate == 1.0
+
+    assert _sign_flip_rate([1]) == 0.0
