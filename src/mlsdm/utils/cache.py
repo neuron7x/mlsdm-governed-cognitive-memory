@@ -137,6 +137,8 @@ class CacheEntry(Generic[T]):
 
     def is_expired(self) -> bool:
         """Check if entry is expired."""
+        if self.ttl <= 0:
+            return False
         return time.time() > (self.created_at + self.ttl)
 
 
@@ -219,7 +221,7 @@ class MemoryCache(Generic[T]):
             self._cache[key] = CacheEntry(
                 value=value,
                 created_at=time.time(),
-                ttl=ttl or self._default_ttl,
+                ttl=self._default_ttl if ttl is None else ttl,
             )
             self._cache.move_to_end(key)
             self._stats.size = len(self._cache)
