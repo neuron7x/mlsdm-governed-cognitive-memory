@@ -60,6 +60,9 @@ Blocking issues: 3
 7. Neuro-AI adapters not integrated: `SynapticMemoryAdapter`, `PredictionErrorAdapter`, `RegimeController` implemented but not wired into `NeuroCognitiveEngine` or live system paths; need integration tests + real-world usage evidence.
 
 ## Change Log
+- 2026-01-01 — **Deterministic iteration metrics evidence path wired** — PR: (this)
+  - Added `scripts/eval/generate_iteration_metrics.py` + `make iteration-metrics`; `make evidence` now packages `iteration/iteration-metrics.jsonl` deterministically for audit trails.
+  - Validation: `make iteration-metrics`, `make evidence`, `python scripts/evidence/verify_evidence_snapshot.py --evidence-dir artifacts/evidence/<date>/<sha>`
 - 2026-01-01 — **Iteration loop + evidence optional metrics (prediction-error, safe, audited)** — PR: #423
   - Added `src/mlsdm/core/iteration_loop.py`: default-off Δ-driven loop with regimes (NORMAL/CAUTION/DEFENSIVE), risk-scaled learning rate/inhibition/tau, bounded updates, safety gate, and optional JSONL metrics emitter.
   - Added tests `tests/unit/test_iteration_loop.py` (disabled mode, Δ reduction, threat/regime dynamics, safety gating) and `tests/unit/test_iteration_metrics_emitter.py` (JSONL emission contract).

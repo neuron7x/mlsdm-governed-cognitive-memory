@@ -79,6 +79,8 @@ def source_ref() -> str:
 
 def _prefer_uv(command: List[str]) -> List[str]:
     """Prefix command with `uv run` if available to mirror CI."""
+    if os.getenv("DISABLE_UV_RUN"):
+        return command
     if shutil.which("uv"):
         return ["uv", "run", *command]
     return command
@@ -144,13 +146,14 @@ def capture_coverage(
     shutil.copy(coverage_path, dest_cov)
     produced.append(dest_cov)
     outputs["coverage_xml"] = str(dest_cov.relative_to(evidence_dir))
-    if coverage_log and coverage_log.exists():
-        logs_dir = evidence_dir / "logs"
-        logs_dir.mkdir(parents=True, exist_ok=True)
-        dest_log = logs_dir / "coverage_gate.log"
-        shutil.copy(coverage_log, dest_log)
-        produced.append(dest_log)
-        outputs["coverage_log"] = str(dest_log.relative_to(evidence_dir))
+    _copy_log_file(
+        evidence_dir,
+        produced,
+        outputs,
+        "coverage_log",
+        coverage_log,
+        Path("logs") / "coverage_gate.log",
+    )
 
 
 def capture_pytest_junit(
@@ -168,13 +171,21 @@ def capture_pytest_junit(
     shutil.copy(junit_path, dest_junit)
     produced.append(dest_junit)
     outputs["junit_xml"] = str(dest_junit.relative_to(evidence_dir))
-    if unit_log and unit_log.exists():
-        logs_dir = evidence_dir / "logs"
-        logs_dir.mkdir(parents=True, exist_ok=True)
-        dest_log = logs_dir / "unit_tests.log"
-        shutil.copy(unit_log, dest_log)
-        produced.append(dest_log)
-        outputs["unit_log"] = str(dest_log.relative_to(evidence_dir))
+    _copy_log_file(
+        evidence_dir,
+        produced,
+        outputs,
+        "unit_log",
+        unit_log,
+        Path("logs") / "unit_tests.log",
+    )
+
+
+def _record_output(
+    evidence_dir: Path, produced: list[Path], outputs: MutableMapping[str, str], key: str, dest_path: Path
+) -> None:
+    produced.append(dest_path)
+    outputs[key] = str(dest_path.relative_to(evidence_dir))
 
 
 def _copy_optional(
@@ -189,9 +200,26 @@ def _copy_optional(
         return
     dest_path = evidence_dir / dest_rel
     dest_path.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy(source_path, dest_path)
-    produced.append(dest_path)
-    outputs[key] = str(dest_path.relative_to(evidence_dir))
+    if source_path.resolve() != dest_path.resolve():
+        shutil.copy(source_path, dest_path)
+    _record_output(evidence_dir, produced, outputs, key, dest_path)
+
+
+def _copy_log_file(
+    evidence_dir: Path,
+    produced: list[Path],
+    outputs: MutableMapping[str, str],
+    key: str,
+    source_path: Path | None,
+    dest_rel: Path,
+) -> None:
+    if source_path is None or not source_path.exists():
+        return
+    dest_path = evidence_dir / dest_rel
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
+    if source_path.resolve() != dest_path.resolve():
+        shutil.copy(source_path, dest_path)
+    _record_output(evidence_dir, produced, outputs, key, dest_path)
 
 
 def capture_env(evidence_dir: Path, produced: list[Path], outputs: MutableMapping[str, str]) -> None:
@@ -370,8 +398,7 @@ def main() -> int:
     sha_full = git_sha()
     short_sha = sha_full[:12] if sha_full != "unknown" else "unknown"
     base_dir = root / "artifacts" / "evidence" / date_str
-    base_dir.mkdir(parents=True, exist_ok=True)
-    temp_dir = Path(tempfile.mkdtemp(prefix="evidence-", dir=base_dir))
+    temp_dir = Path(tempfile.mkdtemp(prefix="evidence-"))
     evidence_dir = temp_dir
 
     commands: list[str] = []
@@ -401,6 +428,7 @@ def main() -> int:
             print(f"ERROR writing manifest: {exc}", file=sys.stderr)
 
     final_dir = base_dir / short_sha
+    base_dir.mkdir(parents=True, exist_ok=True)
     if final_dir.exists():
         shutil.rmtree(final_dir)
     shutil.move(str(temp_dir), final_dir)

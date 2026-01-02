@@ -15,23 +15,25 @@ Metrics are sourced from **committed evidence snapshots** in the repository for 
 | **JUnit Test Results** | `artifacts/evidence/<date>/<sha>/pytest/junit.xml` |
 | **Logs** | `artifacts/evidence/<date>/<sha>/logs/` |
 | **Manifest** | `artifacts/evidence/<date>/<sha>/manifest.json` |
-| **Iteration Metrics (optional)** | `artifacts/evidence/<date>/<sha>/iteration/iteration-metrics.jsonl` |
+| **Iteration Metrics (deterministic)** | `artifacts/evidence/<date>/<sha>/iteration/iteration-metrics.jsonl` |
 | **Benchmarks (optional)** | `artifacts/evidence/<date>/<sha>/benchmarks/` |
 | **Memory Footprint (optional)** | `artifacts/evidence/<date>/<sha>/memory/memory_footprint.json` |
+
+Iteration metrics are produced by `make evidence` via the deterministic generator (`make iteration-metrics`).
 
 Regenerate and validate locally:
 
 ```bash
+make iteration-metrics    # deterministic iteration loop benchmark
 make evidence            # captures and verifies the latest snapshot
 make verify-metrics      # validate the latest snapshot without recapturing
 # Raw commands (if needed):
-python scripts/evidence/capture_evidence.py --mode build
+python scripts/evidence/capture_evidence.py --mode build --inputs artifacts/tmp/evidence-inputs.json
 python scripts/evidence/verify_evidence_snapshot.py --evidence-dir artifacts/evidence/<date>/<sha>/
 ls artifacts/evidence/*/*
 # Optional locals:
 #   place benchmark-metrics.json or raw_neuro_engine_latency.json under ./benchmarks before capture
 #   place memory_footprint.json under ./memory before capture
-#   enable iteration metrics emitter to write iteration/iteration-metrics.jsonl before packing
 ```
 Latest evidence lives under: `artifacts/evidence/<date>/<sha>/`
 

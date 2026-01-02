@@ -41,6 +41,11 @@ Each phase returns typed artifacts in `mlsdm.core.iteration_loop`.
 - Threat spikes switch to DEFENSIVE and scale dynamics (α↓, inhibition↑, τ↑).
 - Safety gate clamps runaway deltas (bounded=True, allow_next=False).
 
+## Reproducible Iteration Metrics
+- Deterministic benchmark: `make iteration-metrics` (writes `artifacts/tmp/iteration-metrics.jsonl`)
+- Evidence capture (packs the JSONL automatically): `make evidence`
+- Evidence artifact path: `artifacts/evidence/<date>/<sha>/iteration/iteration-metrics.jsonl`
+
 ## Environment adapter (toy)
 - Protocol: `reset(seed)`, `step(action_payload) -> ObservationBundle`.
 - Toy deterministic environment in tests ensures reproducible Δ trajectories.

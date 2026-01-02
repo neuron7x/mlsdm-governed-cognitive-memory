@@ -1,9 +1,11 @@
 .PHONY: test test-fast coverage-gate verify-metrics lint type cov bench bench-drift help run-dev run-cloud-local run-agent health-check eval-moral_filter test-memory-obs \
         readiness-preview readiness-apply \
         build-package test-package docker-build-neuro-engine docker-run-neuro-engine docker-smoke-neuro-engine \
-        docker-compose-up docker-compose-down lock sync evidence
+        docker-compose-up docker-compose-down lock sync evidence iteration-metrics
 
 export PYTHONPATH := $(PYTHONPATH):$(CURDIR)/src
+ITERATION_METRICS_PATH ?= artifacts/tmp/iteration-metrics.jsonl
+EVIDENCE_INPUTS_PATH ?= artifacts/tmp/evidence-inputs.json
 
 help:
 	@echo "MLSDM Governed Cognitive Memory - Development Commands"
@@ -193,8 +195,15 @@ eval-moral_filter:
 	python -m evals.moral_filter_runner
 
 # Evidence Snapshot
-evidence:
+iteration-metrics:
+	@echo "Generating deterministic iteration metrics..."
+	@mkdir -p $(dir $(ITERATION_METRICS_PATH))
+	python scripts/eval/generate_iteration_metrics.py --out $(ITERATION_METRICS_PATH)
+
+evidence: iteration-metrics
+	@mkdir -p $(dir $(EVIDENCE_INPUTS_PATH))
+	@echo '{"iteration_metrics": "$(ITERATION_METRICS_PATH)"}' > $(EVIDENCE_INPUTS_PATH)
 	@echo "Capturing evidence snapshot..."
-	uv run python scripts/evidence/capture_evidence.py --mode build
+	DISABLE_UV_RUN=1 python scripts/evidence/capture_evidence.py --mode build --inputs $(EVIDENCE_INPUTS_PATH)
 	@echo "Verifying captured evidence snapshot..."
 	$(MAKE) verify-metrics

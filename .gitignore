@@ -44,3 +44,4 @@ conftest
 
 # Evidence artifacts (allow committed snapshots)
 !artifacts/evidence/**
+artifacts/tmp/
