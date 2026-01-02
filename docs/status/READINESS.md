@@ -165,6 +165,12 @@ Blocking issues: 3
   - Updated `src/mlsdm/observability/memory_telemetry.py`: logged average resonance for PELM retrieve operations
   - **Behavior unchanged**: retrieval selection logic and public behavior remain the same when `return_indices=False`
   - **Evidence impact**: no new runtime verification in this PR
+- 2026-01-02 — **Stability envelope + biomimetic coverage audit** — PR: copilot/add-stability-envelope-system
+  - Updated `src/mlsdm/core/iteration_loop.py`: added stability envelope (max Δ, oscillation index, regime-flip rate), fail-safe defensive freeze with learning-off, and extended safety metrics in traces.
+  - Updated `src/mlsdm/neuro_ai/contracts.py`, `src/mlsdm/neuro_ai/__init__.py`: introduced functional coverage matrix classifying biomimetic modules (biological vs engineering abstraction) with function tags and exports.
+  - Tests added/updated: `tests/unit/test_iteration_loop.py` (oscillation fail-safe, long noisy sequence convergence/halts), `tests/neuro_ai/test_neuro_ai_contract_layer.py` (coverage matrix completeness).
+  - Evidence: Targeted tests executed locally for this PR: `PYTHONPATH=./src pytest tests/unit/test_iteration_loop.py tests/neuro_ai/test_neuro_ai_contract_layer.py -q` (pass).
+  - Readiness impact: Safety envelope documented; adapters remain opt-in; broader integration/property suites still pending.
 - 2025-12-25 — **MoralFilterV2 observability enhancements** — PR: #387
   - Updated `src/mlsdm/cognition/moral_filter_v2.py`: Added boundary-case DEBUG logging
   - Added `_log_boundary_cases()` helper to log moral values near MIN/MAX/threshold boundaries (±0.01) when DEBUG level enabled
