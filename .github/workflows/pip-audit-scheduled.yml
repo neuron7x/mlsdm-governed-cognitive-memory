@@ -1,0 +1,53 @@
+name: Scheduled Dependency Vulnerability Scan
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pip-audit:
+    name: Scheduled pip-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHON_VERSION: '3.11'
+      REQUIREMENTS_FILE: requirements.txt
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: |
+            ${{ env.REQUIREMENTS_FILE }}
+            pyproject.toml
+
+      - name: Restore Python cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-py${{ env.PYTHON_VERSION }}-
+            ${{ runner.os }}-
+
+      - name: Install dependencies and pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+          pip install -r ${{ env.REQUIREMENTS_FILE }}
+
+      - name: Run pip-audit
+        run: |
+          pip-audit --requirement ${{ env.REQUIREMENTS_FILE }} --strict --progress-spinner=off
