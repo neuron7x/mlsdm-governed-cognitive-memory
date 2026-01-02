@@ -24,7 +24,7 @@
 [![Python](https://img.shields.io/badge/python-3.10+-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://github.com/neuron7x/mlsdm/pkgs/container/mlsdm-neuro-engine)
-[![Status](https://img.shields.io/badge/status-beta-orange?style=for-the-badge)](docs/status/READINESS.md)
+[![Status](https://img.shields.io/badge/status-beta-orange?style=for-the-badge)](#-engineering--readiness-status)
 
 [🚀 Getting Started](docs/GETTING_STARTED.md) •
 [Quick Start](#-quick-start) •
@@ -33,7 +33,7 @@
 [Metrics](#-validated-metrics) •
 [Contributing](#-contributing)
 
-<p><em>Readiness status is tracked in <a href="docs/status/READINESS.md">docs/status/READINESS.md</a>. All readiness claims elsewhere are superseded by that page.</em></p>
+
 
 </div>
 
@@ -785,7 +785,7 @@ For detailed validation results, see:
 ## ⚙️ Engineering & Readiness Status
 
 > [!NOTE]
-> Evidence-based readiness is tracked centrally in [docs/status/READINESS.md](docs/status/READINESS.md). The tables below summarize capabilities and references without asserting production readiness.
+> The tables below summarize capabilities and references. This project is in **Beta** status and is suitable for non-critical workloads with appropriate monitoring.
 
 ### 🧪 Quality & Reliability Matrix
 
@@ -808,7 +808,7 @@ MLSDM supports multiple deployment patterns:
 | Topology | Description | Key Files |
 |:---------|:------------|:----------|
 | **Local/Dev** | Single container or bare metal | [`docker/Dockerfile`](docker/Dockerfile), [`docker/docker-compose.yaml`](docker/docker-compose.yaml) |
-| **Service Image** | Hardened container image (see readiness status) | [`Dockerfile.neuro-engine-service`](Dockerfile.neuro-engine-service) |
+| **Service Image** | Hardened container image | [`Dockerfile.neuro-engine-service`](Dockerfile.neuro-engine-service) |
 | **Kubernetes** | Full k8s manifests with monitoring | [`deploy/k8s/`](deploy/k8s/) |
 | **Production** | Hardened deployment with security contexts | [`deploy/k8s/production-deployment.yaml`](deploy/k8s/production-deployment.yaml) |
 
@@ -852,7 +852,7 @@ For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_
 
 ## 📖 Documentation
 
-See [docs/index.md](docs/index.md) for the canonical documentation hub (including the archive) and [docs/status/READINESS.md](docs/status/READINESS.md) for readiness evidence.
+See [docs/index.md](docs/index.md) for the canonical documentation hub (including the archive).
 
 ### Core Documentation
 
