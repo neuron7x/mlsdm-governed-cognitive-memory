@@ -33,7 +33,9 @@ _MIGRATION_REGISTRY: dict[tuple[int, int], Callable[[dict[str, Any]], dict[str, 
 
 def register_migration(
     from_version: int, to_version: int
-) -> Callable[[Callable[[dict[str, Any]], dict[str, Any]]], Callable[[dict[str, Any]], dict[str, Any]]]:
+) -> Callable[
+    [Callable[[dict[str, Any]], dict[str, Any]]], Callable[[dict[str, Any]], dict[str, Any]]
+]:
     """Decorator to register a state format migration function.
 
     Args:
@@ -43,11 +45,13 @@ def register_migration(
     Returns:
         Decorator function that registers the migration
     """
+
     def decorator(
-        fn: Callable[[dict[str, Any]], dict[str, Any]]
+        fn: Callable[[dict[str, Any]], dict[str, Any]],
     ) -> Callable[[dict[str, Any]], dict[str, Any]]:
         _MIGRATION_REGISTRY[(from_version, to_version)] = fn
         return fn
+
     return decorator
 
 
@@ -346,7 +350,15 @@ class MemoryManager:
         invalid_fields: dict[str, str] = {}
         if not isinstance(memory_state.get("dimension"), int):
             invalid_fields["memory_state.dimension"] = "expected int"
-        for param in ["lambda_l1", "lambda_l2", "lambda_l3", "theta_l1", "theta_l2", "gating12", "gating23"]:
+        for param in [
+            "lambda_l1",
+            "lambda_l2",
+            "lambda_l3",
+            "theta_l1",
+            "theta_l2",
+            "gating12",
+            "gating23",
+        ]:
             val = memory_state.get(param)
             if not isinstance(val, (int, float)):
                 invalid_fields[f"memory_state.{param}"] = "expected number"
@@ -388,8 +400,7 @@ class MemoryManager:
         if isinstance(qilm_memory, list) and isinstance(qilm_phases, list):
             if len(qilm_phases) != len(qilm_memory):
                 invalid_fields["qilm.phases"] = (
-                    f"length {len(qilm_phases)} does not match memory length "
-                    f"{len(qilm_memory)}"
+                    f"length {len(qilm_phases)} does not match memory length {len(qilm_memory)}"
                 )
 
         if invalid_fields:
@@ -419,8 +430,7 @@ class MemoryManager:
                     filepath=filepath,
                     invalid_fields={
                         f"memory_state.{level_name}": (
-                            f"length {len(level_data)} does not match "
-                            f"dimension {self.dimension}"
+                            f"length {len(level_data)} does not match dimension {self.dimension}"
                         )
                     },
                 )
@@ -448,17 +458,14 @@ class MemoryManager:
             self.memory.l3[:] = new_l3
 
             # Restore QILM state
-            new_qilm_memory = [
-                np.array(vec, dtype=float) for vec in qilm_state["memory"]
-            ]
+            new_qilm_memory = [np.array(vec, dtype=float) for vec in qilm_state["memory"]]
             new_qilm_phases = list(qilm_state["phases"])
 
             self.qilm.memory = new_qilm_memory
             self.qilm.phases = new_qilm_phases
 
             logger.info(
-                "Loaded system state from %s (format_version=%d, "
-                "memory_dim=%d, qilm_entries=%d)",
+                "Loaded system state from %s (format_version=%d, memory_dim=%d, qilm_entries=%d)",
                 filepath,
                 file_version,
                 self.dimension,

@@ -50,6 +50,7 @@ CPU_CACHE_TTL = 2.0  # seconds before cache is considered stale
 @dataclass
 class CPUHealthCache:
     """Thread-safe CPU health cache with TTL."""
+
     value: float
     timestamp: float
     is_valid: bool = True
@@ -348,14 +349,16 @@ async def _cpu_background_sampler() -> None:
             cpu_instant = psutil.cpu_percent(interval=0)
 
             # If we get 0.0, do a proper measurement in thread pool
-            cpu_value = await asyncio.to_thread(psutil.cpu_percent, 0.1) if cpu_instant == 0.0 else cpu_instant
+            cpu_value = (
+                await asyncio.to_thread(psutil.cpu_percent, 0.1)
+                if cpu_instant == 0.0
+                else cpu_instant
+            )
 
             # Update cache atomically
             with _cpu_health_lock:
                 _cpu_health_cache = CPUHealthCache(
-                    value=cpu_value,
-                    timestamp=time.time(),
-                    is_valid=True
+                    value=cpu_value, timestamp=time.time(), is_valid=True
                 )
 
             # Sample at configured interval to keep cache fresh

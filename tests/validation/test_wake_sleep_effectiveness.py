@@ -137,9 +137,9 @@ def test_wake_sleep_phase_separation():
     print(f"  Wake/Sleep ratio: {wake_count}/{sleep_count}")
 
     # Validation: System should support phase-based organization
-    assert (
-        has_phase_organization or wake_count + sleep_count > 0
-    ), "System should support memory storage"
+    assert has_phase_organization or wake_count + sleep_count > 0, (
+        "System should support memory storage"
+    )
 
     print("\n✅ PASS: Wake/sleep cycles enable phase-based memory organization")
     print(f"  - {wake_count} memories in wake phase")
@@ -206,9 +206,9 @@ def test_wake_sleep_retrieval_quality():
     print(f"  Improvement:                       {improvement:.4f} ({pct_improvement:+.1f}%)")
 
     # Note: Improvement may be small but should be non-negative
-    assert (
-        coherence_with >= coherence_without * 0.95
-    ), "Wake/sleep cycles should not significantly harm retrieval quality"
+    assert coherence_with >= coherence_without * 0.95, (
+        "Wake/sleep cycles should not significantly harm retrieval quality"
+    )
 
     if improvement > 0:
         print(f"\n✅ PASS: Wake/sleep cycles improve semantic coherence by {pct_improvement:.1f}%")
@@ -274,12 +274,12 @@ def test_wake_sleep_resource_efficiency():
     print(f"  Total events:          {n_events}")
     print(f"  Processed (wake):      {processed_count}")
     print(f"  Rejected (sleep):      {sleep_rejected}")
-    print(f"  Processing rate:       {processed_count/n_events*100:.1f}%")
+    print(f"  Processing rate:       {processed_count / n_events * 100:.1f}%")
 
     print("\nWITHOUT Wake/Sleep Rhythm:")
     print(f"  Total events:          {n_events}")
     print(f"  Processed:             {baseline_processed}")
-    print(f"  Processing rate:       {baseline_processed/n_events*100:.1f}%")
+    print(f"  Processing rate:       {baseline_processed / n_events * 100:.1f}%")
 
     print("\nEFFICIENCY GAIN:")
     print(f"  Processing reduction:  {processing_reduction:.1f}%")

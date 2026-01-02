@@ -1,8 +1,8 @@
 """Unit tests for scripts/ci/generate_evidence_inputs.py."""
-from pathlib import Path
+
 import json
 import subprocess
-import os
+from pathlib import Path
 
 
 def test_generate_evidence_inputs_with_all_files(tmp_path: Path) -> None:
@@ -102,4 +102,3 @@ def test_generate_evidence_inputs_from_repo_root() -> None:
     # Values should be either string or None
     for key, value in inputs.items():
         assert value is None or isinstance(value, str), f"Invalid type for {key}: {type(value)}"
-

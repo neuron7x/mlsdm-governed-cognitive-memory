@@ -149,7 +149,9 @@ class RegimeController:
         self.defensive = defensive
         self.cooldown = cooldown
 
-    def update(self, state: IterationState, ctx: IterationContext) -> tuple[Regime, float, float, float, int]:
+    def update(
+        self, state: IterationState, ctx: IterationContext
+    ) -> tuple[Regime, float, float, float, int]:
         cooldown = state.cooldown_steps
         regime = state.regime
         if ctx.threat >= self.defensive or ctx.risk >= self.defensive:
@@ -211,7 +213,9 @@ class IterationLoop:
         self.convergence_tol = convergence_tol
         self.metrics_emitter = metrics_emitter
 
-    def propose_action(self, state: IterationState, ctx: IterationContext) -> tuple[ActionProposal, PredictionBundle]:
+    def propose_action(
+        self, state: IterationState, ctx: IterationContext
+    ) -> tuple[ActionProposal, PredictionBundle]:
         predicted = _to_vector(state.parameter)
         proposal = ActionProposal(
             action_id="predict",
@@ -222,7 +226,9 @@ class IterationLoop:
         bundle = PredictionBundle(predicted_outcome=predicted, predicted_value=state.parameter)
         return proposal, bundle
 
-    def execute_action(self, env: EnvironmentAdapter, proposal: ActionProposal, ctx: IterationContext) -> ObservationBundle:
+    def execute_action(
+        self, env: EnvironmentAdapter, proposal: ActionProposal, ctx: IterationContext
+    ) -> ObservationBundle:
         _ = ctx  # ctx reserved for future environment modulation
         return env.step(proposal.action_payload)
 
@@ -238,7 +244,9 @@ class IterationLoop:
         abs_delta = sum(abs(d) for d in delta) / len(delta) if delta else 0.0
         clipped = [max(-self.delta_max, min(self.delta_max, d)) for d in delta]
         components = [abs(d) for d in delta]
-        return PredictionError(delta=delta, abs_delta=abs_delta, clipped_delta=clipped, components=components)
+        return PredictionError(
+            delta=delta, abs_delta=abs_delta, clipped_delta=clipped, components=components
+        )
 
     def apply_updates(
         self,
@@ -255,7 +263,9 @@ class IterationLoop:
                 setattr(target, key, value)
             return target
 
-        def _update_guard_window(target: IterationState, abs_delta_max: float) -> tuple[deque[float], float]:
+        def _update_guard_window(
+            target: IterationState, abs_delta_max: float
+        ) -> tuple[deque[float], float]:
             recent_abs_deltas = deque(target.recent_abs_deltas, maxlen=GUARD_WINDOW)
             recent_abs_deltas.append(abs_delta_max)
             window_max = max(recent_abs_deltas) if recent_abs_deltas else abs_delta_max
@@ -271,7 +281,9 @@ class IterationLoop:
         ) -> tuple[dict[str, float], float, float, bool]:
             max_delta = max((abs(d) for d in pe.delta), default=0.0)
             clipped_max_delta = max((abs(d) for d in pe.clipped_delta), default=0.0)
-            convergence_time = float(steps) if abs(delta_mean) <= self.delta_max * self.convergence_tol else -1.0
+            convergence_time = (
+                float(steps) if abs(delta_mean) <= self.delta_max * self.convergence_tol else -1.0
+            )
             sign_flip_rate = _sign_flip_rate(delta_signs)
             regime_flip_rate = sum(regime_flips_window) / max(1, len(regime_flips_window))
             envelope_metrics = {
@@ -289,7 +301,9 @@ class IterationLoop:
                 "guard_max_regime_flip_rate": MAX_REGIME_FLIP_RATE,
             }
             delta_breach = clipped_max_delta > MAX_ABS_DELTA
-            regime_flip_breach = len(regime_flips_window) > 1 and regime_flip_rate > MAX_REGIME_FLIP_RATE
+            regime_flip_breach = (
+                len(regime_flips_window) > 1 and regime_flip_rate > MAX_REGIME_FLIP_RATE
+            )
             oscillation_breach = len(delta_signs) > 1 and sign_flip_rate > MAX_SIGN_FLIP_RATE
             envelope_breach = delta_breach or regime_flip_breach or oscillation_breach
             return envelope_metrics, sign_flip_rate, regime_flip_rate, envelope_breach
@@ -304,7 +318,9 @@ class IterationLoop:
         if not self.enabled:
             recent_abs_deltas, max_abs_delta = _update_guard_window(state, abs_max)
             sign_flip_rate = _sign_flip_rate(state.delta_signs)
-            regime_flip_rate = sum(state.regime_flips_window) / max(1, len(state.regime_flips_window))
+            regime_flip_rate = sum(state.regime_flips_window) / max(
+                1, len(state.regime_flips_window)
+            )
             frozen_state = replace(
                 state,
                 regime=Regime.DEFENSIVE if state.frozen else state.regime,
@@ -316,7 +332,9 @@ class IterationLoop:
                     "max_delta": abs_max,
                     "oscillation_index": sign_flip_rate,
                     "regime_flip_rate": regime_flip_rate,
-                    "convergence_time": float(state.steps) if abs(state.last_delta) <= self.delta_max else -1.0,
+                    "convergence_time": float(state.steps)
+                    if abs(state.last_delta) <= self.delta_max
+                    else -1.0,
                     "sign_flip_rate": sign_flip_rate,
                     "windowed_max_abs_delta": max_abs_delta,
                     "windowed_sign_flip_rate": sign_flip_rate,
@@ -327,11 +345,15 @@ class IterationLoop:
                     "guard_max_regime_flip_rate": MAX_REGIME_FLIP_RATE,
                 },
             )
-            return frozen_state, UpdateResult(parameter_deltas={}, bounded=state.frozen, applied=False), {
-                "effective_lr": 0.0,
-                "inhibition_scale": 1.0,
-                "tau_scale": 1.0,
-            }
+            return (
+                frozen_state,
+                UpdateResult(parameter_deltas={}, bounded=state.frozen, applied=False),
+                {
+                    "effective_lr": 0.0,
+                    "inhibition_scale": 1.0,
+                    "tau_scale": 1.0,
+                },
+            )
 
         if state.kill_switch_active or state.frozen or state.cooldown_remaining > 0:
             delta_sign = _sign(delta_mean)
@@ -357,7 +379,9 @@ class IterationLoop:
                 cooldown_remaining = max(0, base_cooldown - 1)
             if cooldown_remaining > 0 or envelope_breach or not guard_stable:
                 steps = state.steps + 1
-                time_to_kill_switch = state.time_to_kill_switch if state.time_to_kill_switch is not None else steps
+                time_to_kill_switch = (
+                    state.time_to_kill_switch if state.time_to_kill_switch is not None else steps
+                )
                 frozen_state = replace(
                     state,
                     regime=Regime.DEFENSIVE,
@@ -380,12 +404,16 @@ class IterationLoop:
                     frozen=True,
                     time_to_kill_switch=time_to_kill_switch,
                 )
-                return frozen_state, UpdateResult(parameter_deltas={}, bounded=True, applied=False), {
-                    "effective_lr": 0.0,
-                    "inhibition_scale": 1.0,
-                    "tau_scale": 1.0,
-                    **envelope_metrics,
-                }
+                return (
+                    frozen_state,
+                    UpdateResult(parameter_deltas={}, bounded=True, applied=False),
+                    {
+                        "effective_lr": 0.0,
+                        "inhibition_scale": 1.0,
+                        "tau_scale": 1.0,
+                        **envelope_metrics,
+                    },
+                )
             state = replace(
                 state,
                 recent_abs_deltas=recent_abs_deltas,
@@ -402,7 +430,9 @@ class IterationLoop:
             # Track recovery for inclusion in dynamics
             just_recovered = True
 
-        regime, lr_scale, inhibition_scale, tau_scale, cooldown = self.regime_controller.update(state, ctx)
+        regime, lr_scale, inhibition_scale, tau_scale, cooldown = self.regime_controller.update(
+            state, ctx
+        )
         risk_adjusted_lr = state.learning_rate * lr_scale * (1 - ctx.risk * self.risk_scale)
         base_lr = max(self.alpha_min, min(self.alpha_max, risk_adjusted_lr))
         new_param = state.parameter - base_lr * delta_mean
@@ -463,7 +493,9 @@ class IterationLoop:
             recovered=state.recovered,
         )
         if envelope_breach:
-            time_to_kill_switch = state.time_to_kill_switch if state.time_to_kill_switch is not None else steps
+            time_to_kill_switch = (
+                state.time_to_kill_switch if state.time_to_kill_switch is not None else steps
+            )
             new_state = replace(
                 state,
                 regime=Regime.DEFENSIVE,
@@ -485,12 +517,16 @@ class IterationLoop:
                 recovered=False,
                 frozen=True,
             )
-            return new_state, UpdateResult(parameter_deltas={}, bounded=True, applied=False), {
-                "effective_lr": 0.0,
-                "inhibition_scale": inhibition_scale,
-                "tau_scale": tau_scale,
-                **envelope_metrics,
-            }
+            return (
+                new_state,
+                UpdateResult(parameter_deltas={}, bounded=True, applied=False),
+                {
+                    "effective_lr": 0.0,
+                    "inhibition_scale": inhibition_scale,
+                    "tau_scale": tau_scale,
+                    **envelope_metrics,
+                },
+            )
 
         dynamics_dict = {
             "effective_lr": base_lr,
@@ -500,10 +536,20 @@ class IterationLoop:
         }
         if just_recovered:
             dynamics_dict["recovered"] = True
-        
-        return new_state, UpdateResult(parameter_deltas={"parameter": new_param - state.parameter}, bounded=bounded, applied=True), dynamics_dict
 
-    def evaluate_safety(self, state: IterationState, pe: PredictionError, ctx: IterationContext) -> SafetyDecision:
+        return (
+            new_state,
+            UpdateResult(
+                parameter_deltas={"parameter": new_param - state.parameter},
+                bounded=bounded,
+                applied=True,
+            ),
+            dynamics_dict,
+        )
+
+    def evaluate_safety(
+        self, state: IterationState, pe: PredictionError, ctx: IterationContext
+    ) -> SafetyDecision:
         abs_max = max((abs(d) for d in pe.delta), default=0.0)
         allow = abs_max <= self.delta_max * self.safety_multiplier
         reason = "stable"
@@ -562,8 +608,12 @@ class IterationLoop:
             "windowed_max_abs_delta": new_state.max_abs_delta,
             "time_to_kill_switch": new_state.time_to_kill_switch,
             "recovered": new_state.recovered,
-            "windowed_sign_flip_rate": new_state.last_envelope_metrics.get("windowed_sign_flip_rate", 0.0),
-            "windowed_regime_flip_rate": new_state.last_envelope_metrics.get("windowed_regime_flip_rate", 0.0),
+            "windowed_sign_flip_rate": new_state.last_envelope_metrics.get(
+                "windowed_sign_flip_rate", 0.0
+            ),
+            "windowed_regime_flip_rate": new_state.last_envelope_metrics.get(
+                "windowed_regime_flip_rate", 0.0
+            ),
         }
 
         trace = {

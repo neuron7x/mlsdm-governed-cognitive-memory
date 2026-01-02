@@ -181,10 +181,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
 # Canonical app factory used by all runtime entrypoints
 def create_app() -> FastAPI:
     """Return the canonical FastAPI application instance."""
     return app
+
 
 # Add production middleware (order matters: outer to inner)
 # 1. SecurityHeaders - adds security headers to all responses

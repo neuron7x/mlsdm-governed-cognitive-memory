@@ -95,18 +95,18 @@ def test_rhythm_phase_validity(wake_duration, sleep_duration, num_steps):
 
     # Check initial phase
     assert rhythm.phase in valid_phases, f"Invalid initial phase: {rhythm.phase}"
-    assert (
-        rhythm.get_current_phase() in valid_phases
-    ), f"Invalid get_current_phase: {rhythm.get_current_phase()}"
+    assert rhythm.get_current_phase() in valid_phases, (
+        f"Invalid get_current_phase: {rhythm.get_current_phase()}"
+    )
 
     # Check phase after each step
     for i in range(num_steps):
         rhythm.step()
 
-        assert rhythm.phase in valid_phases, f"Invalid phase after step {i+1}: {rhythm.phase}"
-        assert (
-            rhythm.get_current_phase() in valid_phases
-        ), f"get_current_phase invalid after step {i+1}: {rhythm.get_current_phase()}"
+        assert rhythm.phase in valid_phases, f"Invalid phase after step {i + 1}: {rhythm.phase}"
+        assert rhythm.get_current_phase() in valid_phases, (
+            f"get_current_phase invalid after step {i + 1}: {rhythm.get_current_phase()}"
+        )
 
 
 @settings(max_examples=50, deadline=None)
@@ -130,7 +130,7 @@ def test_rhythm_counter_non_negativity(wake_duration, sleep_duration, num_steps)
         rhythm.step()
 
         # Counter should reset when phase changes, never go negative
-        assert rhythm.counter >= 0, f"Counter negative after step {i+1}: {rhythm.counter}"
+        assert rhythm.counter >= 0, f"Counter negative after step {i + 1}: {rhythm.counter}"
 
 
 # ============================================================================
@@ -189,11 +189,11 @@ def test_rhythm_step_progress(wake_duration, sleep_duration, num_steps):
 
         # When counter reaches 0, phase changes and counter resets
         if counter_before == 1:
-            assert phase_changed, f"Phase should change when counter was 1 (step {i+1})"
+            assert phase_changed, f"Phase should change when counter was 1 (step {i + 1})"
         else:
-            assert (
-                counter_decreased or phase_changed
-            ), f"Step {i+1} made no progress: counter {counter_before}->{counter_after}, phase {phase_before}->{phase_after}"
+            assert counter_decreased or phase_changed, (
+                f"Step {i + 1} made no progress: counter {counter_before}->{counter_after}, phase {phase_before}->{phase_after}"
+            )
 
 
 @settings(max_examples=30, deadline=None)
@@ -208,9 +208,9 @@ def test_rhythm_is_wake_is_sleep_consistency(wake_duration, sleep_duration):
 
     for _ in range(cycle_length * 3):  # Test through 3 full cycles
         # Exactly one must be true
-        assert (
-            rhythm.is_wake() != rhythm.is_sleep()
-        ), f"is_wake={rhythm.is_wake()}, is_sleep={rhythm.is_sleep()} - not mutually exclusive"
+        assert rhythm.is_wake() != rhythm.is_sleep(), (
+            f"is_wake={rhythm.is_wake()}, is_sleep={rhythm.is_sleep()} - not mutually exclusive"
+        )
 
         # Must match phase attribute
         if rhythm.is_wake():
@@ -256,9 +256,9 @@ def test_rhythm_cycle_periodicity(wake_duration, sleep_duration):
         if steps > expected_cycle * 2:
             break
 
-    assert (
-        steps == expected_cycle
-    ), f"Cycle duration {steps} != expected {expected_cycle} (wake={wake_duration}, sleep={sleep_duration})"
+    assert steps == expected_cycle, (
+        f"Cycle duration {steps} != expected {expected_cycle} (wake={wake_duration}, sleep={sleep_duration})"
+    )
 
 
 @settings(max_examples=30, deadline=None)
@@ -287,9 +287,9 @@ def test_rhythm_phase_alternation(wake_duration, sleep_duration):
 
     # Verify alternation: no two consecutive identical phases in history
     for i in range(len(phase_history) - 1):
-        assert (
-            phase_history[i] != phase_history[i + 1]
-        ), f"Phase repetition at index {i}: {phase_history}"
+        assert phase_history[i] != phase_history[i + 1], (
+            f"Phase repetition at index {i}: {phase_history}"
+        )
 
 
 @settings(max_examples=30, deadline=None)
@@ -312,9 +312,9 @@ def test_rhythm_wake_duration_exact(wake_duration, sleep_duration):
         if wake_steps > wake_duration + 1:
             break
 
-    assert (
-        wake_steps == wake_duration
-    ), f"Wake phase lasted {wake_steps} steps, expected {wake_duration}"
+    assert wake_steps == wake_duration, (
+        f"Wake phase lasted {wake_steps} steps, expected {wake_duration}"
+    )
 
 
 @settings(max_examples=30, deadline=None)
@@ -341,9 +341,9 @@ def test_rhythm_sleep_duration_exact(wake_duration, sleep_duration):
         if sleep_steps > sleep_duration + 1:
             break
 
-    assert (
-        sleep_steps == sleep_duration
-    ), f"Sleep phase lasted {sleep_steps} steps, expected {sleep_duration}"
+    assert sleep_steps == sleep_duration, (
+        f"Sleep phase lasted {sleep_steps} steps, expected {sleep_duration}"
+    )
 
 
 # ============================================================================

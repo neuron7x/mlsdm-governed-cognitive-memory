@@ -58,7 +58,7 @@ def test_verify_snapshot_smoke(tmp_path: Path) -> None:
     junit_xml = pytest_dir / "junit.xml"
     junit_xml.write_text(
         '<testsuite name="suite" tests="1" failures="0" errors="0" skipped="0">'
-        "<testcase name=\"test_example\"/>"
+        '<testcase name="test_example"/>'
         "</testsuite>\n",
         encoding="utf-8",
     )

@@ -167,9 +167,9 @@ class TestFullStackNormalRequest:
 
         # Validate response
         response = result.get("response", "")
-        assert (
-            response != "" or rejected_at is not None
-        ), "Expected non-empty response or explicit rejection (error field or rejected_at set)"
+        assert response != "" or rejected_at is not None, (
+            "Expected non-empty response or explicit rejection (error field or rejected_at set)"
+        )
 
         # If we got a response, validate it's well-formed
         if response:
@@ -358,9 +358,9 @@ class TestFullStackToxicRejection:
         # Validate rejection mechanism is working
         # Use 50% minimum to account for adaptive filter behavior
         # (70% expectation from contract is for statistically averaged scenario)
-        assert (
-            rejection_rate >= 0.5
-        ), f"Rejection rate {rejection_rate:.1%} is below expected 50% minimum"
+        assert rejection_rate >= 0.5, (
+            f"Rejection rate {rejection_rate:.1%} is below expected 50% minimum"
+        )
 
 
 # ============================================================
@@ -403,9 +403,9 @@ class TestFullStackAphasiaDetection:
             result = detector.analyze(text)
 
             # Contract: telegraphic text should be detected as aphasic
-            assert (
-                result["is_aphasic"] is True
-            ), f"Expected aphasic=True for telegraphic text: {text}"
+            assert result["is_aphasic"] is True, (
+                f"Expected aphasic=True for telegraphic text: {text}"
+            )
 
             # Contract: severity should be > 0
             assert result["severity"] > 0.0, f"Expected severity > 0 for aphasic text: {text}"
@@ -543,9 +543,9 @@ class TestFullStackIntegration:
         # Toxic request should be rejected
         toxic_error = toxic_result.get("error")
         toxic_rejected = toxic_result.get("rejected_at")
-        assert (
-            toxic_rejected is not None or toxic_error is not None
-        ), "Toxic request should be rejected"
+        assert toxic_rejected is not None or toxic_error is not None, (
+            "Toxic request should be rejected"
+        )
 
 
 if __name__ == "__main__":

@@ -157,9 +157,9 @@ def test_response_schema_completeness(prompt):
             "rejected_at",
         }
 
-        assert required_keys.issubset(
-            set(response.keys())
-        ), f"Missing required keys. Got: {set(response.keys())}, Required: {required_keys}"
+        assert required_keys.issubset(set(response.keys())), (
+            f"Missing required keys. Got: {set(response.keys())}, Required: {required_keys}"
+        )
 
         # Check nested structures exist
         # governance can be None (when FSLGS disabled) or dict (when FSLGS enabled)
@@ -201,9 +201,9 @@ def test_moral_threshold_enforcement(prompt, moral_threshold):
         moral_score = get_moral_score_estimate(response["response"], prompt)
 
         # Should meet threshold (with some tolerance for estimation error)
-        assert (
-            moral_score >= moral_threshold - MORAL_SCORE_TOLERANCE
-        ), f"Accepted response has moral score {moral_score} below threshold {moral_threshold}"
+        assert moral_score >= moral_threshold - MORAL_SCORE_TOLERANCE, (
+            f"Accepted response has moral score {moral_score} below threshold {moral_threshold}"
+        )
 
 
 @settings(max_examples=50, deadline=None)
@@ -249,9 +249,9 @@ def test_rejection_reason_validity(prompt):
             "generation",  # Can be rejected during generation phase
         }
 
-        assert (
-            rejected_at in valid_stages
-        ), f"Invalid rejection stage: {rejected_at}. Valid stages: {valid_stages}"
+        assert rejected_at in valid_stages, (
+            f"Invalid rejection stage: {rejected_at}. Valid stages: {valid_stages}"
+        )
 
         assert error is not None, "Rejection without error message"
 
@@ -363,9 +363,9 @@ def test_neutral_phrase_stability(prompt):
 
     # Scores should be similar (within tolerance)
     score_diff = abs(score1 - score2)
-    assert (
-        score_diff < COHERENCE_TOLERANCE
-    ), f"Neutral phrase changed moral score by {score_diff} (from {score1} to {score2})"
+    assert score_diff < COHERENCE_TOLERANCE, (
+        f"Neutral phrase changed moral score by {score_diff} (from {score1} to {score2})"
+    )
 
 
 @settings(max_examples=30, deadline=None)
@@ -411,12 +411,12 @@ def test_rephrasing_consistency(prompt):
         "error",
         "rejected_at",
     }
-    assert required_keys.issubset(
-        set(response1.keys())
-    ), f"response1 missing keys: {required_keys - set(response1.keys())}"
-    assert required_keys.issubset(
-        set(response2.keys())
-    ), f"response2 missing keys: {required_keys - set(response2.keys())}"
+    assert required_keys.issubset(set(response1.keys())), (
+        f"response1 missing keys: {required_keys - set(response1.keys())}"
+    )
+    assert required_keys.issubset(set(response2.keys())), (
+        f"response2 missing keys: {required_keys - set(response2.keys())}"
+    )
 
     # Key invariant: Polite rephrasing should not cause rejection flip
     # If original was accepted, rephrased should also be accepted
@@ -581,9 +581,9 @@ def test_engine_step_counter_monotonic_under_valid_calls(num_calls, moral_value)
         if "step" in mlsdm_state:
             step = mlsdm_state["step"]
             expected_step = i + 1  # Steps start at 1
-            assert (
-                step >= expected_step
-            ), f"Step counter went backwards: got {step}, expected >= {expected_step}"
+            assert step >= expected_step, (
+                f"Step counter went backwards: got {step}, expected >= {expected_step}"
+            )
 
 
 @settings(max_examples=30, deadline=None)
@@ -673,9 +673,9 @@ def test_engine_multi_prompt_sequence_stability(prompts):
         is_rejected = response.get("rejected_at") is not None
         has_error = response.get("error") is not None
 
-        assert (
-            has_content or is_rejected or has_error
-        ), f"Response {i} has neither content nor rejection/error"
+        assert has_content or is_rejected or has_error, (
+            f"Response {i} has neither content nor rejection/error"
+        )
 
 
 if __name__ == "__main__":

@@ -79,14 +79,10 @@ class MoralFilterV2:
     _ADAPT_DELTA = 0.05
     _BOUNDARY_EPS = 0.01
 
-    def __init__(
-        self, initial_threshold: float | None = None, filter_id: str = "default"
-    ) -> None:
+    def __init__(self, initial_threshold: float | None = None, filter_id: str = "default") -> None:
         # Use calibration default if not specified
         if initial_threshold is None:
-            initial_threshold = (
-                MORAL_FILTER_DEFAULTS.threshold if MORAL_FILTER_DEFAULTS else 0.50
-            )
+            initial_threshold = MORAL_FILTER_DEFAULTS.threshold if MORAL_FILTER_DEFAULTS else 0.50
 
         # Validate input
         if not isinstance(initial_threshold, int | float):
@@ -95,9 +91,7 @@ class MoralFilterV2:
             )
 
         # Optimization: Use pure Python min/max instead of np.clip for scalar
-        self.threshold = max(
-            self.MIN_THRESHOLD, min(float(initial_threshold), self.MAX_THRESHOLD)
-        )
+        self.threshold = max(self.MIN_THRESHOLD, min(float(initial_threshold), self.MAX_THRESHOLD))
         self.ema_accept_rate = 0.5
 
         # NEW: Drift detection

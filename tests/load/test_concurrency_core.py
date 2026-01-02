@@ -237,9 +237,9 @@ class TestNeuroCognitiveEngineConcurrency:
             assert step >= 0, "step_counter should never be negative"
 
         # 5. Verify test completed in reasonable time
-        assert (
-            elapsed < timeout_seconds
-        ), f"Test took {elapsed:.2f}s, exceeds timeout of {timeout_seconds}s"
+        assert elapsed < timeout_seconds, (
+            f"Test took {elapsed:.2f}s, exceeds timeout of {timeout_seconds}s"
+        )
 
         # 6. Count accepted vs rejected
         accepted = sum(1 for r in results if r.get("error") is None)
@@ -317,9 +317,9 @@ class TestNeuroCognitiveEngineConcurrency:
 
         assert num_timed_out == 0, f"{num_timed_out} calls timed out - possible deadlock detected"
         assert num_completed == N, f"Only {num_completed}/{N} calls completed - possible deadlock"
-        assert (
-            elapsed < overall_timeout
-        ), f"Test took {elapsed:.2f}s, exceeded timeout - possible deadlock"
+        assert elapsed < overall_timeout, (
+            f"Test took {elapsed:.2f}s, exceeded timeout - possible deadlock"
+        )
 
         print(f"\nNo deadlock detected: {num_completed}/{N} completed in {elapsed:.2f}s")
 
@@ -401,9 +401,9 @@ class TestCognitiveControllerConcurrency:
 
         # Assertions
         # 1. No exceptions
-        assert (
-            len(exceptions) == 0
-        ), f"{len(exceptions)} exceptions occurred: {[str(e) for e in exceptions[:5]]}"
+        assert len(exceptions) == 0, (
+            f"{len(exceptions)} exceptions occurred: {[str(e) for e in exceptions[:5]]}"
+        )
 
         # 2. Step counter never goes negative
         assert all(s >= 0 for s in step_snapshots), "step_counter went negative"
@@ -412,9 +412,9 @@ class TestCognitiveControllerConcurrency:
         # (concurrent access means we can't guarantee strict order)
         sorted_steps = sorted(step_snapshots)
         for i in range(1, len(sorted_steps)):
-            assert (
-                sorted_steps[i] >= sorted_steps[i - 1]
-            ), f"Step counter decreased: {sorted_steps[i - 1]} -> {sorted_steps[i]}"
+            assert sorted_steps[i] >= sorted_steps[i - 1], (
+                f"Step counter decreased: {sorted_steps[i - 1]} -> {sorted_steps[i]}"
+            )
 
         # 4. Final step counter should be >= N (accounting for potential rejections)
         final_step = controller.step_counter
@@ -423,14 +423,14 @@ class TestCognitiveControllerConcurrency:
         # 5. pelm_used stays within valid bounds
         pelm_capacity = controller.pelm.capacity
         for used in pelm_used_snapshots:
-            assert (
-                0 <= used <= pelm_capacity
-            ), f"pelm_used {used} out of bounds [0, {pelm_capacity}]"
+            assert 0 <= used <= pelm_capacity, (
+                f"pelm_used {used} out of bounds [0, {pelm_capacity}]"
+            )
 
         # 6. No unexpected emergency shutdown
-        assert (
-            not controller.emergency_shutdown
-        ), "Unexpected emergency_shutdown triggered during normal load"
+        assert not controller.emergency_shutdown, (
+            "Unexpected emergency_shutdown triggered during normal load"
+        )
 
         # 7. Memory integrity check - internal structures should be consistent
         pelm_stats = controller.pelm.get_state_stats()
@@ -479,9 +479,9 @@ class TestCognitiveControllerConcurrency:
         unique_steps = set(steps_only)
 
         # All steps should be unique (1 to N)
-        assert len(unique_steps) == len(
-            steps_only
-        ), f"Duplicate step values detected: {len(unique_steps)} unique vs {len(steps_only)} total"
+        assert len(unique_steps) == len(steps_only), (
+            f"Duplicate step values detected: {len(unique_steps)} unique vs {len(steps_only)} total"
+        )
 
         # Steps should cover range 1 to N
         assert min(steps_only) >= 1

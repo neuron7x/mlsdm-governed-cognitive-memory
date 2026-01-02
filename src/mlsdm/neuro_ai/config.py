@@ -24,7 +24,11 @@ class NeuroHybridFlags:
 
     @classmethod
     def from_env_and_config(cls, config: SystemConfig | None = None) -> NeuroHybridFlags:
-        config_overrides = config.neuro_hybrid.module_overrides if config and hasattr(config, "neuro_hybrid") else {}
+        config_overrides = (
+            config.neuro_hybrid.module_overrides
+            if config and hasattr(config, "neuro_hybrid")
+            else {}
+        )
         hybrid = _env_bool("MLSDM_NEURO_HYBRID_ENABLE", False)
         learning = _env_bool("MLSDM_NEURO_LEARNING_ENABLE", False)
         regime = _env_bool("MLSDM_NEURO_REGIME_ENABLE", False)

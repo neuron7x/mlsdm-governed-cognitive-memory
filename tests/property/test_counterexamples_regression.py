@@ -247,9 +247,9 @@ class TestCoherenceCounterexamples:
         )
 
         # Should detect at least 50% of low coherence cases (heuristic baseline)
-        assert (
-            detection_rate >= 0.50
-        ), f"Low coherence detection rate {detection_rate:.1%} below 50% threshold"
+        assert detection_rate >= 0.50, (
+            f"Low coherence detection rate {detection_rate:.1%} below 50% threshold"
+        )
 
     def test_schizophasia_patterns_tracked(self, counterexamples):
         """Track Sapolsky-style schizophasia patterns (stress-induced incoherence)."""
@@ -302,9 +302,9 @@ class TestMemoryCounterexamples:
 
                 actual_size = pelm.size
 
-                assert (
-                    actual_size <= case["capacity"]
-                ), f"Capacity enforcement failed: {actual_size} > {case['capacity']}"
+                assert actual_size <= case["capacity"], (
+                    f"Capacity enforcement failed: {actual_size} > {case['capacity']}"
+                )
 
     def test_dimension_consistency_cases(self, counterexamples):
         """Verify dimension consistency cases."""
@@ -408,7 +408,7 @@ def test_counterexamples_statistics():
         + sum(1 for c in memory_cases if c["passed"])
     )
 
-    print(f"\nOverall: {total_passing}/{total} passing ({total_passing/total*100:.1f}%)")
+    print(f"\nOverall: {total_passing}/{total} passing ({total_passing / total * 100:.1f}%)")
     print("=" * 70)
 
 

@@ -3,7 +3,9 @@ from __future__ import annotations
 import fnmatch
 from pathlib import Path
 
-MAX_EVIDENCE_FILE_BYTES = 5 * 1024 * 1024  # 5 MB cap per requirement: keep evidence small and non-sensitive
+MAX_EVIDENCE_FILE_BYTES = (
+    5 * 1024 * 1024
+)  # 5 MB cap per requirement: keep evidence small and non-sensitive
 FORBIDDEN_PATTERNS = [
     "*.env",
     "*.pem",
@@ -49,6 +51,4 @@ def test_evidence_files_are_under_size_cap() -> None:
     for path in _evidence_files():
         if path.stat().st_size > MAX_EVIDENCE_FILE_BYTES:
             oversized.append(str(path))
-    assert not oversized, (
-        f"Evidence files exceed {MAX_EVIDENCE_FILE_BYTES} bytes cap: {oversized}"
-    )
+    assert not oversized, f"Evidence files exceed {MAX_EVIDENCE_FILE_BYTES} bytes cap: {oversized}"

@@ -283,10 +283,13 @@ class TestCascadingFailuresChaos:
 
         # Recovery phase requests should succeed
         success_count = sum(
-            1 for r in recovery_results
+            1
+            for r in recovery_results
             if r.get("error") is None and r.get("response") and "Recovered" in r.get("response", "")
         )
-        assert success_count >= 3, f"Recovery phase should have high success rate, got {success_count}"
+        assert success_count >= 3, (
+            f"Recovery phase should have high success rate, got {success_count}"
+        )
 
 
 class TestIsolationUnderCascade:
@@ -354,7 +357,9 @@ class TestIsolationUnderCascade:
         assert len(results) == 10
 
         # Should have mix of successes and failures
-        successes = [r for idx, r in results if r.get("response") and "Success" in r.get("response", "")]
+        successes = [
+            r for idx, r in results if r.get("response") and "Success" in r.get("response", "")
+        ]
         failures = [r for idx, r in results if r.get("error") or r.get("response") is None]
 
         # With retry, we should have some successes
@@ -387,8 +392,9 @@ class TestIsolationUnderCascade:
 
         # Step count should have increased consistently
         expected_processed = 50
-        assert final_step >= initial_step + expected_processed // 2, \
+        assert final_step >= initial_step + expected_processed // 2, (
             f"Step count inconsistent: started at {initial_step}, ended at {final_step}"
+        )
 
         # Controller should not be in emergency (threshold was high)
         assert controller.emergency_shutdown is False

@@ -247,9 +247,9 @@ class TestRateLimiterLongRunning:
         expected_allowed = 10.0 * 2.0  # 20 requests over 2 seconds
 
         # Allow 50% margin due to timing variability
-        assert (
-            allowed_count >= expected_allowed * 0.5
-        ), f"Allowed {allowed_count}, expected ~{expected_allowed}"
-        assert (
-            allowed_count <= expected_allowed * 1.5
-        ), f"Allowed {allowed_count}, expected ~{expected_allowed}"
+        assert allowed_count >= expected_allowed * 0.5, (
+            f"Allowed {allowed_count}, expected ~{expected_allowed}"
+        )
+        assert allowed_count <= expected_allowed * 1.5, (
+            f"Allowed {allowed_count}, expected ~{expected_allowed}"
+        )

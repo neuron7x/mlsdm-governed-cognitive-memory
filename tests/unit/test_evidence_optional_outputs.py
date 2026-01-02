@@ -61,7 +61,10 @@ def test_optional_outputs_verified_when_present(tmp_path: Path) -> None:
     iteration_metrics = tmp_path / "iteration-metrics.jsonl"
 
     coverage.write_text('<coverage line-rate="0.5"></coverage>', encoding="utf-8")
-    junit.write_text('<testsuite name="t" tests="1" failures="0" errors="0" skipped="0"><testcase name="ok"/></testsuite>', encoding="utf-8")
+    junit.write_text(
+        '<testsuite name="t" tests="1" failures="0" errors="0" skipped="0"><testcase name="ok"/></testsuite>',
+        encoding="utf-8",
+    )
     bench.write_text('{"metric": 1}', encoding="utf-8")
     latency.write_text('{"p50": 1}', encoding="utf-8")
     memory.write_text('{"rss": 1}', encoding="utf-8")
@@ -90,7 +93,10 @@ def test_required_only_still_passes(tmp_path: Path) -> None:
     junit = tmp_path / "junit.xml"
 
     coverage.write_text('<coverage line-rate="0.5"></coverage>', encoding="utf-8")
-    junit.write_text('<testsuite name="t" tests="1" failures="0" errors="0" skipped="0"><testcase name="ok"/></testsuite>', encoding="utf-8")
+    junit.write_text(
+        '<testsuite name="t" tests="1" failures="0" errors="0" skipped="0"><testcase name="ok"/></testsuite>',
+        encoding="utf-8",
+    )
 
     produced = _run_capture(
         snapshot.parent,
@@ -112,7 +118,10 @@ def test_optional_output_outside_dir_fails(tmp_path: Path) -> None:
     bad = tmp_path / "outside.json"
 
     coverage.write_text('<coverage line-rate="0.5"></coverage>', encoding="utf-8")
-    junit.write_text('<testsuite name="t" tests="1" failures="0" errors="0" skipped="0"><testcase name="ok"/></testsuite>', encoding="utf-8")
+    junit.write_text(
+        '<testsuite name="t" tests="1" failures="0" errors="0" skipped="0"><testcase name="ok"/></testsuite>',
+        encoding="utf-8",
+    )
     bad.write_text("{}", encoding="utf-8")
 
     manifest_inputs = {

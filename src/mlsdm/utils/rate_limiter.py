@@ -112,9 +112,7 @@ class RateLimiter:
             if client_count == 0:
                 average_tokens = 0.0
             else:
-                average_tokens = sum(
-                    tokens for tokens, _ in self.buckets.values()
-                ) / client_count
+                average_tokens = sum(tokens for tokens, _ in self.buckets.values()) / client_count
             return {
                 "client_count": float(client_count),
                 "average_tokens": float(average_tokens),

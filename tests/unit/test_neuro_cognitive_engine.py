@@ -583,7 +583,9 @@ class TestNeuroCognitiveEngineMoralChecks:
         score = engine._estimate_response_moral_score("I hate this so much", "normal prompt")
         assert score < 0.8  # Should be penalized for "hate"
 
-        score = engine._estimate_response_moral_score("Let's attack them with violence", "normal prompt")
+        score = engine._estimate_response_moral_score(
+            "Let's attack them with violence", "normal prompt"
+        )
         assert score < 0.6  # Should be heavily penalized for "attack" and "violence"
 
     def test_estimate_response_moral_score_neutral_response(self):
@@ -617,7 +619,9 @@ class TestNeuroCognitiveEngineMoralChecks:
         )
 
         # Positive response patterns increase the score
-        score = engine._estimate_response_moral_score("I'm happy to help you with that!", "How are you?")
+        score = engine._estimate_response_moral_score(
+            "I'm happy to help you with that!", "How are you?"
+        )
         assert score > 0.8  # Should be boosted for "help"
 
 
@@ -668,9 +672,9 @@ class TestNeuroCognitiveEngineExceptionHandling:
         # Error should indicate empty response (type='empty_response' is used by engine)
         error_type = result["error"].get("type", "")
         error_message = result["error"].get("message", "")
-        assert (
-            error_type == "empty_response" or "empty" in error_message.lower()
-        ), f"Expected empty_response error, got type='{error_type}', message='{error_message}'"
+        assert error_type == "empty_response" or "empty" in error_message.lower(), (
+            f"Expected empty_response error, got type='{error_type}', message='{error_message}'"
+        )
 
 
 class TestCircuitBreakerIntegration:

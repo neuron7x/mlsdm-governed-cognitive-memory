@@ -749,7 +749,9 @@ class SanitizedContext:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
-            "sanitized_text": self.sanitized_text[:200] + "..." if len(self.sanitized_text) > 200 else self.sanitized_text,
+            "sanitized_text": self.sanitized_text[:200] + "..."
+            if len(self.sanitized_text) > 200
+            else self.sanitized_text,
             "removed_count": len(self.removed_instructions),
             "risk_score": self.risk_score,
             "is_modified": self.is_modified,
@@ -760,7 +762,13 @@ class SanitizedContext:
 _EMBEDDED_INSTRUCTION_PATTERNS = [
     # Direct instruction injection in context
     (re.compile(r"\[INST(?:RUCTION)?\].*?\[/INST(?:RUCTION)?\]", re.IGNORECASE | re.DOTALL), 0.9),
-    (re.compile(r"<\|?(?:im_start|system|assistant)\|?>.*?<\|?(?:im_end|/system|/assistant)\|?>", re.IGNORECASE | re.DOTALL), 0.95),
+    (
+        re.compile(
+            r"<\|?(?:im_start|system|assistant)\|?>.*?<\|?(?:im_end|/system|/assistant)\|?>",
+            re.IGNORECASE | re.DOTALL,
+        ),
+        0.95,
+    ),
     # Hidden instructions in context
     (re.compile(r"(?:hidden\s+)?(?:instruction|command)s?\s*:\s*[^\n]+", re.IGNORECASE), 0.8),
     # Unicode/invisible character attacks
@@ -809,7 +817,9 @@ def sanitize_context(
             for match in matches:
                 # Store what we're removing (truncated for safety)
                 removed_text = match if isinstance(match, str) else str(match)
-                removed_instructions.append(removed_text[:50] + "..." if len(removed_text) > 50 else removed_text)
+                removed_instructions.append(
+                    removed_text[:50] + "..." if len(removed_text) > 50 else removed_text
+                )
             sanitized = pattern.sub("", sanitized)
             max_risk = max(max_risk, risk_score)
 

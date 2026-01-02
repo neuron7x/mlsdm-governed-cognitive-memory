@@ -97,9 +97,9 @@ class TestPromptInjectionDetection:
         ]
         for prompt in hijack_attempts:
             result = analyzer.analyze_prompt(prompt)
-            assert any(
-                v.category == SafetyCategory.ROLE_HIJACK for v in result.violations
-            ), f"Role hijack not detected: {prompt}"
+            assert any(v.category == SafetyCategory.ROLE_HIJACK for v in result.violations), (
+                f"Role hijack not detected: {prompt}"
+            )
 
     def test_jailbreak_attempt_detected(self, analyzer: LLMSafetyAnalyzer) -> None:
         """Test detection of jailbreak attempts."""
@@ -114,9 +114,9 @@ class TestPromptInjectionDetection:
         for prompt in jailbreaks:
             result = analyzer.analyze_prompt(prompt)
             assert not result.is_safe, f"Jailbreak not blocked: {prompt}"
-            assert any(
-                v.category == SafetyCategory.JAILBREAK_ATTEMPT for v in result.violations
-            ), f"Jailbreak not detected: {prompt}"
+            assert any(v.category == SafetyCategory.JAILBREAK_ATTEMPT for v in result.violations), (
+                f"Jailbreak not detected: {prompt}"
+            )
 
     def test_dangerous_command_detected(self, analyzer: LLMSafetyAnalyzer) -> None:
         """Test detection of dangerous commands."""
@@ -128,9 +128,9 @@ class TestPromptInjectionDetection:
         ]
         for prompt in dangerous:
             result = analyzer.analyze_prompt(prompt)
-            assert any(
-                v.category == SafetyCategory.DANGEROUS_COMMAND for v in result.violations
-            ), f"Dangerous command not detected: {prompt}"
+            assert any(v.category == SafetyCategory.DANGEROUS_COMMAND for v in result.violations), (
+                f"Dangerous command not detected: {prompt}"
+            )
 
     def test_fake_system_marker_detected(self, analyzer: LLMSafetyAnalyzer) -> None:
         """Test detection of fake system/admin markers."""
@@ -143,9 +143,9 @@ class TestPromptInjectionDetection:
         ]
         for prompt in injections:
             result = analyzer.analyze_prompt(prompt)
-            assert any(
-                v.category == SafetyCategory.PROMPT_INJECTION for v in result.violations
-            ), f"Fake marker not detected: {prompt}"
+            assert any(v.category == SafetyCategory.PROMPT_INJECTION for v in result.violations), (
+                f"Fake marker not detected: {prompt}"
+            )
 
     def test_multiple_violations_detected(self, analyzer: LLMSafetyAnalyzer) -> None:
         """Test that multiple violations in one prompt are all detected."""
@@ -601,7 +601,10 @@ class TestContextSanitization:
         """
         result = sanitize_context(context)
         assert result.is_modified
-        assert "ignore all previous" not in result.sanitized_text.lower() or "[REMOVED]" in result.sanitized_text
+        assert (
+            "ignore all previous" not in result.sanitized_text.lower()
+            or "[REMOVED]" in result.sanitized_text
+        )
 
     def test_convenience_function_works(self) -> None:
         """Test the convenience function for getting sanitized text."""

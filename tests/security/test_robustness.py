@@ -37,12 +37,12 @@ class TestMoralFilterThresholdStability:
             moral.adapt(result)
 
         # Threshold must remain within bounds
-        assert (
-            moral.threshold >= MoralFilterV2.MIN_THRESHOLD
-        ), f"Threshold drifted below minimum: {moral.threshold}"
-        assert (
-            moral.threshold <= MoralFilterV2.MAX_THRESHOLD
-        ), f"Threshold drifted above maximum: {moral.threshold}"
+        assert moral.threshold >= MoralFilterV2.MIN_THRESHOLD, (
+            f"Threshold drifted below minimum: {moral.threshold}"
+        )
+        assert moral.threshold <= MoralFilterV2.MAX_THRESHOLD, (
+            f"Threshold drifted above maximum: {moral.threshold}"
+        )
 
         # Drift should be bounded
         drift = abs(moral.threshold - initial_threshold)
@@ -357,7 +357,7 @@ class TestErrorRecovery:
 
         # First 5 requests should be allowed
         for i in range(5):
-            assert limiter.is_allowed("client1") is True, f"Request {i+1} should be allowed"
+            assert limiter.is_allowed("client1") is True, f"Request {i + 1} should be allowed"
 
         # 6th request should be blocked
         assert limiter.is_allowed("client1") is False, "6th request should be blocked"

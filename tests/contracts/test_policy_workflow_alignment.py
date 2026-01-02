@@ -37,9 +37,7 @@ class TestPolicyWorkflowAlignment:
         with open(policy_path, encoding="utf-8") as f:
             return yaml.safe_load(f)
 
-    def test_policy_required_checks_exist(
-        self, repo_root: Path, security_policy: dict
-    ) -> None:
+    def test_policy_required_checks_exist(self, repo_root: Path, security_policy: dict) -> None:
         """Verify all required checks reference existing files/commands."""
         required_checks = security_policy.get("required_checks", [])
         assert len(required_checks) > 0, "Policy must define required checks"
@@ -57,19 +55,14 @@ class TestPolicyWorkflowAlignment:
             # Check script exists if specified
             if "script" in check:
                 script_path = repo_root / check["script"].lstrip("./")
-                assert script_path.exists(), (
-                    f"{check_name}: Script not found: {check['script']}"
-                )
+                assert script_path.exists(), f"{check_name}: Script not found: {check['script']}"
 
-    def test_coverage_threshold_consistency(
-        self, repo_root: Path, security_policy: dict
-    ) -> None:
+    def test_coverage_threshold_consistency(self, repo_root: Path, security_policy: dict) -> None:
         """Verify coverage threshold is consistent between policy and coverage_gate.sh."""
         # Get policy coverage threshold
         required_checks = security_policy.get("required_checks", [])
         coverage_check = next(
-            (c for c in required_checks if c.get("name") == "coverage_gate"),
-            None
+            (c for c in required_checks if c.get("name") == "coverage_gate"), None
         )
         assert coverage_check is not None, "coverage_gate check not found in policy"
 
@@ -97,9 +90,7 @@ class TestPolicyWorkflowAlignment:
             f"policy={policy_threshold}%, script default={script_threshold}%"
         )
 
-    def test_security_modules_exist(
-        self, repo_root: Path, security_policy: dict
-    ) -> None:
+    def test_security_modules_exist(self, repo_root: Path, security_policy: dict) -> None:
         """Verify referenced security modules exist in codebase."""
         security_reqs = security_policy.get("security_requirements", {})
 
@@ -123,8 +114,7 @@ class TestPolicyWorkflowAlignment:
                 init_path = file_path / "__init__.py"
 
                 assert py_path.exists() or init_path.exists(), (
-                    f"Module not found: {module_path} "
-                    f"(checked {py_path} and {init_path})"
+                    f"Module not found: {module_path} (checked {py_path} and {init_path})"
                 )
 
     def test_scrubber_implementation_exists(self, repo_root: Path, security_policy: dict) -> None:
@@ -174,7 +164,8 @@ class TestPolicyWorkflowAlignment:
 
         # Find SAST-related checks
         sast_checks = [
-            check for check in required_checks
+            check
+            for check in required_checks
             if check.get("name") in ["bandit", "semgrep", "codeql"]
         ]
 
@@ -201,16 +192,13 @@ class TestPolicyWorkflowAlignment:
                     f"{check_name}: Job not found in {workflow_file}"
                 )
 
-    def test_dependency_audit_workflow_exists(
-        self, repo_root: Path, security_policy: dict
-    ) -> None:
+    def test_dependency_audit_workflow_exists(self, repo_root: Path, security_policy: dict) -> None:
         """Verify dependency audit workflow exists and is properly configured."""
         required_checks = security_policy.get("required_checks", [])
 
         # Find dependency-audit check
         dep_audit_check = next(
-            (c for c in required_checks if c.get("name") == "dependency-audit"),
-            None
+            (c for c in required_checks if c.get("name") == "dependency-audit"), None
         )
         assert dep_audit_check is not None, "dependency-audit check not found in policy"
 
@@ -227,17 +215,12 @@ class TestPolicyWorkflowAlignment:
         jobs = workflow_content.get("jobs", {})
         assert "dependency-audit" in jobs, "dependency-audit job not found in workflow"
 
-    def test_secrets_scan_workflow_exists(
-        self, repo_root: Path, security_policy: dict
-    ) -> None:
+    def test_secrets_scan_workflow_exists(self, repo_root: Path, security_policy: dict) -> None:
         """Verify secrets scanning workflow exists and is properly configured."""
         required_checks = security_policy.get("required_checks", [])
 
         # Find secrets-scan check
-        secrets_check = next(
-            (c for c in required_checks if c.get("name") == "secrets-scan"),
-            None
-        )
+        secrets_check = next((c for c in required_checks if c.get("name") == "secrets-scan"), None)
         assert secrets_check is not None, "secrets-scan check not found in policy"
 
         workflow_file = secrets_check.get("workflow_file")

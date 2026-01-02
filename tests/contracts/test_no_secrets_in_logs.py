@@ -57,9 +57,7 @@ class TestNoSecretsInLogs:
             {"ssn": "123-45-6789"},
         ]
 
-    def test_scrub_dict_removes_default_secret_keys(
-        self, secret_payloads: list[dict]
-    ) -> None:
+    def test_scrub_dict_removes_default_secret_keys(self, secret_payloads: list[dict]) -> None:
         """Verify scrub_dict removes all values for DEFAULT_SECRET_KEYS."""
         for payload in secret_payloads:
             key = list(payload.keys())[0]
@@ -143,9 +141,7 @@ class TestNoSecretsInLogs:
 
         for text, secret_part in texts:
             result = scrub_text(text)
-            assert secret_part not in result, (
-                f"Secret not scrubbed from text: {secret_part}"
-            )
+            assert secret_part not in result, f"Secret not scrubbed from text: {secret_part}"
             assert "***REDACTED***" in result
 
     def test_nested_secrets_are_scrubbed(self) -> None:
@@ -159,7 +155,7 @@ class TestNoSecretsInLogs:
                     "config": {
                         "api_key": "sk-nested-secret-123456789012",
                     }
-                }
+                },
             }
         }
 

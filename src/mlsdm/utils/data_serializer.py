@@ -56,6 +56,7 @@ def _save_data(data: dict[str, Any], filepath: str) -> None:
     path = Path(filepath)
     ext = path.suffix.lower()
     if ext == ".json":
+
         def _write_json(fd: int, temp_name: str) -> bool:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)

@@ -24,9 +24,7 @@ class TestPolicyDriftDetection:
 
     def test_records_drift_on_threshold_change(self):
         """Drift is recorded when threshold changes."""
-        with patch(
-            "mlsdm.cognition.moral_filter_v2.record_threshold_change"
-        ) as mock_record:
+        with patch("mlsdm.cognition.moral_filter_v2.record_threshold_change") as mock_record:
             mf = MoralFilterV2(initial_threshold=0.5, filter_id="test")
 
             # Reset call count from __init__
@@ -143,16 +141,13 @@ class TestPolicyDriftDetection:
         drift_logs = [
             record
             for record in caplog.records
-            if "drift" in record.message.lower()
-            and record.levelname in ("WARNING", "ERROR")
+            if "drift" in record.message.lower() and record.levelname in ("WARNING", "ERROR")
         ]
         assert len(drift_logs) == 0, f"Expected no drift logs, but found: {drift_logs}"
 
     def test_filter_id_passed_to_metrics(self):
         """Filter ID is correctly passed to metrics."""
-        with patch(
-            "mlsdm.cognition.moral_filter_v2.record_threshold_change"
-        ) as mock_record:
+        with patch("mlsdm.cognition.moral_filter_v2.record_threshold_change") as mock_record:
             _mf = MoralFilterV2(initial_threshold=0.5, filter_id="production-filter")
 
             # Check that __init__ called record_threshold_change with correct filter_id
@@ -189,9 +184,7 @@ class TestPolicyDriftDetection:
 
     def test_metrics_recorded_on_init(self):
         """Metrics are recorded during initialization."""
-        with patch(
-            "mlsdm.cognition.moral_filter_v2.record_threshold_change"
-        ) as mock_record:
+        with patch("mlsdm.cognition.moral_filter_v2.record_threshold_change") as mock_record:
             _mf = MoralFilterV2(initial_threshold=0.6, filter_id="init-test")
 
             # Should have been called once in __init__

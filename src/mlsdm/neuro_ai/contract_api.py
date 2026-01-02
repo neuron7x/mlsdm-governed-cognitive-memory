@@ -48,7 +48,9 @@ class NeuroModuleAdapter:
     - When `enable` is True, the module receives prediction/risk context when supported.
     """
 
-    def __init__(self, module: Any, *, metadata: NeuroContractMetadata, enable: bool = False) -> None:
+    def __init__(
+        self, module: Any, *, metadata: NeuroContractMetadata, enable: bool = False
+    ) -> None:
         self.module = module
         self.metadata = metadata
         self.enable = enable

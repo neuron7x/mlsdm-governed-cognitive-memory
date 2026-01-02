@@ -245,10 +245,7 @@ class TestAphasiaMetricsSanity:
         report = runner.run()
 
         # Find aphasia test prompts in results
-        aphasia_results = [
-            r for r in report.prompt_results
-            if "aphasia_test" in r.get("id", "")
-        ]
+        aphasia_results = [r for r in report.prompt_results if "aphasia_test" in r.get("id", "")]
 
         assert len(aphasia_results) > 0
         for result in aphasia_results:
@@ -341,14 +338,10 @@ class TestFixtures:
 
     def test_custom_fixtures_path(self) -> None:
         """Runner can use custom fixtures path."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
-            json.dump({
-                "prompts": [
-                    {"id": "test_1", "prompt": "Test prompt", "expected_safe": True}
-                ]
-            }, f)
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(
+                {"prompts": [{"id": "test_1", "prompt": "Test prompt", "expected_safe": True}]}, f
+            )
             f.flush()
 
             runner = AblationRunner(

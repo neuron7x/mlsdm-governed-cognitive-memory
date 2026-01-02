@@ -227,9 +227,9 @@ class TestScenarioA_NormalOperation:
             current_usage = controller.memory_usage_bytes()
             max_allowed = controller.max_memory_bytes
 
-            assert (
-                current_usage <= max_allowed
-            ), f"Memory usage {current_usage} exceeds limit {max_allowed} at event {i+1}"
+            assert current_usage <= max_allowed, (
+                f"Memory usage {current_usage} exceeds limit {max_allowed} at event {i + 1}"
+            )
 
     @settings(max_examples=20, deadline=None)
     @given(events=event_sequence_strategy(dim=16, min_events=10, max_events=30))
@@ -248,9 +248,9 @@ class TestScenarioA_NormalOperation:
             # If emergency shutdown triggered, it should NOT be due to memory
             if result["rejected"] and "emergency shutdown" in result["note"]:
                 # Should not be memory-related with default 1.4 GB limit
-                assert (
-                    "global memory limit" not in result["note"]
-                ), "Memory limit triggered under normal operation"
+                assert "global memory limit" not in result["note"], (
+                    "Memory limit triggered under normal operation"
+                )
 
     def test_memory_usage_stable_after_many_events(self) -> None:
         """
@@ -276,9 +276,9 @@ class TestScenarioA_NormalOperation:
         # Memory should not have grown significantly (PELM wraps around)
         # Allow small tolerance for any dynamic structures
         growth_tolerance = 0.1  # 10%
-        assert usage_at_200 <= usage_at_100 * (
-            1 + growth_tolerance
-        ), f"Memory grew unexpectedly: {usage_at_100} -> {usage_at_200}"
+        assert usage_at_200 <= usage_at_100 * (1 + growth_tolerance), (
+            f"Memory grew unexpectedly: {usage_at_100} -> {usage_at_200}"
+        )
 
 
 # ============================================================================
@@ -306,9 +306,9 @@ class TestScenarioB_ForcedEmergencyShutdown:
 
         # Initial usage exceeds limit (PELM alone is > 1KB)
         initial_usage = controller.memory_usage_bytes()
-        assert (
-            initial_usage > tiny_limit
-        ), "Test setup requires initial memory usage to exceed tiny limit"
+        assert initial_usage > tiny_limit, (
+            "Test setup requires initial memory usage to exceed tiny limit"
+        )
 
         # Process an event - should trigger shutdown
         vec = np.random.randn(16).astype(np.float32)
@@ -346,9 +346,9 @@ class TestScenarioB_ForcedEmergencyShutdown:
 
             # Memory should not grow
             current_usage = controller.memory_usage_bytes()
-            assert (
-                current_usage <= usage_at_shutdown
-            ), f"Memory grew after shutdown: {usage_at_shutdown} -> {current_usage}"
+            assert current_usage <= usage_at_shutdown, (
+                f"Memory grew after shutdown: {usage_at_shutdown} -> {current_usage}"
+            )
 
     def test_shutdown_reason_is_recorded(self) -> None:
         """
@@ -362,9 +362,9 @@ class TestScenarioB_ForcedEmergencyShutdown:
         controller.process_event(vec, moral_value=0.8)
 
         # Reason should be recorded
-        assert (
-            controller._emergency_reason == "memory_limit_exceeded"
-        ), f"Wrong shutdown reason: {controller._emergency_reason}"
+        assert controller._emergency_reason == "memory_limit_exceeded", (
+            f"Wrong shutdown reason: {controller._emergency_reason}"
+        )
 
     @settings(max_examples=20, deadline=None)
     @given(num_events=st.integers(min_value=10, max_value=50))
@@ -456,9 +456,9 @@ class TestGlobalMemoryIntegration:
 
         # Overhead should be small (a few KB at most)
         assert controller_overhead >= 0, "Overhead cannot be negative"
-        assert (
-            controller_overhead < 10 * 1024
-        ), f"Unexpectedly high controller overhead: {controller_overhead} bytes"
+        assert controller_overhead < 10 * 1024, (
+            f"Unexpectedly high controller overhead: {controller_overhead} bytes"
+        )
 
     def test_memory_reporting_consistent(self) -> None:
         """
@@ -470,9 +470,9 @@ class TestGlobalMemoryIntegration:
         usage2 = controller.memory_usage_bytes()
         usage3 = controller.memory_usage_bytes()
 
-        assert (
-            usage1 == usage2 == usage3
-        ), f"Inconsistent memory reports: {usage1}, {usage2}, {usage3}"
+        assert usage1 == usage2 == usage3, (
+            f"Inconsistent memory reports: {usage1}, {usage2}, {usage3}"
+        )
 
 
 if __name__ == "__main__":

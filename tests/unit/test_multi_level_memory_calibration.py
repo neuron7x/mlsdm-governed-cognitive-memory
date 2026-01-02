@@ -272,9 +272,9 @@ class TestLambdaAffectsForgettingRate:
         l1_fast, _, _ = mem_fast.get_state()
         l1_slow, _, _ = mem_slow.get_state()
 
-        assert np.linalg.norm(l1_fast) < np.linalg.norm(
-            l1_slow
-        ), "YAML config with higher λ should result in faster decay"
+        assert np.linalg.norm(l1_fast) < np.linalg.norm(l1_slow), (
+            "YAML config with higher λ should result in faster decay"
+        )
 
 
 class TestThetaGatingAffectsActivation:
@@ -428,9 +428,9 @@ class TestThetaGatingAffectsActivation:
         _, l2_low, _ = mem_low.get_state()
         _, l2_high, _ = mem_high.get_state()
 
-        assert np.linalg.norm(l2_low) > np.linalg.norm(
-            l2_high
-        ), "YAML config with lower θ should result in more L2 transfer"
+        assert np.linalg.norm(l2_low) > np.linalg.norm(l2_high), (
+            "YAML config with lower θ should result in more L2 transfer"
+        )
 
 
 class TestCognitiveControllerWithYAMLConfig:

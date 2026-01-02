@@ -262,9 +262,7 @@ class TestNeuroCognitiveClientGenerateTyped:
 
     def test_generate_typed_mocked_response(self) -> None:
         """Test generate_typed with mocked engine response."""
-        with patch(
-            "mlsdm.sdk.neuro_engine_client.build_neuro_engine_from_env"
-        ) as mock_factory:
+        with patch("mlsdm.sdk.neuro_engine_client.build_neuro_engine_from_env") as mock_factory:
             mock_engine = MagicMock()
             mock_engine.generate.return_value = {
                 "response": "Mocked response",
@@ -305,9 +303,7 @@ class TestNeuroCognitiveClientGenerateTyped:
 
     def test_generate_typed_rejected_response(self) -> None:
         """Test generate_typed with rejected response."""
-        with patch(
-            "mlsdm.sdk.neuro_engine_client.build_neuro_engine_from_env"
-        ) as mock_factory:
+        with patch("mlsdm.sdk.neuro_engine_client.build_neuro_engine_from_env") as mock_factory:
             mock_engine = MagicMock()
             mock_engine.generate.return_value = {
                 "response": "",
@@ -328,9 +324,7 @@ class TestNeuroCognitiveClientGenerateTyped:
 
     def test_generate_typed_error_response(self) -> None:
         """Test generate_typed with error response."""
-        with patch(
-            "mlsdm.sdk.neuro_engine_client.build_neuro_engine_from_env"
-        ) as mock_factory:
+        with patch("mlsdm.sdk.neuro_engine_client.build_neuro_engine_from_env") as mock_factory:
             mock_engine = MagicMock()
             mock_engine.generate.return_value = {
                 "response": "",
@@ -363,9 +357,7 @@ class TestNeuroCognitiveClientEdgeCases:
 
     def test_generate_typed_no_speech_governance(self) -> None:
         """Test generate_typed when speech_governance is not in mlsdm state."""
-        with patch(
-            "mlsdm.sdk.neuro_engine_client.build_neuro_engine_from_env"
-        ) as mock_factory:
+        with patch("mlsdm.sdk.neuro_engine_client.build_neuro_engine_from_env") as mock_factory:
             mock_engine = MagicMock()
             mock_engine.generate.return_value = {
                 "response": "Response",
@@ -386,9 +378,7 @@ class TestNeuroCognitiveClientEdgeCases:
 
     def test_generate_typed_speech_governance_no_metadata(self) -> None:
         """Test generate_typed when speech_governance has no metadata."""
-        with patch(
-            "mlsdm.sdk.neuro_engine_client.build_neuro_engine_from_env"
-        ) as mock_factory:
+        with patch("mlsdm.sdk.neuro_engine_client.build_neuro_engine_from_env") as mock_factory:
             mock_engine = MagicMock()
             mock_engine.generate.return_value = {
                 "response": "Response",
@@ -412,9 +402,7 @@ class TestNeuroCognitiveClientEdgeCases:
 
     def test_generate_typed_speech_governance_no_aphasia_report(self) -> None:
         """Test generate_typed when metadata has no aphasia_report."""
-        with patch(
-            "mlsdm.sdk.neuro_engine_client.build_neuro_engine_from_env"
-        ) as mock_factory:
+        with patch("mlsdm.sdk.neuro_engine_client.build_neuro_engine_from_env") as mock_factory:
             mock_engine = MagicMock()
             mock_engine.generate.return_value = {
                 "response": "Response",

@@ -337,9 +337,9 @@ class TestLatencyDistribution:
         p99 = np.percentile(latencies_arr, 99)
 
         print("\nLatency Distribution:")
-        print(f"  P50: {p50*1000:.2f}ms")
-        print(f"  P95: {p95*1000:.2f}ms")
-        print(f"  P99: {p99*1000:.2f}ms")
+        print(f"  P50: {p50 * 1000:.2f}ms")
+        print(f"  P95: {p95 * 1000:.2f}ms")
+        print(f"  P99: {p99 * 1000:.2f}ms")
 
         # Verify reasonable latency
         assert p50 < 1.0  # P50 should be under 1s
@@ -496,7 +496,7 @@ class TestMoralFilterToxicity:
         print("\nMoral Filter Statistics:")
         print(f"  Accepted: {accepted_count}")
         print(f"  Rejected: {rejected_count}")
-        print(f"  Rejection Rate: {rejected_count/len(toxic_samples)*100:.1f}%")
+        print(f"  Rejection Rate: {rejected_count / len(toxic_samples) * 100:.1f}%")
         print(f"  Final Threshold: {state['moral_threshold']:.3f}")
 
 

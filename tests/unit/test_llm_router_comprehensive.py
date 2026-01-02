@@ -258,8 +258,7 @@ class TestABTestRouterSelectProvider:
 
         # Same user_id should always get same result
         results = [
-            router.select_provider("test", metadata={"user_id": "user123"})
-            for _ in range(100)
+            router.select_provider("test", metadata={"user_id": "user123"}) for _ in range(100)
         ]
         assert len(set(results)) == 1  # All results should be the same
 
@@ -279,8 +278,7 @@ class TestABTestRouterSelectProvider:
 
         # Generate results for many different users
         results = {
-            router.select_provider("test", metadata={"user_id": f"user{i}"})
-            for i in range(100)
+            router.select_provider("test", metadata={"user_id": f"user{i}"}) for i in range(100)
         }
 
         # With 50% split and 100 users, we should see both control and treatment
@@ -301,10 +299,7 @@ class TestABTestRouterSelectProvider:
         )
 
         # Without user_id, should use random sampling
-        results = {
-            router.select_provider("test", metadata={})
-            for _ in range(100)
-        }
+        results = {router.select_provider("test", metadata={}) for _ in range(100)}
 
         # With 50% split and 100 calls, we should likely see both
         # (there's a tiny chance this could fail, but probability is ~2^-100)
@@ -326,8 +321,7 @@ class TestABTestRouterSelectProvider:
 
         # Even with user_id, should use random sampling
         results = {
-            router.select_provider("test", metadata={"user_id": "user123"})
-            for _ in range(100)
+            router.select_provider("test", metadata={"user_id": "user123"}) for _ in range(100)
         }
 
         # With 50% split and 100 calls, we should likely see both

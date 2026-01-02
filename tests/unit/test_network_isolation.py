@@ -34,8 +34,9 @@ class TestNetworkIsolation:
         def blocking_socket(*args, **kwargs):
             raise RuntimeError("Network access is not allowed in unit tests")
 
-        with patch.object(socket, "socket", blocking_socket), pytest.raises(
-            RuntimeError, match="Network access is not allowed"
+        with (
+            patch.object(socket, "socket", blocking_socket),
+            pytest.raises(RuntimeError, match="Network access is not allowed"),
         ):
             socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 

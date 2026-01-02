@@ -194,7 +194,7 @@ class MetricsCollector:
         # 2. Positive slope indicating continuous growth
         if growth_rate > 0.20 and slope > 0.5:
             leak_detected = True
-            reason = f"Memory increased {growth_rate*100:.1f}% with positive trend"
+            reason = f"Memory increased {growth_rate * 100:.1f}% with positive trend"
 
         return {
             "stable": not leak_detected,
@@ -236,7 +236,7 @@ class MetricsCollector:
         print("=" * 80)
         print(f"\nTest Duration: {report['test_info']['duration_seconds']:.1f}s")
         print(f"Total Requests: {report['test_info']['total_requests']}")
-        print(f"Success Rate: {len(self.latencies)/self.request_count*100:.1f}%")
+        print(f"Success Rate: {len(self.latencies) / self.request_count * 100:.1f}%")
         print("\nLatency Metrics:")
         print(f"  P50: {percentiles['p50']:.2f}ms")
         print(f"  P95: {percentiles['p95']:.2f}ms")

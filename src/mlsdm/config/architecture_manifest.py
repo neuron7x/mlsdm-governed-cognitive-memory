@@ -207,8 +207,6 @@ def validate_manifest(manifest: Iterable[ArchitectureModule]) -> list[str]:
 
         for dependency in module.allowed_dependencies:
             if dependency not in names:
-                issues.append(
-                    f"Module '{module.name}' declares unknown dependency '{dependency}'"
-                )
+                issues.append(f"Module '{module.name}' declares unknown dependency '{dependency}'")
 
     return issues

@@ -8,7 +8,9 @@ from pathlib import Path
 
 
 def _load():
-    module_path = Path(__file__).resolve().parents[2] / "src" / "mlsdm" / "core" / "iteration_loop.py"
+    module_path = (
+        Path(__file__).resolve().parents[2] / "src" / "mlsdm" / "core" / "iteration_loop.py"
+    )
     loader = importlib.machinery.SourceFileLoader("iteration_loop", str(module_path))
     spec = importlib.util.spec_from_loader(loader.name, loader)
     module = importlib.util.module_from_spec(spec)

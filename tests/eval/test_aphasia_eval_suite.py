@@ -69,17 +69,17 @@ def test_aphasia_eval_suite_basic_metrics(eval_suite: AphasiaEvalSuite) -> None:
     result = eval_suite.run()
 
     # TPR and TNR should be high
-    assert (
-        result.true_positive_rate >= 0.8
-    ), f"TPR should be at least 80%, got {result.true_positive_rate:.2%}"
-    assert (
-        result.true_negative_rate >= 0.8
-    ), f"TNR should be at least 80%, got {result.true_negative_rate:.2%}"
+    assert result.true_positive_rate >= 0.8, (
+        f"TPR should be at least 80%, got {result.true_positive_rate:.2%}"
+    )
+    assert result.true_negative_rate >= 0.8, (
+        f"TNR should be at least 80%, got {result.true_negative_rate:.2%}"
+    )
 
     # Severity for telegraphic cases should be noticeable
-    assert (
-        result.mean_severity_telegraphic >= 0.3
-    ), f"Mean severity should be at least 0.3, got {result.mean_severity_telegraphic:.3f}"
+    assert result.mean_severity_telegraphic >= 0.3, (
+        f"Mean severity should be at least 0.3, got {result.mean_severity_telegraphic:.3f}"
+    )
 
 
 def test_aphasia_metrics_meet_declared_thresholds(eval_suite: AphasiaEvalSuite) -> None:

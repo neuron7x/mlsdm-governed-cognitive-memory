@@ -168,9 +168,9 @@ def test_memory_capacity_never_exceeded(capacity, num_calls, prompt, moral_value
         max_size_seen = max(max_size_seen, current_size)
 
         # Invariant: size never exceeds capacity
-        assert (
-            current_size <= capacity
-        ), f"PELM size {current_size} exceeds capacity {capacity} after call {i+1}"
+        assert current_size <= capacity, (
+            f"PELM size {current_size} exceeds capacity {capacity} after call {i + 1}"
+        )
 
     # Final check: max size seen should never exceed capacity
     assert max_size_seen <= capacity, f"Max PELM size {max_size_seen} exceeded capacity {capacity}"
@@ -216,9 +216,9 @@ def test_memory_does_not_grow_unbounded(capacity, num_overflow_calls):
         max_size_observed = max(max_size_observed, current_size)
 
         # Key invariant: size never exceeds capacity
-        assert (
-            current_size <= capacity
-        ), f"PELM size {current_size} exceeds capacity {capacity} at step {i+1}"
+        assert current_size <= capacity, (
+            f"PELM size {current_size} exceeds capacity {capacity} at step {i + 1}"
+        )
 
     # Final verification
     final_size = wrapper.pelm.size
@@ -227,9 +227,9 @@ def test_memory_does_not_grow_unbounded(capacity, num_overflow_calls):
     assert final_size <= capacity, f"Final PELM size {final_size} exceeds capacity {capacity}"
 
     # Max observed size should never have exceeded capacity
-    assert (
-        max_size_observed <= capacity
-    ), f"Max observed size {max_size_observed} exceeded capacity {capacity}"
+    assert max_size_observed <= capacity, (
+        f"Max observed size {max_size_observed} exceeded capacity {capacity}"
+    )
 
 
 @settings(max_examples=30, deadline=None)
@@ -258,7 +258,7 @@ def test_capacity_invariant_under_mixed_phases(capacity):
 
         # Invariant must hold at every step
         assert wrapper.pelm.size <= capacity, (
-            f"Size {wrapper.pelm.size} > capacity {capacity} at step {i+1}, "
+            f"Size {wrapper.pelm.size} > capacity {capacity} at step {i + 1}, "
             f"phase={wrapper.rhythm.phase}"
         )
 
@@ -302,17 +302,17 @@ def test_stateless_mode_no_memory_writes(prompt, moral_value, num_calls):
 
             # If successful, result should indicate stateless mode
             if result.get("accepted"):
-                assert (
-                    result.get("stateless_mode") is True
-                ), "Accepted response in stateless mode should indicate stateless_mode=True"
+                assert result.get("stateless_mode") is True, (
+                    "Accepted response in stateless mode should indicate stateless_mode=True"
+                )
         except Exception:
             pass  # Some rejections are ok
 
     # Memory size should NOT have increased
     final_size = wrapper.pelm.size
-    assert (
-        final_size == initial_size
-    ), f"Memory size changed in stateless mode: {initial_size} -> {final_size}"
+    assert final_size == initial_size, (
+        f"Memory size changed in stateless mode: {initial_size} -> {final_size}"
+    )
 
 
 @settings(max_examples=50, deadline=None)
@@ -348,9 +348,9 @@ def test_stateless_mode_consistency_across_calls(prompts):
             result = wrapper.generate(prompt=prompt, moral_value=0.8)
 
             # Stateless mode should persist
-            assert (
-                wrapper.stateless_mode is True
-            ), "stateless_mode switched from True to False unexpectedly"
+            assert wrapper.stateless_mode is True, (
+                "stateless_mode switched from True to False unexpectedly"
+            )
 
             # Result should reflect stateless mode if accepted
             if result.get("accepted"):
@@ -384,9 +384,9 @@ def test_stateless_mode_consolidation_buffer_empty(capacity):
             pass
 
     # Consolidation buffer should still be empty in stateless mode
-    assert (
-        len(wrapper.consolidation_buffer) == 0
-    ), f"Consolidation buffer has {len(wrapper.consolidation_buffer)} items in stateless mode"
+    assert len(wrapper.consolidation_buffer) == 0, (
+        f"Consolidation buffer has {len(wrapper.consolidation_buffer)} items in stateless mode"
+    )
 
 
 # ============================================================================
@@ -437,14 +437,14 @@ def test_governance_metadata_always_present(prompt, moral_value):
 
     # All required keys must be present
     for key in REQUIRED_RESPONSE_KEYS:
-        assert (
-            key in result
-        ), f"Required key '{key}' missing from response. Keys present: {list(result.keys())}"
+        assert key in result, (
+            f"Required key '{key}' missing from response. Keys present: {list(result.keys())}"
+        )
 
     # Check types of governance fields
-    assert isinstance(
-        result["accepted"], bool
-    ), f"'accepted' should be bool, got {type(result['accepted'])}"
+    assert isinstance(result["accepted"], bool), (
+        f"'accepted' should be bool, got {type(result['accepted'])}"
+    )
 
     assert isinstance(result["phase"], str), f"'phase' should be str, got {type(result['phase'])}"
 
@@ -455,9 +455,9 @@ def test_governance_metadata_always_present(prompt, moral_value):
 
     assert isinstance(result["step"], int), f"'step' should be int, got {type(result['step'])}"
 
-    assert isinstance(
-        result["moral_threshold"], (int, float)
-    ), f"'moral_threshold' should be numeric, got {type(result['moral_threshold'])}"
+    assert isinstance(result["moral_threshold"], (int, float)), (
+        f"'moral_threshold' should be numeric, got {type(result['moral_threshold'])}"
+    )
 
     assert isinstance(result["note"], str), f"'note' should be str, got {type(result['note'])}"
 
@@ -488,19 +488,19 @@ def test_accepted_responses_have_full_metadata(prompt, moral_value):
             assert key in result, f"Accepted response missing key '{key}'"
 
         # These should be non-negative integers
-        assert isinstance(
-            result["context_items"], int
-        ), f"'context_items' should be int, got {type(result['context_items'])}"
-        assert (
-            result["context_items"] >= 0
-        ), f"'context_items' should be >= 0, got {result['context_items']}"
+        assert isinstance(result["context_items"], int), (
+            f"'context_items' should be int, got {type(result['context_items'])}"
+        )
+        assert result["context_items"] >= 0, (
+            f"'context_items' should be >= 0, got {result['context_items']}"
+        )
 
-        assert isinstance(
-            result["max_tokens_used"], int
-        ), f"'max_tokens_used' should be int, got {type(result['max_tokens_used'])}"
-        assert (
-            result["max_tokens_used"] > 0
-        ), f"'max_tokens_used' should be > 0, got {result['max_tokens_used']}"
+        assert isinstance(result["max_tokens_used"], int), (
+            f"'max_tokens_used' should be int, got {type(result['max_tokens_used'])}"
+        )
+        assert result["max_tokens_used"] > 0, (
+            f"'max_tokens_used' should be > 0, got {result['max_tokens_used']}"
+        )
 
 
 @settings(max_examples=50, deadline=None)
@@ -554,9 +554,9 @@ def test_step_counter_increments_monotonically(num_calls, moral_value):
 
         current_step = result.get("step")
         assert current_step is not None, "Response missing 'step' field"
-        assert (
-            current_step > previous_step
-        ), f"Step counter did not increase: {previous_step} -> {current_step}"
+        assert current_step > previous_step, (
+            f"Step counter did not increase: {previous_step} -> {current_step}"
+        )
 
         previous_step = current_step
 
@@ -581,9 +581,9 @@ def test_moral_threshold_in_valid_range(prompt, moral_value):
 
     threshold = result.get("moral_threshold")
     assert threshold is not None, "Response missing 'moral_threshold'"
-    assert isinstance(
-        threshold, (int, float)
-    ), f"'moral_threshold' should be numeric, got {type(threshold)}"
+    assert isinstance(threshold, (int, float)), (
+        f"'moral_threshold' should be numeric, got {type(threshold)}"
+    )
     assert 0.0 <= threshold <= 1.0, f"'moral_threshold' {threshold} out of valid range [0.0, 1.0]"
 
 

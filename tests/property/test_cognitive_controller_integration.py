@@ -49,9 +49,9 @@ def test_controller_pelm_multilevel_coordination(dim, num_events):
     # Both systems should have consistent state
     # PELM size should reflect accepted events (up to capacity)
     pelm_size = controller.pelm.size
-    assert (
-        pelm_size <= controller.pelm.capacity
-    ), f"PELM size {pelm_size} exceeds capacity {controller.pelm.capacity}"
+    assert pelm_size <= controller.pelm.capacity, (
+        f"PELM size {pelm_size} exceeds capacity {controller.pelm.capacity}"
+    )
 
     # MultiLevel memory should have accumulated information
     L1, L2, L3 = controller.synaptic.get_state()
@@ -127,17 +127,17 @@ def test_controller_state_consistency(num_events):
         after_phase = controller.rhythm.phase
 
         # Step counter should always increment
-        assert (
-            after_step == before_step + 1
-        ), f"Step counter should increment: {before_step} -> {after_step}"
+        assert after_step == before_step + 1, (
+            f"Step counter should increment: {before_step} -> {after_step}"
+        )
 
         # Phase should be valid
         assert after_phase in ["wake", "sleep"], f"Invalid phase: {after_phase}"
 
     # Final step count should match number of events
-    assert (
-        controller.step_counter == initial_step + num_events
-    ), f"Step count mismatch: {controller.step_counter} != {initial_step + num_events}"
+    assert controller.step_counter == initial_step + num_events, (
+        f"Step count mismatch: {controller.step_counter} != {initial_step + num_events}"
+    )
 
 
 @settings(max_examples=20, deadline=None)
@@ -160,9 +160,9 @@ def test_controller_deterministic_processing(moral_value):
         result2 = controller2.process_event(vec, moral_value)
 
         # Results should match
-        assert (
-            result1["rejected"] == result2["rejected"]
-        ), f"Different rejection status at event {i}"
+        assert result1["rejected"] == result2["rejected"], (
+            f"Different rejection status at event {i}"
+        )
         assert result1["note"] == result2["note"], f"Different notes at event {i}"
 
 

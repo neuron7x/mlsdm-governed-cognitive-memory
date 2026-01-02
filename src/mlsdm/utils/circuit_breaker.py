@@ -121,7 +121,7 @@ class CircuitOpenError(CircuitBreakerError):
         self.name = name
         self.recovery_time_remaining = recovery_time_remaining
         super().__init__(
-            f"Circuit breaker '{name}' is OPEN. " f"Recovery in {recovery_time_remaining:.1f}s"
+            f"Circuit breaker '{name}' is OPEN. Recovery in {recovery_time_remaining:.1f}s"
         )
 
 

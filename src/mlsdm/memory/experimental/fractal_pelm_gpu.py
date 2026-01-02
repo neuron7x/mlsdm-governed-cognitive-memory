@@ -260,8 +260,7 @@ class FractalPELMGPU:
             raise ValueError(f"vectors must be 2D, got shape {tuple(vec_tensor.shape)}")
         if vec_tensor.shape[1] != self.dimension:
             raise ValueError(
-                f"vector dimension mismatch: expected {self.dimension}, "
-                f"got {vec_tensor.shape[1]}"
+                f"vector dimension mismatch: expected {self.dimension}, got {vec_tensor.shape[1]}"
             )
         if phase_tensor.dim() != 1:
             raise ValueError(f"phases must be 1D, got shape {tuple(phase_tensor.shape)}")
@@ -351,7 +350,7 @@ class FractalPELMGPU:
             )
         if q_tensor.shape[0] != self.dimension:
             raise ValueError(
-                f"query dimension mismatch: expected {self.dimension}, " f"got {q_tensor.shape[0]}"
+                f"query dimension mismatch: expected {self.dimension}, got {q_tensor.shape[0]}"
             )
 
         # Use AMP context if enabled
@@ -408,7 +407,7 @@ class FractalPELMGPU:
             raise ValueError(f"query_vectors must be 2D, got shape {tuple(q_tensor.shape)}")
         if q_tensor.shape[1] != self.dimension:
             raise ValueError(
-                f"query dimension mismatch: expected {self.dimension}, " f"got {q_tensor.shape[1]}"
+                f"query dimension mismatch: expected {self.dimension}, got {q_tensor.shape[1]}"
             )
         if phase_tensor.dim() != 1:
             raise ValueError(f"current_phases must be 1D, got shape {tuple(phase_tensor.shape)}")

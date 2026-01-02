@@ -35,9 +35,7 @@ class TestEntrypointDeprecations:
         with patch("mlsdm.entrypoints.serve.serve") as mock_serve:
             mock_serve.return_value = 0
 
-            with pytest.warns(
-                DeprecationWarning, match="python -m mlsdm.entrypoints.cloud"
-            ):
+            with pytest.warns(DeprecationWarning, match="python -m mlsdm.entrypoints.cloud"):
                 from mlsdm.entrypoints.cloud_entry import main
 
                 # Mock health check to avoid side effects
@@ -57,9 +55,7 @@ class TestEntrypointDeprecations:
         with patch("mlsdm.entrypoints.serve.serve") as mock_serve:
             mock_serve.return_value = 0
 
-            with pytest.warns(
-                DeprecationWarning, match="python -m mlsdm.entrypoints.agent"
-            ):
+            with pytest.warns(DeprecationWarning, match="python -m mlsdm.entrypoints.agent"):
                 from mlsdm.entrypoints.agent_entry import main
 
                 # Mock health check to avoid side effects
@@ -178,4 +174,3 @@ class TestEntrypointDeprecations:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
-

@@ -591,9 +591,7 @@ class LLMPipeline:
                 block_reason="generation_failed",
                 stages=stages,
                 total_duration_ms=(perf() - start_time) * 1000,
-                metadata={
-                    "stage_durations_ms": stage_durations_ms
-                },
+                metadata={"stage_durations_ms": stage_durations_ms},
             )
             self._emit_telemetry(error_result)
             return error_result

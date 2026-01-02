@@ -154,9 +154,10 @@ class TestReadinessEndpoint:
 
         try:
             # CRITICAL FIX: Mock psutil to ensure deterministic system checks
-            with patch('psutil.virtual_memory') as mock_memory, \
-                 patch('psutil.cpu_percent') as mock_cpu:
-
+            with (
+                patch("psutil.virtual_memory") as mock_memory,
+                patch("psutil.cpu_percent") as mock_cpu,
+            ):
                 # Set stable, healthy values
                 mock_memory.return_value.percent = 50.0  # 50% memory usage
                 mock_memory.return_value.available = 8_000_000_000  # 8GB available
@@ -166,10 +167,11 @@ class TestReadinessEndpoint:
                 response_legacy = client.get("/health/readiness")
 
             # Verify identical behavior
-            assert response_new.status_code == response_legacy.status_code, \
-                f"Endpoints return different status codes: " \
-                f"/health/ready={response_new.status_code}, " \
+            assert response_new.status_code == response_legacy.status_code, (
+                f"Endpoints return different status codes: "
+                f"/health/ready={response_new.status_code}, "
                 f"/health/readiness={response_legacy.status_code}"
+            )
 
             assert response_new.status_code == 200, "Both should be healthy"
 

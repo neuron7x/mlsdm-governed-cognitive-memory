@@ -12,7 +12,9 @@ import pytest
 
 
 def _load_iteration_loop_module():
-    module_path = Path(__file__).resolve().parents[2] / "src" / "mlsdm" / "core" / "iteration_loop.py"
+    module_path = (
+        Path(__file__).resolve().parents[2] / "src" / "mlsdm" / "core" / "iteration_loop.py"
+    )
     spec = importlib.util.spec_from_file_location("iteration_loop", module_path)
     if spec is None or spec.loader is None:
         raise ImportError("Unable to load iteration_loop module")
@@ -179,7 +181,9 @@ def test_stability_envelope_triggers_fail_safe_on_oscillation() -> None:
     frozen_seen = False
     safety: SafetyDecision | None = None
     for i in range(12):
-        state, trace, safety = loop.step(state, env, _ctx(i, threat=0.9 if i % 2 == 0 else 0.1, risk=0.6))
+        state, trace, safety = loop.step(
+            state, env, _ctx(i, threat=0.9 if i % 2 == 0 else 0.1, risk=0.6)
+        )
         if state.frozen:
             frozen_seen = True
             assert trace["regime"] == Regime.DEFENSIVE.value
@@ -417,7 +421,7 @@ def test_cooldown_holds_learning_off_until_recovery() -> None:
     """Verify that kill-switch recovery sets recovered=True in trace dynamics."""
     loop = IterationLoop(enabled=True, delta_max=0.5)
     env = ToyEnvironment(outcomes=[0.1])  # Small error to avoid re-triggering kill-switch
-    
+
     # Set up state in cooldown after kill-switch (COOLDOWN_STEPS = 2)
     state = IterationState(parameter=0.0, learning_rate=0.2)
     state.frozen = True
@@ -426,9 +430,9 @@ def test_cooldown_holds_learning_off_until_recovery() -> None:
     state.regime = Regime.DEFENSIVE
     state.regime_flips_window = deque(maxlen=iteration_loop.GUARD_WINDOW)
     state.delta_signs = deque(maxlen=iteration_loop.GUARD_WINDOW)
-    
+
     ctx = _ctx(0)
-    
+
     # Step 1: cooldown = 2, decrements to 1, stays frozen
     new_state, trace, _ = loop.step(state, env, ctx)
     assert new_state.cooldown_remaining == 1
@@ -436,18 +440,18 @@ def test_cooldown_holds_learning_off_until_recovery() -> None:
     assert new_state.frozen is True
     assert trace["update"]["applied"] is False
     assert "recovered" not in trace["dynamics"] or trace["dynamics"].get("recovered") is False
-    
+
     # Step 2: cooldown = 1, decrements to 0, should recover (if guard stable)
     state = new_state
     new_state, trace, _ = loop.step(state, env, ctx)
-    
+
     # Verify recovery happened
     assert new_state.cooldown_remaining == 0
     assert new_state.kill_switch_active is False
     assert new_state.recovered is True
     assert new_state.frozen is False
     assert trace["update"]["applied"] is True
-    
+
     # Verify recovered flag is captured in trace dynamics - this is the critical assertion
     assert "recovered" in trace["dynamics"], "recovered flag must be in trace dynamics dict"
     assert trace["dynamics"]["recovered"] is True
@@ -573,7 +577,9 @@ def test_metrics_emitter_creates_parent_directories(tmp_path: Path) -> None:
         (0.3, 0.75, Regime.DEFENSIVE),
     ],
 )
-def test_regime_selection_by_threat_risk(threat: float, risk: float, expected_regime: Regime) -> None:
+def test_regime_selection_by_threat_risk(
+    threat: float, risk: float, expected_regime: Regime
+) -> None:
     loop = IterationLoop(enabled=True)
     env = ToyEnvironment(target=0.5)
     state = IterationState(parameter=0.0, learning_rate=0.2)
