@@ -213,7 +213,7 @@ jobs:
         run: |
           pip install pip-audit
           pip install -r requirements.txt
-          pip-audit --strict
+          pip-audit --strict --requirement requirements.txt
 
   # Validate documentation
   docs-validation:
