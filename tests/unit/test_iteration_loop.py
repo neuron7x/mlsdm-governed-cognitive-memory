@@ -32,6 +32,7 @@ PredictionBundle = iteration_loop.PredictionBundle
 Regime = iteration_loop.Regime
 RegimeController = iteration_loop.RegimeController
 PredictionError = iteration_loop.PredictionError
+SafetyDecision = iteration_loop.SafetyDecision
 
 
 class ToyEnvironment(EnvironmentAdapter):
@@ -161,3 +162,54 @@ def test_apply_updates_clamps_parameter_bounds() -> None:
     new_state, update_result, _ = loop.apply_updates(state, pe_low, ctx)
     assert update_result.bounded
     assert new_state.parameter == -0.2
+
+
+def test_stability_envelope_triggers_fail_safe_on_oscillation() -> None:
+    loop = IterationLoop(
+        enabled=True,
+        delta_max=0.5,
+        max_regime_flip_rate=0.3,
+        max_oscillation_index=0.4,
+    )
+    env = ToyEnvironment(outcomes=[1.0, -1.0] * 6)
+    state = IterationState(parameter=0.0, learning_rate=0.3)
+
+    frozen_seen = False
+    safety: SafetyDecision | None = None
+    for i in range(12):
+        state, trace, safety = loop.step(state, env, _ctx(i, threat=0.9 if i % 2 == 0 else 0.1, risk=0.6))
+        if state.frozen:
+            frozen_seen = True
+            assert trace["regime"] == Regime.DEFENSIVE.value
+            assert trace["update"]["applied"] is False
+            assert safety.allow_next is False
+            assert safety.reason == "stability_envelope_breach"
+            assert "oscillation_index" in safety.stability_metrics
+            break
+
+    assert frozen_seen
+    assert safety is not None
+
+
+def test_long_sequence_converges_or_halts_safely() -> None:
+    loop = IterationLoop(
+        enabled=True,
+        delta_max=1.0,
+        max_regime_flip_rate=0.6,
+        max_oscillation_index=0.7,
+        convergence_tol=0.3,
+    )
+    env = ToyEnvironment(outcomes=[0.8 + ((-1) ** i) * 0.05 for i in range(20)])
+    state = IterationState(parameter=0.0, learning_rate=0.2)
+
+    final_safety: SafetyDecision | None = None
+    for i in range(20):
+        state, _, final_safety = loop.step(state, env, _ctx(i, threat=0.3, risk=0.2))
+        if state.frozen:
+            break
+
+    assert final_safety is not None
+    assert (
+        not state.frozen and abs(state.last_delta) <= loop.delta_max * loop.convergence_tol
+    ) or state.frozen
+    assert "convergence_time" in final_safety.stability_metrics

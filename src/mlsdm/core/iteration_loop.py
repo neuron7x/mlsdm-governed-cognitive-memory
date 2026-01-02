@@ -83,6 +83,11 @@ class IterationState:
     tau: float = 1.0
     cooldown_steps: int = 0
     last_delta: float = 0.0
+    steps: int = 0
+    regime_flips: int = 0
+    sign_flips: int = 0
+    frozen: bool = False
+    last_envelope_metrics: dict[str, float] = field(default_factory=dict)
 
 
 class EnvironmentAdapter(Protocol):
@@ -145,6 +150,9 @@ class IterationLoop:
         safety_multiplier: float = 1.5,
         tau_decay: float = 0.9,
         tau_max: float = 5.0,
+        max_regime_flip_rate: float = 0.5,
+        max_oscillation_index: float = 0.6,
+        convergence_tol: float = 0.2,
         metrics_emitter: IterationMetricsEmitter | None = None,
     ) -> None:
         self.enabled = enabled
@@ -157,6 +165,9 @@ class IterationLoop:
         self.safety_multiplier = safety_multiplier
         self.tau_decay = tau_decay
         self.tau_max = tau_max
+        self.max_regime_flip_rate = max_regime_flip_rate
+        self.max_oscillation_index = max_oscillation_index
+        self.convergence_tol = convergence_tol
         self.metrics_emitter = metrics_emitter
 
     def propose_action(self, state: IterationState, ctx: IterationContext) -> tuple[ActionProposal, PredictionBundle]:
@@ -194,8 +205,24 @@ class IterationLoop:
         pe: PredictionError,
         ctx: IterationContext,
     ) -> tuple[IterationState, UpdateResult, dict[str, float]]:
-        if not self.enabled:
-            return state, UpdateResult(parameter_deltas={}, bounded=False, applied=False), {"effective_lr": 0.0}
+        if not self.enabled or state.frozen:
+            frozen_state = replace(
+                state,
+                regime=Regime.DEFENSIVE if state.frozen else state.regime,
+                last_effective_lr=0.0,
+                frozen=state.frozen,
+                last_envelope_metrics={
+                    "max_delta": max((abs(d) for d in pe.delta), default=0.0),
+                    "oscillation_index": state.sign_flips / max(1, state.steps),
+                    "regime_flip_rate": state.regime_flips / max(1, state.steps),
+                    "convergence_time": float(state.steps) if abs(state.last_delta) <= self.delta_max else -1.0,
+                },
+            )
+            return frozen_state, UpdateResult(parameter_deltas={}, bounded=state.frozen, applied=False), {
+                "effective_lr": 0.0,
+                "inhibition_scale": 1.0,
+                "tau_scale": 1.0,
+            }
 
         regime, lr_scale, inhibition_scale, tau_scale, cooldown = self.regime_controller.update(state, ctx)
         risk_adjusted_lr = state.learning_rate * lr_scale * (1 - ctx.risk * self.risk_scale)
@@ -215,6 +242,27 @@ class IterationLoop:
         smoothed_tau = state.tau * self.tau_decay + ctx.dt * tau_scale * (1 - self.tau_decay)
         bounded_tau = min(self.tau_max, smoothed_tau)
 
+        regime_flip = regime != state.regime
+        sign_flip = state.last_delta != 0.0 and delta_mean != 0.0 and (delta_mean * state.last_delta) < 0
+        steps = state.steps + 1
+        regime_flips = state.regime_flips + (1 if regime_flip else 0)
+        sign_flips = state.sign_flips + (1 if sign_flip else 0)
+        oscillation_index = sign_flips / max(1, steps)
+        regime_flip_rate = regime_flips / max(1, steps)
+        max_delta = max((abs(d) for d in pe.delta), default=0.0)
+        convergence_time = float(steps) if abs(delta_mean) <= self.delta_max * self.convergence_tol else -1.0
+        envelope_metrics = {
+            "max_delta": max_delta,
+            "oscillation_index": oscillation_index,
+            "regime_flip_rate": regime_flip_rate,
+            "convergence_time": convergence_time,
+        }
+        envelope_breach = (
+            max_delta > self.delta_max * self.safety_multiplier
+            or regime_flip_rate > self.max_regime_flip_rate
+            or oscillation_index > self.max_oscillation_index
+        )
+
         new_state = replace(
             state,
             parameter=new_param,
@@ -225,11 +273,30 @@ class IterationLoop:
             tau=bounded_tau,
             last_delta=delta_mean,
             cooldown_steps=cooldown,
+            steps=steps,
+            regime_flips=regime_flips,
+            sign_flips=sign_flips,
+            frozen=envelope_breach,
+            last_envelope_metrics=envelope_metrics,
         )
+        if envelope_breach:
+            new_state = replace(
+                new_state,
+                regime=Regime.DEFENSIVE,
+                last_effective_lr=0.0,
+            )
+            return new_state, UpdateResult(parameter_deltas={}, bounded=True, applied=False), {
+                "effective_lr": 0.0,
+                "inhibition_scale": inhibition_scale,
+                "tau_scale": tau_scale,
+                **envelope_metrics,
+            }
+
         return new_state, UpdateResult(parameter_deltas={"parameter": new_param - state.parameter}, bounded=bounded, applied=True), {
             "effective_lr": base_lr,
             "inhibition_scale": inhibition_scale,
             "tau_scale": tau_scale,
+            **envelope_metrics,
         }
 
     def evaluate_safety(self, state: IterationState, pe: PredictionError, ctx: IterationContext) -> SafetyDecision:
@@ -239,14 +306,22 @@ class IterationLoop:
         if state.regime == Regime.DEFENSIVE and abs_max > self.delta_max:
             allow = False
             reason = "defensive_clamp"
+        if state.frozen:
+            allow = False
+            reason = "stability_envelope_breach"
         if not allow and reason == "stable":
             reason = "delta_exceeds_bounds"
 
+        envelope_metrics = state.last_envelope_metrics or {}
         stability = {
             "abs_delta": pe.abs_delta,
             "abs_delta_max": abs_max,
+            "max_delta": envelope_metrics.get("max_delta", abs_max),
             "tau": state.tau,
             "inhibition_gain": state.inhibition_gain,
+            "oscillation_index": envelope_metrics.get("oscillation_index", 0.0),
+            "regime_flip_rate": envelope_metrics.get("regime_flip_rate", 0.0),
+            "convergence_time": envelope_metrics.get("convergence_time", -1.0),
         }
         risks = {"threat": ctx.threat, "risk": ctx.risk}
         return SafetyDecision(

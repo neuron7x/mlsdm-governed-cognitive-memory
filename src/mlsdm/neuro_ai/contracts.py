@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+    from typing import Literal
 
 
 @dataclass(frozen=True)
@@ -135,3 +136,88 @@ NEURO_CONTRACTS: Mapping[str, ContractSpec] = {
         ],
     ),
 }
+
+
+@dataclass(frozen=True)
+class FunctionalCoverageRecord:
+    """Functional coverage link between biomimetic names and concrete functions."""
+
+    module: str
+    bio_system: str
+    function: str
+    category: "Literal['biological', 'engineering_abstraction']"
+    function_tags: Sequence[str]
+    tests: Sequence[str]
+    contract: str | None = None
+
+
+FUNCTIONAL_COVERAGE_MATRIX: tuple[FunctionalCoverageRecord, ...] = (
+    FunctionalCoverageRecord(
+        module="mlsdm.memory.multi_level_memory.MultiLevelSynapticMemory",
+        bio_system="Hippocampal-cortical multi-timescale buffer",
+        function="Consolidation across L1/L2/L3 with decay and gating",
+        category="biological",
+        function_tags=("prediction_error", "inhibition"),
+        tests=(
+            "tests/unit/test_multi_level_memory_calibration.py",
+            "tests/observability/test_memory_observability.py",
+            "tests/neuro_ai/test_neuro_ai_contract_layer.py",
+        ),
+        contract="MultiLevelSynapticMemory",
+    ),
+    FunctionalCoverageRecord(
+        module="mlsdm.memory.phase_entangled_lattice_memory.PhaseEntangledLatticeMemory",
+        bio_system="Phase-coded associative lattice (PELM)",
+        function="Phase-weighted retrieval with bounded similarity and capacity",
+        category="biological",
+        function_tags=("action_selection",),
+        tests=("tests/unit/test_pelm.py", "tests/unit/test_pelm_batch.py"),
+        contract="PhaseEntangledLatticeMemory",
+    ),
+    FunctionalCoverageRecord(
+        module="mlsdm.rhythm.cognitive_rhythm.CognitiveRhythm",
+        bio_system="Wake/sleep pacing with hysteresis",
+        function="Phase pacing and inhibition timing",
+        category="biological",
+        function_tags=("regime_switching", "inhibition"),
+        tests=(
+            "tests/unit/test_cognitive_rhythm.py",
+            "tests/validation/test_wake_sleep_effectiveness.py",
+        ),
+        contract="CognitiveRhythm",
+    ),
+    FunctionalCoverageRecord(
+        module="mlsdm.cognition.synergy_experience.SynergyExperienceMemory",
+        bio_system="Basal-ganglia-inspired action selection",
+        function="Prediction-error-driven combo selection with ε-greedy",
+        category="biological",
+        function_tags=("action_selection", "prediction_error"),
+        tests=("tests/unit/test_synergy_experience.py",),
+        contract="SynergyExperienceMemory",
+    ),
+    FunctionalCoverageRecord(
+        module="mlsdm.neuro_ai.adapters.SynapticMemoryAdapter",
+        bio_system="Threat-driven inhibition wrapper",
+        function="Regime-aware scaling of synaptic updates",
+        category="engineering_abstraction",
+        function_tags=("inhibition", "regime_switching"),
+        tests=("tests/neuro_ai/test_neuro_ai_contract_layer.py",),
+        contract=None,
+    ),
+    FunctionalCoverageRecord(
+        module="mlsdm.core.iteration_loop.IterationLoop",
+        bio_system="Prediction-error control loop",
+        function="Stability-envelope-governed regime switching and updates",
+        category="engineering_abstraction",
+        function_tags=("prediction_error", "regime_switching", "inhibition"),
+        tests=("tests/unit/test_iteration_loop.py",),
+        contract=None,
+    ),
+)
+
+__all__ = [
+    "ContractSpec",
+    "FunctionalCoverageRecord",
+    "FUNCTIONAL_COVERAGE_MATRIX",
+    "NEURO_CONTRACTS",
+]

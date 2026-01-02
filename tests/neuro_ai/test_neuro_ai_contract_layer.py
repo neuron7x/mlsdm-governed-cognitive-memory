@@ -1,12 +1,8 @@
 import numpy as np
 
 from mlsdm.memory.multi_level_memory import MultiLevelSynapticMemory
-from mlsdm.neuro_ai.adapters import (
-    PredictionErrorAdapter,
-    RegimeController,
-    RegimeState,
-    SynapticMemoryAdapter,
-)
+from mlsdm.neuro_ai import FUNCTIONAL_COVERAGE_MATRIX, NEURO_CONTRACTS
+from mlsdm.neuro_ai.adapters import PredictionErrorAdapter, RegimeController, RegimeState, SynapticMemoryAdapter
 
 
 def test_adapter_default_matches_baseline() -> None:
@@ -119,3 +115,21 @@ def test_neuro_ai_metrics_remain_bounded_under_sequence() -> None:
 
     # Deterministic sequence keeps std-dev of norms well below 5, indicating stable traces.
     assert max(oscillations) < 5.0
+
+
+def test_functional_coverage_matrix_is_complete() -> None:
+    contract_names = set(NEURO_CONTRACTS)
+    categories = {"biological", "engineering_abstraction"}
+    tags_seen: set[str] = set()
+
+    for record in FUNCTIONAL_COVERAGE_MATRIX:
+        assert record.category in categories
+        assert record.function_tags
+        tags_seen.update(record.function_tags)
+        if record.contract is not None:
+            assert record.contract in contract_names
+            contract_names.remove(record.contract)
+        assert record.tests  # every record must cite behavioral tests
+
+    assert not contract_names  # all contracts are covered
+    assert {"action_selection", "prediction_error", "regime_switching", "inhibition"}.issubset(tags_seen)

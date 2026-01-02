@@ -25,11 +25,18 @@ from .contract_api import (
     NeuroOutputPack,
     NeuroSignalPack,
 )
-from .contracts import NEURO_CONTRACTS, ContractSpec
+from .contracts import (
+    FUNCTIONAL_COVERAGE_MATRIX,
+    FunctionalCoverageRecord,
+    NEURO_CONTRACTS,
+    ContractSpec,
+)
 from .prediction_error import BoundedUpdateResult, PredictorEMA, compute_delta, update_bounded
 
 __all__ = [
     "ContractSpec",
+    "FunctionalCoverageRecord",
+    "FUNCTIONAL_COVERAGE_MATRIX",
     "NEURO_CONTRACTS",
     "NeuroContractMetadata",
     "NeuroHybridFlags",

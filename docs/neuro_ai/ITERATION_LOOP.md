@@ -25,11 +25,11 @@ Each phase returns typed artifacts in `mlsdm.core.iteration_loop`.
 ## Regimes & risk coupling
 - Regimes: **NORMAL**, **CAUTION**, **DEFENSIVE** (hysteresis + cooldown)
 - Threat/risk modulate learning rate (↓ under DEFENSIVE), inhibition gain (↑), and τ smoothing (↑) to damp oscillations.
-- Updates are Δ-driven (prediction error), clipped by `delta_max`, learning rate clamped to `[alpha_min, alpha_max]`, parameters clamped to safe bounds.
+- Updates are Δ-driven (prediction error), clipped by `delta_max`, learning rate clamped to `[alpha_min, alpha_max]`, parameters clamped to safe bounds, and **stability envelope** checked (max |Δ|, oscillation index, regime-flip rate). Envelope violations force a **fail-safe downgrade** (learning off, DEFENSIVE regime, inference-only).
 
 ## Safety gate
 - Blocks iteration when |Δ| exceeds bounds or in DEFENSIVE with large residuals.
-- Emits per-iteration trace: action, prediction vs observation, Δ metrics, regime, dynamics (α, inhibition, τ), update, safety decision.
+- Emits per-iteration trace: action, prediction vs observation, Δ metrics, regime, dynamics (α, inhibition, τ, oscillation index, regime-flip rate), update, safety decision.
 
 ## Enabling (opt-in)
 - Construct `IterationLoop(enabled=True, ...)` and call `step(state, env, ctx)`.
