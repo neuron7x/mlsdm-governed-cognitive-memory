@@ -96,6 +96,7 @@ class IterationState:
     kill_switch_active: bool = field(default=False, init=False)
     cooldown_remaining: int = field(default=0, init=False)
     instability_events_count: int = field(default=0, init=False)
+    # Episode-scoped marker for when the kill switch first activates.
     time_to_kill_switch: int | None = field(default=None, init=False)
     recovered: bool = field(default=False, init=False)
     last_delta: float = 0.0
@@ -355,7 +356,7 @@ class IterationLoop:
                     + (1 if state.frozen and not state.kill_switch_active else 0),
                     recovered=False,
                     frozen=True,
-                    time_to_kill_switch=0,
+                    time_to_kill_switch=state.time_to_kill_switch if state.time_to_kill_switch is not None else steps,
                 )
                 return frozen_state, UpdateResult(parameter_deltas={}, bounded=True, applied=False), {
                     "effective_lr": 0.0,
@@ -454,7 +455,7 @@ class IterationLoop:
                 kill_switch_active=True,
                 cooldown_remaining=COOLDOWN_STEPS,
                 instability_events_count=state.instability_events_count + 1,
-                time_to_kill_switch=0,
+                time_to_kill_switch=state.time_to_kill_switch if state.time_to_kill_switch is not None else steps,
                 recovered=False,
                 frozen=True,
             )
