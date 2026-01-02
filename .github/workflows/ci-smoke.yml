@@ -43,11 +43,20 @@ jobs:
 
       - name: Run smoke tests (fast unit tests only)
         run: |
+          mkdir -p artifacts
           # Run all unit tests except slow ones for fast feedback
           # The 'slow' marker is already defined and used in the codebase
           # This gives us fast feedback on basic functionality
-          pytest tests/unit/ -v -m "not slow" --tb=short -q --maxfail=5
+          pytest tests/unit/ -v -m "not slow" --tb=short -q --maxfail=5 --junitxml=artifacts/junit-smoke.xml
         timeout-minutes: 3
+
+      - name: Upload smoke junit report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: smoke-junit
+          path: artifacts/junit-smoke.xml
+          retention-days: 7
 
       - name: Run critical module imports
         run: |
@@ -183,3 +192,85 @@ jobs:
           echo "Checking CI workflow policies..."
           # Use --fail-on-warn=false to allow warnings but fail on denies
           conftest test .github/workflows/*.yml -p policies/ci/ --all-namespaces --fail-on-warn=false
+
+  failure-intelligence:
+    name: Failure Intelligence
+    needs:
+      - smoke
+      - coverage-gate
+      - ablation-smoke
+      - policy-check
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Determine changed files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_REF="${{ github.event.pull_request.base.ref }}"
+            git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
+          else
+            BASE_REF="${{ github.ref_name }}"
+          fi
+          echo "BASE_REF=$BASE_REF" >> "$GITHUB_ENV"
+          git diff --name-only origin/"$BASE_REF"...HEAD > changed_files.txt || true
+          if [ ! -s changed_files.txt ]; then
+            git diff --name-only HEAD~1...HEAD > changed_files.txt || true
+          fi
+
+      - name: Download smoke junit
+        uses: actions/download-artifact@v6
+        with:
+          name: smoke-junit
+          path: artifacts
+        continue-on-error: true
+
+      - name: Download coverage report
+        uses: actions/download-artifact@v6
+        with:
+          name: coverage-report
+          path: artifacts
+        continue-on-error: true
+
+      - name: Download ablation report
+        uses: actions/download-artifact@v6
+        with:
+          name: ablation-report
+          path: artifacts
+        continue-on-error: true
+
+      - name: Generate failure intelligence summary
+        if: always()
+        run: |
+          python scripts/ci/failure_intelligence.py \
+            --junit artifacts/junit-smoke.xml \
+            --coverage artifacts/coverage.xml \
+            --changed-files changed_files.txt \
+            --out failure_summary.md \
+            --json failure_summary.json
+
+      - name: Publish job summary
+        if: always()
+        run: cat failure_summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload failure intelligence artifact
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: failure-intelligence
+          path: |
+            failure_summary.md
+            failure_summary.json
+            changed_files.txt
+          retention-days: 7

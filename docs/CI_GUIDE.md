@@ -179,6 +179,12 @@ make cov
 - Manual approval step
 - Deployment simulation
 
+## Failure Intelligence Summaries
+
+- CI Smoke runs publish a **Failure Intelligence** section in the GitHub Actions job summary.
+- The artifact `failure-intelligence` contains `failure_summary.md`, `failure_summary.json`, and `changed_files.txt` for reproducible debugging.
+- Reproduce failures locally using the suggested commands in the summary (commonly `make test-fast`, `make lint`, `make type`).
+
 **When to modify:**
 - Changing production requirements
 - Adding deployment validations
