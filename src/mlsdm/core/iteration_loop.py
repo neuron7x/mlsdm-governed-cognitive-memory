@@ -518,6 +518,7 @@ class IterationLoop:
             "abs_delta_max": abs_max,
             "max_delta": envelope_metrics.get("max_delta", abs_max),
             "windowed_max_abs_delta": envelope_metrics.get("windowed_max_abs_delta", abs_max),
+            "max_abs_delta": state.max_abs_delta,
             "tau": state.tau,
             "inhibition_gain": state.inhibition_gain,
             "oscillation_index": envelope_metrics.get("oscillation_index", 0.0),
@@ -526,6 +527,9 @@ class IterationLoop:
             "windowed_sign_flip_rate": envelope_metrics.get("windowed_sign_flip_rate", 0.0),
             "windowed_regime_flip_rate": envelope_metrics.get("windowed_regime_flip_rate", 0.0),
             "convergence_time": envelope_metrics.get("convergence_time", -1.0),
+            "instability_events_count": state.instability_events_count,
+            "time_to_kill_switch": state.time_to_kill_switch,
+            "recovered": state.recovered,
         }
         risks = {"threat": ctx.threat, "risk": ctx.risk}
         return SafetyDecision(
