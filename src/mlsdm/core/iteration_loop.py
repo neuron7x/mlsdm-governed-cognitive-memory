@@ -100,8 +100,6 @@ class IterationState:
     recovered: bool = field(default=False, init=False)
     last_delta: float = 0.0
     steps: int = 0
-    regime_flips: int = 0
-    sign_flips: int = 0
     frozen: bool = False
     recent_delta_signs: deque[int] = field(default_factory=lambda: deque(maxlen=GUARD_WINDOW))
     recent_regime_flips: deque[int] = field(default_factory=lambda: deque(maxlen=GUARD_WINDOW))
@@ -260,8 +258,7 @@ class IterationLoop:
             recent_abs_deltas = deque(target.recent_abs_deltas, maxlen=GUARD_WINDOW)
             recent_abs_deltas.append(abs_delta_max)
             window_max = max(recent_abs_deltas) if recent_abs_deltas else abs_delta_max
-            max_abs_delta = max(target.max_abs_delta, window_max)
-            return recent_abs_deltas, max_abs_delta
+            return recent_abs_deltas, window_max
 
         def _calculate_envelope(
             *,
@@ -269,6 +266,7 @@ class IterationLoop:
             steps: int,
             recent_delta_signs: deque[int],
             recent_regime_flips: deque[int],
+            windowed_abs_delta_max: float,
         ) -> tuple[dict[str, float], float, float, bool]:
             max_delta = max((abs(d) for d in pe.delta), default=0.0)
             clipped_max_delta = max((abs(d) for d in pe.clipped_delta), default=0.0)
@@ -281,6 +279,9 @@ class IterationLoop:
                 "regime_flip_rate": regime_flip_rate,
                 "convergence_time": convergence_time,
                 "sign_flip_rate": sign_flip_rate,
+                "windowed_max_abs_delta": windowed_abs_delta_max,
+                "windowed_sign_flip_rate": sign_flip_rate,
+                "windowed_regime_flip_rate": regime_flip_rate,
                 "guard_window": GUARD_WINDOW,
                 "guard_max_abs_delta": MAX_ABS_DELTA,
                 "guard_max_sign_flip_rate": MAX_SIGN_FLIP_RATE,
@@ -309,6 +310,9 @@ class IterationLoop:
                     "regime_flip_rate": regime_flip_rate,
                     "convergence_time": float(state.steps) if abs(state.last_delta) <= self.delta_max else -1.0,
                     "sign_flip_rate": sign_flip_rate,
+                    "windowed_max_abs_delta": max_abs_delta,
+                    "windowed_sign_flip_rate": sign_flip_rate,
+                    "windowed_regime_flip_rate": regime_flip_rate,
                     "guard_window": GUARD_WINDOW,
                     "guard_max_abs_delta": MAX_ABS_DELTA,
                     "guard_max_sign_flip_rate": MAX_SIGN_FLIP_RATE,
@@ -335,6 +339,7 @@ class IterationLoop:
                 steps=state.steps + 1,
                 recent_delta_signs=recent_delta_signs,
                 recent_regime_flips=recent_regime_flips,
+                windowed_abs_delta_max=max_abs_delta,
             )
             if envelope_breach:
                 cooldown_remaining = COOLDOWN_STEPS
@@ -345,10 +350,7 @@ class IterationLoop:
                     base_cooldown = max(state.cooldown_remaining, COOLDOWN_STEPS) if state.frozen else 0
                 cooldown_remaining = max(0, base_cooldown - 1)
             if cooldown_remaining > 0 or envelope_breach:
-                sign_flip = state.last_delta != 0.0 and delta_mean != 0.0 and (delta_mean * state.last_delta) < 0
                 steps = state.steps + 1
-                regime_flips = state.regime_flips + (1 if regime_flip else 0)
-                sign_flips = state.sign_flips + (1 if sign_flip else 0)
                 time_to_kill_switch = state.time_to_kill_switch if state.time_to_kill_switch is not None else steps
                 frozen_state = replace(
                     state,
@@ -356,8 +358,6 @@ class IterationLoop:
                     last_effective_lr=0.0,
                     last_delta=delta_mean,
                     steps=steps,
-                    regime_flips=regime_flips,
-                    sign_flips=sign_flips,
                     recent_delta_signs=recent_delta_signs,
                     recent_regime_flips=recent_regime_flips,
                     recent_abs_deltas=recent_abs_deltas,
@@ -413,11 +413,8 @@ class IterationLoop:
 
         regime_flip = regime != state.regime
         # Detect oscillations via sign changes between consecutive delta means.
-        sign_flip = state.last_delta != 0.0 and delta_mean != 0.0 and (delta_mean * state.last_delta) < 0
         delta_sign = _sign(delta_mean)
         steps = state.steps + 1
-        regime_flips = state.regime_flips + (1 if regime_flip else 0)
-        sign_flips = state.sign_flips + (1 if sign_flip else 0)
         recent_delta_signs = deque(state.recent_delta_signs, maxlen=GUARD_WINDOW)
         recent_regime_flips = deque(state.recent_regime_flips, maxlen=GUARD_WINDOW)
         recent_abs_deltas, max_abs_delta = _update_guard_window(state, abs_max)
@@ -428,6 +425,7 @@ class IterationLoop:
             steps=steps,
             recent_delta_signs=recent_delta_signs,
             recent_regime_flips=recent_regime_flips,
+            windowed_abs_delta_max=max_abs_delta,
         )
 
         new_state = replace(
@@ -441,8 +439,6 @@ class IterationLoop:
             last_delta=delta_mean,
             cooldown_steps=cooldown,
             steps=steps,
-            regime_flips=regime_flips,
-            sign_flips=sign_flips,
             frozen=envelope_breach,
             recent_delta_signs=recent_delta_signs,
             recent_regime_flips=recent_regime_flips,
@@ -466,8 +462,6 @@ class IterationLoop:
                 last_effective_lr=0.0,
                 last_delta=delta_mean,
                 steps=steps,
-                regime_flips=regime_flips,
-                sign_flips=sign_flips,
                 recent_delta_signs=recent_delta_signs,
                 recent_regime_flips=recent_regime_flips,
                 recent_abs_deltas=recent_abs_deltas,
@@ -515,11 +509,14 @@ class IterationLoop:
             "abs_delta": pe.abs_delta,
             "abs_delta_max": abs_max,
             "max_delta": envelope_metrics.get("max_delta", abs_max),
+            "windowed_max_abs_delta": envelope_metrics.get("windowed_max_abs_delta", abs_max),
             "tau": state.tau,
             "inhibition_gain": state.inhibition_gain,
             "oscillation_index": envelope_metrics.get("oscillation_index", 0.0),
             "sign_flip_rate": envelope_metrics.get("sign_flip_rate", 0.0),
             "regime_flip_rate": envelope_metrics.get("regime_flip_rate", 0.0),
+            "windowed_sign_flip_rate": envelope_metrics.get("windowed_sign_flip_rate", 0.0),
+            "windowed_regime_flip_rate": envelope_metrics.get("windowed_regime_flip_rate", 0.0),
             "convergence_time": envelope_metrics.get("convergence_time", -1.0),
         }
         risks = {"threat": ctx.threat, "risk": ctx.risk}
@@ -546,8 +543,11 @@ class IterationLoop:
         stability_guard = {
             "instability_events_count": new_state.instability_events_count,
             "max_abs_delta": new_state.max_abs_delta,
+            "windowed_max_abs_delta": new_state.max_abs_delta,
             "time_to_kill_switch": new_state.time_to_kill_switch,
             "recovered": new_state.recovered,
+            "windowed_sign_flip_rate": new_state.last_envelope_metrics.get("windowed_sign_flip_rate", 0.0),
+            "windowed_regime_flip_rate": new_state.last_envelope_metrics.get("windowed_regime_flip_rate", 0.0),
         }
 
         trace = {
