@@ -294,6 +294,74 @@ def test_kill_switch_activation_on_envelope_breach() -> None:
     assert kill_switch_triggered
 
 
+def test_deterministic_instability_triggers_kill_switch() -> None:
+    loop = IterationLoop(enabled=True, delta_max=1.0)
+    env = ToyEnvironment(outcomes=[3.0, -3.0, 3.0, -3.0])
+    state = IterationState(parameter=0.0, learning_rate=0.05)
+    baseline_instability_events = state.instability_events_count
+
+    kill_switch_state: IterationState | None = None
+    kill_switch_trace: dict[str, Any] | None = None
+    for i in range(4):
+        state, trace, _ = loop.step(state, env, _ctx(i))
+        if state.kill_switch_active:
+            kill_switch_state = state
+            kill_switch_trace = trace
+            break
+
+    assert kill_switch_state is not None
+    assert kill_switch_trace is not None
+    assert kill_switch_state.kill_switch_active is True
+    assert kill_switch_state.regime == Regime.DEFENSIVE
+    assert kill_switch_trace["update"]["applied"] is False
+    assert kill_switch_state.instability_events_count == baseline_instability_events + 1
+    assert kill_switch_state.time_to_kill_switch is not None
+    assert kill_switch_state.time_to_kill_switch == kill_switch_state.steps
+
+
+def test_cooldown_recovery_reenables_learning() -> None:
+    loop = IterationLoop(enabled=True, delta_max=1.0)
+    outcomes = [3.0, -3.0, 3.0, -3.0] + [0.1] * 12
+    env = ToyEnvironment(outcomes=outcomes)
+    state = IterationState(parameter=0.0, learning_rate=0.05)
+
+    kill_switch_seen = False
+    recovered_seen = False
+    for i in range(len(outcomes)):
+        state, trace, _ = loop.step(state, env, _ctx(i))
+        if state.kill_switch_active:
+            kill_switch_seen = True
+            assert trace["update"]["applied"] is False
+        if kill_switch_seen and not state.kill_switch_active:
+            recovered_seen = True
+            assert trace["update"]["applied"] is True
+            assert state.recovered is True
+            break
+
+    assert kill_switch_seen is True
+    assert recovered_seen is True
+
+
+def test_default_off_regression_no_update_neutral_metrics() -> None:
+    loop = IterationLoop(enabled=False)
+    env = ToyEnvironment(outcomes=[0.8, 0.8])
+    state = IterationState(parameter=0.3, learning_rate=0.2)
+
+    new_state, trace, _ = loop.step(state, env, _ctx(0))
+
+    assert new_state.parameter == pytest.approx(state.parameter)
+    assert trace["prediction"] == [state.parameter]
+    assert trace["update"]["applied"] is False
+    assert trace["update"]["parameter_deltas"] == {}
+    assert trace["dynamics"]["effective_learning_rate"] == 0.0
+    assert trace["dynamics"]["effective_lr"] == 0.0
+    assert trace["dynamics"]["inhibition_scale"] == 1.0
+    assert trace["dynamics"]["tau_scale"] == 1.0
+    assert trace["safety"]["stability_guard"]["instability_events_count"] == 0
+    assert trace["safety"]["stability_guard"]["max_abs_delta"] == pytest.approx(0.5)
+    assert trace["safety"]["stability_guard"]["time_to_kill_switch"] is None
+
+
 def test_kill_switch_recovery_after_cooldown() -> None:
     loop = IterationLoop(enabled=True, delta_max=0.5)
     state = IterationState(parameter=0.0, learning_rate=0.2)
