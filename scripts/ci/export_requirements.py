@@ -39,16 +39,27 @@ def _normalize_package_name(name: str) -> str:
     return normalized
 
 
-def _normalize_excluded_packages(excluded_packages: dict[str, str]) -> dict[str, str]:
+def _normalize_excluded_packages(
+    excluded_packages: dict[str, dict[str, str]]
+) -> dict[str, dict[str, str]]:
     return {
-        _normalize_package_name(name): reason for name, reason in excluded_packages.items()
+        _normalize_package_name(name): metadata
+        for name, metadata in excluded_packages.items()
     }
 
 
-EXCLUDED_PACKAGES: dict[str, str] = _normalize_excluded_packages(
+EXCLUDED_PACKAGES: dict[str, dict[str, str]] = _normalize_excluded_packages(
     {
-        "jupyter": "excluded from requirements.txt to avoid pip-audit failures via nbconvert",
-        "jupyter_core": "excluded from requirements.txt to avoid pip-audit failures via nbconvert",
+        "jupyter": {
+            "reason": "excluded from requirements.txt to avoid pip-audit failures via nbconvert",
+            "cve": "CVE-2025-53000",
+            "remove_when": "remove once nbconvert>=7.16.0",
+        },
+        "jupyter_core": {
+            "reason": "excluded from requirements.txt to avoid pip-audit failures via nbconvert",
+            "cve": "CVE-2025-53000",
+            "remove_when": "remove once nbconvert>=7.16.0",
+        },
     }
 )
 
@@ -87,14 +98,18 @@ def filter_excluded_dependencies(deps: Iterable[str]) -> list[str]:
     return [dep for dep in deps if _normalize_dependency_name(dep) not in EXCLUDED_PACKAGES]
 
 
-def _format_excluded_packages(excluded_packages: dict[str, str]) -> list[str]:
+def _format_excluded_packages(excluded_packages: dict[str, dict[str, str]]) -> list[str]:
     if not excluded_packages:
         return ["# Optional dependency packages excluded: none"]
     excluded_lines = [
         "# Optional dependency packages excluded:",
     ]
     for name in sorted(excluded_packages):
-        excluded_lines.append(f"# - {name}: {excluded_packages[name]}")
+        metadata = excluded_packages[name]
+        reason = metadata["reason"]
+        cve = metadata["cve"]
+        remove_when = metadata["remove_when"]
+        excluded_lines.append(f"# - {name}: {reason} ({cve}; {remove_when})")
     return excluded_lines
 
 
