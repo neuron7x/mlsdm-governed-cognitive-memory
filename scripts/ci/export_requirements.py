@@ -35,7 +35,8 @@ PYPROJECT_PATH = PROJECT_ROOT / "pyproject.toml"
 REQUIREMENTS_PATH = PROJECT_ROOT / "requirements.txt"
 def _normalize_package_name(name: str) -> str:
     normalized = name.strip().lower()
-    normalized = re.sub(r"[-_.]+", "-", normalized)
+    normalized = normalized.replace("_", "-").replace(".", "-")
+    normalized = re.sub(r"-{2,}", "-", normalized)
     return normalized
 
 
