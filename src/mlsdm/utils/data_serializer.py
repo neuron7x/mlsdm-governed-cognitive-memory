@@ -82,12 +82,31 @@ def _load_json_file(filepath: str) -> dict[str, Any]:
 
 def _load_npz_file(filepath: str, *, allow_legacy_pickle: bool) -> dict[str, Any]:
     arrs = _load_npz_arrays(filepath, allow_legacy_pickle=allow_legacy_pickle)
-    # Convert NpzFile to dict - explicit type to satisfy mypy
-    result: dict[str, Any] = {
-        k: _deserialize_npz_value(v) if isinstance(v, np.ndarray) else v
-        for k, v in arrs.items()
-    }
-    return result
+    try:
+        # Convert NpzFile to dict - explicit type to satisfy mypy
+        result: dict[str, Any] = {
+            k: _deserialize_npz_value(v) if isinstance(v, np.ndarray) else v
+            for k, v in arrs.items()
+        }
+        return result
+    except ValueError as exc:
+        if "Object arrays cannot be loaded when allow_pickle=False" not in str(exc):
+            raise
+        if not allow_legacy_pickle:
+            raise ValueError(
+                "Legacy pickle-based NPZ payload detected. "
+                "Refusing to load without allow_legacy_pickle=True."
+            ) from exc
+        logger.warning(
+            "Loading legacy pickle-based NPZ payload from %s. "
+            "Consider re-saving to migrate to the safer format.",
+            filepath,
+        )
+        arrs = np.load(filepath, allow_pickle=True)
+        return {
+            k: _deserialize_npz_value(v) if isinstance(v, np.ndarray) else v
+            for k, v in arrs.items()
+        }
 
 
 @retry(stop=stop_after_attempt(3))
