@@ -1,0 +1,63 @@
+name: CI Python Setup
+description: Standardized Python setup with pip/uv caching for CI jobs.
+
+inputs:
+  python-version:
+    description: Python version to install.
+    required: true
+  min-pip-version:
+    description: Minimum pip version to enforce.
+    required: false
+    default: "25.3"
+  upgrade-pip:
+    description: Whether to upgrade pip before installs.
+    required: false
+    default: "true"
+  cache-dependency-path:
+    description: Paths used to compute the dependency cache key.
+    required: false
+    default: |
+      requirements.txt
+      pyproject.toml
+      uv.lock
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python ${{ inputs.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: 'pip'
+        cache-dependency-path: ${{ inputs.cache-dependency-path }}
+
+    - name: Restore Python cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.cache/uv
+          .venv
+        key: ${{ runner.os }}-py${{ inputs.python-version }}-${{ hashFiles(inputs.cache-dependency-path) }}
+        restore-keys: |
+          ${{ runner.os }}-py${{ inputs.python-version }}-
+          ${{ runner.os }}-
+
+    - name: Ensure pip minimum version
+      if: ${{ inputs.upgrade-pip == 'true' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        python -m pip install --upgrade "pip>=${{ inputs.min-pip-version }}"
+        python - <<'PY'
+        import sys
+        from pip._vendor.packaging.version import Version
+        import pip
+
+        minimum = Version("${{ inputs.min-pip-version }}")
+        current = Version(pip.__version__)
+        if current < minimum:
+          print(f"pip {current} is below required {minimum}", file=sys.stderr)
+          raise SystemExit(1)
+        print(f"pip {current} meets minimum {minimum}")
+        PY

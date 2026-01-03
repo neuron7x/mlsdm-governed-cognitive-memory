@@ -29,25 +29,9 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+        uses: ./.github/actions/ci-python-setup
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pip
-            ~/.cache/uv
-            .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version }}-
-            ${{ runner.os }}-
 
       - name: Install dependencies
         run: |
@@ -70,25 +54,9 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+        uses: ./.github/actions/ci-python-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pip
-            ~/.cache/uv
-            .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
-          restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-
-            ${{ runner.os }}-
 
       - name: Install dependencies
         run: |
@@ -111,25 +79,9 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+        uses: ./.github/actions/ci-python-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pip
-            ~/.cache/uv
-            .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
-          restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-
-            ${{ runner.os }}-
 
       - name: Install dependencies
         run: |
@@ -153,25 +105,9 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+        uses: ./.github/actions/ci-python-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pip
-            ~/.cache/uv
-            .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
-          restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-
-            ${{ runner.os }}-
 
       - name: Install dependencies
         run: |
@@ -194,25 +130,9 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+        uses: ./.github/actions/ci-python-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pip
-            ~/.cache/uv
-            .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
-          restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-
-            ${{ runner.os }}-
 
       - name: Install dependencies
         run: |
@@ -235,25 +155,9 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+        uses: ./.github/actions/ci-python-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pip
-            ~/.cache/uv
-            .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
-          restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-
-            ${{ runner.os }}-
 
       - name: Install dependencies
         run: |
@@ -276,25 +180,9 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+        uses: ./.github/actions/ci-python-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pip
-            ~/.cache/uv
-            .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
-          restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-
-            ${{ runner.os }}-
 
       - name: Install dependencies
         run: |
@@ -318,25 +206,9 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+        uses: ./.github/actions/ci-python-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pip
-            ~/.cache/uv
-            .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
-          restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-
-            ${{ runner.os }}-
 
       - name: Install dependencies
         run: |
@@ -361,25 +233,9 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+        uses: ./.github/actions/ci-python-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
-
-      - name: Restore Python cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pip
-            ~/.cache/uv
-            .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
-          restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-
-            ${{ runner.os }}-
 
       - name: Install dependencies
         run: |
@@ -648,13 +504,9 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: ./.github/actions/ci-python-setup
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            pyproject.toml
 
       - name: Install build dependencies
         run: |

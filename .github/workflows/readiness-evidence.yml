@@ -24,18 +24,11 @@ jobs:
         with:
           fetch-depth: 0
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: ./.github/actions/ci-python-setup
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/uv
-            .venv
-          key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
-          restore-keys: |
-            uv-${{ runner.os }}-
+          cache-dependency-path: |
+            uv.lock
       - name: Install deps via uv (tests)
         run: |
           python -m pip install -U pip
@@ -57,18 +50,11 @@ jobs:
         with:
           fetch-depth: 0
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: ./.github/actions/ci-python-setup
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/uv
-            .venv
-          key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
-          restore-keys: |
-            uv-${{ runner.os }}-
+          cache-dependency-path: |
+            uv.lock
       - name: Install deps via uv (tests)
         run: |
           python -m pip install -U pip
