@@ -21,7 +21,10 @@ from datetime import datetime, timezone
 from typing import Any
 
 import numpy as np
+
 from tenacity import retry, stop_after_attempt, wait_exponential
+
+from mlsdm.utils.npz_helpers import load_npz_arrays_safe
 
 from .system_state_migrations import migrate_state
 from .system_state_schema import (
@@ -98,25 +101,6 @@ def _convert_numpy_to_python(obj: Any) -> Any:
     if isinstance(obj, list):
         return [_convert_numpy_to_python(item) for item in obj]
     return obj
-
-
-def _load_npz_arrays(
-    filepath: str,
-    *,
-    allow_legacy_pickle: bool,
-    error_type: type[Exception],
-    legacy_error_message: str,
-    warning_message: str,
-) -> np.lib.npyio.NpzFile:
-    try:
-        return np.load(filepath, allow_pickle=False)
-    except ValueError as exc:
-        if "Object arrays cannot be loaded when allow_pickle=False" not in str(exc):
-            raise
-        if not allow_legacy_pickle:
-            raise error_type(legacy_error_message) from exc
-        logger.warning(warning_message, filepath)
-        return np.load(filepath, allow_pickle=True)
 
 
 def _state_dict_from_npz(arrs: np.lib.npyio.NpzFile) -> dict[str, Any]:
@@ -294,7 +278,7 @@ def load_system_state(
             state_dict = _load_json_state(filepath, verify_checksum=verify_checksum)
 
         elif ext == ".npz":
-            arrs = _load_npz_arrays(
+            arrs = load_npz_arrays_safe(
                 filepath,
                 allow_legacy_pickle=allow_legacy_pickle,
                 error_type=StateLoadError,
@@ -424,7 +408,7 @@ def recover_system_state(
                 data = f.read()
             state_dict = json.loads(data.decode("utf-8"))
         elif ext == ".npz":
-            arrs = _load_npz_arrays(
+            arrs = load_npz_arrays_safe(
                 backup_path,
                 allow_legacy_pickle=allow_legacy_pickle,
                 error_type=StateRecoveryError,

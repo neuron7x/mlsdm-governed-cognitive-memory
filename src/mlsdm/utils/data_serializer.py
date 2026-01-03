@@ -7,7 +7,10 @@ from pathlib import Path
 from typing import Any, cast
 
 import numpy as np
+
 from tenacity import retry, stop_after_attempt
+
+from mlsdm.utils.npz_helpers import load_npz_arrays_safe
 
 
 logger = logging.getLogger(__name__)
@@ -55,25 +58,6 @@ def _atomic_write(path: Path, suffix: str, writer: Callable[[int, str], bool]) -
             os.unlink(temp_name)
 
 
-def _load_npz_arrays(filepath: str, *, allow_legacy_pickle: bool) -> np.lib.npyio.NpzFile:
-    try:
-        return np.load(filepath, allow_pickle=False)
-    except ValueError as exc:
-        if "Object arrays cannot be loaded when allow_pickle=False" not in str(exc):
-            raise
-        if not allow_legacy_pickle:
-            raise ValueError(
-                "Legacy pickle-based NPZ payload detected. "
-                "Refusing to load without allow_legacy_pickle=True."
-            ) from exc
-        logger.warning(
-            "Loading legacy pickle-based NPZ payload from %s. "
-            "Consider re-saving to migrate to the safer format.",
-            filepath,
-        )
-        return np.load(filepath, allow_pickle=True)
-
-
 def _load_json_file(filepath: str) -> dict[str, Any]:
     with open(filepath, encoding="utf-8") as f:
         data: dict[str, Any] = json.load(f)
@@ -81,7 +65,7 @@ def _load_json_file(filepath: str) -> dict[str, Any]:
 
 
 def _load_npz_file(filepath: str, *, allow_legacy_pickle: bool) -> dict[str, Any]:
-    arrs = _load_npz_arrays(filepath, allow_legacy_pickle=allow_legacy_pickle)
+    arrs = load_npz_arrays_safe(filepath, allow_legacy_pickle=allow_legacy_pickle)
     try:
         # Convert NpzFile to dict - explicit type to satisfy mypy
         result: dict[str, Any] = {
