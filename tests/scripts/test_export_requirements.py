@@ -30,7 +30,8 @@ def test_header_lists_all_optional_groups():
     assert "# Optional dependency groups excluded: none" in content
     assert "# Optional dependency packages excluded:" in content
     assert (
-        "# - jupyter: excluded from requirements.txt to avoid pip-audit failures via nbconvert"
+        "# - jupyter: excluded from requirements.txt to avoid pip-audit failures via nbconvert "
+        "(CVE-2025-53000; remove once nbconvert>=7.16.6)"
         in content
     )
 

@@ -16,7 +16,7 @@
 #
 
 # Optional dependency packages excluded:
-# - jupyter: excluded from requirements.txt to avoid pip-audit failures via nbconvert
+# - jupyter: excluded from requirements.txt to avoid pip-audit failures via nbconvert (CVE-2025-53000; remove once nbconvert>=7.16.6)
 
 # Core Dependencies (from pyproject.toml [project.dependencies])
 defusedxml>=0.7.1

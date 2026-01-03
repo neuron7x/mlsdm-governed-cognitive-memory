@@ -21,8 +21,12 @@ from typing import Any, Iterable
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 PYPROJECT_PATH = PROJECT_ROOT / "pyproject.toml"
 REQUIREMENTS_PATH = PROJECT_ROOT / "requirements.txt"
-EXCLUDED_PACKAGES: dict[str, str] = {
-    "jupyter": "excluded from requirements.txt to avoid pip-audit failures via nbconvert",
+EXCLUDED_PACKAGES: dict[str, dict[str, str]] = {
+    "jupyter": {
+        "reason": "excluded from requirements.txt to avoid pip-audit failures via nbconvert",
+        "cve": "CVE-2025-53000",
+        "remove_when": "nbconvert>=7.16.6",
+    }
 }
 
 
@@ -59,14 +63,24 @@ def filter_excluded_dependencies(deps: Iterable[str]) -> list[str]:
     return [dep for dep in deps if _dependency_name(dep) not in EXCLUDED_PACKAGES]
 
 
-def _format_excluded_packages(excluded_packages: dict[str, str]) -> list[str]:
+def _format_excluded_packages(excluded_packages: dict[str, dict[str, str]]) -> list[str]:
     if not excluded_packages:
         return ["# Optional dependency packages excluded: none"]
     excluded_lines = [
         "# Optional dependency packages excluded:",
     ]
     for name in sorted(excluded_packages):
-        excluded_lines.append(f"# - {name}: {excluded_packages[name]}")
+        metadata = excluded_packages[name]
+        reason = metadata.get("reason", "no reason provided")
+        cve = metadata.get("cve")
+        remove_when = metadata.get("remove_when")
+        details = []
+        if cve:
+            details.append(cve)
+        if remove_when:
+            details.append(f"remove once {remove_when}")
+        details_suffix = f" ({'; '.join(details)})" if details else ""
+        excluded_lines.append(f"# - {name}: {reason}{details_suffix}")
     return excluded_lines
 
 
