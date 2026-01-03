@@ -16,7 +16,10 @@ def _repo_root() -> Path:
 
 
 def _latest_snapshot(paths: set[Path]) -> Path:
-    return max(paths, key=lambda p: p.stat().st_mtime)
+    existing = [p for p in paths if p.exists()]
+    if not existing:
+        raise AssertionError("No evidence snapshot produced")
+    return max(existing, key=lambda p: p.stat().st_mtime)
 
 
 def _run_capture(evidence_dir: Path, inputs: dict[str, str]) -> Path:
@@ -24,7 +27,7 @@ def _run_capture(evidence_dir: Path, inputs: dict[str, str]) -> Path:
     inputs_path.parent.mkdir(parents=True, exist_ok=True)
     inputs_path.write_text(json.dumps(inputs), encoding="utf-8")
     evidence_root = _repo_root() / "artifacts" / "evidence"
-    before = {p.resolve() for p in evidence_root.glob("*/*")} if evidence_root.exists() else set()
+    before = set(evidence_root.glob("*/*")) if evidence_root.exists() else set()
     subprocess.check_call(
         [
             sys.executable,
@@ -36,7 +39,7 @@ def _run_capture(evidence_dir: Path, inputs: dict[str, str]) -> Path:
         ],
         cwd=_repo_root(),
     )
-    after = {p.resolve() for p in evidence_root.glob("*/*")} if evidence_root.exists() else set()
+    after = set(evidence_root.glob("*/*")) if evidence_root.exists() else set()
     new_snapshots = after - before
     if new_snapshots:
         return _latest_snapshot(new_snapshots)
