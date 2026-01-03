@@ -27,7 +27,11 @@ def _run_capture(evidence_dir: Path, inputs: dict[str, str]) -> Path:
     inputs_path.parent.mkdir(parents=True, exist_ok=True)
     inputs_path.write_text(json.dumps(inputs), encoding="utf-8")
     evidence_root = _repo_root() / "artifacts" / "evidence"
-    before = set(evidence_root.glob("*/*")) if evidence_root.exists() else set()
+
+    def _snapshot_set(root: Path) -> set[Path]:
+        return set(root.glob("*/*")) if root.exists() else set()
+
+    before = _snapshot_set(evidence_root)
     subprocess.check_call(
         [
             sys.executable,
@@ -39,7 +43,7 @@ def _run_capture(evidence_dir: Path, inputs: dict[str, str]) -> Path:
         ],
         cwd=_repo_root(),
     )
-    after = set(evidence_root.glob("*/*")) if evidence_root.exists() else set()
+    after = _snapshot_set(evidence_root)
     new_snapshots = after - before
     if new_snapshots:
         return _latest_snapshot(new_snapshots)
