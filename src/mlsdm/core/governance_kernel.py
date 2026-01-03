@@ -193,6 +193,19 @@ class GovernanceKernel:
         self.pelm_ro = PelmRO(self._pelm)
         self.rhythm_ro = RhythmRO(self._rhythm)
 
+    def evaluate_moral(self, moral_value: float) -> tuple[bool, float]:
+        """Evaluate moral value and adapt threshold within kernel lock.
+
+        Returns:
+            Tuple of (accepted, threshold_used) where threshold_used is the
+            value applied during evaluation before any adaptation.
+        """
+        with self._lock:
+            threshold_used = self._moral.threshold
+            accepted = self._moral.evaluate(moral_value)
+            self._moral.adapt(accepted)
+            return accepted, threshold_used
+
     def moral_adapt(self, accepted: bool) -> None:
         with self._lock:
             self._moral.adapt(accepted)

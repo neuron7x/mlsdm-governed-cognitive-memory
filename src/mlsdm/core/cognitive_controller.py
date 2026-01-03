@@ -309,12 +309,11 @@ class CognitiveController:
                     "cognitive_controller.moral_filter",
                     attributes={
                         "mlsdm.moral_value": moral_value,
-                        "mlsdm.moral_threshold": self.moral.threshold,
                     },
                 ) as moral_span:
-                    accepted = self.moral.evaluate(moral_value)
-                    self._kernel.moral_adapt(accepted)
+                    accepted, threshold_used = self._kernel.evaluate_moral(moral_value)
                     moral_span.set_attribute("mlsdm.moral.accepted", accepted)
+                    moral_span.set_attribute("mlsdm.moral_threshold", threshold_used)
 
                     if not accepted:
                         event_span.set_attribute("mlsdm.rejected", True)

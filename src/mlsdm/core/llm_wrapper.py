@@ -570,8 +570,7 @@ class LLMWrapper:
 
     def _check_moral_and_phase(self, moral_value: float) -> dict[str, Any] | None:
         """Check moral acceptability and cognitive phase. Returns rejection response or None."""
-        accepted = self.moral.evaluate(moral_value)
-        self._kernel.moral_adapt(accepted)
+        accepted, _threshold_used = self._kernel.evaluate_moral(moral_value)
 
         if not accepted:
             self.rejected_count += 1
