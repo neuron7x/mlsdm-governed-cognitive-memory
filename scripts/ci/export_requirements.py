@@ -13,107 +13,103 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+import tomllib
 from pathlib import Path
+from typing import Any, Iterable
 
 # Project root is two levels up from this script
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 PYPROJECT_PATH = PROJECT_ROOT / "pyproject.toml"
 REQUIREMENTS_PATH = PROJECT_ROOT / "requirements.txt"
+EXCLUDED_PACKAGES: dict[str, str] = {
+    "jupyter": "excluded from requirements.txt to avoid pip-audit failures via nbconvert",
+}
 
-GENERATED_HEADER = """\
+
+def load_pyproject(path: Path) -> dict[str, Any]:
+    """Load pyproject.toml data using tomllib."""
+    return tomllib.loads(path.read_text(encoding="utf-8"))
+
+
+def parse_pyproject_deps(pyproject_data: dict[str, Any]) -> dict[str, Any]:
+    """Parse dependencies from pyproject.toml data."""
+    project = pyproject_data.get("project", {})
+    core_deps = list(project.get("dependencies", []) or [])
+    optional_deps = {
+        group: list(deps or [])
+        for group, deps in (project.get("optional-dependencies", {}) or {}).items()
+    }
+    return {"core": core_deps, "optional": optional_deps}
+
+
+def _format_group_list(groups: Iterable[str]) -> str:
+    group_list = ", ".join(groups)
+    return group_list if group_list else "none"
+
+
+def _title_case_group(group: str) -> str:
+    return group.replace("-", " ").title()
+
+
+def _dependency_name(dep: str) -> str:
+    return re.split(r"[<>=!~;\\[]", dep, maxsplit=1)[0].strip().lower()
+
+
+def filter_excluded_dependencies(deps: Iterable[str]) -> list[str]:
+    return [dep for dep in deps if _dependency_name(dep) not in EXCLUDED_PACKAGES]
+
+
+def _format_excluded_packages(excluded_packages: dict[str, str]) -> list[str]:
+    if not excluded_packages:
+        return ["# Optional dependency packages excluded: none"]
+    excluded_lines = [
+        "# Optional dependency packages excluded:",
+    ]
+    for name in sorted(excluded_packages):
+        excluded_lines.append(f"# - {name}: {excluded_packages[name]}")
+    return excluded_lines
+
+
+def generate_requirements(deps: dict[str, Any]) -> str:
+    """Generate requirements.txt content from parsed dependencies."""
+    optional_groups = sorted(deps["optional"].keys())
+    group_list = _format_group_list(optional_groups)
+    header = """\
 # GENERATED FILE - DO NOT EDIT MANUALLY
 # This file is auto-generated from pyproject.toml dependencies.
 # Regenerate with: python scripts/ci/export_requirements.py
 #
 # MLSDM Full Installation Requirements
 #
-# This file includes ALL dependencies including optional ones.
+# This file includes all dependencies including optional ones,
+# except excluded packages listed below.
+# Optional dependency groups discovered in pyproject.toml: {group_list}
+# Optional dependency groups included in this file: all ({group_list})
+# Optional dependency groups excluded: none
+#
 # For minimal installation: pip install -e .
 # For embeddings support: pip install -e ".[embeddings]"
 # For full dev install: pip install -r requirements.txt
 #
-"""
-
-
-def parse_pyproject_deps(content: str) -> dict[str, list[str]]:
-    """Parse dependencies from pyproject.toml content.
-
-    Returns a dict with keys:
-    - 'core': main dependencies
-    - 'embeddings': optional embeddings deps
-    - 'observability': optional observability deps
-    - 'dev': dev dependencies
-    - 'visualization': optional visualization deps
-    """
-    deps: dict[str, list[str]] = {
-        "core": [],
-        "embeddings": [],
-        "observability": [],
-        "dev": [],
-        "visualization": [],
-    }
-
-    # Parse core dependencies
-    core_match = re.search(r"\[project\].*?dependencies\s*=\s*\[(.*?)\]", content, re.DOTALL)
-    if core_match:
-        deps["core"] = _parse_dep_list(core_match.group(1))
-
-    # Parse optional dependencies
-    for group in ["embeddings", "observability", "dev", "visualization"]:
-        pattern = rf"\[project\.optional-dependencies\].*?{group}\s*=\s*\[(.*?)\]"
-        match = re.search(pattern, content, re.DOTALL)
-        if match:
-            deps[group] = _parse_dep_list(match.group(1))
-
-    return deps
-
-
-def _parse_dep_list(raw: str) -> list[str]:
-    """Parse a TOML array of dependency strings."""
-    deps = []
-    for line in raw.split("\n"):
-        line = line.strip().strip(",")
-        if line.startswith('"') and line.endswith('"'):
-            dep = line.strip('"')
-            if dep and not dep.startswith("#"):
-                deps.append(dep)
-    return deps
-
-
-def generate_requirements(deps: dict[str, list[str]]) -> str:
-    """Generate requirements.txt content from parsed dependencies."""
-    lines = [GENERATED_HEADER]
+""".format(group_list=group_list)
+    lines = [header]
+    lines.extend(_format_excluded_packages(EXCLUDED_PACKAGES))
+    lines.append("")
 
     lines.append("# Core Dependencies (from pyproject.toml [project.dependencies])")
     for dep in sorted(deps["core"], key=str.lower):
         lines.append(dep)
     lines.append("")
 
-    lines.append("# Optional Embeddings (from pyproject.toml [project.optional-dependencies].embeddings)")
-    lines.append("# Install with: pip install \".[embeddings]\" when semantic embeddings are needed")
-    for dep in sorted(deps["embeddings"], key=str.lower):
-        lines.append(dep)
-    lines.append("")
-
-    lines.append("# Optional Observability (from pyproject.toml [project.optional-dependencies].observability)")
-    lines.append("# Install with: pip install \".[observability]\" for distributed tracing")
-    for dep in sorted(deps["observability"], key=str.lower):
-        lines.append(dep)
-    lines.append("")
-
-    lines.append("# Dev dependencies (from pyproject.toml [project.optional-dependencies].dev)")
-    for dep in sorted(deps["dev"], key=str.lower):
-        # Skip sentence-transformers as it's already in embeddings
-        if "sentence-transformers" not in dep.lower():
+    for group in optional_groups:
+        title = _title_case_group(group)
+        lines.append(
+            f"# Optional {title} (from pyproject.toml [project.optional-dependencies].{group})"
+        )
+        lines.append(f"# Install with: pip install \".[{group}]\"")
+        for dep in sorted(filter_excluded_dependencies(deps["optional"][group]), key=str.lower):
             lines.append(dep)
-    lines.append("")
-
-    lines.append("# Visualization (optional, from pyproject.toml [project.optional-dependencies].visualization)")
-    for dep in sorted(deps["visualization"], key=str.lower):
-        # Skip jupyter as it's heavy
-        if "jupyter" not in dep.lower():
-            lines.append(dep)
-    lines.append("")
+        lines.append("")
 
     lines.append("# Security: Pin minimum versions for indirect dependencies with known vulnerabilities")
     lines.append("certifi>=2025.11.12")
@@ -154,8 +150,8 @@ def main() -> int:
         print(f"ERROR: pyproject.toml not found at {PYPROJECT_PATH}", file=sys.stderr)
         return 1
 
-    pyproject_content = PYPROJECT_PATH.read_text(encoding="utf-8")
-    deps = parse_pyproject_deps(pyproject_content)
+    pyproject_data = load_pyproject(PYPROJECT_PATH)
+    deps = parse_pyproject_deps(pyproject_data)
     generated = generate_requirements(deps)
 
     if args.check:
