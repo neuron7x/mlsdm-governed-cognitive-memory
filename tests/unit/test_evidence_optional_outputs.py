@@ -16,10 +16,10 @@ def _repo_root() -> Path:
 
 
 def _latest_snapshot(paths: set[Path]) -> Path:
-    existing = [p for p in paths if p.exists()]
+    existing = [(p.stat().st_mtime, p) for p in paths if p.exists()]
     if not existing:
         raise AssertionError("No evidence snapshot produced")
-    return max(existing, key=lambda p: p.stat().st_mtime)
+    return max(existing)[1]
 
 
 def _run_capture(evidence_dir: Path, inputs: dict[str, str]) -> Path:
@@ -29,6 +29,7 @@ def _run_capture(evidence_dir: Path, inputs: dict[str, str]) -> Path:
     evidence_root = _repo_root() / "artifacts" / "evidence"
 
     def _snapshot_set(root: Path) -> set[Path]:
+        # Snapshots live under artifacts/evidence/<date>/<short_sha>
         return set(root.glob("*/*")) if root.exists() else set()
 
     before = _snapshot_set(evidence_root)
