@@ -44,6 +44,7 @@ PREFERRED_OPTIONAL_GROUP_ORDER = [
     "visualization",
 ]
 
+
 def _normalize_package_name(name: str) -> str:
     normalized = name.strip().lower()
     normalized = re.sub(r"[_.]+", "-", normalized)
