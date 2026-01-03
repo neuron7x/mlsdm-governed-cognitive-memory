@@ -21,9 +21,25 @@ from typing import Any, Iterable
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 PYPROJECT_PATH = PROJECT_ROOT / "pyproject.toml"
 REQUIREMENTS_PATH = PROJECT_ROOT / "requirements.txt"
-EXCLUDED_PACKAGES: dict[str, str] = {
-    "jupyter": "excluded from requirements.txt to avoid pip-audit failures via nbconvert",
-}
+def _normalize_package_name(name: str) -> str:
+    normalized = name.strip().lower()
+    normalized = re.sub(r"[_.]+", "-", normalized)
+    normalized = re.sub(r"-{2,}", "-", normalized)
+    return normalized
+
+
+def _normalize_excluded_packages(excluded_packages: dict[str, str]) -> dict[str, str]:
+    return {
+        _normalize_package_name(name): reason for name, reason in excluded_packages.items()
+    }
+
+
+EXCLUDED_PACKAGES: dict[str, str] = _normalize_excluded_packages(
+    {
+        "jupyter": "excluded from requirements.txt to avoid pip-audit failures via nbconvert",
+        "jupyter_core": "excluded from requirements.txt to avoid pip-audit failures via nbconvert",
+    }
+)
 
 
 def load_pyproject(path: Path) -> dict[str, Any]:
@@ -51,12 +67,13 @@ def _title_case_group(group: str) -> str:
     return group.replace("-", " ").title()
 
 
-def _dependency_name(dep: str) -> str:
-    return re.split(r"[<>=!~;\\[]", dep, maxsplit=1)[0].strip().lower()
+def _normalize_dependency_name(dep: str) -> str:
+    name = re.split(r"[<>=!~;\\[]", dep, maxsplit=1)[0].strip()
+    return _normalize_package_name(name)
 
 
 def filter_excluded_dependencies(deps: Iterable[str]) -> list[str]:
-    return [dep for dep in deps if _dependency_name(dep) not in EXCLUDED_PACKAGES]
+    return [dep for dep in deps if _normalize_dependency_name(dep) not in EXCLUDED_PACKAGES]
 
 
 def _format_excluded_packages(excluded_packages: dict[str, str]) -> list[str]:

@@ -33,6 +33,10 @@ def test_header_lists_all_optional_groups():
         "# - jupyter: excluded from requirements.txt to avoid pip-audit failures via nbconvert"
         in content
     )
+    assert (
+        "# - jupyter-core: excluded from requirements.txt to avoid pip-audit failures via nbconvert"
+        in content
+    )
 
 
 def test_docs_and_neurolang_dependencies_present():
@@ -78,3 +82,14 @@ def test_sections_are_sorted_and_deterministic():
         assert section_deps == sorted(section_deps, key=str.lower)
         expected = export_requirements.filter_excluded_dependencies(deps["optional"][group])
         assert section_deps == sorted(expected, key=str.lower)
+
+
+def test_excluded_dependency_name_variants_are_normalized():
+    deps = [
+        "Jupyter>=1.0.0",
+        "jupyter_core>=5.0.0",
+        "jupyter.core>=5.0.0",
+        "numpy>=1.26.0",
+    ]
+
+    assert export_requirements.filter_excluded_dependencies(deps) == ["numpy>=1.26.0"]
