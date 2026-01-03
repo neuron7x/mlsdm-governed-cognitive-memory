@@ -248,12 +248,13 @@ Run security audit including dependency vulnerability scanning.
 
 **Usage:**
 ```bash
-python scripts/security_audit.py [--fix] [--report PATH]
+python scripts/security_audit.py [--fix] [--report PATH] [--env]
 ```
 
 **Options:**
 - `--fix`: Attempt to fix vulnerabilities by upgrading packages
 - `--report`: Save report to file
+- `--env`: Audit the installed environment instead of requirements.txt
 
 **Example:**
 ```bash

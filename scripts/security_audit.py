@@ -9,7 +9,7 @@ This script performs security checks including:
 Primary audit path: requirements.txt-based scan with pip-audit --requirement requirements.txt.
 
 Usage:
-    python scripts/security_audit.py [--fix] [--report] [--installed]
+    python scripts/security_audit.py [--fix] [--report] [--env]
 """
 
 from __future__ import annotations
@@ -51,7 +51,10 @@ def install_pip_audit() -> bool:
 
 
 def load_excluded_packages() -> dict[str, str]:
-    """Load excluded package metadata from export_requirements.py if available."""
+    """Load excluded package metadata from export_requirements.py if available.
+
+    This keeps audit exclusions consistent with the central requirements generator policy.
+    """
     if not EXPORT_REQUIREMENTS_PATH.exists():
         return {}
 
@@ -108,9 +111,10 @@ def run_pip_audit(
         for line in _format_excluded_packages(excluded_packages):
             print(f"  - {line}")
 
-    cmd = ["pip-audit", "--format", "json"]
     if requirements_path is not None:
-        cmd.extend(["--requirement", str(requirements_path)])
+        cmd = ["pip-audit", "--requirement", str(requirements_path), "--format", "json"]
+    else:
+        cmd = ["pip-audit", "--format", "json"]
     if fix:
         cmd.append("--fix")
 
@@ -346,13 +350,19 @@ def main(argv: list[str] | None = None) -> int:
         type=str,
         help="Save report to file",
     )
-    parser.add_argument(
-        "--installed",
+    audit_group = parser.add_mutually_exclusive_group()
+    audit_group.add_argument(
+        "--env",
         action="store_true",
         help=(
             "Audit the installed environment instead of requirements.txt "
             "(requirements-based audit is the primary path)"
         ),
+    )
+    audit_group.add_argument(
+        "--installed",
+        action="store_true",
+        help=argparse.SUPPRESS,
     )
     args = parser.parse_args(argv)
 
@@ -368,7 +378,7 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
     excluded_packages = load_excluded_packages()
-    if args.installed:
+    if args.env or args.installed:
         requirements_path = None
         audit_mode = "installed environment"
     else:

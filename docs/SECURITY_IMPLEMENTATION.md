@@ -304,6 +304,9 @@ python scripts/security_audit.py
 # Scan and attempt to fix vulnerabilities
 python scripts/security_audit.py --fix
 
+# Scan installed environment explicitly (optional)
+python scripts/security_audit.py --env
+
 # Generate report file
 python scripts/security_audit.py --report security_report.txt
 ```
