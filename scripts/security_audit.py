@@ -6,18 +6,25 @@ This script performs security checks including:
 2. Security configuration validation
 3. Security best practices checks
 
+Primary audit path: requirements.txt-based scan with pip-audit --requirement requirements.txt.
+
 Usage:
-    python scripts/security_audit.py [--fix] [--report]
+    python scripts/security_audit.py [--fix] [--report] [--installed]
 """
 
 from __future__ import annotations
 
+import importlib.util
 import argparse
 import json
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+REQUIREMENTS_PATH = PROJECT_ROOT / "requirements.txt"
+EXPORT_REQUIREMENTS_PATH = PROJECT_ROOT / "scripts" / "ci" / "export_requirements.py"
 
 
 def check_pip_audit_installed() -> bool:
@@ -43,20 +50,67 @@ def install_pip_audit() -> bool:
         return False
 
 
-def run_pip_audit(fix: bool = False) -> tuple[bool, dict[str, Any]]:
+def load_excluded_packages() -> dict[str, str]:
+    """Load excluded package metadata from export_requirements.py if available."""
+    if not EXPORT_REQUIREMENTS_PATH.exists():
+        return {}
+
+    spec = importlib.util.spec_from_file_location(
+        "export_requirements", EXPORT_REQUIREMENTS_PATH
+    )
+    if spec is None or spec.loader is None:
+        return {}
+
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except Exception as exc:
+        print(f"⚠️  Unable to load exclusion metadata: {exc}")
+        return {}
+
+    excluded = getattr(module, "EXCLUDED_PACKAGES", {})
+    if isinstance(excluded, dict):
+        return {str(key): str(value) for key, value in excluded.items()}
+    return {}
+
+
+def _format_excluded_packages(excluded_packages: dict[str, str]) -> list[str]:
+    if not excluded_packages:
+        return ["None"]
+    return [f"{name}: {reason}" for name, reason in sorted(excluded_packages.items())]
+
+
+def run_pip_audit(
+    *,
+    fix: bool = False,
+    requirements_path: Path | None,
+    excluded_packages: dict[str, str],
+) -> tuple[bool, dict[str, Any]]:
     """Run pip-audit to check for vulnerabilities.
 
     Args:
         fix: If True, attempt to fix vulnerabilities by upgrading packages
+        requirements_path: Path to requirements.txt (None to scan installed environment)
+        excluded_packages: Excluded package metadata for reporting
 
     Returns:
         Tuple of (success, results_dict)
     """
     print("\n" + "=" * 60)
-    print("Running dependency vulnerability scan with pip-audit...")
+    if requirements_path is None:
+        mode_label = "installed environment"
+    else:
+        mode_label = f"requirements file ({requirements_path})"
+    print(f"Running dependency vulnerability scan with pip-audit ({mode_label})...")
     print("=" * 60)
+    if excluded_packages:
+        print("Exclusion policy loaded for audit context:")
+        for line in _format_excluded_packages(excluded_packages):
+            print(f"  - {line}")
 
     cmd = ["pip-audit", "--format", "json"]
+    if requirements_path is not None:
+        cmd.extend(["--requirement", str(requirements_path)])
     if fix:
         cmd.append("--fix")
 
@@ -186,7 +240,12 @@ def check_security_implementations() -> tuple[bool, list[str]]:
 
 
 def generate_security_report(
-    audit_results: dict, config_check: bool, impl_check: bool, impl_findings: list[str]
+    audit_results: dict,
+    config_check: bool,
+    impl_check: bool,
+    impl_findings: list[str],
+    audit_mode: str,
+    excluded_packages: dict[str, str],
 ) -> str:
     """Generate security audit report.
 
@@ -216,8 +275,13 @@ def generate_security_report(
 
     report.append(f"Dependencies scanned: {len(audit_results.get('dependencies', []))}")
     report.append(f"Vulnerabilities found: {vuln_count}")
+    report.append(f"Audit mode: {audit_mode}")
     report.append(f"Configuration files: {'✓ Present' if config_check else '✗ Missing'}")
     report.append(f"Security implementations: {'✓ Complete' if impl_check else '✗ Incomplete'}")
+    report.append(
+        "Excluded packages policy: "
+        + ("None" if not excluded_packages else f"{len(excluded_packages)} package(s)")
+    )
     report.append("")
 
     # Details
@@ -238,6 +302,13 @@ def generate_security_report(
         report.append("-" * 60)
         for finding in impl_findings:
             report.append(f"• {finding}")
+        report.append("")
+
+    if excluded_packages:
+        report.append("EXCLUDED PACKAGES (CENTRAL POLICY)")
+        report.append("-" * 60)
+        for line in _format_excluded_packages(excluded_packages):
+            report.append(f"• {line}")
         report.append("")
 
     # Recommendations
@@ -275,6 +346,14 @@ def main(argv: list[str] | None = None) -> int:
         type=str,
         help="Save report to file",
     )
+    parser.add_argument(
+        "--installed",
+        action="store_true",
+        help=(
+            "Audit the installed environment instead of requirements.txt "
+            "(requirements-based audit is the primary path)"
+        ),
+    )
     args = parser.parse_args(argv)
 
     print("MLSDM Governed Cognitive Memory - Security Audit")
@@ -288,13 +367,35 @@ def main(argv: list[str] | None = None) -> int:
             print("Please install manually: pip install pip-audit")
             return 1
 
+    excluded_packages = load_excluded_packages()
+    if args.installed:
+        requirements_path = None
+        audit_mode = "installed environment"
+    else:
+        requirements_path = REQUIREMENTS_PATH
+        audit_mode = f"requirements file ({requirements_path})"
+        if not requirements_path.exists():
+            print(f"ERROR: requirements.txt not found at {requirements_path}")
+            return 1
+
     # Run checks
-    audit_success, audit_results = run_pip_audit(fix=args.fix)
+    audit_success, audit_results = run_pip_audit(
+        fix=args.fix,
+        requirements_path=requirements_path,
+        excluded_packages=excluded_packages,
+    )
     config_check = check_security_configs()
     impl_check, impl_findings = check_security_implementations()
 
     # Generate report
-    report = generate_security_report(audit_results, config_check, impl_check, impl_findings)
+    report = generate_security_report(
+        audit_results,
+        config_check,
+        impl_check,
+        impl_findings,
+        audit_mode,
+        excluded_packages,
+    )
 
     print("\n" + report)
 
