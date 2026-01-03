@@ -15,10 +15,30 @@ def _repo_root() -> Path:
     return current
 
 
+def _latest_snapshot(paths: set[Path]) -> Path:
+    existing: list[tuple[float, Path]] = []
+    for path in paths:
+        try:
+            stat = path.stat()
+        except OSError:
+            continue
+        existing.append((stat.st_mtime, path))
+    if not existing:
+        raise AssertionError("No evidence snapshot produced")
+    return max(existing)[1]
+
+
 def _run_capture(evidence_dir: Path, inputs: dict[str, str]) -> Path:
     inputs_path = evidence_dir / "inputs.json"
     inputs_path.parent.mkdir(parents=True, exist_ok=True)
     inputs_path.write_text(json.dumps(inputs), encoding="utf-8")
+    evidence_root = _repo_root() / "artifacts" / "evidence"
+
+    def _snapshot_set(root: Path) -> set[Path]:
+        # Snapshots live under artifacts/evidence/<date>/<short_sha>
+        return set(root.glob("*/*")) if root.exists() else set()
+
+    before = _snapshot_set(evidence_root)
     subprocess.check_call(
         [
             sys.executable,
@@ -30,9 +50,10 @@ def _run_capture(evidence_dir: Path, inputs: dict[str, str]) -> Path:
         ],
         cwd=_repo_root(),
     )
-    evidence_root = _repo_root() / "artifacts" / "evidence"
-    latest = sorted(evidence_root.glob("*/*"))
-    return latest[-1]
+    after = _snapshot_set(evidence_root)
+    new_snapshots = after - before
+    candidates = new_snapshots if new_snapshots else after
+    return _latest_snapshot(candidates)
 
 
 def _run_verify(snapshot: Path) -> subprocess.CompletedProcess[str]:
