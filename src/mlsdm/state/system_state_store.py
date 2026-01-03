@@ -55,6 +55,14 @@ def _compute_checksum(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _decode_state_json(value: Any) -> dict[str, Any]:
+    if isinstance(value, np.ndarray):
+        value = value.item() if value.size == 1 else value.tobytes()
+    if isinstance(value, bytes):
+        value = value.decode("utf-8")
+    return json.loads(value)
+
+
 def _get_backup_path(filepath: str) -> str:
     """Get backup file path for a state file."""
     return f"{filepath}.backup"
@@ -90,6 +98,69 @@ def _convert_numpy_to_python(obj: Any) -> Any:
     if isinstance(obj, list):
         return [_convert_numpy_to_python(item) for item in obj]
     return obj
+
+
+def _load_npz_arrays(
+    filepath: str,
+    *,
+    allow_legacy_pickle: bool,
+    error_type: type[Exception],
+    legacy_error_message: str,
+    warning_message: str,
+) -> np.lib.npyio.NpzFile:
+    try:
+        return np.load(filepath, allow_pickle=False)
+    except ValueError as exc:
+        if "Object arrays cannot be loaded when allow_pickle=False" not in str(exc):
+            raise
+        if not allow_legacy_pickle:
+            raise error_type(legacy_error_message) from exc
+        logger.warning(warning_message, filepath)
+        return np.load(filepath, allow_pickle=True)
+
+
+def _state_dict_from_npz(arrs: np.lib.npyio.NpzFile) -> dict[str, Any]:
+    if "state_json" in arrs:
+        return _decode_state_json(arrs["state_json"])
+    if "state" in arrs:
+        state_data = arrs["state"]
+        # Handle numpy.void objects from npz loading
+        return state_data.item() if hasattr(state_data, "item") else dict(state_data)
+    # Legacy format: direct state dict
+    return {k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in arrs.items()}
+
+
+def _load_json_state(filepath: str, *, verify_checksum: bool) -> dict[str, Any]:
+    with open(filepath, "rb") as f:
+        data = f.read()
+
+    if verify_checksum:
+        checksum_path = _get_checksum_path(filepath)
+        if os.path.exists(checksum_path):
+            with open(checksum_path, encoding="utf-8") as f:
+                stored_checksum = f.read().strip()
+            computed_checksum = _compute_checksum(data)
+            if stored_checksum != computed_checksum:
+                raise StateCorruptionError(
+                    f"Checksum mismatch for {filepath}. "
+                    f"Expected {stored_checksum}, got {computed_checksum}"
+                )
+
+    return json.loads(data.decode("utf-8"))
+
+
+def _save_npz_state(filepath: str, state_json: str) -> None:
+    base_path, ext = os.path.splitext(filepath)
+    temp_path = f"{base_path}.tmp{ext}"
+    try:
+        np.savez(temp_path, state_json=state_json)
+        os.replace(temp_path, filepath)
+    finally:
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except OSError as e:
+                logger.debug("Failed to remove temp npz file %s: %s", temp_path, e)
 
 
 @retry(
@@ -178,20 +249,8 @@ def save_system_state(
             _write_file_atomic(checksum_path, checksum.encode("utf-8"))
 
         elif ext == ".npz":
-            # For NPZ, convert lists back to arrays
-            processed = _convert_numpy_to_python(state_dict)
-            # Create a temporary file for npz
-            base_path, ext = os.path.splitext(filepath)
-            temp_path = f"{base_path}.tmp{ext}"
-            try:
-                np.savez(temp_path, state=processed)
-                os.replace(temp_path, filepath)
-            finally:
-                if os.path.exists(temp_path):
-                    try:
-                        os.remove(temp_path)
-                    except OSError as e:
-                        logger.debug("Failed to remove temp npz file %s: %s", temp_path, e)
+            state_json = json.dumps(state_dict, default=str)
+            _save_npz_state(filepath, state_json)
 
         logger.info(f"Saved system state to {filepath} (version {state.version})")
 
@@ -204,6 +263,7 @@ def load_system_state(
     *,
     verify_checksum: bool = True,
     auto_migrate: bool = True,
+    allow_legacy_pickle: bool = True,
 ) -> SystemStateRecord:
     """Load and validate system state from file.
 
@@ -211,6 +271,7 @@ def load_system_state(
         filepath: Path to load state from (.json or .npz)
         verify_checksum: If True, verify checksum (for .json files)
         auto_migrate: If True, automatically migrate old schema versions
+        allow_legacy_pickle: If True, allow loading legacy pickle-based .npz files
 
     Returns:
         Validated SystemStateRecord
@@ -230,35 +291,23 @@ def load_system_state(
         ext = os.path.splitext(filepath)[1].lower()
 
         if ext == ".json":
-            with open(filepath, "rb") as f:
-                data = f.read()
-
-            # Verify checksum if requested
-            if verify_checksum:
-                checksum_path = _get_checksum_path(filepath)
-                if os.path.exists(checksum_path):
-                    with open(checksum_path, encoding="utf-8") as f:
-                        stored_checksum = f.read().strip()
-                    computed_checksum = _compute_checksum(data)
-                    if stored_checksum != computed_checksum:
-                        raise StateCorruptionError(
-                            f"Checksum mismatch for {filepath}. "
-                            f"Expected {stored_checksum}, got {computed_checksum}"
-                        )
-
-            state_dict = json.loads(data.decode("utf-8"))
+            state_dict = _load_json_state(filepath, verify_checksum=verify_checksum)
 
         elif ext == ".npz":
-            arrs = np.load(filepath, allow_pickle=True)
-            if "state" in arrs:
-                state_data = arrs["state"]
-                # Handle numpy.void objects from npz loading
-                state_dict = state_data.item() if hasattr(state_data, "item") else dict(state_data)
-            else:
-                # Legacy format: direct state dict
-                state_dict = {
-                    k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in arrs.items()
-                }
+            arrs = _load_npz_arrays(
+                filepath,
+                allow_legacy_pickle=allow_legacy_pickle,
+                error_type=StateLoadError,
+                legacy_error_message=(
+                    "Legacy pickle-based NPZ state detected. "
+                    "Refusing to load without allow_legacy_pickle=True."
+                ),
+                warning_message=(
+                    "Loading legacy pickle-based NPZ state from %s. "
+                    "Consider re-saving to migrate to the safer format."
+                ),
+            )
+            state_dict = _state_dict_from_npz(arrs)
 
         else:
             raise ValueError(f"Unsupported format: {ext}")
@@ -321,7 +370,11 @@ def delete_system_state(filepath: str, *, delete_backup: bool = False) -> None:
             logger.info(f"Deleted backup file: {backup_path}")
 
 
-def recover_system_state(filepath: str) -> SystemStateRecord:
+def recover_system_state(
+    filepath: str,
+    *,
+    allow_legacy_pickle: bool = True,
+) -> SystemStateRecord:
     """Attempt to recover system state from backup if main file is corrupted.
 
     This function tries:
@@ -331,6 +384,7 @@ def recover_system_state(filepath: str) -> SystemStateRecord:
 
     Args:
         filepath: Path to state file to recover
+        allow_legacy_pickle: If True, allow loading legacy pickle-based .npz files
 
     Returns:
         Recovered SystemStateRecord
@@ -344,7 +398,12 @@ def recover_system_state(filepath: str) -> SystemStateRecord:
 
     # Try main file first
     try:
-        return load_system_state(filepath, verify_checksum=True, auto_migrate=True)
+        return load_system_state(
+            filepath,
+            verify_checksum=True,
+            auto_migrate=True,
+            allow_legacy_pickle=allow_legacy_pickle,
+        )
     except (StateLoadError, StateCorruptionError) as main_error:
         logger.warning(f"Main state file corrupted or missing: {main_error}")
 
@@ -365,14 +424,20 @@ def recover_system_state(filepath: str) -> SystemStateRecord:
                 data = f.read()
             state_dict = json.loads(data.decode("utf-8"))
         elif ext == ".npz":
-            arrs = np.load(backup_path, allow_pickle=True)
-            if "state" in arrs:
-                state_data = arrs["state"]
-                state_dict = state_data.item() if hasattr(state_data, "item") else dict(state_data)
-            else:
-                state_dict = {
-                    k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in arrs.items()
-                }
+            arrs = _load_npz_arrays(
+                backup_path,
+                allow_legacy_pickle=allow_legacy_pickle,
+                error_type=StateRecoveryError,
+                legacy_error_message=(
+                    "Legacy pickle-based NPZ backup detected. "
+                    "Refusing to load without allow_legacy_pickle=True."
+                ),
+                warning_message=(
+                    "Loading legacy pickle-based NPZ backup from %s. "
+                    "Consider re-saving to migrate to the safer format."
+                ),
+            )
+            state_dict = _state_dict_from_npz(arrs)
         else:
             raise ValueError(f"Unsupported format: {ext}")
 

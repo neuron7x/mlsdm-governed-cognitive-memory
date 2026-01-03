@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import tempfile
 from collections.abc import Callable
@@ -7,6 +8,9 @@ from typing import Any, cast
 
 import numpy as np
 from tenacity import retry, stop_after_attempt
+
+
+logger = logging.getLogger(__name__)
 
 
 def _deserialize_npz_value(value: np.ndarray) -> Any:
@@ -51,6 +55,41 @@ def _atomic_write(path: Path, suffix: str, writer: Callable[[int, str], bool]) -
             os.unlink(temp_name)
 
 
+def _load_npz_arrays(filepath: str, *, allow_legacy_pickle: bool) -> np.lib.npyio.NpzFile:
+    try:
+        return np.load(filepath, allow_pickle=False)
+    except ValueError as exc:
+        if "Object arrays cannot be loaded when allow_pickle=False" not in str(exc):
+            raise
+        if not allow_legacy_pickle:
+            raise ValueError(
+                "Legacy pickle-based NPZ payload detected. "
+                "Refusing to load without allow_legacy_pickle=True."
+            ) from exc
+        logger.warning(
+            "Loading legacy pickle-based NPZ payload from %s. "
+            "Consider re-saving to migrate to the safer format.",
+            filepath,
+        )
+        return np.load(filepath, allow_pickle=True)
+
+
+def _load_json_file(filepath: str) -> dict[str, Any]:
+    with open(filepath, encoding="utf-8") as f:
+        data: dict[str, Any] = json.load(f)
+        return data
+
+
+def _load_npz_file(filepath: str, *, allow_legacy_pickle: bool) -> dict[str, Any]:
+    arrs = _load_npz_arrays(filepath, allow_legacy_pickle=allow_legacy_pickle)
+    # Convert NpzFile to dict - explicit type to satisfy mypy
+    result: dict[str, Any] = {
+        k: _deserialize_npz_value(v) if isinstance(v, np.ndarray) else v
+        for k, v in arrs.items()
+    }
+    return result
+
+
 @retry(stop=stop_after_attempt(3))
 def _save_data(data: dict[str, Any], filepath: str) -> None:
     path = Path(filepath)
@@ -86,20 +125,12 @@ def _save_data(data: dict[str, Any], filepath: str) -> None:
 
 
 @retry(stop=stop_after_attempt(3))
-def _load_data(filepath: str) -> dict[str, Any]:
+def _load_data(filepath: str, *, allow_legacy_pickle: bool) -> dict[str, Any]:
     ext = os.path.splitext(filepath)[1].lower()
     if ext == ".json":
-        with open(filepath, encoding="utf-8") as f:
-            data: dict[str, Any] = json.load(f)
-            return data
+        return _load_json_file(filepath)
     elif ext == ".npz":
-        arrs = np.load(filepath, allow_pickle=True)
-        # Convert NpzFile to dict - explicit type to satisfy mypy
-        result: dict[str, Any] = {
-            k: _deserialize_npz_value(v) if isinstance(v, np.ndarray) else v
-            for k, v in arrs.items()
-        }
-        return result
+        return _load_npz_file(filepath, allow_legacy_pickle=allow_legacy_pickle)
     else:
         raise ValueError(f"Unsupported format: {ext}")
 
@@ -112,7 +143,7 @@ class DataSerializer:
         _save_data(data, filepath)
 
     @staticmethod
-    def load(filepath: str) -> dict[str, Any]:
+    def load(filepath: str, *, allow_legacy_pickle: bool = True) -> dict[str, Any]:
         if not isinstance(filepath, str):
             raise TypeError("Filepath must be a string.")
-        return _load_data(filepath)
+        return _load_data(filepath, allow_legacy_pickle=allow_legacy_pickle)
