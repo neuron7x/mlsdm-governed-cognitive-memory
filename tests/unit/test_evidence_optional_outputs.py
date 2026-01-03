@@ -16,7 +16,13 @@ def _repo_root() -> Path:
 
 
 def _latest_snapshot(paths: set[Path]) -> Path:
-    existing = [(p.stat().st_mtime, p) for p in paths if p.exists()]
+    existing: list[tuple[float, Path]] = []
+    for path in paths:
+        try:
+            stat = path.stat()
+        except OSError:
+            continue
+        existing.append((stat.st_mtime, path))
     if not existing:
         raise AssertionError("No evidence snapshot produced")
     return max(existing)[1]
@@ -46,11 +52,8 @@ def _run_capture(evidence_dir: Path, inputs: dict[str, str]) -> Path:
     )
     after = _snapshot_set(evidence_root)
     new_snapshots = after - before
-    if new_snapshots:
-        return _latest_snapshot(new_snapshots)
-    if after:
-        return _latest_snapshot(after)
-    raise AssertionError("No evidence snapshot produced")
+    candidates = new_snapshots if new_snapshots else after
+    return _latest_snapshot(candidates)
 
 
 def _run_verify(snapshot: Path) -> subprocess.CompletedProcess[str]:
