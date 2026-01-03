@@ -339,7 +339,13 @@ def main(argv: list[str] | None = None) -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
-    parser = argparse.ArgumentParser(description="Security audit for MLSDM Cognitive Memory")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Security audit for MLSDM Cognitive Memory. "
+            "Default audit scans requirements.txt via "
+            "'pip-audit --requirement requirements.txt --format json'."
+        )
+    )
     parser.add_argument(
         "--fix",
         action="store_true",
@@ -356,7 +362,7 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help=(
             "Audit the installed environment instead of requirements.txt "
-            "(requirements-based audit is the primary path)"
+            "(default uses 'pip-audit --requirement requirements.txt --format json')"
         ),
     )
     audit_group.add_argument(
@@ -380,10 +386,13 @@ def main(argv: list[str] | None = None) -> int:
     excluded_packages = load_excluded_packages()
     if args.env or args.installed:
         requirements_path = None
-        audit_mode = "installed environment"
+        audit_mode = "installed environment (pip-audit --format json)"
     else:
         requirements_path = REQUIREMENTS_PATH
-        audit_mode = f"requirements file ({requirements_path})"
+        audit_mode = (
+            f"requirements file ({requirements_path}, "
+            "pip-audit --requirement requirements.txt --format json)"
+        )
         if not requirements_path.exists():
             print(f"ERROR: requirements.txt not found at {requirements_path}")
             return 1
