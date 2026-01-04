@@ -16,6 +16,7 @@ import numpy as np
 import pytest
 
 from mlsdm.core.llm_wrapper import CircuitBreaker, CircuitBreakerState, LLMWrapper
+from mlsdm.utils.embedding_cache import EmbeddingCacheConfig
 
 
 class TestCircuitBreaker:
@@ -327,6 +328,117 @@ class TestLLMWrapperReliability:
         assert result["accepted"] is True
         assert "Recovered from timeout" in result["response"]
         assert attempt_count == 2  # Failed once, succeeded on retry
+
+    def test_embedding_cache_stats_and_aliases(self):
+        """Exercise cache conversion path, aliases, and sleep token clamp."""
+        cache_config = EmbeddingCacheConfig(max_size=4, ttl_seconds=10, enabled=True)
+
+        def list_embedding(text: str):
+            # Return list to exercise ndarray conversion path
+            return [1.0] * 384
+
+        wrapper = LLMWrapper(
+            llm_generate_fn=self.mock_llm_generate,
+            embedding_fn=list_embedding,
+            embedding_cache_config=cache_config,
+        )
+        wrapper.qilm_failure_count = 2
+        assert wrapper.qilm_failure_count == 2
+
+        wrapper.stateless_mode = True
+        assert wrapper._safe_pelm_operation("retrieve") == []
+        wrapper.stateless_mode = False
+
+        first = wrapper.generate(prompt="Hello world", moral_value=0.9)
+        second = wrapper.generate(prompt="Hello world", moral_value=0.9)
+
+        assert first["accepted"] is True
+        assert second["accepted"] is True
+
+        state = wrapper.get_state()
+        assert "embedding_cache" in state
+        assert state["embedding_cache"]["hits"] >= 1
+        assert state["embedding_cache"]["misses"] >= 1
+
+        clamped_tokens = wrapper._determine_max_tokens(max_tokens=500, is_wake=False)
+        assert clamped_tokens == wrapper.MAX_SLEEP_TOKENS
+
+    def test_embed_validation_and_pelm_failure_paths(self):
+        """Cover embedding validation errors and PELM failure handling."""
+        empty_wrapper = LLMWrapper(
+            llm_generate_fn=self.mock_llm_generate,
+            embedding_fn=lambda _text: np.array([], dtype=np.float32),
+        )
+
+        error_response = empty_wrapper._embed_and_validate_prompt("bad")
+        assert empty_wrapper._is_error_response(error_response)
+        assert "empty vector" in error_response["note"]
+
+        failure_wrapper = LLMWrapper(
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=self.mock_embedding
+        )
+        failure_wrapper.pelm_failure_count = failure_wrapper.DEFAULT_PELM_FAILURE_THRESHOLD - 1
+        failure_wrapper.pelm.retrieve = Mock(side_effect=MemoryError("pelm boom"))
+
+        with pytest.raises(MemoryError):
+            failure_wrapper._safe_pelm_operation(
+                "retrieve", query_vector=[], current_phase=0.0, phase_tolerance=0.1, top_k=1
+            )
+
+        assert failure_wrapper.stateless_mode is True
+        assert failure_wrapper.pelm_failure_count == failure_wrapper.DEFAULT_PELM_FAILURE_THRESHOLD
+
+        unknown_wrapper = LLMWrapper(
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=self.mock_embedding
+        )
+        with pytest.raises(ValueError):
+            unknown_wrapper._safe_pelm_operation("unknown-op")
+
+        retrieval_wrapper = LLMWrapper(
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=self.mock_embedding
+        )
+        retrieval_wrapper._safe_pelm_operation = Mock(side_effect=RuntimeError("pelm fail"))
+        memories, enhanced_prompt = retrieval_wrapper._retrieve_and_build_context(
+            prompt="hi",
+            prompt_vector=np.ones(384, dtype=np.float32),
+            phase_val=retrieval_wrapper.WAKE_PHASE,
+            context_top_k=2,
+        )
+
+        assert memories == []
+        assert "hi" in enhanced_prompt
+
+    def test_memory_consolidation_failure_and_confidence(self):
+        """Cover memory update failure paths and confidence heuristics."""
+        wrapper = LLMWrapper(
+            llm_generate_fn=self.mock_llm_generate, embedding_fn=self.mock_embedding
+        )
+        wrapper._kernel.memory_commit = Mock(side_effect=RuntimeError("commit failure"))
+
+        start_failures = wrapper.pelm_failure_count
+        wrapper._update_memory_after_generate(
+            np.ones(384, dtype=np.float32), wrapper.WAKE_PHASE, response_text="maybe short"
+        )
+        assert wrapper.pelm_failure_count == start_failures + 1
+        assert wrapper.accepted_count == 1
+
+        wrapper.consolidation_buffer.clear()
+        wrapper._consolidate_memories()
+
+        wrapper.consolidation_buffer.append(np.ones(wrapper.dim, dtype=np.float32))
+        wrapper._kernel.memory_commit = Mock(side_effect=RuntimeError("boom"))
+        with pytest.raises(RuntimeError):
+            wrapper._consolidate_memories()
+        assert wrapper.pelm_failure_count == start_failures + 2
+
+        wrapper.consolidation_buffer.append(np.ones(wrapper.dim, dtype=np.float32))
+        wrapper.stateless_mode = False
+        wrapper._consolidate_memories = Mock(side_effect=RuntimeError("consolidation error"))
+        wrapper.rhythm.is_sleep = lambda: True
+        wrapper._advance_rhythm_and_consolidate()
+
+        confidence = wrapper._estimate_confidence("Maybe this is maybe short")
+        assert confidence < 1.0
 
 
 if __name__ == "__main__":
