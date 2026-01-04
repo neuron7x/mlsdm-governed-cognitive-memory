@@ -158,7 +158,6 @@ class TestCognitiveControllerMemoryLeak:
 
         # Get initial memory usage
         gc.collect()  # Force garbage collection before measuring
-        time.sleep(0.1)  # Give GC time to complete
         initial_memory = controller.get_memory_usage()
 
         # Process 10k events
@@ -174,7 +173,6 @@ class TestCognitiveControllerMemoryLeak:
 
         # Force final garbage collection
         gc.collect()
-        time.sleep(0.1)  # Give GC time to complete
         final_memory = controller.get_memory_usage()
 
         memory_growth = final_memory - initial_memory

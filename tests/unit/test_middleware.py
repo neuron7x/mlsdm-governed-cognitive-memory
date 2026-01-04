@@ -230,7 +230,9 @@ class TestTimeoutMiddleware:
 
         @app.get("/health")
         def health_endpoint() -> dict[str, str]:
-            time.sleep(0.01)  # Slow but should still pass
+            start = time.perf_counter()
+            while time.perf_counter() - start < 0.01:
+                pass
             return {"status": "ok"}
 
         client = TestClient(app)

@@ -212,10 +212,11 @@ class TestEmbeddingCache:
         # entry_1 should be evicted (oldest accessed)
         assert cache.get("entry_1") is None
 
-    def test_ttl_expiration(self) -> None:
+    def test_ttl_expiration(self, fake_clock, monkeypatch) -> None:
         """Test TTL-based expiration."""
         config = EmbeddingCacheConfig(max_size=10, ttl_seconds=0.1)  # 100ms TTL
         cache = EmbeddingCache(config=config)
+        monkeypatch.setattr("mlsdm.utils.embedding_cache.time.time", fake_clock.now)
 
         text = "Hello, world!"
         cache.put(text, simple_embedding(text))
@@ -223,8 +224,8 @@ class TestEmbeddingCache:
         # Should exist immediately
         assert cache.get(text) is not None
 
-        # Wait for TTL to expire
-        time.sleep(0.15)
+        # Advance fake clock past TTL
+        fake_clock.advance(0.15)
 
         # Should be expired
         result = cache.get(text)

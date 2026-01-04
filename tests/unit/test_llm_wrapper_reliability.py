@@ -75,8 +75,8 @@ class TestCircuitBreaker:
 
         assert cb.state == CircuitBreakerState.OPEN
 
-        # Wait for recovery timeout
-        time.sleep(0.2)
+        # Force transition without waiting
+        cb.last_failure_time = time.time() - cb.recovery_timeout
 
         # Should transition to HALF_OPEN and allow test
         mock_func = Mock(return_value="success")
@@ -155,12 +155,14 @@ class TestLLMWrapperReliability:
         assert result["accepted"] is False
         assert "generation failed" in result["note"]
 
-    def test_llm_timeout_handling(self):
+    def test_llm_timeout_handling(self, fake_clock, monkeypatch):
         """LLM generation detects timeouts."""
 
         def slow_llm(prompt: str, max_tokens: int) -> str:
-            time.sleep(0.2)  # Simulate slow response
+            fake_clock.advance(0.2)
             return "Slow response"
+
+        monkeypatch.setattr("mlsdm.core.llm_wrapper.time.time", fake_clock.now)
 
         wrapper = LLMWrapper(
             llm_generate_fn=slow_llm,
