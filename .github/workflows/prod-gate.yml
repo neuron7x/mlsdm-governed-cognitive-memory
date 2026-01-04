@@ -50,7 +50,7 @@ jobs:
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py3.11-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
+          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
           restore-keys: |
             ${{ runner.os }}-py3.11-
             ${{ runner.os }}-
@@ -105,7 +105,7 @@ jobs:
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py3.11-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
+          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
           restore-keys: |
             ${{ runner.os }}-py3.11-
             ${{ runner.os }}-
@@ -146,7 +146,7 @@ jobs:
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py3.11-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
+          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
           restore-keys: |
             ${{ runner.os }}-py3.11-
             ${{ runner.os }}-
