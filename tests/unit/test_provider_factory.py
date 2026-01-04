@@ -8,8 +8,10 @@ Tests cover:
 4. Environment variable handling
 """
 
+import contextlib
 import os
 import sys
+from collections.abc import Callable
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -252,7 +254,10 @@ class TestBuildProviderFromEnvWithOpenAI:
             provider = build_provider_from_env(backend="openai")
             assert "gpt_4" in provider.provider_id
 
-    def test_openai_missing_dependency_raises_import_error(self, block_imports) -> None:
+    def test_openai_missing_dependency_raises_import_error(
+        self,
+        block_imports: Callable[[set[str]], contextlib.AbstractContextManager[None]],
+    ) -> None:
         """Ensure missing openai dependency fails deterministically."""
         with patch.dict(os.environ, {"OPENAI_API_KEY": "test-key-123"}):
             with block_imports({"openai"}):

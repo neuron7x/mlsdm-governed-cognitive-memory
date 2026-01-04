@@ -9,7 +9,9 @@ Tests cover:
 - Edge cases and error handling
 """
 
+import contextlib
 import sys
+from collections.abc import Callable
 from types import SimpleNamespace
 
 import pytest
@@ -217,14 +219,18 @@ class TestOpenAIProviderInit:
         with pytest.raises(ValueError, match="OpenAI API key is required"):
             OpenAIProvider()
 
-    def test_raises_import_error_without_openai(self, monkeypatch, block_imports):
+    def test_raises_import_error_without_openai(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        block_imports: Callable[[set[str]], contextlib.AbstractContextManager[None]],
+    ):
         """Should raise ImportError when openai package is not installed."""
 
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
 
-        with block_imports({"openai"}):
-            from mlsdm.adapters.llm_provider import OpenAIProvider
+        from mlsdm.adapters.llm_provider import OpenAIProvider
 
+        with block_imports({"openai"}):
             with pytest.raises(ImportError, match="openai package is required"):
                 OpenAIProvider(api_key="test-key")
 
