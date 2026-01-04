@@ -259,10 +259,12 @@ class TestBuildProviderFromEnvWithOpenAI:
         block_imports: Callable[[set[str]], contextlib.AbstractContextManager[None]],
     ) -> None:
         """Ensure missing openai dependency fails deterministically."""
-        with patch.dict(os.environ, {"OPENAI_API_KEY": "test-key-123"}):
-            with block_imports({"openai"}):
-                with pytest.raises(ImportError, match="openai package is required"):
-                    build_provider_from_env(backend="openai")
+        with (
+            patch.dict(os.environ, {"OPENAI_API_KEY": "test-key-123"}),
+            block_imports({"openai"}),
+            pytest.raises(ImportError, match="openai package is required"),
+        ):
+            build_provider_from_env(backend="openai")
 
 
 class TestProviderErrorHandling:

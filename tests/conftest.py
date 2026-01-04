@@ -13,7 +13,7 @@ import importlib
 import importlib.util
 import os
 import threading
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 # CRITICAL: Set environment variables BEFORE any imports that might load mlsdm.api.app
@@ -28,7 +28,7 @@ import pytest
 from hypothesis import settings
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
 
     from mlsdm.utils.time_provider import FakeTimeProvider
 
