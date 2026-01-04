@@ -42,12 +42,18 @@ class ConfigCache:
     This reduces file I/O and validation overhead for repeated config loads.
     """
 
-    def __init__(self, ttl_seconds: float = 300.0, max_entries: int = 100) -> None:
+    def __init__(
+        self,
+        ttl_seconds: float = 300.0,
+        max_entries: int = 100,
+        now: "Callable[[], float] | None" = None,
+    ) -> None:
         """Initialize the config cache.
 
         Args:
             ttl_seconds: Time-to-live for cached entries (default: 5 minutes)
             max_entries: Maximum number of cached configurations
+            now: Optional clock function for deterministic testing
         """
         self._cache: dict[str, _CachedConfig] = {}
         self._lock = threading.Lock()
@@ -55,6 +61,7 @@ class ConfigCache:
         self.max_entries = max_entries
         self._hits = 0
         self._misses = 0
+        self._now = now or time.time
 
     def _compute_file_hash(self, path: str) -> str:
         """Compute SHA-256 hash of file contents."""
@@ -79,7 +86,7 @@ class ConfigCache:
                 return None
 
             entry = self._cache[cache_key]
-            current_time = time.time()
+            current_time = self._now()
 
             # Check TTL expiration
             if current_time - entry.timestamp > self.ttl_seconds:
@@ -130,14 +137,14 @@ class ConfigCache:
                 file_hash = self._compute_file_hash(path_for_metadata)
             except OSError:
                 # If we can't read file metadata, use defaults
-                mtime = time.time()
+                mtime = self._now()
                 file_hash = ""
 
             self._cache[cache_key] = _CachedConfig(
                 config=config.copy(),
                 mtime=mtime,
                 file_hash=file_hash,
-                timestamp=time.time(),
+                timestamp=self._now(),
             )
 
     def invalidate(self, path: str) -> bool:

@@ -171,19 +171,19 @@ class TestMemoryCache:
         cache = MemoryCache[str]()
         assert cache.get("nonexistent") is None
 
-    def test_get_expired_entry(self) -> None:
+    def test_get_expired_entry(self, fake_clock) -> None:
         """Test get with expired entry."""
-        cache = MemoryCache[str](default_ttl=1)
+        cache = MemoryCache[str](default_ttl=1, now=fake_clock.now)
         cache.set("key1", "value1")
-        time.sleep(1.1)  # Wait for expiration
+        fake_clock.advance(1.1)
         assert cache.get("key1") is None
 
-    def test_set_with_custom_ttl(self) -> None:
+    def test_set_with_custom_ttl(self, fake_clock) -> None:
         """Test set with custom TTL."""
-        cache = MemoryCache[str](default_ttl=3600)
+        cache = MemoryCache[str](default_ttl=3600, now=fake_clock.now)
         cache.set("key1", "value1", ttl=1)
         assert cache.get("key1") == "value1"
-        time.sleep(1.1)
+        fake_clock.advance(1.1)
         assert cache.get("key1") is None
 
     def test_delete(self) -> None:
@@ -227,12 +227,12 @@ class TestMemoryCache:
         assert stats.hits == 1
         assert stats.misses == 1
 
-    def test_cleanup_expired(self) -> None:
+    def test_cleanup_expired(self, fake_clock) -> None:
         """Test cleanup of expired entries."""
-        cache = MemoryCache[str](default_ttl=1)
+        cache = MemoryCache[str](default_ttl=1, now=fake_clock.now)
         cache.set("key1", "value1")
         cache.set("key2", "value2")
-        time.sleep(1.1)
+        fake_clock.advance(1.1)
         removed = cache.cleanup_expired()
         assert removed == 2
 

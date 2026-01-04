@@ -46,6 +46,7 @@ class RateLimiter:
         requests_per_window: int = 100,
         window_seconds: int = 60,
         storage_cleanup_interval: int = 300,
+        now: "Callable[[], float] | None" = None,
     ) -> None:
         """Initialize the rate limiter.
 
@@ -53,15 +54,17 @@ class RateLimiter:
             requests_per_window: Maximum requests per window.
             window_seconds: Window duration in seconds.
             storage_cleanup_interval: Cleanup interval in seconds.
+            now: Optional clock function for deterministic tests.
         """
         self._requests_per_window = requests_per_window
         self._window_seconds = window_seconds
         self._storage_cleanup_interval = storage_cleanup_interval
+        self._now = now or time.time
 
         # Storage: {client_id: [(timestamp, count), ...]}
         self._requests: dict[str, list[tuple[float, int]]] = defaultdict(list)
         self._lock = Lock()
-        self._last_cleanup = time.time()
+        self._last_cleanup = self._now()
 
     def is_allowed(self, client_id: str) -> bool:
         """Check if a request from the client is allowed.
@@ -73,7 +76,7 @@ class RateLimiter:
             True if request is allowed, False if rate limit exceeded.
         """
         with self._lock:
-            current_time = time.time()
+            current_time = self._now()
 
             # Cleanup old entries periodically
             if current_time - self._last_cleanup > self._storage_cleanup_interval:
@@ -109,7 +112,7 @@ class RateLimiter:
             Number of requests remaining in the current window.
         """
         with self._lock:
-            current_time = time.time()
+            current_time = self._now()
             cutoff_time = current_time - self._window_seconds
 
             client_requests = self._requests.get(client_id, [])

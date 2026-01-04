@@ -18,12 +18,18 @@ class RateLimiter:
         capacity: Maximum burst capacity (default: 10)
     """
 
-    def __init__(self, rate: float = 5.0, capacity: int = 10):
+    def __init__(
+        self,
+        rate: float = 5.0,
+        capacity: int = 10,
+        now: "Callable[[], float] | None" = None,
+    ):
         """Initialize rate limiter.
 
         Args:
             rate: Requests per second allowed (default: 5 RPS)
             capacity: Maximum burst capacity (default: 10 requests)
+            now: Optional clock function for deterministic tests.
         """
         if rate <= 0:
             raise ValueError("Rate must be positive")
@@ -32,8 +38,9 @@ class RateLimiter:
 
         self.rate = float(rate)
         self.capacity = int(capacity)
+        self._now = now or time.time
         self.buckets: dict[str, tuple[float, float]] = defaultdict(
-            lambda: (self.capacity, time.time())
+            lambda: (self.capacity, self._now())
         )
         self.lock = threading.RLock()
 
@@ -52,7 +59,7 @@ class RateLimiter:
             True if request is allowed, False if rate limit exceeded
         """
         with self.lock:
-            current_time = time.time()
+            current_time = self._now()
             tokens, last_update = self.buckets[client_id]
 
             # Optimization: Calculate elapsed time and leaked tokens
@@ -99,7 +106,7 @@ class RateLimiter:
             if client_id in self.buckets:
                 tokens, last_update = self.buckets[client_id]
                 return {"tokens": float(tokens), "last_update": float(last_update)}
-            return {"tokens": float(self.capacity), "last_update": float(time.time())}
+            return {"tokens": float(self.capacity), "last_update": float(self._now())}
 
     def get_all_stats(self) -> dict[str, float]:
         """Get aggregate rate limit stats across all clients.
@@ -133,7 +140,7 @@ class RateLimiter:
             Number of entries cleaned up, optionally with removed client IDs
         """
         with self.lock:
-            current_time = time.time()
+            current_time = self._now()
             old_clients = [
                 client_id
                 for client_id, (_, last_update) in self.buckets.items()

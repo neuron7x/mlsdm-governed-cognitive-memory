@@ -11,7 +11,6 @@ Tests cover:
 """
 
 import threading
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pytest
@@ -138,48 +137,58 @@ class TestBulkheadConcurrencyLimits:
 class TestBulkheadTimeout:
     """Test bulkhead timeout handling."""
 
-    def test_timeout_waiting_for_slot(self):
+    def test_timeout_waiting_for_slot(self, fake_clock):
         """Test that acquire waits up to timeout for a slot."""
         config = BulkheadConfig(
             max_concurrent={BulkheadCompartment.MEMORY: 1},
             timeout_seconds=0.5,
         )
-        bulkhead = Bulkhead(config=config)
+        bulkhead = Bulkhead(config=config, clock=fake_clock.now)
 
         # Fill the compartment
         bulkhead.try_acquire(BulkheadCompartment.MEMORY, timeout=0.1)
 
-        # Start timer
-        start = time.time()
+        started = threading.Event()
+        result_holder: dict[str, float | bool] = {}
 
-        # This should wait and fail
-        result = bulkhead.try_acquire(BulkheadCompartment.MEMORY, timeout=0.2)
-        elapsed = time.time() - start
+        def attempt() -> None:
+            call_start = fake_clock.now()
+            started.set()
+            result_holder["result"] = bulkhead.try_acquire(
+                BulkheadCompartment.MEMORY, timeout=0.2
+            )
+            result_holder["elapsed"] = fake_clock.now() - call_start
 
-        assert result is False
-        # Should have waited approximately timeout duration
-        assert elapsed >= 0.15  # Allow some tolerance
-        assert elapsed < 0.5
+        thread = threading.Thread(target=attempt)
+        thread.start()
 
-    def test_zero_timeout_no_wait(self):
+        started.wait()
+        fake_clock.advance(0.2)
+        thread.join()
+        bulkhead.release(BulkheadCompartment.MEMORY)
+
+        assert result_holder["result"] is False
+        assert result_holder["elapsed"] >= 0.2
+
+    def test_zero_timeout_no_wait(self, fake_clock):
         """Test that timeout=0 returns immediately when full."""
         config = BulkheadConfig(
             max_concurrent={BulkheadCompartment.COGNITIVE: 1},
             timeout_seconds=0.0,
         )
-        bulkhead = Bulkhead(config=config)
+        bulkhead = Bulkhead(config=config, clock=fake_clock.now)
 
         # Fill the compartment
         bulkhead.try_acquire(BulkheadCompartment.COGNITIVE, timeout=0.0)
 
         # Start timer
-        start = time.time()
+        start = fake_clock.now()
         result = bulkhead.try_acquire(BulkheadCompartment.COGNITIVE, timeout=0.0)
-        elapsed = time.time() - start
+        elapsed = fake_clock.now() - start
 
         assert result is False
         # Should return almost immediately
-        assert elapsed < 0.1
+        assert elapsed == 0.0
 
 
 class TestBulkheadStatistics:
@@ -217,13 +226,13 @@ class TestBulkheadStatistics:
         assert stats.total_acquired == 1
         assert stats.total_rejected == 3
 
-    def test_stats_average_wait_time(self):
+    def test_stats_average_wait_time(self, fake_clock):
         """Test that average wait time is tracked."""
         config = BulkheadConfig(
             max_concurrent={BulkheadCompartment.MEMORY: 1},
             timeout_seconds=1.0,
         )
-        bulkhead = Bulkhead(config=config)
+        bulkhead = Bulkhead(config=config, clock=fake_clock.now)
 
         # Fill compartment
         bulkhead.try_acquire(BulkheadCompartment.MEMORY, timeout=0.01)
@@ -232,28 +241,42 @@ class TestBulkheadStatistics:
         RELEASE_DELAY_MS = 100  # 100ms delay before releasing
         EXPECTED_MIN_WAIT_MS = RELEASE_DELAY_MS / 2  # Expect at least 50% of delay
 
-        def delayed_release():
-            time.sleep(RELEASE_DELAY_MS / 1000.0)
+        release_event = threading.Event()
+        started = threading.Event()
+        result_holder: dict[str, float | bool] = {}
+
+        def delayed_release() -> None:
+            release_event.wait()
             bulkhead.release(BulkheadCompartment.MEMORY)
 
-        thread = threading.Thread(target=delayed_release)
-        thread.start()
+        def attempt_acquire() -> None:
+            call_start = fake_clock.now()
+            started.set()
+            result_holder["acquired"] = bulkhead.try_acquire(
+                BulkheadCompartment.MEMORY, timeout=0.5
+            )
+            result_holder["elapsed_ms"] = (fake_clock.now() - call_start) * 1000.0
 
-        # This acquire should wait
-        acquired = bulkhead.try_acquire(BulkheadCompartment.MEMORY, timeout=0.5)
-        thread.join()
+        releaser = threading.Thread(target=delayed_release)
+        worker = threading.Thread(target=attempt_acquire)
+        releaser.start()
+        worker.start()
 
-        assert acquired is True
+        started.wait()
+        fake_clock.advance(RELEASE_DELAY_MS / 1000.0)
+        release_event.set()
+        worker.join()
+        bulkhead.release(BulkheadCompartment.MEMORY)
+        releaser.join()
+
+        assert result_holder["acquired"] is True
 
         stats = bulkhead.get_stats(BulkheadCompartment.MEMORY)
         # Average wait should include the wait for second acquire
         # First acquire is near-instant, second waits for release (RELEASE_DELAY_MS)
         # With two acquisitions, average should be at least EXPECTED_MIN_WAIT_MS
         # Use >= with small tolerance to handle timing jitter in CI environments
-        assert stats.avg_wait_ms >= EXPECTED_MIN_WAIT_MS * 0.98, (
-            f"Expected avg_wait_ms >= {EXPECTED_MIN_WAIT_MS * 0.98:.1f} (98% of {EXPECTED_MIN_WAIT_MS}), "
-            f"got {stats.avg_wait_ms}"
-        )
+        assert stats.avg_wait_ms >= EXPECTED_MIN_WAIT_MS * 0.98
 
     def test_get_all_stats(self):
         """Test getting stats for all compartments."""
@@ -307,8 +330,7 @@ class TestBulkheadThreadSafety:
         def worker(idx: int) -> None:
             try:
                 with bulkhead.acquire(BulkheadCompartment.LLM_GENERATION, timeout=5.0):
-                    # Simulate some work
-                    time.sleep(0.01)
+                    pass
             except Exception as e:
                 with lock:
                     errors.append((idx, e))
@@ -357,7 +379,7 @@ class TestBulkheadThreadSafety:
         def worker(idx: int, compartment: BulkheadCompartment) -> None:
             try:
                 with bulkhead.acquire(compartment, timeout=5.0):
-                    time.sleep(0.005)
+                    pass
             except Exception as e:
                 with lock:
                     errors.append((idx, compartment, e))
@@ -387,16 +409,14 @@ class TestBulkheadThreadSafety:
         """Test that stats can be accessed concurrently with operations."""
         bulkhead = Bulkhead()
 
-        running = threading.Event()
-        running.set()
         errors = []
         lock = threading.Lock()
 
         def acquire_worker() -> None:
-            while running.is_set():
+            for _ in range(200):
                 try:
                     with bulkhead.acquire(BulkheadCompartment.COGNITIVE, timeout=0.1):
-                        time.sleep(0.001)
+                        pass
                 except BulkheadFullError:
                     pass
                 except Exception as e:
@@ -404,7 +424,7 @@ class TestBulkheadThreadSafety:
                         errors.append(("acquire", e))
 
         def stats_worker() -> None:
-            while running.is_set():
+            for _ in range(200):
                 try:
                     _ = bulkhead.get_stats(BulkheadCompartment.COGNITIVE)
                     _ = bulkhead.get_all_stats()
@@ -419,10 +439,6 @@ class TestBulkheadThreadSafety:
 
         for t in threads:
             t.start()
-
-        # Let them run for a bit
-        time.sleep(0.5)
-        running.clear()
 
         for t in threads:
             t.join(timeout=2.0)

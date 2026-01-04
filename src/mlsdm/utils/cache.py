@@ -135,11 +135,12 @@ class CacheEntry(Generic[T]):
     ttl: int
     access_count: int = 0
 
-    def is_expired(self) -> bool:
+    def is_expired(self, current_time: float | None = None) -> bool:
         """Check if entry is expired."""
         if self.ttl <= 0:
             return False
-        return time.time() > (self.created_at + self.ttl)
+        now = current_time if current_time is not None else time.time()
+        return now > (self.created_at + self.ttl)
 
 
 class MemoryCache(Generic[T]):
@@ -153,12 +154,14 @@ class MemoryCache(Generic[T]):
         self,
         max_size: int = 10000,
         default_ttl: int = 3600,
+        now: "Callable[[], float] | None" = None,
     ) -> None:
         """Initialize memory cache.
 
         Args:
             max_size: Maximum number of entries
             default_ttl: Default TTL in seconds
+            now: Optional time function for testing
         """
         if max_size <= 0:
             raise ValueError("max_size must be a positive integer")
@@ -167,6 +170,7 @@ class MemoryCache(Generic[T]):
         self._max_size = max_size
         self._default_ttl = default_ttl
         self._stats = CacheStats()
+        self._now = now or time.time
 
     def get(self, key: str) -> T | None:
         """Get value from cache.
@@ -183,7 +187,7 @@ class MemoryCache(Generic[T]):
                 self._stats.misses += 1
                 return None
 
-            if entry.is_expired():
+            if entry.is_expired(current_time=self._now()):
                 del self._cache[key]
                 self._stats.misses += 1
                 self._stats.evictions += 1
@@ -220,7 +224,7 @@ class MemoryCache(Generic[T]):
 
             self._cache[key] = CacheEntry(
                 value=value,
-                created_at=time.time(),
+                created_at=self._now(),
                 ttl=self._default_ttl if ttl is None else ttl,
             )
             self._cache.move_to_end(key)
@@ -265,7 +269,10 @@ class MemoryCache(Generic[T]):
             Number of entries removed
         """
         with self._lock:
-            expired_keys = [key for key, entry in self._cache.items() if entry.is_expired()]
+            current_time = self._now()
+            expired_keys = [
+                key for key, entry in self._cache.items() if entry.is_expired(current_time)
+            ]
             for key in expired_keys:
                 del self._cache[key]
                 self._stats.evictions += 1

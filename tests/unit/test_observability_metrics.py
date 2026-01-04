@@ -1,7 +1,6 @@
 """Unit tests for Prometheus-compatible metrics exporter."""
 
 import threading
-import time
 
 import pytest
 from prometheus_client import CollectorRegistry
@@ -186,14 +185,14 @@ class TestGauges:
 class TestHistograms:
     """Test histogram operations."""
 
-    def test_processing_timer(self):
+    def test_processing_timer(self, fake_clock):
         """Test processing timer functionality."""
         registry = CollectorRegistry()
-        exporter = MetricsExporter(registry=registry)
+        exporter = MetricsExporter(registry=registry, monotonic=fake_clock.now)
 
         correlation_id = "test-123"
         exporter.start_processing_timer(correlation_id)
-        time.sleep(0.01)  # Sleep for 10ms
+        fake_clock.advance(0.01)  # Advance 10ms
         latency = exporter.stop_processing_timer(correlation_id)
 
         assert latency is not None
@@ -216,14 +215,14 @@ class TestHistograms:
         # If no exception, test passes
         assert True
 
-    def test_retrieval_timer(self):
+    def test_retrieval_timer(self, fake_clock):
         """Test retrieval timer functionality."""
         registry = CollectorRegistry()
-        exporter = MetricsExporter(registry=registry)
+        exporter = MetricsExporter(registry=registry, monotonic=fake_clock.now)
 
         correlation_id = "test-456"
         exporter.start_retrieval_timer(correlation_id)
-        time.sleep(0.005)  # Sleep for 5ms
+        fake_clock.advance(0.005)  # Advance for 5ms
         latency = exporter.stop_retrieval_timer(correlation_id)
 
         assert latency is not None

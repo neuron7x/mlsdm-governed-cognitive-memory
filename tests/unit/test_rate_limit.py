@@ -10,7 +10,6 @@ Tests cover:
 - Global rate limiter singleton
 """
 
-import time
 from threading import Thread
 
 import pytest
@@ -77,9 +76,9 @@ class TestIsAllowed:
         assert limiter.is_allowed("client2") is False
 
     @pytest.mark.slow
-    def test_is_allowed_window_expiration(self):
+    def test_is_allowed_window_expiration(self, fake_clock):
         """Test that old requests expire."""
-        limiter = RateLimiter(requests_per_window=2, window_seconds=1)
+        limiter = RateLimiter(requests_per_window=2, window_seconds=1, now=fake_clock.now)
         client = "client1"
 
         # Use up the limit
@@ -88,7 +87,7 @@ class TestIsAllowed:
         assert limiter.is_allowed(client) is False
 
         # Wait for window to expire
-        time.sleep(1.1)
+        fake_clock.advance(1.1)
 
         # Should be allowed again
         assert limiter.is_allowed(client) is True
@@ -171,12 +170,13 @@ class TestCleanup:
     """Tests for cleanup functionality."""
 
     @pytest.mark.slow
-    def test_cleanup_triggered(self):
+    def test_cleanup_triggered(self, fake_clock):
         """Test that cleanup is triggered after interval."""
         limiter = RateLimiter(
             requests_per_window=10,
             window_seconds=1,
             storage_cleanup_interval=1,
+            now=fake_clock.now,
         )
 
         # Make some requests
@@ -184,7 +184,7 @@ class TestCleanup:
         limiter.is_allowed("client2")
 
         # Wait for cleanup interval and window to expire
-        time.sleep(1.5)
+        fake_clock.advance(1.5)
 
         # This should trigger cleanup
         limiter.is_allowed("client3")
@@ -194,18 +194,19 @@ class TestCleanup:
         assert limiter.get_remaining("client1") == 10  # Reset due to expired window
 
     @pytest.mark.slow
-    def test_cleanup_removes_empty_clients(self):
+    def test_cleanup_removes_empty_clients(self, fake_clock):
         """Test that cleanup removes clients with no recent requests."""
         limiter = RateLimiter(
             requests_per_window=10,
             window_seconds=1,
             storage_cleanup_interval=0,  # Immediate cleanup
+            now=fake_clock.now,
         )
 
         limiter.is_allowed("client1")
 
         # Wait for window to expire
-        time.sleep(1.1)
+        fake_clock.advance(1.1)
 
         # Trigger cleanup
         limiter.is_allowed("client2")

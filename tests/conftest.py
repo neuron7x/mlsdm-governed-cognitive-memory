@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import threading
 from typing import TYPE_CHECKING, Any
 
 # CRITICAL: Set environment variables BEFORE any imports that might load mlsdm.api.app
@@ -473,3 +474,33 @@ def fake_time_with_start() -> Callable[[float], FakeTimeProvider]:
         return FakeTimeProvider(start_time=start_time)
 
     return _create
+
+
+# ============================================================
+# Deterministic Clock for Unit Tests
+# ============================================================
+
+
+class FakeClock:
+    """Simple deterministic clock for unit tests."""
+
+    def __init__(self, start: float = 0.0) -> None:
+        self._time = start
+        self._lock = threading.Lock()
+
+    def now(self) -> float:
+        """Return current fake time."""
+        with self._lock:
+            return self._time
+
+    def advance(self, delta: float) -> float:
+        """Advance time by delta seconds and return new time."""
+        with self._lock:
+            self._time += delta
+            return self._time
+
+
+@pytest.fixture
+def fake_clock() -> FakeClock:
+    """Provide a FakeClock starting at 0 for deterministic timing."""
+    return FakeClock()

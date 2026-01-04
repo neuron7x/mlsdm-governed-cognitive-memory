@@ -12,7 +12,6 @@ Tests cover:
 """
 
 import threading
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pytest
@@ -146,12 +145,13 @@ class TestCircuitBreakerStateTransitions:
         # can_execute should return False
         assert cb.can_execute() is False
 
-    def test_open_to_half_open_after_timeout(self) -> None:
+    def test_open_to_half_open_after_timeout(self, fake_clock) -> None:
         """Test circuit transitions to HALF_OPEN after recovery timeout."""
         cb = CircuitBreaker(
             name="test",
             failure_threshold=2,
             recovery_timeout=0.1,  # 100ms for fast test
+            now=fake_clock.now,
         )
 
         # Open the circuit
@@ -160,18 +160,19 @@ class TestCircuitBreakerStateTransitions:
         assert cb.state == CircuitState.OPEN
 
         # Wait for recovery timeout
-        time.sleep(0.15)
+        fake_clock.advance(0.15)
 
         # State check should trigger transition
         assert cb.state == CircuitState.HALF_OPEN
 
-    def test_half_open_to_closed_on_successes(self) -> None:
+    def test_half_open_to_closed_on_successes(self, fake_clock) -> None:
         """Test circuit closes after success threshold in HALF_OPEN."""
         cb = CircuitBreaker(
             name="test",
             failure_threshold=2,
             success_threshold=2,
             recovery_timeout=0.05,
+            now=fake_clock.now,
         )
 
         # Open the circuit
@@ -179,7 +180,7 @@ class TestCircuitBreakerStateTransitions:
         cb.record_failure()
 
         # Wait for HALF_OPEN
-        time.sleep(0.1)
+        fake_clock.advance(0.1)
         assert cb.state == CircuitState.HALF_OPEN
 
         # Record successes
@@ -189,12 +190,13 @@ class TestCircuitBreakerStateTransitions:
         cb.record_success()
         assert cb.state == CircuitState.CLOSED
 
-    def test_half_open_to_open_on_failure(self) -> None:
+    def test_half_open_to_open_on_failure(self, fake_clock) -> None:
         """Test circuit reopens on failure in HALF_OPEN state."""
         cb = CircuitBreaker(
             name="test",
             failure_threshold=2,
             recovery_timeout=0.05,
+            now=fake_clock.now,
         )
 
         # Open the circuit
@@ -202,7 +204,7 @@ class TestCircuitBreakerStateTransitions:
         cb.record_failure()
 
         # Wait for HALF_OPEN
-        time.sleep(0.1)
+        fake_clock.advance(0.1)
         assert cb.state == CircuitState.HALF_OPEN
 
         # Single failure should reopen
@@ -252,12 +254,13 @@ class TestCircuitBreakerContextManager:
 class TestCircuitBreakerHalfOpenProbes:
     """Test HALF_OPEN probe request limiting."""
 
-    def test_half_open_limits_probe_requests(self) -> None:
+    def test_half_open_limits_probe_requests(self, fake_clock) -> None:
         """Test that HALF_OPEN limits concurrent probe requests."""
         cb = CircuitBreaker(
             name="test",
             failure_threshold=2,
             recovery_timeout=0.05,
+            now=fake_clock.now,
         )
         cb.config.half_open_max_requests = 2
 
@@ -266,7 +269,7 @@ class TestCircuitBreakerHalfOpenProbes:
         cb.record_failure()
 
         # Wait for HALF_OPEN
-        time.sleep(0.1)
+        fake_clock.advance(0.1)
         assert cb.state == CircuitState.HALF_OPEN
 
         # First two probes should be allowed
@@ -459,12 +462,10 @@ class TestCircuitBreakerThreadSafety:
             recovery_timeout=0.1,
         )
 
-        running = threading.Event()
-        running.set()
         errors: list[Exception] = []
 
         def state_checker() -> None:
-            while running.is_set():
+            for _ in range(50):
                 try:
                     _ = cb.state
                     _ = cb.can_execute()
@@ -473,10 +474,9 @@ class TestCircuitBreakerThreadSafety:
                     errors.append(e)
 
         def mutator() -> None:
-            while running.is_set():
+            for _ in range(50):
                 try:
                     cb.record_failure()
-                    time.sleep(0.01)
                     cb.record_success()
                 except Exception as e:
                     errors.append(e)
@@ -487,9 +487,6 @@ class TestCircuitBreakerThreadSafety:
 
         for t in threads:
             t.start()
-
-        time.sleep(0.5)
-        running.clear()
 
         for t in threads:
             t.join(timeout=2.0)
@@ -685,13 +682,14 @@ class TestCircuitBreakerEdgeCases:
 
         assert cb.state == CircuitState.CLOSED
 
-    def test_rapid_state_transitions(self) -> None:
+    def test_rapid_state_transitions(self, fake_clock) -> None:
         """Test rapid state transitions don't corrupt state."""
         cb = CircuitBreaker(
             name="test",
             failure_threshold=1,
             success_threshold=1,
             recovery_timeout=0.01,
+            now=fake_clock.now,
         )
 
         for _ in range(10):
@@ -700,18 +698,18 @@ class TestCircuitBreakerEdgeCases:
             assert cb.state == CircuitState.OPEN
 
             # Wait for HALF_OPEN
-            time.sleep(0.02)
+            fake_clock.advance(0.02)
             assert cb.state == CircuitState.HALF_OPEN
 
             # Close
             cb.record_success()
             assert cb.state == CircuitState.CLOSED
 
-    def test_stats_time_tracking(self) -> None:
+    def test_stats_time_tracking(self, fake_clock) -> None:
         """Test that time in state is tracked correctly."""
-        cb = CircuitBreaker(name="test")
+        cb = CircuitBreaker(name="test", now=fake_clock.now)
 
-        time.sleep(0.1)
+        fake_clock.advance(0.1)
 
         stats = cb.get_stats()
         assert stats.time_in_current_state >= 0.1

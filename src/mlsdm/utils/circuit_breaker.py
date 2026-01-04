@@ -164,6 +164,7 @@ class CircuitBreaker:
         failure_threshold: int | None = None,
         success_threshold: int | None = None,
         recovery_timeout: float | None = None,
+        now: "Callable[[], float] | None" = None,
     ) -> None:
         """Initialize circuit breaker.
 
@@ -173,8 +174,10 @@ class CircuitBreaker:
             failure_threshold: Failures before opening (ignored if config provided).
             success_threshold: Successes in HALF_OPEN to close (ignored if config provided).
             recovery_timeout: Seconds before OPEN -> HALF_OPEN (ignored if config provided).
+            now: Optional clock function for deterministic tests.
         """
         self.name = name
+        self._now = now or time.time
 
         # Apply config or build from individual params
         if config is not None:
@@ -200,7 +203,7 @@ class CircuitBreaker:
 
         # Timestamps
         self._last_failure_time: float | None = None
-        self._last_state_change_time = time.time()
+        self._last_state_change_time = self._now()
         self._opened_at: float | None = None
 
     @property
@@ -294,7 +297,7 @@ class CircuitBreaker:
         """Get seconds until recovery timeout expires (must hold lock)."""
         if self._opened_at is None:
             return 0.0
-        elapsed = time.time() - self._opened_at
+        elapsed = self._now() - self._opened_at
         remaining = self.config.recovery_timeout - elapsed
         return max(0.0, remaining)
 
@@ -304,7 +307,7 @@ class CircuitBreaker:
         Handles OPEN -> HALF_OPEN transition when recovery timeout expires.
         """
         if self._state == CircuitState.OPEN and self._opened_at is not None:
-            elapsed = time.time() - self._opened_at
+            elapsed = self._now() - self._opened_at
             if elapsed >= self.config.recovery_timeout:
                 self._transition_to(CircuitState.HALF_OPEN)
 
@@ -315,7 +318,7 @@ class CircuitBreaker:
         """
         old_state = self._state
         self._state = new_state
-        self._last_state_change_time = time.time()
+        self._last_state_change_time = self._now()
 
         # Reset counters based on transition
         if new_state == CircuitState.HALF_OPEN:
@@ -325,7 +328,7 @@ class CircuitBreaker:
             self._consecutive_failures = 0
             self._opened_at = None
         elif new_state == CircuitState.OPEN:
-            self._opened_at = time.time()
+            self._opened_at = self._now()
             self._consecutive_successes = 0
 
         _logger.info(
@@ -392,7 +395,7 @@ class CircuitBreaker:
                     return
 
             self._total_failures += 1
-            self._last_failure_time = time.time()
+            self._last_failure_time = self._now()
 
             if self._state == CircuitState.CLOSED:
                 self._consecutive_failures += 1
@@ -457,7 +460,7 @@ class CircuitBreaker:
             self._total_successes = 0
             self._total_rejected = 0
             self._last_failure_time = None
-            self._last_state_change_time = time.time()
+            self._last_state_change_time = self._now()
             self._opened_at = None
 
     def get_stats(self) -> CircuitBreakerStats:
@@ -468,7 +471,7 @@ class CircuitBreaker:
         """
         with self._lock:
             self._check_state_transition()
-            current_time = time.time()
+            current_time = self._now()
 
             return CircuitBreakerStats(
                 name=self.name,

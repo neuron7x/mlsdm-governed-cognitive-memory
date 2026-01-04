@@ -5,7 +5,6 @@ Tests leaky bucket rate limiting implementation.
 """
 
 import threading
-import time
 
 import pytest
 
@@ -40,9 +39,9 @@ class TestRateLimiterBasic:
         # Next request should be blocked
         assert limiter.is_allowed(client_id) is False
 
-    def test_token_refill(self):
+    def test_token_refill(self, fake_clock):
         """Test tokens refill over time."""
-        limiter = RateLimiter(rate=10.0, capacity=5)
+        limiter = RateLimiter(rate=10.0, capacity=5, now=fake_clock.now)
         client_id = "test_client"
 
         # Use up tokens
@@ -52,8 +51,7 @@ class TestRateLimiterBasic:
         # Should be blocked now
         assert limiter.is_allowed(client_id) is False
 
-        # Wait for refill (100ms at 10 tokens/sec = 1 token)
-        time.sleep(0.15)
+        fake_clock.advance(0.15)
 
         # Should allow one more request
         assert limiter.is_allowed(client_id) is True
@@ -91,13 +89,10 @@ class TestRateLimiterCapacity:
         # 11th should be blocked
         assert limiter.is_allowed(client_id) is False
 
-    def test_capacity_not_exceeded(self):
+    def test_capacity_not_exceeded(self, fake_clock):
         """Test capacity is never exceeded."""
-        limiter = RateLimiter(rate=100.0, capacity=5)
+        limiter = RateLimiter(rate=100.0, capacity=5, now=fake_clock.now)
         client_id = "test_client"
-
-        # Wait for tokens to accumulate
-        time.sleep(0.1)
 
         # Should only allow up to capacity
         allowed = 0
@@ -167,16 +162,15 @@ class TestRateLimiterStatistics:
 class TestRateLimiterCleanup:
     """Test rate limiter cleanup of old entries."""
 
-    def test_cleanup_old_clients(self):
+    def test_cleanup_old_clients(self, fake_clock):
         """Test cleanup of old client entries."""
-        limiter = RateLimiter(rate=5.0, capacity=10)
+        limiter = RateLimiter(rate=5.0, capacity=10, now=fake_clock.now)
 
         # Create many clients
         for i in range(10):
             limiter.is_allowed(f"client_{i}")
 
-        # Wait a bit
-        time.sleep(0.002)
+        fake_clock.advance(0.002)
 
         # Cleanup should remove old entries (max_age_seconds not max_age)
         removed = limiter.cleanup_old_entries(max_age_seconds=0.001)
@@ -297,9 +291,9 @@ class TestRateLimiterAccuracy:
     """Test rate limiter timing accuracy."""
 
     @pytest.mark.slow
-    def test_rate_accuracy(self):
+    def test_rate_accuracy(self, fake_clock):
         """Test rate limiting is approximately accurate."""
-        limiter = RateLimiter(rate=10.0, capacity=10)
+        limiter = RateLimiter(rate=10.0, capacity=10, now=fake_clock.now)
         client_id = "test_client"
 
         # Use up capacity
@@ -309,8 +303,7 @@ class TestRateLimiterAccuracy:
         # Should be blocked
         assert limiter.is_allowed(client_id) is False
 
-        # Wait for 1 second (should get 10 tokens at 10/sec rate)
-        time.sleep(1.0)
+        fake_clock.advance(1.0)
 
         # Should allow approximately 10 requests
         allowed = 0

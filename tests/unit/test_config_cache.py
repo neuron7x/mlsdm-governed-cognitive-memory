@@ -2,7 +2,6 @@
 
 import os
 import tempfile
-import time
 
 import yaml
 
@@ -46,9 +45,9 @@ class TestConfigCache:
         result = cache.get("/nonexistent/path.yaml")
         assert result is None
 
-    def test_ttl_expiration(self) -> None:
+    def test_ttl_expiration(self, fake_clock) -> None:
         """Test entries expire after TTL."""
-        cache = ConfigCache(ttl_seconds=0.1)  # 100ms TTL
+        cache = ConfigCache(ttl_seconds=0.1, now=fake_clock.now)  # 100ms TTL
         config = {"key": "value"}
 
         with tempfile.NamedTemporaryFile(suffix=".yaml", delete=False, mode="w") as f:
@@ -59,14 +58,14 @@ class TestConfigCache:
             cache.put(path, config)
             assert cache.get(path) == config
 
-            time.sleep(0.15)  # Wait for expiration
+            fake_clock.advance(0.15)
             assert cache.get(path) is None
         finally:
             os.unlink(path)
 
-    def test_file_modification_invalidates(self) -> None:
+    def test_file_modification_invalidates(self, fake_clock) -> None:
         """Test cache invalidates when file is modified."""
-        cache = ConfigCache()
+        cache = ConfigCache(now=fake_clock.now)
         config = {"key": "value1"}
 
         with tempfile.NamedTemporaryFile(suffix=".yaml", delete=False, mode="w") as f:
@@ -77,10 +76,10 @@ class TestConfigCache:
             cache.put(path, config, file_path=path)
             assert cache.get(path, file_path=path) == config
 
-            # Modify file (need to wait briefly to ensure mtime changes)
-            time.sleep(0.1)  # Increased sleep for mtime resolution
+            current_mtime = os.path.getmtime(path)
             with open(path, "w") as f:
                 yaml.dump({"key": "value2"}, f)
+            os.utime(path, (current_mtime + 1, current_mtime + 1))
 
             # Cache should return None (file modified)
             assert cache.get(path, file_path=path) is None
@@ -149,9 +148,9 @@ class TestConfigCache:
         finally:
             os.unlink(path)
 
-    def test_max_entries_eviction(self) -> None:
+    def test_max_entries_eviction(self, fake_clock) -> None:
         """Test LRU eviction when max entries reached."""
-        cache = ConfigCache(max_entries=2)
+        cache = ConfigCache(max_entries=2, now=fake_clock.now)
 
         configs = []
         paths = []
@@ -167,7 +166,7 @@ class TestConfigCache:
         try:
             # Put first two
             cache.put(paths[0], configs[0])
-            time.sleep(0.01)  # Ensure different timestamps
+            fake_clock.advance(0.001)
             cache.put(paths[1], configs[1])
 
             # Put third (should evict first)

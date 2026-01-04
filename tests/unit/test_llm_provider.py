@@ -9,8 +9,9 @@ Tests cover:
 - Edge cases and error handling
 """
 
-import importlib.util
-from functools import cache
+import builtins
+import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -22,13 +23,35 @@ from mlsdm.adapters.llm_provider import (
 )
 
 
-@cache
-def _is_package_installed(name: str) -> bool:
-    """Check if a package is installed using importlib.util.find_spec.
+def _force_import_failure(monkeypatch, package: str) -> None:
+    """Force ImportError for the given package."""
+    real_import = builtins.__import__
 
-    Results are cached since package installation status doesn't change during test execution.
-    """
-    return importlib.util.find_spec(name) is not None
+    def _raising_import(name, *args, **kwargs):
+        if name.split(".")[0] == package:
+            raise ImportError(f"Forced import failure for {package}")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", _raising_import)
+
+
+def _install_module_stub(monkeypatch, name: str, client_attr: str) -> None:
+    """Install a lightweight stub module so imports succeed deterministically."""
+
+    class _DummyClient:
+        def __init__(self, api_key: str | None = None) -> None:
+            self.api_key = api_key
+
+    stub = SimpleNamespace(
+        **{
+            client_attr: _DummyClient,
+            "APITimeoutError": Exception,
+            "APIConnectionError": Exception,
+            "RateLimitError": Exception,
+            "APIStatusError": type("APIStatusError", (Exception,), {"status_code": 0}),
+        }
+    )
+    monkeypatch.setitem(sys.modules, name, stub)
 
 
 class TestLLMProviderError:
@@ -212,23 +235,19 @@ class TestOpenAIProviderInit:
 
         # Mock openai import to fail
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        _force_import_failure(monkeypatch, "openai")
 
-        # Skip test if openai is installed (we can't easily mock ImportError)
-        if _is_package_installed("openai"):
-            pytest.skip("openai package is installed, skipping ImportError test")
-        else:
-            from mlsdm.adapters.llm_provider import OpenAIProvider
+        from mlsdm.adapters.llm_provider import OpenAIProvider
 
-            with pytest.raises(ImportError, match="openai package is required"):
-                OpenAIProvider(api_key="test-key")
+        with pytest.raises(ImportError, match="openai package is required"):
+            OpenAIProvider(api_key="test-key")
 
     def test_accepts_api_key_parameter(self, monkeypatch):
         """Should accept API key via parameter."""
         # Ensure environment variable is not set
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
-        if not _is_package_installed("openai"):
-            pytest.skip("openai package not installed")
+        _install_module_stub(monkeypatch, "openai", "OpenAI")
 
         from mlsdm.adapters.llm_provider import OpenAIProvider
 
@@ -240,8 +259,7 @@ class TestOpenAIProviderInit:
         """Should use OPENAI_API_KEY from environment."""
         monkeypatch.setenv("OPENAI_API_KEY", "env-api-key-67890")
 
-        if not _is_package_installed("openai"):
-            pytest.skip("openai package not installed")
+        _install_module_stub(monkeypatch, "openai", "OpenAI")
 
         from mlsdm.adapters.llm_provider import OpenAIProvider
 
@@ -253,8 +271,7 @@ class TestOpenAIProviderInit:
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
         monkeypatch.delenv("OPENAI_MODEL", raising=False)
 
-        if not _is_package_installed("openai"):
-            pytest.skip("openai package not installed")
+        _install_module_stub(monkeypatch, "openai", "OpenAI")
 
         from mlsdm.adapters.llm_provider import OpenAIProvider
 
@@ -265,8 +282,7 @@ class TestOpenAIProviderInit:
         """Should accept custom model parameter."""
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
 
-        if not _is_package_installed("openai"):
-            pytest.skip("openai package not installed")
+        _install_module_stub(monkeypatch, "openai", "OpenAI")
 
         from mlsdm.adapters.llm_provider import OpenAIProvider
 
@@ -277,8 +293,7 @@ class TestOpenAIProviderInit:
         """Provider ID should include formatted model name."""
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
 
-        if not _is_package_installed("openai"):
-            pytest.skip("openai package not installed")
+        _install_module_stub(monkeypatch, "openai", "OpenAI")
 
         from mlsdm.adapters.llm_provider import OpenAIProvider
 
@@ -302,8 +317,7 @@ class TestAnthropicProviderInit:
         """Should accept API key via parameter."""
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
-        if not _is_package_installed("anthropic"):
-            pytest.skip("anthropic package not installed")
+        _install_module_stub(monkeypatch, "anthropic", "Anthropic")
 
         from mlsdm.adapters.llm_provider import AnthropicProvider
 
@@ -314,8 +328,7 @@ class TestAnthropicProviderInit:
         """Should use ANTHROPIC_API_KEY from environment."""
         monkeypatch.setenv("ANTHROPIC_API_KEY", "env-anthropic-key")
 
-        if not _is_package_installed("anthropic"):
-            pytest.skip("anthropic package not installed")
+        _install_module_stub(monkeypatch, "anthropic", "Anthropic")
 
         from mlsdm.adapters.llm_provider import AnthropicProvider
 
@@ -327,8 +340,7 @@ class TestAnthropicProviderInit:
         monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
         monkeypatch.delenv("ANTHROPIC_MODEL", raising=False)
 
-        if not _is_package_installed("anthropic"):
-            pytest.skip("anthropic package not installed")
+        _install_module_stub(monkeypatch, "anthropic", "Anthropic")
 
         from mlsdm.adapters.llm_provider import AnthropicProvider
 
@@ -339,8 +351,7 @@ class TestAnthropicProviderInit:
         """Should accept custom model parameter."""
         monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
-        if not _is_package_installed("anthropic"):
-            pytest.skip("anthropic package not installed")
+        _install_module_stub(monkeypatch, "anthropic", "Anthropic")
 
         from mlsdm.adapters.llm_provider import AnthropicProvider
 
@@ -351,8 +362,7 @@ class TestAnthropicProviderInit:
         """Provider ID should include formatted model name."""
         monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
-        if not _is_package_installed("anthropic"):
-            pytest.skip("anthropic package not installed")
+        _install_module_stub(monkeypatch, "anthropic", "Anthropic")
 
         from mlsdm.adapters.llm_provider import AnthropicProvider
 

@@ -157,14 +157,20 @@ class Bulkhead:
                 bulkhead.release(BulkheadCompartment.EMBEDDING)
     """
 
-    def __init__(self, config: BulkheadConfig | None = None) -> None:
+    def __init__(
+        self,
+        config: BulkheadConfig | None = None,
+        clock: "Callable[[], float] | None" = None,
+    ) -> None:
         """Initialize bulkhead with optional configuration.
 
         Args:
             config: BulkheadConfig with compartment limits. Defaults to standard limits.
+            clock: Optional monotonic clock for wait-time measurement.
         """
         self.config = config or BulkheadConfig()
         self._lock = threading.Lock()
+        self._clock = clock or time.perf_counter
 
         # Initialize compartment states
         self._compartments: dict[BulkheadCompartment, _CompartmentState] = {}
@@ -231,11 +237,11 @@ class Bulkhead:
             timeout = self.config.timeout_seconds
 
         state = self._compartments[compartment]
-        start_time = time.perf_counter()
+        start_time = self._clock()
 
         # Try to acquire semaphore with timeout
         acquired = state.semaphore.acquire(blocking=True, timeout=timeout)
-        elapsed_ms = (time.perf_counter() - start_time) * 1000.0
+        elapsed_ms = (self._clock() - start_time) * 1000.0
 
         with state.lock:
             if acquired:

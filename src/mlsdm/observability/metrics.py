@@ -45,14 +45,20 @@ class MetricsExporter:
     - Histograms: processing_latency_ms, retrieval_latency_ms
     """
 
-    def __init__(self, registry: CollectorRegistry | None = None):
+    def __init__(
+        self,
+        registry: CollectorRegistry | None = None,
+        monotonic: "Callable[[], float] | None" = None,
+    ):
         """Initialize metrics exporter.
 
         Args:
             registry: Optional custom Prometheus registry. If None, uses default.
+            monotonic: Optional monotonic clock for deterministic timing tests.
         """
         self.registry = registry or CollectorRegistry()
         self._lock = Lock()
+        self._clock = monotonic or time.monotonic
 
         # Counters
         self.events_processed = Counter(
@@ -686,7 +692,7 @@ class MetricsExporter:
             correlation_id: Unique identifier for this processing operation
         """
         with self._lock:
-            self._processing_start_times[correlation_id] = time.monotonic()
+            self._processing_start_times[correlation_id] = self._clock()
 
     def stop_processing_timer(self, correlation_id: str) -> float | None:
         """Stop timing an event processing operation and record the latency.
@@ -702,7 +708,7 @@ class MetricsExporter:
             if start_time is None:
                 return None
 
-            latency_seconds = time.monotonic() - start_time
+            latency_seconds = self._clock() - start_time
             latency_ms = latency_seconds * 1000
             self.processing_latency_ms.observe(latency_ms)
             return latency_ms
@@ -723,7 +729,7 @@ class MetricsExporter:
             correlation_id: Unique identifier for this retrieval operation
         """
         with self._lock:
-            self._retrieval_start_times[correlation_id] = time.monotonic()
+            self._retrieval_start_times[correlation_id] = self._clock()
 
     def stop_retrieval_timer(self, correlation_id: str) -> float | None:
         """Stop timing a memory retrieval operation and record the latency.
@@ -739,7 +745,7 @@ class MetricsExporter:
             if start_time is None:
                 return None
 
-            latency_seconds = time.monotonic() - start_time
+            latency_seconds = self._clock() - start_time
             latency_ms = latency_seconds * 1000
             self.retrieval_latency_ms.observe(latency_ms)
             return latency_ms
