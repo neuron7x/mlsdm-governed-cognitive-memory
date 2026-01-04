@@ -202,7 +202,7 @@ jobs:
         run: |
           # SECURITY GATE: Fail on any known vulnerabilities
           # Uses --strict to fail on any vulnerability found
-          pip-audit --strict --progress-spinner=off
+          pip-audit --requirement requirements.txt --strict --progress-spinner=off
 
       - name: Generate dependency report
         if: always()
@@ -211,8 +211,8 @@ jobs:
           echo "" >> dep-audit-summary.md
           echo "Generated at: $(date -u)" >> dep-audit-summary.md
           echo "" >> dep-audit-summary.md
-          pip-audit --format json > pip-audit-results.json 2>&1 || true
-          pip-audit >> dep-audit-summary.md 2>&1 || true
+          pip-audit --requirement requirements.txt --format json > pip-audit-results.json 2>&1 || true
+          pip-audit --requirement requirements.txt >> dep-audit-summary.md 2>&1 || true
 
       - name: Upload dependency report
         if: always()

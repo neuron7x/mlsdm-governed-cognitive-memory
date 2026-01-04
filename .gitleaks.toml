@@ -25,6 +25,11 @@ title = "MLSDM Gitleaks Configuration"
     # Unit tests for payload scrubber and LLM provider
     '''tests/unit/test_payload_scrubber\.py$''',
     '''tests/unit/test_llm_provider\.py$''',
+    # Unit fixtures containing fake secrets to validate scrubbers/guardrails
+    '''tests/unit/test_cli\.py$''',
+    '''tests/unit/test_failure_intelligence\.py$''',
+    '''tests/unit/test_llm_safety_comprehensive\.py$''',
+    '''tests/unit/test_payload_scrubber_comprehensive\.py$''',
   ]
 
   # Specific regex patterns that are known to be safe

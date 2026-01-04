@@ -11,14 +11,13 @@ import re
 from pathlib import Path
 
 
-def get_repo_root() -> Path:
+def _repo_root() -> Path:
     """Get repository root directory."""
     current = Path(__file__).resolve()
     for parent in current.parents:
-        if (parent / ".git").exists():
+        if (parent / "pyproject.toml").exists() or (parent / ".git").exists():
             return parent
-    # Fallback: assume tests/unit/test_metrics_evidence_paths.py
-    return current.parent.parent.parent
+    return current.parents[3] if len(current.parents) > 3 else current.parent
 
 
 class TestMetricsEvidencePaths:
@@ -26,7 +25,7 @@ class TestMetricsEvidencePaths:
 
     def test_no_ci_workflow_links_in_metrics_source(self) -> None:
         """METRICS_SOURCE.md should not reference CI workflow URLs."""
-        repo_root = get_repo_root()
+        repo_root = _repo_root()
         metrics_source = repo_root / "docs" / "METRICS_SOURCE.md"
 
         assert metrics_source.exists(), f"Missing {metrics_source}"
@@ -52,7 +51,7 @@ class TestMetricsEvidencePaths:
 
     def test_evidence_directory_exists(self) -> None:
         """artifacts/evidence/ directory must exist."""
-        repo_root = get_repo_root()
+        repo_root = _repo_root()
         evidence_dir = repo_root / "artifacts" / "evidence"
 
         assert evidence_dir.exists(), (
@@ -62,7 +61,7 @@ class TestMetricsEvidencePaths:
 
     def test_at_least_one_evidence_snapshot_exists(self) -> None:
         """At least one evidence snapshot must be committed."""
-        repo_root = get_repo_root()
+        repo_root = _repo_root()
         evidence_dir = repo_root / "artifacts" / "evidence"
 
         if not evidence_dir.exists():
@@ -83,7 +82,7 @@ class TestMetricsEvidencePaths:
 
     def test_evidence_snapshot_has_required_files(self) -> None:
         """Evidence snapshots should contain required files."""
-        repo_root = get_repo_root()
+        repo_root = _repo_root()
         evidence_dir = repo_root / "artifacts" / "evidence"
 
         if not evidence_dir.exists():

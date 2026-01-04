@@ -67,9 +67,6 @@ jobs:
       - name: Type check
         run: make type
 
-      - name: Security vulnerability scan
-        run: pip-audit --strict --progress-spinner=off
-
       - name: Run all unit tests
         run: make test-fast
 
@@ -210,7 +207,7 @@ jobs:
         run: |
           pip install pip-audit
           pip install -r requirements.txt
-          pip-audit --strict
+          pip-audit --requirement requirements.txt --strict --progress-spinner=off
 
   # Validate documentation
   docs-validation:

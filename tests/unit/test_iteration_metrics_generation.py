@@ -14,9 +14,9 @@ MAX_JSONL_BYTES = 100_000  # ensures deterministic artifact stays well under evi
 def _repo_root() -> Path:
     current = Path(__file__).resolve()
     for parent in current.parents:
-        if (parent / ".git").exists():
+        if (parent / "pyproject.toml").exists() or (parent / ".git").exists():
             return parent
-    return current
+    return current.parents[3] if len(current.parents) > 3 else current.parent
 
 
 def _run_generator(out_path: Path, *, seed: int = 7, steps: int = 16) -> Path:

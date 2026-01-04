@@ -11,9 +11,9 @@ from pathlib import Path
 def _repo_root() -> Path:
     current = Path(__file__).resolve()
     for parent in current.parents:
-        if (parent / ".git").exists():
+        if (parent / "pyproject.toml").exists() or (parent / ".git").exists():
             return parent
-    return current
+    return current.parents[3] if len(current.parents) > 3 else current.parent
 
 
 def _latest_snapshot() -> Path:
