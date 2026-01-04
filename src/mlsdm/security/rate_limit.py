@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict
+from collections.abc import Callable
 from threading import Lock
 
 
@@ -46,7 +47,7 @@ class RateLimiter:
         requests_per_window: int = 100,
         window_seconds: int = 60,
         storage_cleanup_interval: int = 300,
-        now: "Callable[[], float] | None" = None,
+        now: Callable[[], float] | None = None,
     ) -> None:
         """Initialize the rate limiter.
 

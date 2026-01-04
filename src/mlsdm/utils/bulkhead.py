@@ -25,6 +25,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
@@ -160,7 +161,7 @@ class Bulkhead:
     def __init__(
         self,
         config: BulkheadConfig | None = None,
-        clock: "Callable[[], float] | None" = None,
+        clock: Callable[[], float] | None = None,
     ) -> None:
         """Initialize bulkhead with optional configuration.
 

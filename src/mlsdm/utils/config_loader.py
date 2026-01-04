@@ -12,6 +12,7 @@ import hashlib
 import os
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -46,7 +47,7 @@ class ConfigCache:
         self,
         ttl_seconds: float = 300.0,
         max_entries: int = 100,
-        now: "Callable[[], float] | None" = None,
+        now: Callable[[], float] | None = None,
     ) -> None:
         """Initialize the config cache.
 

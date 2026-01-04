@@ -43,6 +43,7 @@ import os
 import threading
 import time
 from collections import OrderedDict
+from collections.abc import Callable
 from dataclasses import dataclass
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast
@@ -154,7 +155,7 @@ class MemoryCache(Generic[T]):
         self,
         max_size: int = 10000,
         default_ttl: int = 3600,
-        now: "Callable[[], float] | None" = None,
+        now: Callable[[], float] | None = None,
     ) -> None:
         """Initialize memory cache.
 

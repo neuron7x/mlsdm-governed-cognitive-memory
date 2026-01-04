@@ -6,6 +6,7 @@ the MLSDM cognitive architecture system, with Prometheus export format.
 
 import logging
 import time
+from collections.abc import Callable
 from enum import Enum
 from threading import Lock
 from typing import Any
@@ -48,7 +49,7 @@ class MetricsExporter:
     def __init__(
         self,
         registry: CollectorRegistry | None = None,
-        monotonic: "Callable[[], float] | None" = None,
+        monotonic: Callable[[], float] | None = None,
     ):
         """Initialize metrics exporter.
 

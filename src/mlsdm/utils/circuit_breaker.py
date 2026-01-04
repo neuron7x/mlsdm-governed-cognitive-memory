@@ -37,6 +37,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
@@ -164,7 +165,7 @@ class CircuitBreaker:
         failure_threshold: int | None = None,
         success_threshold: int | None = None,
         recovery_timeout: float | None = None,
-        now: "Callable[[], float] | None" = None,
+        now: Callable[[], float] | None = None,
     ) -> None:
         """Initialize circuit breaker.
 

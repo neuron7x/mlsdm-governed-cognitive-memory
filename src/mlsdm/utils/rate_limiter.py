@@ -8,6 +8,7 @@ SECURITY_POLICY.md.
 import threading
 import time
 from collections import defaultdict
+from collections.abc import Callable
 
 
 class RateLimiter:
@@ -22,7 +23,7 @@ class RateLimiter:
         self,
         rate: float = 5.0,
         capacity: int = 10,
-        now: "Callable[[], float] | None" = None,
+        now: Callable[[], float] | None = None,
     ):
         """Initialize rate limiter.
 
