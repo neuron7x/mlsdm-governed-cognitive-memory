@@ -115,24 +115,28 @@ class TestPELMConcurrency:
         pelm = PhaseEntangledLatticeMemory(dimension=5, capacity=100)
         errors: Queue = Queue()
         lock = threading.Lock()
+        operations_done = 0
+        progress = threading.Condition()
 
         def writer(worker_id: int, count: int) -> None:
+            nonlocal operations_done
             for i in range(count):
                 try:
                     vector = [float(worker_id + i)] * 5
                     pelm.entangle(vector, 0.5)
+                    with progress:
+                        operations_done += 1
+                        progress.notify_all()
                 except Exception as e:
                     errors.put((worker_id, str(e)))
 
         def corrupter() -> None:
             """Periodically corrupt and let auto-recovery handle it."""
-            import time
-
-            for _ in range(3):
-                time.sleep(0.01)
+            for threshold in (10, 40, 70):
+                with progress:
+                    progress.wait_for(lambda: operations_done >= threshold)
                 with lock:
                     pelm.pointer = 9999  # Corrupt
-                time.sleep(0.01)
 
         threads = [threading.Thread(target=writer, args=(i, 30)) for i in range(3)]
         threads.append(threading.Thread(target=corrupter))
