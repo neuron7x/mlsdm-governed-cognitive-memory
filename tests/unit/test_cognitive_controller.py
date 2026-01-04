@@ -5,7 +5,6 @@ Tests memory monitoring, processing time limits, and emergency shutdown function
 """
 
 import gc
-import time
 
 import numpy as np
 import pytest
@@ -197,7 +196,6 @@ class TestCognitiveControllerMemoryLeak:
         controller = CognitiveController()
 
         gc.collect()
-        time.sleep(0.1)
 
         memory_samples = []
 
@@ -208,7 +206,6 @@ class TestCognitiveControllerMemoryLeak:
                 controller.process_event(vector, moral_value=0.7)
 
             gc.collect()
-            time.sleep(0.1)
             memory_samples.append(controller.get_memory_usage())
 
         # Check that memory doesn't continuously grow between batches
@@ -563,8 +560,10 @@ class TestCognitiveControllerTimeBasedRecovery:
         # Increase memory threshold to allow recovery
         controller.memory_threshold_mb = 10000.0
 
-        # Wait for time-based cooldown
-        time.sleep(0.15)  # Wait slightly longer than cooldown
+        # Simulate time-based cooldown passage without sleeping
+        controller._last_emergency_time -= (
+            controller.auto_recovery_cooldown_seconds + 0.01
+        )
 
         # Process event - should trigger time-based recovery
         result = controller.process_event(vector, moral_value=0.8)
@@ -614,7 +613,7 @@ class TestCognitiveControllerTimeBasedRecovery:
         controller.memory_threshold_mb = 10000.0
 
         # Even with time passed, won't recover without step cooldown
-        time.sleep(0.1)
+        controller._last_emergency_time -= controller.auto_recovery_cooldown_seconds + 1.0
         controller.process_event(vector, moral_value=0.8)
         assert controller.emergency_shutdown is True
 

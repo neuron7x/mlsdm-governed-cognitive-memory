@@ -21,6 +21,7 @@ import random
 
 import numpy as np
 import pytest
+from hypothesis import settings
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -46,6 +47,27 @@ def pytest_configure(config: Any) -> None:
     config.addinivalue_line(
         "markers", "load: marks tests as load/stress tests (concurrency, stress)"
     )
+
+
+# ============================================================
+# Hypothesis Profiles
+# ============================================================
+
+settings.register_profile(
+    "ci",
+    settings(derandomize=True, deadline=None, print_blob=True, max_examples=200),
+)
+settings.register_profile(
+    "dev",
+    settings(
+        derandomize=False,
+        max_examples=1000,
+    ),
+)
+_is_ci = os.environ.get("CI", "").lower() == "true" or os.environ.get(
+    "GITHUB_ACTIONS", ""
+).lower() == "true"
+settings.load_profile("ci" if _is_ci else "dev")
 
 
 # ============================================================
