@@ -37,14 +37,13 @@ from __future__ import annotations
 import logging
 import threading
 import time
-from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
 _logger = logging.getLogger(__name__)
 

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import threading
+
 import numpy as np
 
 from mlsdm.utils.embedding_cache import (

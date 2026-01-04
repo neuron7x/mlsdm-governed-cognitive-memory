@@ -10,8 +10,11 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict
-from collections.abc import Callable
 from threading import Lock
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class RateLimiter:
