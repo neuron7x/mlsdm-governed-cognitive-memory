@@ -85,9 +85,9 @@ jobs:
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
+          key: ${{ runner.os }}-py${{ matrix.python-version || '3.11' }}-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
           restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-
+            ${{ runner.os }}-py${{ matrix.python-version || '3.11' }}-
             ${{ runner.os }}-
 
       - name: Install dependencies
@@ -126,9 +126,9 @@ jobs:
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
+          key: ${{ runner.os }}-py${{ matrix.python-version || '3.11' }}-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
           restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-
+            ${{ runner.os }}-py${{ matrix.python-version || '3.11' }}-
             ${{ runner.os }}-
 
       - name: Install dependencies
@@ -168,9 +168,9 @@ jobs:
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
+          key: ${{ runner.os }}-py${{ matrix.python-version || '3.11' }}-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
           restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-
+            ${{ runner.os }}-py${{ matrix.python-version || '3.11' }}-
             ${{ runner.os }}-
 
       - name: Install dependencies
@@ -209,9 +209,9 @@ jobs:
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
+          key: ${{ runner.os }}-py${{ matrix.python-version || '3.11' }}-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
           restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-
+            ${{ runner.os }}-py${{ matrix.python-version || '3.11' }}-
             ${{ runner.os }}-
 
       - name: Install dependencies
@@ -250,9 +250,9 @@ jobs:
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
+          key: ${{ runner.os }}-py${{ matrix.python-version || '3.11' }}-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
           restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-
+            ${{ runner.os }}-py${{ matrix.python-version || '3.11' }}-
             ${{ runner.os }}-
 
       - name: Install dependencies
@@ -291,9 +291,9 @@ jobs:
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
+          key: ${{ runner.os }}-py${{ matrix.python-version || '3.11' }}-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
           restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-
+            ${{ runner.os }}-py${{ matrix.python-version || '3.11' }}-
             ${{ runner.os }}-
 
       - name: Install dependencies
@@ -333,9 +333,9 @@ jobs:
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
+          key: ${{ runner.os }}-py${{ matrix.python-version || '3.11' }}-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
           restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-
+            ${{ runner.os }}-py${{ matrix.python-version || '3.11' }}-
             ${{ runner.os }}-
 
       - name: Install dependencies
@@ -376,9 +376,9 @@ jobs:
             ~/.cache/pip
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-${{ hashFiles(\'**/requirements.txt\', \'**/pyproject.toml\', \'**/uv.lock\') }}
+          key: ${{ runner.os }}-py${{ matrix.python-version || '3.11' }}-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
           restore-keys: |
-            ${{ runner.os }}-py${{ matrix.python-version || \'3.11\' }}-
+            ${{ runner.os }}-py${{ matrix.python-version || '3.11' }}-
             ${{ runner.os }}-
 
       - name: Install dependencies
