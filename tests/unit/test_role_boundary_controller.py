@@ -140,6 +140,22 @@ class TestStructuredTask:
         assert "No breaking changes" in markdown
         assert "Module A" in markdown
 
+    def test_structured_task_to_markdown_empty_sections(self) -> None:
+        """Ensure markdown rendering handles empty sections gracefully."""
+        task = StructuredTask(
+            interpreted_task="Document behavior",
+            constraints=[],
+            scope=ScopeDefinition(in_scope=[], out_of_scope=[]),
+            execution_plan=[],
+            clarifications_required=None,
+        )
+
+        markdown = task.to_markdown()
+
+        assert "- None" in markdown
+        assert "  - None specified" in markdown
+        assert "1. No execution steps defined" in markdown
+
 
 class TestRoleBoundaryController:
     """Tests for RoleBoundaryController main functionality."""
@@ -363,6 +379,18 @@ class TestRoleBoundaryController:
         )
         medium_risk_result = controller.interpret_and_bound(medium_risk_request)
         assert medium_risk_result.metadata["risk_level"] in ["medium", "high"]
+
+    def test_production_mode_risk_level_without_keywords(self) -> None:
+        """Production context should elevate risk even without risky keywords."""
+        controller = RoleBoundaryController()
+        request = TaskRequest(
+            raw_request="Improve documentation clarity",
+            context={"repo": "mlsdm", "mode": "production"},
+        )
+
+        result = controller.interpret_and_bound(request)
+
+        assert result.metadata["risk_level"] == "high"
 
     def test_metadata_generation(self) -> None:
         """Test metadata generation."""
