@@ -106,7 +106,8 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.package-data]
-mlsdm = ["config/*.yaml", "py.typed"]
+mlsdm = ["py.typed"]
+"mlsdm.config" = ["*.yaml"]
 
 # ====================================================
 # Tool Configuration

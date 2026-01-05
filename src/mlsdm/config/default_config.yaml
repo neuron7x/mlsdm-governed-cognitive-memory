@@ -7,8 +7,8 @@
 # Documentation: src/mlsdm/utils/config_schema.py
 # Deployment Guide: DEPLOYMENT_GUIDE.md
 
-# Vector dimension (10 for testing, use 384+ in production)
-dimension: 10
+# Vector dimension (default 384; increase for higher-capacity embeddings)
+dimension: 384
 
 # Multi-level synaptic memory (three-level hierarchy)
 multi_level_memory:
@@ -26,13 +26,6 @@ moral_filter:
   adapt_rate: 0.05    # Adaptation speed
   min_threshold: 0.3  # Lower bound
   max_threshold: 0.9  # Upper bound
-
-# Ontology-based semantic categorization
-ontology_matcher:
-  ontology_vectors:
-    - [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    - [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-  ontology_labels: ["concept1", "concept2"]
 
 # Circadian-like wake/sleep rhythm
 cognitive_rhythm:

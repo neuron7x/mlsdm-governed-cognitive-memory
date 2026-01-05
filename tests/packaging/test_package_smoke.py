@@ -8,6 +8,10 @@ Run with:
     pytest tests/packaging/test_package_smoke.py -v
 """
 
+from pathlib import Path
+
+import pytest
+
 
 class TestPackageSmoke:
     """Smoke tests for package installation verification."""
@@ -267,3 +271,18 @@ class TestObservabilitySmoke:
         exporter = get_metrics_exporter()
         text = exporter.get_metrics_text()
         assert isinstance(text, str)
+
+
+def test_packaged_default_config_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Ensure packaged default_config.yaml loads when cwd lacks config/."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("CONFIG_PATH", raising=False)
+
+    from mlsdm.utils.config_loader import ConfigLoader
+
+    config = ConfigLoader.load_config("config/default_config.yaml")
+
+    assert isinstance(config, dict)
+    assert config.get("dimension") == 384
