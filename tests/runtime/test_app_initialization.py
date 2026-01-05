@@ -43,14 +43,8 @@ def test_app_import_has_no_file_io(monkeypatch: pytest.MonkeyPatch) -> None:
         raise AssertionError("file I/O during import")
 
     monkeypatch.setattr(builtins, "open", _fail_open)
-    monkeypatch.setattr(
-        Path, "open", lambda *_, **__: (_ for _ in ()).throw(AssertionError("file I/O during import"))
-    )
-    monkeypatch.setattr(
-        Path,
-        "read_text",
-        lambda *_, **__: (_ for _ in ()).throw(AssertionError("file I/O during import")),
-    )
+    monkeypatch.setattr(Path, "open", _fail_open)
+    monkeypatch.setattr(Path, "read_text", _fail_open)
 
     module = types.ModuleType(module_name)
     module.__file__ = str(app_path)
