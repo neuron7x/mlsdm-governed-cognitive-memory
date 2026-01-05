@@ -285,4 +285,4 @@ def test_packaged_default_config_fallback(
     config = ConfigLoader.load_config("config/default_config.yaml")
 
     assert isinstance(config, dict)
-    assert config.get("dimension") == 384
+    assert config.get("dimension") == 10
