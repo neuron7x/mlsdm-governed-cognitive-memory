@@ -1,5 +1,5 @@
-from importlib import resources
 import os
+from importlib import resources
 from pathlib import Path
 
 import pytest
