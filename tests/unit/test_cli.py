@@ -263,10 +263,12 @@ class TestMain:
 
         Verifies help text is displayed when no command provided.
         """
-        from mlsdm.cli import main
+        # Explicitly import from __init__.py to avoid conflict with main.py module
+        import mlsdm.cli
+        main_func = mlsdm.cli.main
 
         with patch("sys.argv", ["mlsdm"]):
-            result = main()
+            result = main_func()
 
         assert result == 0
         captured = capsys.readouterr()
@@ -282,10 +284,12 @@ class TestMain:
 
         Verifies check command is executed successfully.
         """
-        from mlsdm.cli import main
+        # Explicitly import from __init__.py to avoid conflict with main.py module
+        import mlsdm.cli
+        main_func = mlsdm.cli.main
 
         with patch("sys.argv", ["mlsdm", "check"]):
-            result = main()
+            result = main_func()
 
         assert result == 0
         captured = capsys.readouterr()
@@ -296,10 +300,12 @@ class TestMain:
 
         Verifies demo command runs successfully.
         """
-        from mlsdm.cli import main
+        # Explicitly import from __init__.py to avoid conflict with main.py module
+        import mlsdm.cli
+        main_func = mlsdm.cli.main
 
         with patch("sys.argv", ["mlsdm", "demo"]):
-            result = main()
+            result = main_func()
 
         assert result == 0
         captured = capsys.readouterr()
@@ -310,10 +316,12 @@ class TestMain:
 
         Verifies custom prompt is processed correctly.
         """
-        from mlsdm.cli import main
+        # Explicitly import from __init__.py to avoid conflict with main.py module
+        import mlsdm.cli
+        main_func = mlsdm.cli.main
 
         with patch("sys.argv", ["mlsdm", "demo", "-p", "Test prompt"]):
-            result = main()
+            result = main_func()
 
         assert result == 0
         captured = capsys.readouterr()
@@ -324,10 +332,12 @@ class TestMain:
 
         Verifies verbose flag is processed correctly.
         """
-        from mlsdm.cli import main
+        # Explicitly import from __init__.py to avoid conflict with main.py module
+        import mlsdm.cli
+        main_func = mlsdm.cli.main
 
         with patch("sys.argv", ["mlsdm", "check", "-v"]):
-            result = main()
+            result = main_func()
 
         assert result == 0
         captured = capsys.readouterr()
