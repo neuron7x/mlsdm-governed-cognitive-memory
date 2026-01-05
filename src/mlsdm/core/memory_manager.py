@@ -310,7 +310,16 @@ class MemoryManager:
         # Optional: Persist to LTM if enabled
         if self._ltm_store is not None:
             # Convert event vector to text representation for LTM
-            content = f"Event vector (dim={len(event_vector)}): {event_vector.tolist()}"
+            # For large vectors, truncate to avoid performance issues
+            if len(event_vector) <= 10:
+                vec_repr = str(event_vector.tolist())
+            else:
+                # Show first 5 and last 5 elements for large vectors
+                first_5 = event_vector[:5].tolist()
+                last_5 = event_vector[-5:].tolist()
+                vec_repr = f"{first_5}...{last_5}"
+            
+            content = f"Event vector (dim={len(event_vector)}): {vec_repr}"
             provenance = MemoryProvenance(
                 source=MemorySource.SYSTEM_PROMPT,
                 confidence=moral_value,

@@ -21,6 +21,7 @@ import json
 import logging
 import os
 import sqlite3
+from datetime import datetime as dt
 from typing import Any, cast
 
 from mlsdm.memory.provenance import MemoryProvenance, MemorySource
@@ -287,7 +288,6 @@ class SQLiteMemoryStore:
         provenance: MemoryProvenance | None = None
         if row["provenance_json"]:
             prov_data = json.loads(row["provenance_json"])
-            from datetime import datetime as dt
             provenance = MemoryProvenance(
                 source=MemorySource(prov_data["source"]),
                 confidence=prov_data["confidence"],
@@ -370,7 +370,6 @@ class SQLiteMemoryStore:
             provenance: MemoryProvenance | None = None
             if row["provenance_json"]:
                 prov_data = json.loads(row["provenance_json"])
-                from datetime import datetime as dt
                 provenance = MemoryProvenance(
                     source=MemorySource(prov_data["source"]),
                     confidence=prov_data["confidence"],
