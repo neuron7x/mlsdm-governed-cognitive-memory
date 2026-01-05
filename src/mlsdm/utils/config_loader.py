@@ -12,9 +12,9 @@ import hashlib
 import os
 import threading
 import time
-from importlib import resources
 from collections.abc import Callable
 from dataclasses import dataclass
+from importlib import resources
 from pathlib import Path
 from typing import Any
 
@@ -293,7 +293,7 @@ class ConfigLoader:
             cache.put(cache_key, config, file_path=path)
 
         return config
- 
+
     @staticmethod
     def _load_yaml_resource(package: str, resource: str) -> dict[str, Any]:
         """Load YAML configuration from a packaged resource."""

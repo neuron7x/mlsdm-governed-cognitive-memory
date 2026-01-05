@@ -257,7 +257,7 @@ def _ensure_runtime_state(app: FastAPI) -> None:
 
 def _require_manager(request: Request) -> MemoryManager:
     _ensure_runtime_state(request.app)
-    manager = cast(MemoryManager | None, getattr(request.app.state, "memory_manager", None))
+    manager = cast("MemoryManager | None", getattr(request.app.state, "memory_manager", None))
     if manager is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Service not initialized"
@@ -267,7 +267,9 @@ def _require_manager(request: Request) -> MemoryManager:
 
 def _require_engine(request: Request) -> NeuroCognitiveEngine:
     _ensure_runtime_state(request.app)
-    engine = cast(NeuroCognitiveEngine | None, getattr(request.app.state, "neuro_engine", None))
+    engine = cast(
+        "NeuroCognitiveEngine | None", getattr(request.app.state, "neuro_engine", None)
+    )
     if engine is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Service not initialized"
