@@ -256,14 +256,18 @@ class TestCmdDemo:
 
 
 class TestMain:
-    """Tests for the main entry point and argument parsing."""
+    """Tests for the main entry point and argument parsing.
+    
+    Note: We use `import mlsdm.cli; main_func = mlsdm.cli.main` pattern
+    to explicitly get the main() function from __init__.py and avoid
+    ambiguity with the main.py module file.
+    """
 
     def test_main_no_command_prints_help(self, capsys: "CaptureFixture[str]") -> None:
         """Running without command should print help.
 
         Verifies help text is displayed when no command provided.
         """
-        # Explicitly import from __init__.py to avoid conflict with main.py module
         import mlsdm.cli
         main_func = mlsdm.cli.main
 
@@ -284,7 +288,6 @@ class TestMain:
 
         Verifies check command is executed successfully.
         """
-        # Explicitly import from __init__.py to avoid conflict with main.py module
         import mlsdm.cli
         main_func = mlsdm.cli.main
 
@@ -300,7 +303,6 @@ class TestMain:
 
         Verifies demo command runs successfully.
         """
-        # Explicitly import from __init__.py to avoid conflict with main.py module
         import mlsdm.cli
         main_func = mlsdm.cli.main
 
@@ -316,7 +318,6 @@ class TestMain:
 
         Verifies custom prompt is processed correctly.
         """
-        # Explicitly import from __init__.py to avoid conflict with main.py module
         import mlsdm.cli
         main_func = mlsdm.cli.main
 
@@ -332,7 +333,6 @@ class TestMain:
 
         Verifies verbose flag is processed correctly.
         """
-        # Explicitly import from __init__.py to avoid conflict with main.py module
         import mlsdm.cli
         main_func = mlsdm.cli.main
 
