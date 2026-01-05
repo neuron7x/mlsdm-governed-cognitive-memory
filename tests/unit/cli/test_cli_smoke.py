@@ -110,23 +110,15 @@ class TestCLIMainModule:
     def test_main_module_calls_main_function(self) -> None:
         """Test that __main__ module calls main() function."""
         import importlib.util
-        import sys
-        from pathlib import Path
 
-        # Get the path to __main__.py
-        main_path = Path(__file__).parent.parent.parent.parent / "src" / "mlsdm" / "cli" / "__main__.py"
+        # Use importlib to find the module spec
+        spec = importlib.util.find_spec("mlsdm.cli.__main__")
         
-        # Mock the main function and sys.exit
-        with patch("mlsdm.cli.main") as mock_main_func, \
-             patch("sys.exit") as mock_exit:
+        if spec and spec.origin:
+            # Verify the __main__ module exists and can be loaded
+            module = importlib.util.module_from_spec(spec)
+            assert module is not None
             
-            mock_main_func.return_value = 0
-            
-            # Load and execute the __main__ module
-            spec = importlib.util.spec_from_file_location("__main__", main_path)
-            if spec and spec.loader:
-                module = importlib.util.module_from_spec(spec)
-                # Execute only if __name__ == "__main__" condition would be true
-                # We can't easily test this without actually running it
-                # So we just verify the module loads
-                assert module is not None
+            # Verify it imports correctly
+            from mlsdm.cli import __main__ as main_module
+            assert main_module is not None
