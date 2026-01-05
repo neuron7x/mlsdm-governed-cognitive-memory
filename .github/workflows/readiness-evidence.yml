@@ -86,7 +86,7 @@ jobs:
           exit "${status}"
       - name: Upload coverage artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: readiness-coverage
           path: |
@@ -129,7 +129,7 @@ jobs:
         run: uv run python scripts/evidence/verify_evidence_snapshot.py --evidence-dir "${{ steps.evidence_path.outputs.path }}"
       - name: Upload evidence snapshot
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: readiness-evidence-snapshot
           path: ${{ steps.evidence_path.outputs.path }}

@@ -52,7 +52,7 @@ jobs:
 
       - name: Upload smoke junit report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: smoke-junit
           path: artifacts/junit-smoke.xml
@@ -121,7 +121,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage.xml
@@ -163,7 +163,7 @@ jobs:
 
       - name: Upload ablation report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: ablation-report
           path: reports/ablation/*.json
@@ -269,21 +269,21 @@ jobs:
           fi
 
       - name: Download smoke junit
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: ${{ env.FI_JUNIT_ARTIFACT }}
           path: artifacts
         continue-on-error: true
 
       - name: Download coverage report
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: ${{ env.FI_COV_ARTIFACT }}
           path: artifacts
         continue-on-error: true
 
       - name: Download ablation report
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: ${{ env.FI_ABLATION_ARTIFACT }}
           path: artifacts
@@ -338,7 +338,7 @@ jobs:
 
       - name: Upload failure intelligence artifact
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: failure-intelligence
           path: |

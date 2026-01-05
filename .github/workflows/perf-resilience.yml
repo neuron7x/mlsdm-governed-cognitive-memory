@@ -95,7 +95,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: resilience-fast-results
           path: resilience-fast-results.xml
@@ -168,7 +168,7 @@ jobs:
 
       - name: Upload performance results
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: perf-slo-results
           path: perf-slo-results.xml
@@ -241,7 +241,7 @@ jobs:
 
       - name: Upload comprehensive results
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: resilience-comprehensive-results
           path: |
