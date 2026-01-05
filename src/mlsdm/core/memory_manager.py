@@ -2,7 +2,10 @@ import asyncio
 import json
 import logging
 import os
+import time
+import uuid
 from collections.abc import Callable, Iterator
+from datetime import datetime
 from typing import Any
 
 import numpy as np
@@ -10,10 +13,13 @@ import numpy as np
 from mlsdm.cognition.moral_filter import MoralFilter
 from mlsdm.cognition.ontology_matcher import OntologyMatcher
 from mlsdm.memory.multi_level_memory import MultiLevelSynapticMemory
+from mlsdm.memory.provenance import MemoryProvenance, MemorySource
 from mlsdm.memory.qilm_module import QILM
+from mlsdm.memory.store import MemoryItem, MemoryStore, compute_content_hash
 from mlsdm.rhythm.cognitive_rhythm import CognitiveRhythm
 from mlsdm.utils.data_serializer import DataSerializer
 from mlsdm.utils.errors import (
+    ConfigurationError,
     StateCorruptError,
     StateFileNotFoundError,
     StateIncompleteError,
@@ -159,6 +165,119 @@ class MemoryManager:
         self.metrics_collector = MetricsCollector()
         self.strict_mode = bool(config.get("strict_mode", False))
 
+        # LTM (Long-Term Memory) store - optional, disabled by default
+        self._ltm_store: MemoryStore | None = None
+        self._ltm_strict: bool = False
+        self._init_ltm_store(config)
+
+    def _init_ltm_store(self, config: dict[str, Any]) -> None:
+        """Initialize LTM store if enabled in config.
+        
+        LTM is enabled only when:
+        - config.memory.ltm_enabled == True
+        - config.memory.ltm_backend == "sqlite"
+        - A database path is provided (config or env)
+        
+        This method never crashes - logs errors and continues without LTM
+        unless ltm_strict=True is set.
+        """
+        memory_cfg = config.get("memory", {})
+        
+        # Check if LTM is enabled
+        if not memory_cfg.get("ltm_enabled", False):
+            return
+        
+        # Check backend type
+        backend = memory_cfg.get("ltm_backend", "sqlite")
+        if backend != "sqlite":
+            logger.warning(
+                "LTM backend '%s' not supported, only 'sqlite' is available. LTM disabled.",
+                backend,
+            )
+            return
+        
+        # Get database path from config or environment
+        db_path = memory_cfg.get("ltm_db_path") or os.environ.get("MLSDM_LTM_DB_PATH")
+        if not db_path:
+            logger.warning(
+                "LTM enabled but no database path provided. "
+                "Set 'memory.ltm_db_path' in config or MLSDM_LTM_DB_PATH env var. LTM disabled."
+            )
+            return
+        
+        # Check for encryption configuration
+        encryption_key: bytes | None = None
+        encryption_enabled = (
+            os.environ.get("MLSDM_LTM_ENCRYPTION", "0") == "1"
+            and os.environ.get("MLSDM_LTM_KEY") is not None
+        )
+        
+        if encryption_enabled:
+            key_hex = os.environ.get("MLSDM_LTM_KEY", "")
+            try:
+                encryption_key = bytes.fromhex(key_hex)
+            except ValueError:
+                logger.error("Invalid MLSDM_LTM_KEY format (expected hex). LTM disabled.")
+                return
+        
+        # Store raw option (default: False, meaning scrubbing enabled)
+        store_raw = memory_cfg.get("ltm_store_raw", False)
+        
+        # Strict mode for LTM errors
+        self._ltm_strict = memory_cfg.get("ltm_strict", False)
+        
+        # Initialize SQLite store
+        try:
+            from mlsdm.memory.sqlite_store import SQLiteMemoryStore
+            
+            self._ltm_store = SQLiteMemoryStore(
+                db_path=db_path,
+                encryption_key=encryption_key,
+                store_raw=store_raw,
+            )
+            logger.info(
+                "LTM store initialized at %s (encryption=%s, strict=%s)",
+                db_path,
+                encryption_enabled,
+                self._ltm_strict,
+            )
+        except ConfigurationError:
+            # Re-raise configuration errors (e.g., encryption without cryptography)
+            raise
+        except Exception as e:
+            if self._ltm_strict:
+                raise
+            logger.error("Failed to initialize LTM store: %s. LTM disabled.", e, exc_info=True)
+
+    def _persist_to_ltm(self, content: str, provenance: MemoryProvenance | None = None) -> None:
+        """Persist content to long-term memory store.
+        
+        This is called after successful memory operations to optionally
+        persist to the LTM backend. Errors are logged and do not crash
+        the core path unless ltm_strict=True.
+        
+        Args:
+            content: Text content to persist
+            provenance: Optional provenance metadata
+        """
+        if self._ltm_store is None:
+            return
+        
+        try:
+            item = MemoryItem(
+                id=str(uuid.uuid4()),
+                ts=time.time(),
+                content=content,
+                content_hash=compute_content_hash(content),
+                provenance=provenance,
+            )
+            self._ltm_store.put(item)
+            logger.debug("Persisted memory to LTM: %s", item.id)
+        except Exception as e:
+            if self._ltm_strict:
+                raise
+            logger.warning("Failed to persist to LTM: %s", e, exc_info=True)
+
     def _is_sensitive(self, vec: np.ndarray) -> bool:
         if np.linalg.norm(vec) > 10 or np.sum(vec) < 0:
             logger.warning("Sensitive vector detected by heuristic.")
@@ -187,6 +306,17 @@ class MemoryManager:
 
         self.metrics_collector.add_accepted_event()
         self.metrics_collector.stop_event_timer_and_record_latency()
+
+        # Optional: Persist to LTM if enabled
+        if self._ltm_store is not None:
+            # Convert event vector to text representation for LTM
+            content = f"Event vector (dim={len(event_vector)}): {event_vector.tolist()}"
+            provenance = MemoryProvenance(
+                source=MemorySource.SYSTEM_PROMPT,
+                confidence=moral_value,
+                timestamp=datetime.now(),
+            )
+            self._persist_to_ltm(content, provenance)
 
     async def simulate(self, num_steps: int, event_gen: Iterator[tuple[np.ndarray, float]]) -> None:
         for step, (ev, mv) in enumerate(event_gen):
