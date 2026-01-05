@@ -4,7 +4,7 @@ import logging
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 import psutil
@@ -35,7 +35,7 @@ from mlsdm.api.middleware import (
 )
 from mlsdm.contracts import AphasiaMetadata
 from mlsdm.core.memory_manager import MemoryManager
-from mlsdm.engine import NeuroEngineConfig, build_neuro_engine_from_env
+from mlsdm.engine import NeuroCognitiveEngine, NeuroEngineConfig, build_neuro_engine_from_env
 from mlsdm.observability.tracing import (
     TracingConfig,
     add_span_attributes,
@@ -83,10 +83,6 @@ _tracing_config = TracingConfig(
 )
 initialize_tracing(_tracing_config)
 
-# Module-level config and resources that need to be initialized before app starts
-_config_path = os.getenv("CONFIG_PATH", "config/default_config.yaml")
-_manager = MemoryManager(ConfigLoader.load_config(_config_path))
-
 # Initialize rate limiter (5 RPS per client as per SECURITY_POLICY.md)
 # Can be disabled in testing with DISABLE_RATE_LIMIT=true/1
 _secure_mode_enabled = _get_env_bool("MLSDM_SECURE_MODE", False)
@@ -112,14 +108,6 @@ _rate_limiter = RateLimiter(rate=_rate_limit_rate, capacity=_rate_limit_capacity
 # Initialize input validator
 _validator = InputValidator()
 
-# Initialize NeuroCognitiveEngine for /generate endpoint
-_engine_config = NeuroEngineConfig(
-    dim=_manager.dimension,
-    enable_fslgs=False,  # FSLGS is optional
-    enable_metrics=True,
-)
-_neuro_engine = build_neuro_engine_from_env(config=_engine_config)
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -130,8 +118,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     lifecycle = get_lifecycle_manager()
     await lifecycle.startup()
 
+    config_path = os.getenv("CONFIG_PATH", "config/default_config.yaml")
+    config = ConfigLoader.load_config(config_path)
+    manager = MemoryManager(config)
+    engine_config = NeuroEngineConfig(
+        dim=manager.dimension,
+        enable_fslgs=False,  # FSLGS is optional
+        enable_metrics=True,
+    )
+    engine = build_neuro_engine_from_env(config=engine_config)
+
+    app.state.memory_manager = manager
+    app.state.neuro_engine = engine
+    health.set_memory_manager(manager)
+
     # Register cleanup tasks
-    lifecycle.register_cleanup(lambda: cleanup_memory_manager(_manager))
+    lifecycle.register_cleanup(lambda: cleanup_memory_manager(manager))
 
     # Start CPU background sampler for non-blocking health checks
     _cpu_background_task = asyncio.create_task(_cpu_background_sampler())
@@ -147,7 +149,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     security_logger.log_system_event(
         SecurityEventType.STARTUP,
         "MLSDM Governed Cognitive Memory API started",
-        additional_data={"version": "1.0.0", "dimension": _manager.dimension},
+        additional_data={"version": "1.0.0", "dimension": manager.dimension},
     )
 
     yield
@@ -205,9 +207,6 @@ app.add_middleware(BulkheadMiddleware)
 # Include health check router
 app.include_router(health.router)
 
-# Set memory manager for health checks
-health.set_memory_manager(_manager)
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 
@@ -233,6 +232,49 @@ def _get_client_id(request: Request) -> str:
     identifier = f"{client_ip}:{user_agent}"
     hashed = hashlib.sha256(identifier.encode()).hexdigest()[:16]
     return hashed
+
+
+def _ensure_runtime_state(app: FastAPI) -> None:
+    if getattr(app.state, "memory_manager", None) is not None and getattr(
+        app.state, "neuro_engine", None
+    ):
+        return
+
+    config_path = os.getenv("CONFIG_PATH", "config/default_config.yaml")
+    config = ConfigLoader.load_config(config_path)
+    manager = MemoryManager(config)
+    engine_config = NeuroEngineConfig(
+        dim=manager.dimension,
+        enable_fslgs=False,  # FSLGS is optional
+        enable_metrics=True,
+    )
+    engine = build_neuro_engine_from_env(config=engine_config)
+
+    app.state.memory_manager = manager
+    app.state.neuro_engine = engine
+    health.set_memory_manager(manager)
+
+
+def _require_manager(request: Request) -> MemoryManager:
+    _ensure_runtime_state(request.app)
+    manager = cast("MemoryManager | None", getattr(request.app.state, "memory_manager", None))
+    if manager is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Service not initialized"
+        )
+    return manager
+
+
+def _require_engine(request: Request) -> NeuroCognitiveEngine:
+    _ensure_runtime_state(request.app)
+    engine = cast(
+        "NeuroCognitiveEngine | None", getattr(request.app.state, "neuro_engine", None)
+    )
+    if engine is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Service not initialized"
+        )
+    return engine
 
 
 async def get_current_user(token: str | None = Depends(oauth2_scheme)) -> str | None:
@@ -419,6 +461,7 @@ async def process_event(
     as specified in SECURITY_POLICY.md.
     """
     client_id = _get_client_id(request)
+    manager = _require_manager(request)
 
     # Rate limiting check (can be disabled for testing)
     if _rate_limiting_enabled and not _rate_limiter.is_allowed(client_id):
@@ -435,14 +478,14 @@ async def process_event(
     # Validate and convert vector
     try:
         vec = _validator.validate_vector(
-            event.event_vector, expected_dim=_manager.dimension, normalize=False
+            event.event_vector, expected_dim=manager.dimension, normalize=False
         )
     except ValueError as e:
         security_logger.log_invalid_input(client_id=client_id, error_message=str(e))
         raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Process the event
-    await _manager.process_event(vec, moral_value)
+    await manager.process_event(vec, moral_value)
 
     return await get_state(request, user)
 
@@ -452,23 +495,24 @@ async def process_event(
 async def get_state(request: Request, user: str = Depends(get_current_user)) -> StateResponse:
     """Get system state with rate limiting."""
     client_id = _get_client_id(request)
+    manager = _require_manager(request)
 
     # Rate limiting check (can be disabled for testing)
     if _rate_limiting_enabled and not _rate_limiter.is_allowed(client_id):
         security_logger.log_rate_limit_exceeded(client_id=client_id)
         raise HTTPException(status_code=429, detail=_rate_limit_message())
 
-    L1, L2, L3 = _manager.memory.get_state()
-    metrics = _manager.metrics_collector.get_metrics()
+    L1, L2, L3 = manager.memory.get_state()
+    metrics = manager.metrics_collector.get_metrics()
     return StateResponse(
         L1_norm=float(np.linalg.norm(L1)),
         L2_norm=float(np.linalg.norm(L2)),
         L3_norm=float(np.linalg.norm(L3)),
-        current_phase=_manager.rhythm.get_current_phase(),
+        current_phase=manager.rhythm.get_current_phase(),
         latent_events_count=int(metrics["latent_events_count"]),
         accepted_events_count=int(metrics["accepted_events_count"]),
         total_events_processed=int(metrics["total_events_processed"]),
-        moral_filter_threshold=float(_manager.filter.threshold),
+        moral_filter_threshold=float(manager.filter.threshold),
     )
 
 
@@ -525,6 +569,7 @@ async def generate(
     """
     client_id = _get_client_id(request)
     request_id = getattr(request.state, "request_id", None)
+    engine = _require_engine(request)
 
     # Start root span for the generate endpoint
     tracer_manager = get_tracer_manager()
@@ -585,7 +630,7 @@ async def generate(
                 kwargs["moral_value"] = request_body.moral_value
 
             # Generate response (engine has its own child spans)
-            result: dict[str, Any] = _neuro_engine.generate(**kwargs)
+            result: dict[str, Any] = engine.generate(**kwargs)
 
             # Extract phase from mlsdm state if available
             mlsdm_state = result.get("mlsdm", {})
@@ -746,6 +791,7 @@ async def infer(
     """
     client_id = _get_client_id(request)
     request_id = getattr(request.state, "request_id", None)
+    engine = _require_engine(request)
 
     # Start root span for the infer endpoint
     tracer_manager = get_tracer_manager()
@@ -824,7 +870,7 @@ async def infer(
                 kwargs["context_top_k"] = 0
 
             # Generate response (engine has its own child spans)
-            result: dict[str, Any] = _neuro_engine.generate(**kwargs)
+            result: dict[str, Any] = engine.generate(**kwargs)
 
             # Extract state
             mlsdm_state = result.get("mlsdm", {})
@@ -934,13 +980,15 @@ async def infer(
 @app.get("/status", tags=["Health"])
 @v1_router.get("/status", tags=["Health"])
 @v2_router.get("/status", tags=["Health"])
-async def get_status() -> dict[str, Any]:
+async def get_status(request: Request) -> dict[str, Any]:
     """Get extended service status with system info.
 
     Returns system status including version, backend, memory usage,
     and configuration info.
     """
     import psutil
+
+    manager = _require_manager(request)
 
     return {
         "status": "ok",
@@ -951,7 +999,7 @@ async def get_status() -> dict[str, Any]:
             "cpu_percent": psutil.cpu_percent(),
         },
         "config": {
-            "dimension": _manager.dimension,
+            "dimension": manager.dimension,
             "rate_limiting_enabled": _rate_limiting_enabled,
             "rate_limit_requests": _rate_limit_requests,
             "rate_limit_window": _rate_limit_window,

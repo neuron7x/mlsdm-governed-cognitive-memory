@@ -14,6 +14,7 @@ import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from importlib import resources
 from pathlib import Path
 from typing import Any
 
@@ -233,8 +234,16 @@ class ConfigLoader:
         if not isinstance(path, str):
             raise TypeError("Path must be a string.")
 
-        # Check file exists
-        if not Path(path).is_file():
+        resource_config: dict[str, Any] | None = None
+        resource_loaded = False
+
+        if path == "config/default_config.yaml" and not Path(path).is_file():
+            resource_config = ConfigLoader._load_yaml_resource(
+                package="mlsdm.config", resource="default_config.yaml"
+            )
+            resource_loaded = True
+
+        if not resource_loaded and not Path(path).is_file():
             raise FileNotFoundError(f"Configuration file not found: {path}")
 
         if not path.endswith((".yaml", ".yml", ".ini")):
@@ -245,7 +254,7 @@ class ConfigLoader:
 
         # Optimization: Try cache first (only for validated configs without env override)
         cache_key = f"{path}:{validate}:{env_override}"
-        if use_cache and validate and not env_override:
+        if not resource_loaded and use_cache and validate and not env_override:
             cache = get_config_cache()
             cached = cache.get(cache_key, file_path=path)
             if cached is not None:
@@ -254,7 +263,9 @@ class ConfigLoader:
         config: dict[str, Any] = {}
 
         # Load from file
-        if path.endswith((".yaml", ".yml")):
+        if resource_loaded and resource_config is not None:
+            config = resource_config
+        elif path.endswith((".yaml", ".yml")):
             config = ConfigLoader._load_yaml(path)
         else:
             config = ConfigLoader._load_ini(path)
@@ -277,11 +288,31 @@ class ConfigLoader:
                 ) from e
 
         # Optimization: Cache the result (only for validated configs without env override)
-        if use_cache and validate and not env_override:
+        if not resource_loaded and use_cache and validate and not env_override:
             cache = get_config_cache()
             cache.put(cache_key, config, file_path=path)
 
         return config
+
+    @staticmethod
+    def _load_yaml_resource(package: str, resource: str) -> dict[str, Any]:
+        """Load YAML configuration from a packaged resource."""
+        try:
+            text = resources.files(package).joinpath(resource).read_text(encoding="utf-8")
+        except FileNotFoundError as e:
+            raise FileNotFoundError(f"Resource '{resource}' not found in package '{package}'") from e
+        except Exception as e:
+            raise ValueError(
+                f"Error reading resource '{resource}' from package '{package}': {str(e)}"
+            ) from e
+
+        try:
+            config = yaml.safe_load(text) or {}
+            return config
+        except yaml.YAMLError as e:
+            raise ValueError(
+                f"Invalid YAML syntax in resource '{resource}' from package '{package}': {str(e)}"
+            ) from e
 
     @staticmethod
     def _load_yaml(path: str) -> dict[str, Any]:

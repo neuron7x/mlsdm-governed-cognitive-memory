@@ -1,9 +1,9 @@
 {
   "schema_version": "evidence-v1",
-  "git_sha": "6cd55acfd33a67c0715f00c4c4f3463b9a287a11",
-  "short_sha": "6cd55acfd33a",
-  "created_utc": "2026-01-04T12:13:58Z",
-  "source_ref": "refs/heads/copilot/eliminate-flakiness-in-tests",
+  "git_sha": "7b8d8dd100cab27ad8bc1cb15a746b7c3c75e4ec",
+  "short_sha": "7b8d8dd100ca",
+  "created_utc": "2026-01-04T23:45:45Z",
+  "source_ref": "refs/heads/copilot/add-package-safe-default-config",
   "commands": [],
   "outputs": {
     "coverage_xml": "coverage/coverage.xml",
