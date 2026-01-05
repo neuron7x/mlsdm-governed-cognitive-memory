@@ -51,7 +51,7 @@ jobs:
             pyproject.toml
 
       - name: Restore Python cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/pip
@@ -100,7 +100,7 @@ jobs:
             pyproject.toml
 
       - name: Restore Python cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/pip
@@ -163,7 +163,7 @@ jobs:
             pyproject.toml
 
       - name: Restore Python cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/pip
@@ -211,7 +211,7 @@ jobs:
             pyproject.toml
 
       - name: Restore Python cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/pip
@@ -279,7 +279,7 @@ jobs:
             pyproject.toml
 
       - name: Restore Python cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/pip
@@ -322,7 +322,7 @@ jobs:
             pyproject.toml
 
       - name: Restore Python cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/pip
@@ -386,7 +386,7 @@ jobs:
             pyproject.toml
 
       - name: Restore Python cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/pip
@@ -558,7 +558,7 @@ jobs:
             pyproject.toml
 
       - name: Restore Python cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/pip
@@ -614,7 +614,7 @@ jobs:
             pyproject.toml
 
       - name: Restore Python cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/pip

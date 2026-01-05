@@ -16,7 +16,7 @@ jobs:
     if: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
     steps:
       - name: Approve workflow runs for trusted PRs
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           TRUSTED_ACTORS: ${{ vars.TRUSTED_PR_ACTORS }}
         with:

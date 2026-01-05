@@ -269,21 +269,21 @@ jobs:
           fi
 
       - name: Download smoke junit
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: ${{ env.FI_JUNIT_ARTIFACT }}
           path: artifacts
         continue-on-error: true
 
       - name: Download coverage report
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: ${{ env.FI_COV_ARTIFACT }}
           path: artifacts
         continue-on-error: true
 
       - name: Download ablation report
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: ${{ env.FI_ABLATION_ARTIFACT }}
           path: artifacts
