@@ -63,7 +63,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e ".[test]"
           pip install -e ".[dev]"
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest, pytest_benchmark"
 
       - name: Run chaos tests - Memory Pressure
         if: ${{ github.event.inputs.test_category == 'all' || github.event.inputs.test_category == 'memory' || github.event_name == 'schedule' }}

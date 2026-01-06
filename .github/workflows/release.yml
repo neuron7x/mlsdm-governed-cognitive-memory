@@ -55,6 +55,9 @@ jobs:
           pip install -r requirements.txt
           pip install -e ".[test]"
 
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest, pytest_benchmark"
+
       - name: Run unit tests
         run: |
           pytest tests/unit/ -v --tb=short
@@ -96,6 +99,9 @@ jobs:
           pip install -r requirements.txt
           pip install -e ".[test]"
 
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest, pytest_benchmark"
+
       - name: Run integration tests
         run: |
           pytest tests/integration/ -v --tb=short
@@ -136,6 +142,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest, pytest_benchmark"
 
       - name: Run property-based tests
         run: |
@@ -179,6 +188,9 @@ jobs:
           pip install -r requirements.txt
           pip install -e ".[test]"
 
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest, pytest_benchmark"
+
       - name: Run validation tests
         run: |
           pytest tests/validation/ -v --tb=short
@@ -219,6 +231,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest, pytest_benchmark"
 
       - name: Run security tests
         run: |
@@ -261,6 +276,9 @@ jobs:
           pip install -r requirements.txt
           pip install -e ".[test]"
 
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest, pytest_benchmark"
+
       - name: Run observability tests
         run: |
           pytest tests/observability/ -v --tb=short
@@ -301,6 +319,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest, pytest_benchmark"
 
       - name: Run benchmarks
         run: |
@@ -386,6 +407,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest, pytest_benchmark"
 
       - name: Run coverage check
         run: |

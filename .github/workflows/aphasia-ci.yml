@@ -42,8 +42,12 @@ jobs:
       - name: Install dependencies (core + neurolang extra)
         run: |
           python -m pip install --upgrade pip
-          pip install .[neurolang]
-          pip install pytest
+          pip install -r requirements.txt
+          pip install -e ".[test,neurolang]"
+          python -m pip check
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest, pytest_benchmark"
 
       - name: Run Aphasia / NeuroLang tests
         run: |

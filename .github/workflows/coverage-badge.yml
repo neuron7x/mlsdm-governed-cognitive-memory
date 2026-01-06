@@ -54,6 +54,9 @@ jobs:
           pip install -r requirements.txt
           pip install -e ".[test]"
           pip install coverage-badge
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest, pytest_benchmark"
       
       - name: Run coverage
         run: |

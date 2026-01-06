@@ -40,6 +40,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
+          python -m pip check
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest, pytest_benchmark"
 
       - name: Run smoke tests (fast unit tests only)
         run: |
@@ -113,6 +117,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
+          python -m pip check
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest, pytest_benchmark"
 
       - name: Run coverage gate
         run: ./coverage_gate.sh
@@ -150,6 +158,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
+          python -m pip check
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest, pytest_benchmark"
 
       - name: Run ablation baseline smoke test
         run: |
@@ -209,7 +221,11 @@ jobs:
 
       - name: Check dependency drift
         run: |
-          python scripts/ci/export_requirements.py --check
+          # Regenerate requirements to surface drift in git diff for easier debugging
+          # Policy requires regeneration + diff instead of --check to catch missing extras
+          python scripts/ci/export_requirements.py
+          git diff requirements.txt || true
+          git diff --exit-code requirements.txt
 
       - name: Validate defusedxml is resolvable
         run: |
