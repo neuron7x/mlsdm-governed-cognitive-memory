@@ -1058,5 +1058,85 @@ class TestMetricsRecording:
             assert 0 <= threshold <= 1
 
 
+class TestLTMConfiguration:
+    """Tests for optional Long-Term Memory (LTM) paths."""
+
+    def test_ltm_disabled_with_unsupported_backend(self):
+        """LTM should be disabled when backend is not sqlite."""
+        manager = MemoryManager(
+            {
+                "dimension": 3,
+                "memory": {"ltm_enabled": True, "ltm_backend": "redis"},
+            }
+        )
+
+        assert manager._ltm_store is None
+
+    def test_ltm_disabled_when_db_path_missing(self):
+        """LTM should not initialize without a database path."""
+        manager = MemoryManager(
+            {
+                "dimension": 3,
+                "memory": {"ltm_enabled": True, "ltm_backend": "sqlite"},
+            }
+        )
+
+        assert manager._ltm_store is None
+
+    def test_ltm_invalid_encryption_key_disables_store(self, tmp_path, monkeypatch):
+        """Invalid hex key should abort LTM setup without crashing."""
+        monkeypatch.setenv("MLSDM_LTM_ENCRYPTION", "1")
+        monkeypatch.setenv("MLSDM_LTM_KEY", "not-hex")
+
+        manager = MemoryManager(
+            {
+                "dimension": 3,
+                "memory": {
+                    "ltm_enabled": True,
+                    "ltm_backend": "sqlite",
+                    "ltm_db_path": str(tmp_path / "ltm.db"),
+                },
+            }
+        )
+
+        assert manager._ltm_store is None
+
+    def test_persist_to_ltm_raises_when_strict_and_store_errors(self):
+        """_persist_to_ltm should surface errors when strict mode is enabled."""
+
+        class FailingStore:
+            def put(self, item):  # pragma: no cover - simple stub
+                raise RuntimeError("boom")
+
+        manager = MemoryManager({"dimension": 3})
+        manager._ltm_store = FailingStore()
+        manager._ltm_strict = True
+
+        with pytest.raises(RuntimeError):
+            manager._persist_to_ltm("content")
+
+    @pytest.mark.asyncio
+    async def test_process_event_persists_to_ltm_with_truncation(self):
+        """Large vectors should be truncated when persisted to LTM."""
+
+        class RecordingStore:
+            def __init__(self) -> None:
+                self.items = []
+
+            def put(self, item):  # pragma: no cover - simple stub
+                self.items.append(item)
+
+        manager = MemoryManager({"dimension": 12})
+        manager._ltm_store = RecordingStore()
+
+        long_vector = np.arange(12, dtype=float)
+        await manager.process_event(long_vector, moral_value=1.0)
+
+        assert len(manager._ltm_store.items) == 1
+        stored = manager._ltm_store.items[0]
+        assert "Event vector (dim=12)" in stored.content
+        assert "..." in stored.content
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
