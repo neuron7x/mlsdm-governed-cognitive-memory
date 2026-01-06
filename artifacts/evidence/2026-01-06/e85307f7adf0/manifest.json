@@ -1,8 +1,8 @@
 {
   "schema_version": "evidence-v1",
-  "git_sha": "b0e66fc80f0614335805be08447c23e0f4b95eb2",
-  "short_sha": "b0e66fc80f06",
-  "created_utc": "2026-01-06T11:56:39Z",
+  "git_sha": "e85307f7adf04bb5f6cf03b30cc56918bb7c6582",
+  "short_sha": "e85307f7adf0",
+  "created_utc": "2026-01-06T13:01:41Z",
   "source_ref": "refs/heads/copilot/increase-coverage-for-core-memory",
   "commands": [],
   "outputs": {
