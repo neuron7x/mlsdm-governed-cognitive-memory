@@ -709,7 +709,7 @@ class TestPELMObservability:
              patch('mlsdm.memory.phase_entangled_lattice_memory.record_pelm_store') as mock_record:
             pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
             pelm._confidence_threshold = 0.9  # High threshold
-            
+
             # All provenances have low confidence - ALL will be rejected
             low_conf_provenances = [
                 MemoryProvenance(
@@ -719,16 +719,16 @@ class TestPELMObservability:
                 )
                 for _ in range(3)
             ]
-            
+
             vectors = [[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0], [9.0, 10.0, 11.0, 12.0]]
             phases = [0.3, 0.5, 0.7]
-            
+
             indices = pelm.entangle_batch(vectors, phases, provenances=low_conf_provenances)
-            
+
             # All should be rejected
             assert indices == [-1, -1, -1]
             assert pelm.size == 0
-            
+
             # Observability should record with fallback values (last_accepted is None)
             mock_record.assert_called_once()
             call_args = mock_record.call_args[1]
@@ -745,13 +745,13 @@ class TestPELMObservability:
              patch('mlsdm.memory.phase_entangled_lattice_memory.record_pelm_corruption') as mock_record:
             pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
             pelm.entangle([1.0, 2.0, 3.0, 4.0], phase=0.5)
-            
+
             # Corrupt pointer (recoverable)
             pelm.pointer = -1
-            
+
             # Entangle should trigger recovery and succeed
             idx = pelm.entangle([5.0, 6.0, 7.0, 8.0], phase=0.6)
-            
+
             assert idx >= 0  # Recovery succeeded
             mock_record.assert_called_once()
             call_args = mock_record.call_args[1]
