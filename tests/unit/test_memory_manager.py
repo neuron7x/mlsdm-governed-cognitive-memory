@@ -1137,6 +1137,354 @@ class TestLTMConfiguration:
         assert "Event vector (dim=12)" in stored.content
         assert "..." in stored.content
 
+    @pytest.mark.asyncio
+    async def test_process_event_persists_small_vector_without_truncation(self):
+        """Small vectors should be persisted without truncation."""
+
+        class RecordingStore:
+            def __init__(self) -> None:
+                self.items = []
+
+            def put(self, item):
+                self.items.append(item)
+
+        manager = MemoryManager({"dimension": 5})
+        manager._ltm_store = RecordingStore()
+
+        small_vector = np.arange(5, dtype=float)
+        await manager.process_event(small_vector, moral_value=1.0)
+
+        assert len(manager._ltm_store.items) == 1
+        stored = manager._ltm_store.items[0]
+        assert "Event vector (dim=5)" in stored.content
+        # Small vectors should show full representation, no "..."
+        assert "..." not in stored.content
+
+    def test_ltm_initialized_with_valid_sqlite_config(self, tmp_path):
+        """LTM should be initialized when valid sqlite config is provided."""
+        db_path = str(tmp_path / "ltm.db")
+        manager = MemoryManager(
+            {
+                "dimension": 3,
+                "memory": {
+                    "ltm_enabled": True,
+                    "ltm_backend": "sqlite",
+                    "ltm_db_path": db_path,
+                    "ltm_store_raw": True,
+                    "ltm_strict": True,
+                },
+            }
+        )
+
+        assert manager._ltm_store is not None
+        assert manager._ltm_strict is True
+        manager._ltm_store.close()
+
+    def test_ltm_initialized_from_env_path(self, tmp_path, monkeypatch):
+        """LTM should use db path from environment variable if not in config."""
+        db_path = str(tmp_path / "env_ltm.db")
+        monkeypatch.setenv("MLSDM_LTM_DB_PATH", db_path)
+
+        manager = MemoryManager(
+            {
+                "dimension": 3,
+                "memory": {
+                    "ltm_enabled": True,
+                    "ltm_backend": "sqlite",
+                    # No ltm_db_path in config - should use env var
+                },
+            }
+        )
+
+        assert manager._ltm_store is not None
+        manager._ltm_store.close()
+
+    def test_persist_to_ltm_logs_on_error_when_not_strict(self, tmp_path, caplog):
+        """_persist_to_ltm should log error when store fails in non-strict mode."""
+        import logging
+
+        class FailingStore:
+            def put(self, item):
+                raise RuntimeError("Store error")
+
+        manager = MemoryManager({"dimension": 3})
+        manager._ltm_store = FailingStore()
+        manager._ltm_strict = False
+
+        with caplog.at_level(logging.WARNING):
+            # Should not raise
+            manager._persist_to_ltm("content")
+
+        # Error should be logged
+        assert "Failed to persist to LTM" in caplog.text
+
+    def test_ltm_configuration_error_reraises(self, tmp_path, monkeypatch):
+        """ConfigurationError during LTM init should be re-raised."""
+        from mlsdm.utils.errors import ConfigurationError
+
+        # Mock SQLiteMemoryStore to raise ConfigurationError
+        def mock_init(*args, **kwargs):
+            raise ConfigurationError(message="Invalid encryption config")
+
+        import mlsdm.memory.sqlite_store
+
+        original_cls = mlsdm.memory.sqlite_store.SQLiteMemoryStore
+        monkeypatch.setattr(
+            mlsdm.memory.sqlite_store, "SQLiteMemoryStore", mock_init
+        )
+
+        try:
+            with pytest.raises(ConfigurationError):
+                MemoryManager(
+                    {
+                        "dimension": 3,
+                        "memory": {
+                            "ltm_enabled": True,
+                            "ltm_backend": "sqlite",
+                            "ltm_db_path": str(tmp_path / "ltm.db"),
+                        },
+                    }
+                )
+        finally:
+            monkeypatch.setattr(
+                mlsdm.memory.sqlite_store, "SQLiteMemoryStore", original_cls
+            )
+
+    def test_ltm_init_error_with_strict_reraises(self, tmp_path, monkeypatch):
+        """LTM init error should be re-raised when ltm_strict=True."""
+        # Mock SQLiteMemoryStore to raise a non-ConfigurationError
+        def mock_init(*args, **kwargs):
+            raise RuntimeError("Database init failed")
+
+        import mlsdm.memory.sqlite_store
+
+        original_cls = mlsdm.memory.sqlite_store.SQLiteMemoryStore
+        monkeypatch.setattr(
+            mlsdm.memory.sqlite_store, "SQLiteMemoryStore", mock_init
+        )
+
+        try:
+            with pytest.raises(RuntimeError):
+                MemoryManager(
+                    {
+                        "dimension": 3,
+                        "memory": {
+                            "ltm_enabled": True,
+                            "ltm_backend": "sqlite",
+                            "ltm_db_path": str(tmp_path / "ltm.db"),
+                            "ltm_strict": True,
+                        },
+                    }
+                )
+        finally:
+            monkeypatch.setattr(
+                mlsdm.memory.sqlite_store, "SQLiteMemoryStore", original_cls
+            )
+
+    def test_ltm_init_error_disabled_when_not_strict(self, tmp_path, monkeypatch, caplog):
+        """LTM init error should disable LTM when ltm_strict=False."""
+        import logging
+
+        # Mock SQLiteMemoryStore to raise a non-ConfigurationError
+        def mock_init(*args, **kwargs):
+            raise RuntimeError("Database init failed")
+
+        import mlsdm.memory.sqlite_store
+
+        original_cls = mlsdm.memory.sqlite_store.SQLiteMemoryStore
+        monkeypatch.setattr(
+            mlsdm.memory.sqlite_store, "SQLiteMemoryStore", mock_init
+        )
+
+        try:
+            with caplog.at_level(logging.ERROR):
+                manager = MemoryManager(
+                    {
+                        "dimension": 3,
+                        "memory": {
+                            "ltm_enabled": True,
+                            "ltm_backend": "sqlite",
+                            "ltm_db_path": str(tmp_path / "ltm.db"),
+                            "ltm_strict": False,  # Non-strict mode
+                        },
+                    }
+                )
+
+            # LTM should be disabled
+            assert manager._ltm_store is None
+            # Error should be logged
+            assert "Failed to initialize LTM store" in caplog.text
+        finally:
+            monkeypatch.setattr(
+                mlsdm.memory.sqlite_store, "SQLiteMemoryStore", original_cls
+            )
+
+
+class TestStateLoadingEdgeCases:
+    """Additional tests for state loading edge cases."""
+
+    def test_load_system_state_qilm_vector_not_list(self, tmp_path):
+        """Test loading file with qilm vector that is not a list raises StateIncompleteError."""
+        import json
+
+        from mlsdm.utils.errors import StateIncompleteError
+
+        config = {"dimension": 3}
+        manager = MemoryManager(config)
+
+        filepath = str(tmp_path / "bad_qilm_vector.json")
+        with open(filepath, "w") as f:
+            json.dump(
+                {
+                    "format_version": 1,
+                    "memory_state": {
+                        "dimension": 3,
+                        "lambda_l1": 0.5,
+                        "lambda_l2": 0.1,
+                        "lambda_l3": 0.01,
+                        "theta_l1": 1.0,
+                        "theta_l2": 2.0,
+                        "gating12": 0.5,
+                        "gating23": 0.3,
+                        "state_L1": [0.0, 0.0, 0.0],
+                        "state_L2": [0.0, 0.0, 0.0],
+                        "state_L3": [0.0, 0.0, 0.0],
+                    },
+                    "qilm": {
+                        "memory": ["not a list"],  # First vector is a string
+                        "phases": [0.5],
+                    },
+                },
+                f,
+            )
+
+        with pytest.raises(StateIncompleteError) as exc_info:
+            manager.load_system_state(filepath)
+
+        assert exc_info.value.code.value == "E410"
+
+    def test_load_system_state_qilm_vector_wrong_dimension(self, tmp_path):
+        """Test loading file with qilm vector of wrong dimension raises StateIncompleteError."""
+        import json
+
+        from mlsdm.utils.errors import StateIncompleteError
+
+        config = {"dimension": 3}
+        manager = MemoryManager(config)
+
+        filepath = str(tmp_path / "bad_qilm_dim.json")
+        with open(filepath, "w") as f:
+            json.dump(
+                {
+                    "format_version": 1,
+                    "memory_state": {
+                        "dimension": 3,
+                        "lambda_l1": 0.5,
+                        "lambda_l2": 0.1,
+                        "lambda_l3": 0.01,
+                        "theta_l1": 1.0,
+                        "theta_l2": 2.0,
+                        "gating12": 0.5,
+                        "gating23": 0.3,
+                        "state_L1": [0.0, 0.0, 0.0],
+                        "state_L2": [0.0, 0.0, 0.0],
+                        "state_L3": [0.0, 0.0, 0.0],
+                    },
+                    "qilm": {
+                        "memory": [[1.0, 2.0]],  # Wrong dimension (2 instead of 3)
+                        "phases": [0.5],
+                    },
+                },
+                f,
+            )
+
+        with pytest.raises(StateIncompleteError) as exc_info:
+            manager.load_system_state(filepath)
+
+        assert exc_info.value.code.value == "E410"
+        assert "dimension" in str(exc_info.value)
+
+    def test_load_system_state_qilm_phases_length_mismatch(self, tmp_path):
+        """Test loading file with mismatched qilm phases length raises StateIncompleteError."""
+        import json
+
+        from mlsdm.utils.errors import StateIncompleteError
+
+        config = {"dimension": 3}
+        manager = MemoryManager(config)
+
+        filepath = str(tmp_path / "phase_mismatch.json")
+        with open(filepath, "w") as f:
+            json.dump(
+                {
+                    "format_version": 1,
+                    "memory_state": {
+                        "dimension": 3,
+                        "lambda_l1": 0.5,
+                        "lambda_l2": 0.1,
+                        "lambda_l3": 0.01,
+                        "theta_l1": 1.0,
+                        "theta_l2": 2.0,
+                        "gating12": 0.5,
+                        "gating23": 0.3,
+                        "state_L1": [0.0, 0.0, 0.0],
+                        "state_L2": [0.0, 0.0, 0.0],
+                        "state_L3": [0.0, 0.0, 0.0],
+                    },
+                    "qilm": {
+                        "memory": [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+                        "phases": [0.5],  # Only 1 phase for 2 memories
+                    },
+                },
+                f,
+            )
+
+        with pytest.raises(StateIncompleteError) as exc_info:
+            manager.load_system_state(filepath)
+
+        assert exc_info.value.code.value == "E410"
+        assert "phases" in str(exc_info.value)
+
+    def test_load_system_state_with_migration_failure_reraises(self, tmp_path):
+        """Test loading file that needs migration without migration path raises error."""
+        import json
+
+        from mlsdm.core.memory_manager import STATE_FORMAT_VERSION
+        from mlsdm.utils.errors import StateVersionMismatchError
+
+        config = {"dimension": 3}
+        manager = MemoryManager(config)
+
+        # Create a state file with version 0 (requires migration to current)
+        # Since no migration is registered for 0->1, it should fail
+        filepath = str(tmp_path / "old_version.json")
+        with open(filepath, "w") as f:
+            json.dump(
+                {
+                    "format_version": 0,  # Older than current
+                    "memory_state": {
+                        "dimension": 3,
+                        "lambda_l1": 0.5,
+                        "lambda_l2": 0.1,
+                        "lambda_l3": 0.01,
+                        "theta_l1": 1.0,
+                        "theta_l2": 2.0,
+                        "gating12": 0.5,
+                        "gating23": 0.3,
+                        "state_L1": [0.0, 0.0, 0.0],
+                        "state_L2": [0.0, 0.0, 0.0],
+                        "state_L3": [0.0, 0.0, 0.0],
+                    },
+                    "qilm": {"memory": [], "phases": []},
+                },
+                f,
+            )
+
+        # This should raise StateVersionMismatchError due to missing migration path
+        if STATE_FORMAT_VERSION > 0:
+            with pytest.raises(StateVersionMismatchError):
+                manager.load_system_state(filepath)
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
