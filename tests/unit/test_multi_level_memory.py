@@ -324,5 +324,23 @@ class TestToDict:
         assert len(result["state_L1"]) == 3
 
 
+class TestGetDefaultFallback:
+    """Test _get_default fallback path when _SYNAPTIC_MEMORY_DEFAULTS is None."""
+
+    def test_get_default_fallback_when_defaults_none(self):
+        """Test _get_default fallback path when _SYNAPTIC_MEMORY_DEFAULTS is None."""
+        # This tests line 38 in multi_level_memory.py
+        from unittest.mock import patch
+        from mlsdm.memory import multi_level_memory
+        
+        # Mock _SYNAPTIC_MEMORY_DEFAULTS to be None
+        with patch.object(multi_level_memory, '_SYNAPTIC_MEMORY_DEFAULTS', None):
+            # Call _get_default with a fallback value
+            result = multi_level_memory._get_default('lambda_l1', 0.99)
+            
+            # Should return the fallback value since defaults is None
+            assert result == 0.99
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
