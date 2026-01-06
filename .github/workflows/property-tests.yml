@@ -75,6 +75,9 @@ jobs:
           pip install -r requirements.txt
           pip install -e ".[test]"
 
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest"
+
       - name: Run property-based tests
         run: |
           set -o pipefail
@@ -141,6 +144,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest"
 
       - name: Run counterexamples regression tests
         run: |

@@ -180,6 +180,9 @@ jobs:
           pip install -r requirements.txt
           pip install -e ".[test]"
 
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest"
+
       - name: Run tests
         run: |
           # Exclude benchmark tests from CI matrix - they are timing-sensitive and run
@@ -227,6 +230,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest"
 
       - name: Run tests with coverage
         run: |
@@ -296,6 +302,9 @@ jobs:
           pip install -r requirements.txt
           pip install -e ".[test]"
 
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest"
+
       - name: Run E2E tests
         run: |
           pytest tests/e2e -v -m "not slow" --tb=short
@@ -338,6 +347,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest"
 
       - name: Run effectiveness suite with SLO validation
         run: |
@@ -402,6 +414,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest"
 
       - name: Run benchmarks with SLO assertions
         id: benchmarks
@@ -574,6 +589,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[test]"
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest"
 
       - name: Run Sapolsky Validation Suite tests
         run: |

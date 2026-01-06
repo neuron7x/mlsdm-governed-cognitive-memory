@@ -80,8 +80,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install -e ".[test]"
           pip install -e ".[dev]"
           pip install pytest pytest-benchmark pytest-asyncio
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest"
 
       - name: Run fast resilience tests
         run: |
@@ -143,8 +147,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install -e ".[test]"
           pip install -e ".[dev]"
           pip install pytest pytest-benchmark pytest-asyncio
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest"
 
       - name: Run SLO validation tests
         run: |
@@ -213,8 +221,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install -e ".[test]"
           pip install -e ".[dev]"
           pip install pytest pytest-benchmark pytest-asyncio
+
+      - name: Verify test dependencies
+        run: python -c "import hypothesis, pytest"
 
       - name: Run all resilience tests (including slow)
         run: |
