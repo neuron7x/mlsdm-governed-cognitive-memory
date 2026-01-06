@@ -82,7 +82,7 @@ jobs:
           pip install -r requirements.txt
           pip install -e ".[test]"
           pip install -e ".[dev]"
-          pip install pytest pytest-benchmark pytest-asyncio
+          pip install pytest-benchmark
 
       - name: Verify test dependencies
         run: python -c "import hypothesis, pytest"
@@ -149,7 +149,7 @@ jobs:
           pip install -r requirements.txt
           pip install -e ".[test]"
           pip install -e ".[dev]"
-          pip install pytest pytest-benchmark pytest-asyncio
+          pip install pytest-benchmark
 
       - name: Verify test dependencies
         run: python -c "import hypothesis, pytest"
@@ -223,7 +223,7 @@ jobs:
           pip install -r requirements.txt
           pip install -e ".[test]"
           pip install -e ".[dev]"
-          pip install pytest pytest-benchmark pytest-asyncio
+          pip install pytest-benchmark
 
       - name: Verify test dependencies
         run: python -c "import hypothesis, pytest"

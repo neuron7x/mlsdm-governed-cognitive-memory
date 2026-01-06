@@ -45,6 +45,7 @@ jobs:
           pip install -r requirements.txt
           pip install -e ".[test]"
           pip install .[neurolang]
+          pip install pytest-benchmark pytest-asyncio
 
       - name: Verify test dependencies
         run: python -c "import hypothesis, pytest"
