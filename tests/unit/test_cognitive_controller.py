@@ -5,6 +5,7 @@ Tests memory monitoring, processing time limits, and emergency shutdown function
 """
 
 import gc
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -634,3 +635,59 @@ class TestCognitiveControllerTimeBasedRecovery:
         # Manual reset
         controller.reset_emergency_shutdown()
         assert controller._last_emergency_time == 0.0
+
+
+class TestCognitiveControllerCoverageEdges:
+    """Targeted edge cases for coverage gaps."""
+
+    def test_yaml_config_uses_synaptic_loader(self):
+        yaml_config = {
+            "multi_level_memory": {
+                "lambda_l1": 0.6,
+                "theta_l1": 1.8,
+            }
+        }
+
+        controller = CognitiveController(dim=3, yaml_config=yaml_config)
+
+        assert controller.synaptic.lambda_l1 == 0.6
+        assert controller.synaptic.theta_l1 == 1.8
+
+    def test_processing_timeout_rejection(self):
+        controller = CognitiveController(dim=3, max_processing_time_ms=1.0)
+        vector = np.ones(3, dtype=np.float32)
+
+        with patch("time.perf_counter", side_effect=[0.0, 0.005]):
+            result = controller.process_event(vector, moral_value=0.8)
+
+        assert result["rejected"] is True
+        assert "processing time exceeded" in result["note"]
+
+    def test_reset_emergency_shutdown_handles_metrics_exception(self):
+        controller = CognitiveController()
+        controller.emergency_shutdown = True
+
+        with patch("mlsdm.core.cognitive_controller.get_metrics_exporter", side_effect=Exception("boom")):
+            controller.reset_emergency_shutdown()
+
+        assert controller.emergency_shutdown is False
+
+    def test_enter_emergency_shutdown_handles_metrics_exception(self):
+        controller = CognitiveController()
+
+        with patch("mlsdm.core.cognitive_controller.get_metrics_exporter", side_effect=Exception("boom")):
+            controller._enter_emergency_shutdown("test_reason")
+
+        assert controller.emergency_shutdown is True
+        assert controller._emergency_reason == "test_reason"
+
+    def test_record_auto_recovery_handles_metrics_exception(self):
+        controller = CognitiveController()
+
+        with patch("mlsdm.core.cognitive_controller.get_metrics_exporter", side_effect=Exception("boom")):
+            controller._record_auto_recovery("success", "test_reason")
+
+    def test_get_phase_returns_rhythm_phase(self):
+        controller = CognitiveController()
+
+        assert controller.get_phase() == controller.rhythm.phase

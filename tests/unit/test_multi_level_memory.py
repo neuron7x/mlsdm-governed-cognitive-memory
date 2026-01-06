@@ -11,8 +11,9 @@ Tests cover:
 
 import numpy as np
 import pytest
+from unittest.mock import patch
 
-from mlsdm.memory.multi_level_memory import MultiLevelSynapticMemory
+from mlsdm.memory.multi_level_memory import MultiLevelSynapticMemory, _get_default
 
 
 class TestMultiLevelSynapticMemoryInit:
@@ -322,6 +323,24 @@ class TestToDict:
         assert isinstance(result["state_L2"], list)
         assert isinstance(result["state_L3"], list)
         assert len(result["state_L1"]) == 3
+
+
+class TestCoverageEdges:
+    """Targeted edge cases for coverage gaps."""
+
+    def test_get_default_returns_fallback_when_no_calibration(self):
+        with patch("mlsdm.memory.multi_level_memory._SYNAPTIC_MEMORY_DEFAULTS", None):
+            assert _get_default("lambda_l1", 0.42) == 0.42
+
+    def test_update_skips_observability_when_disabled(self):
+        with patch("mlsdm.memory.multi_level_memory._OBSERVABILITY_AVAILABLE", False):
+            memory = MultiLevelSynapticMemory(dimension=4)
+            event = np.ones(4, dtype=np.float32)
+
+            memory.update(event)
+
+            l1, _, _ = memory.state()
+            assert np.linalg.norm(l1) > 0
 
 
 if __name__ == "__main__":
