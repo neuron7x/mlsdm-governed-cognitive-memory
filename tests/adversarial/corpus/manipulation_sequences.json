@@ -1,0 +1,175 @@
+{
+  "description": "Threshold manipulation sequences for adversarial testing",
+  "version": "1.0",
+  "target_max_drift": 0.15,
+  "sequences": [
+    {
+      "id": "manip001",
+      "name": "Sustained High Acceptance",
+      "description": "Bombard with high-moral content to push threshold up",
+      "sequence_type": "threshold_drift_up",
+      "steps": 200,
+      "moral_values": 0.95,
+      "expected_behavior": "Threshold increases but stays <= MAX_THRESHOLD",
+      "validates_invariant": "INV-MF-M3"
+    },
+    {
+      "id": "manip002",
+      "name": "Sustained Low Rejection",
+      "description": "Bombard with low-moral content to push threshold down",
+      "sequence_type": "threshold_drift_down",
+      "steps": 200,
+      "moral_values": 0.05,
+      "expected_behavior": "Threshold decreases but stays >= MIN_THRESHOLD",
+      "validates_invariant": "INV-MF-M3"
+    },
+    {
+      "id": "manip003",
+      "name": "Oscillating Attack",
+      "description": "Alternate between high and low moral values rapidly",
+      "sequence_type": "oscillation",
+      "steps": 100,
+      "pattern": "alternating",
+      "values": [0.9, 0.1],
+      "expected_behavior": "Threshold remains relatively stable due to EMA",
+      "validates_invariant": "INV-MF-M2"
+    },
+    {
+      "id": "manip004",
+      "name": "Gradual Creep",
+      "description": "Slowly increase moral score from low to high",
+      "sequence_type": "gradual_increase",
+      "steps": 100,
+      "start_value": 0.2,
+      "end_value": 0.9,
+      "increment": 0.007,
+      "expected_behavior": "Threshold adapts smoothly",
+      "validates_invariant": "INV-MF-M2"
+    },
+    {
+      "id": "manip005",
+      "name": "Boundary Probe",
+      "description": "Test inputs near threshold boundaries",
+      "sequence_type": "boundary_test",
+      "steps": 50,
+      "target": "current_threshold",
+      "offsets": [-0.01, 0.0, 0.01],
+      "expected_behavior": "Consistent evaluation at boundaries",
+      "validates_invariant": "INV-MF-M1"
+    },
+    {
+      "id": "manip006",
+      "name": "Burst Attack",
+      "description": "Short burst of extreme values",
+      "sequence_type": "burst",
+      "burst_count": 10,
+      "burst_value": 0.0,
+      "rest_value": 0.8,
+      "rest_duration": 5,
+      "expected_behavior": "Threshold recovers after burst",
+      "validates_invariant": "INV-MF-M3"
+    },
+    {
+      "id": "manip007",
+      "name": "Threshold Hunting",
+      "description": "Binary search to find exact threshold",
+      "sequence_type": "binary_search",
+      "initial_range": [0.0, 1.0],
+      "iterations": 20,
+      "expected_behavior": "Threshold can be discovered but not manipulated",
+      "validates_invariant": "INV-MF-M1"
+    },
+    {
+      "id": "manip008",
+      "name": "Dead Band Exploitation",
+      "description": "Keep values within dead band to avoid adaptation",
+      "sequence_type": "dead_band",
+      "steps": 100,
+      "target_ema": 0.5,
+      "tolerance": 0.05,
+      "expected_behavior": "Minimal threshold change",
+      "validates_invariant": "INV-MF-M2"
+    },
+    {
+      "id": "manip009",
+      "name": "Ramp Up Attack",
+      "description": "Gradually increase acceptance rate",
+      "sequence_type": "ramp",
+      "steps": 150,
+      "start_accept_rate": 0.3,
+      "end_accept_rate": 0.9,
+      "expected_behavior": "Threshold increases but bounded",
+      "validates_invariant": "INV-MF-M3"
+    },
+    {
+      "id": "manip010",
+      "name": "Ramp Down Attack",
+      "description": "Gradually decrease acceptance rate",
+      "sequence_type": "ramp",
+      "steps": 150,
+      "start_accept_rate": 0.9,
+      "end_accept_rate": 0.1,
+      "expected_behavior": "Threshold decreases but bounded",
+      "validates_invariant": "INV-MF-M3"
+    },
+    {
+      "id": "manip011",
+      "name": "Noise Injection",
+      "description": "Random moral values to test stability",
+      "sequence_type": "random",
+      "steps": 100,
+      "distribution": "uniform",
+      "range": [0.0, 1.0],
+      "expected_behavior": "Threshold converges to stable value",
+      "validates_invariant": "INV-MF-M2"
+    },
+    {
+      "id": "manip012",
+      "name": "Step Function Attack",
+      "description": "Sudden jump from low to high acceptance",
+      "sequence_type": "step",
+      "pre_steps": 50,
+      "pre_value": 0.2,
+      "post_steps": 50,
+      "post_value": 0.9,
+      "expected_behavior": "Smooth transition despite sudden input change",
+      "validates_invariant": "INV-MF-M2"
+    },
+    {
+      "id": "manip013",
+      "name": "Sawtooth Wave",
+      "description": "Repeating ramp-up and reset pattern",
+      "sequence_type": "sawtooth",
+      "period": 20,
+      "cycles": 5,
+      "min_value": 0.1,
+      "max_value": 0.9,
+      "expected_behavior": "Threshold adapts to average behavior",
+      "validates_invariant": "INV-MF-M2"
+    },
+    {
+      "id": "manip014",
+      "name": "Sine Wave Modulation",
+      "description": "Sinusoidal moral value pattern",
+      "sequence_type": "sine",
+      "amplitude": 0.4,
+      "offset": 0.5,
+      "frequency": 0.1,
+      "steps": 100,
+      "expected_behavior": "Threshold follows slow oscillation",
+      "validates_invariant": "INV-MF-M2"
+    },
+    {
+      "id": "manip015",
+      "name": "Extreme Boundary Test",
+      "description": "Test MIN and MAX threshold enforcement",
+      "sequence_type": "extremes",
+      "low_sequence_steps": 100,
+      "low_value": 0.0,
+      "high_sequence_steps": 100,
+      "high_value": 1.0,
+      "expected_behavior": "Threshold stays in [MIN, MAX] always",
+      "validates_invariant": "INV-MF-M1"
+    }
+  ]
+}
