@@ -8,7 +8,6 @@ Property-based tests for RateLimiter using Hypothesis to validate:
 - Cleanup doesn't affect active windows
 """
 
-import time
 from unittest.mock import Mock
 
 import pytest

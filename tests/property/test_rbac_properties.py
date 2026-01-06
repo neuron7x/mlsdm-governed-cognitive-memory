@@ -8,6 +8,8 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
+from mlsdm.security.rbac import Role, UserContext, ROLE_HIERARCHY
+
 
 class TestRBACProperties:
     """RBAC hierarchy property tests."""
@@ -23,56 +25,60 @@ class TestRBACProperties:
         - write has read permissions
         - read has only read permissions
         """
-        # Role hierarchy: admin > write > read
-        role_hierarchy = {
-            "admin": ["write", "read"],
-            "write": ["read"],
-            "read": [],
-        }
+        # Test using actual ROLE_HIERARCHY
+        # admin should include write and read
+        assert Role.ADMIN in ROLE_HIERARCHY
+        assert Role.WRITE in ROLE_HIERARCHY[Role.ADMIN]
+        assert Role.READ in ROLE_HIERARCHY[Role.ADMIN]
         
-        # Test transitivity
-        def has_permission(user_role: str, required_role: str) -> bool:
-            if user_role == required_role:
-                return True
-            return required_role in role_hierarchy.get(user_role, [])
+        # write should include read
+        assert Role.WRITE in ROLE_HIERARCHY
+        assert Role.READ in ROLE_HIERARCHY[Role.WRITE]
         
-        # Admin should have all permissions
-        assert has_permission("admin", "admin")
-        assert has_permission("admin", "write")
-        assert has_permission("admin", "read")
+        # read should only include itself
+        assert Role.READ in ROLE_HIERARCHY
+        assert ROLE_HIERARCHY[Role.READ] == {Role.READ}
         
-        # Write should have write and read
-        assert has_permission("write", "write")
-        assert has_permission("write", "read")
-        assert not has_permission("write", "admin")
+        # Test using UserContext
+        admin_user = UserContext(user_id="admin", roles={Role.ADMIN})
+        assert admin_user.has_role(Role.ADMIN)
+        assert admin_user.has_role(Role.WRITE)
+        assert admin_user.has_role(Role.READ)
         
-        # Read should have only read
-        assert has_permission("read", "read")
-        assert not has_permission("read", "write")
-        assert not has_permission("read", "admin")
+        write_user = UserContext(user_id="writer", roles={Role.WRITE})
+        assert write_user.has_role(Role.WRITE)
+        assert write_user.has_role(Role.READ)
+        assert not write_user.has_role(Role.ADMIN)
+        
+        read_user = UserContext(user_id="reader", roles={Role.READ})
+        assert read_user.has_role(Role.READ)
+        assert not read_user.has_role(Role.WRITE)
+        assert not read_user.has_role(Role.ADMIN)
     
     @settings(max_examples=50, deadline=None)
     @given(
-        role_name=st.sampled_from(["admin", "write", "read", "none"]),
+        role_name=st.sampled_from(["READ", "WRITE", "ADMIN"]),
     )
     def test_permission_checks_consistent(self, role_name):
         """Property: Permission checks are consistent."""
-        # Define expected permissions
-        expected_permissions = {
-            "admin": {"read", "write", "admin"},
-            "write": {"read", "write"},
-            "read": {"read"},
-            "none": set(),
-        }
+        role = Role[role_name]
         
-        permissions = expected_permissions.get(role_name, set())
+        # Get permissions for this role
+        permissions = ROLE_HIERARCHY.get(role, set())
         
         # Check consistency
-        if "admin" in permissions:
-            assert "write" in permissions
-            assert "read" in permissions
-        if "write" in permissions:
-            assert "read" in permissions
+        if Role.ADMIN in permissions:
+            assert Role.WRITE in permissions
+            assert Role.READ in permissions
+        if Role.WRITE in permissions:
+            assert Role.READ in permissions
+        
+        # Test with UserContext
+        user = UserContext(user_id="test", roles={role})
+        
+        # User should have all permissions in hierarchy
+        for perm in permissions:
+            assert user.has_role(perm)
 
 
 pytestmark = pytest.mark.property

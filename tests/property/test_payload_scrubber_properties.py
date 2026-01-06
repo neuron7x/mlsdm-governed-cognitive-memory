@@ -12,7 +12,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from mlsdm.security.payload_scrubber import scrub_payload, scrub_text
+from mlsdm.security.payload_scrubber import scrub_text, scrub_request_payload
 
 
 class TestPayloadScrubberProperties:
@@ -64,7 +64,7 @@ class TestPayloadScrubberProperties:
     def test_email_field_scrubbed_in_dict(self, email):
         """Property: Email fields in dicts are scrubbed."""
         payload = {"email": email}
-        scrubbed = scrub_payload(payload)
+        scrubbed = scrub_request_payload(payload)
         
         # Email should be scrubbed
         assert scrubbed.get("email") == "***REDACTED***", (
@@ -86,7 +86,7 @@ class TestPayloadScrubberProperties:
         for _ in range(nested_depth):
             payload = {"nested": payload}
         
-        scrubbed = scrub_payload(payload)
+        scrubbed = scrub_request_payload(payload)
         
         # Navigate to bottom and verify scrubbing
         current = scrubbed
@@ -131,7 +131,7 @@ class TestPayloadScrubberProperties:
     def test_dict_scrubbing_never_raises(self, payload):
         """Property: Dict scrubbing never raises exceptions."""
         try:
-            result = scrub_payload(payload)
+            result = scrub_request_payload(payload)
             assert isinstance(result, dict), "Result must be dict"
         except Exception as e:
             pytest.fail(f"scrub_payload raised exception: {e}")
@@ -150,7 +150,7 @@ class TestPayloadScrubberProperties:
         
         for field in pii_fields:
             payload = {field: "sensitive_data"}
-            scrubbed = scrub_payload(payload)
+            scrubbed = scrub_request_payload(payload)
             
             assert scrubbed[field] == "***REDACTED***", (
                 f"PII field '{field}' not scrubbed"
@@ -187,7 +187,7 @@ class TestPayloadScrubberProperties:
             ]
         }
         
-        scrubbed = scrub_payload(payload)
+        scrubbed = scrub_request_payload(payload)
         
         # All emails should be scrubbed
         for user in scrubbed["users"]:
