@@ -698,6 +698,66 @@ class TestPELMObservability:
             assert call_args['results_count'] == 1
             assert call_args['avg_resonance'] is not None
 
+    def test_batch_entangle_all_rejected_with_observability(self):
+        """Test batch entangle where ALL vectors are rejected due to low confidence."""
+        from datetime import datetime
+        from unittest.mock import patch
+
+        from mlsdm.memory.provenance import MemoryProvenance, MemorySource
+
+        with patch('mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE', True), \
+             patch('mlsdm.memory.phase_entangled_lattice_memory.record_pelm_store') as mock_record:
+            pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
+            pelm._confidence_threshold = 0.9  # High threshold
+            
+            # All provenances have low confidence - ALL will be rejected
+            low_conf_provenances = [
+                MemoryProvenance(
+                    source=MemorySource.USER_INPUT,
+                    confidence=0.1,  # Below 0.9 threshold
+                    timestamp=datetime.now()
+                )
+                for _ in range(3)
+            ]
+            
+            vectors = [[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0], [9.0, 10.0, 11.0, 12.0]]
+            phases = [0.3, 0.5, 0.7]
+            
+            indices = pelm.entangle_batch(vectors, phases, provenances=low_conf_provenances)
+            
+            # All should be rejected
+            assert indices == [-1, -1, -1]
+            assert pelm.size == 0
+            
+            # Observability should record with fallback values (last_accepted is None)
+            mock_record.assert_called_once()
+            call_args = mock_record.call_args[1]
+            # When all rejected, falls back to (0, 0.0, 0.0)
+            assert call_args['index'] == 0
+            assert call_args['phase'] == 0.0
+            assert call_args['vector_norm'] == 0.0
+
+    def test_corruption_recovery_success_with_observability(self):
+        """Test corruption recovery SUCCESS path with observability logging."""
+        from unittest.mock import patch
+
+        with patch('mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE', True), \
+             patch('mlsdm.memory.phase_entangled_lattice_memory.record_pelm_corruption') as mock_record:
+            pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
+            pelm.entangle([1.0, 2.0, 3.0, 4.0], phase=0.5)
+            
+            # Corrupt pointer (recoverable)
+            pelm.pointer = -1
+            
+            # Entangle should trigger recovery and succeed
+            idx = pelm.entangle([5.0, 6.0, 7.0, 8.0], phase=0.6)
+            
+            assert idx >= 0  # Recovery succeeded
+            mock_record.assert_called_once()
+            call_args = mock_record.call_args[1]
+            assert call_args['detected'] is True
+            assert call_args['recovered'] is True  # This is the SUCCESS path
+
 
 class TestPELMReturnIndices:
     """Test PELM return_indices parameter."""
@@ -810,6 +870,13 @@ class TestPELMFallbackAndEdgeCases:
         pelm.size = 15
         pelm._rebuild_index()
         assert pelm.size == pelm.capacity
+
+    def test_rebuild_index_with_negative_size(self):
+        """Test _rebuild_index corrects negative size."""
+        pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
+        pelm.size = -5  # Corrupt to negative
+        pelm._rebuild_index()
+        assert pelm.size == 0  # Should be corrected to 0
 
     def test_evict_lowest_confidence_empty_memory(self):
         """Test _evict_lowest_confidence on empty memory."""
