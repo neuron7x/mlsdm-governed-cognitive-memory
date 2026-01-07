@@ -65,11 +65,9 @@ class TestSQLiteMemoryStoreInit:
         assert store._cipher is not None
         store.close()
 
+    @pytest.mark.skipif(not _CRYPTOGRAPHY_AVAILABLE, reason="cryptography not installed")
     def test_initialization_with_invalid_encryption_key_length(self, tmp_path):
         """Test store rejects encryption keys that are not 32 bytes."""
-        if not _CRYPTOGRAPHY_AVAILABLE:
-            pytest.skip("cryptography not installed")
-
         db_path = str(tmp_path / "test.db")
         bad_key = os.urandom(16)  # 16 bytes instead of 32
 
