@@ -198,3 +198,233 @@ class TestGovernanceKernelCapabilities:
 
         assert result is not None
         assert isinstance(result, dict)
+
+    def test_capability_nonce_mismatch_raises_permission_error(self):
+        """Test that capability with wrong nonce raises PermissionError."""
+        from mlsdm.core.governance_kernel import Capability
+
+        kernel = GovernanceKernel(
+            dim=10,
+            capacity=100,
+            wake_duration=8,
+            sleep_duration=3
+        )
+
+        # Create a fake capability with wrong nonce hash
+        bad_cap = Capability(
+            perms=frozenset(["MUTATE_MORAL_THRESHOLD"]),
+            kernel_nonce_hash="wrong_nonce_hash"
+        )
+
+        import pytest
+
+        with pytest.raises(PermissionError) as exc_info:
+            kernel.moral_adapt(accepted=True, cap=bad_cap)
+
+        assert "nonce mismatch" in str(exc_info.value)
+
+    def test_capability_missing_permission_raises_error(self):
+        """Test that capability without required permission raises PermissionError."""
+        from mlsdm.core.governance_kernel import Capability
+
+        kernel = GovernanceKernel(
+            dim=10,
+            capacity=100,
+            wake_duration=8,
+            sleep_duration=3
+        )
+
+        # Create a capability with correct nonce but missing permission
+        # Access private _cap_hash for testing
+        correct_nonce = kernel._cap_hash
+
+        bad_cap = Capability(
+            perms=frozenset(["WRONG_PERM"]),  # Missing MUTATE_MORAL_THRESHOLD
+            kernel_nonce_hash=correct_nonce
+        )
+
+        import pytest
+
+        with pytest.raises(PermissionError) as exc_info:
+            kernel.moral_adapt(accepted=True, cap=bad_cap)
+
+        assert "missing permission" in str(exc_info.value)
+
+    def test_assert_can_mutate_blocks_unauthorized_caller(self, monkeypatch):
+        """Test that mutations from unauthorized callers are blocked."""
+        import pytest
+
+        kernel = GovernanceKernel(
+            dim=10,
+            capacity=100,
+            wake_duration=8,
+            sleep_duration=3
+        )
+
+        # Mock inspect.stack to return an unauthorized module
+        def mock_stack():
+            class MockFrame:
+                def __init__(self):
+                    self.f_globals = {"__name__": "unauthorized.module"}
+
+            class MockFrameInfo:
+                def __init__(self):
+                    self.frame = MockFrame()
+
+            return [MockFrameInfo(), MockFrameInfo(), MockFrameInfo()]
+
+        import inspect
+        monkeypatch.setattr(inspect, "stack", mock_stack)
+
+        with pytest.raises(PermissionError) as exc_info:
+            kernel.moral_adapt(accepted=True)  # No capability provided
+
+        assert "Kernel mutation blocked" in str(exc_info.value)
+
+    def test_issue_capability_blocks_unauthorized_caller(self, monkeypatch):
+        """Test that issue_capability blocks unauthorized callers."""
+        import pytest
+
+        kernel = GovernanceKernel(
+            dim=10,
+            capacity=100,
+            wake_duration=8,
+            sleep_duration=3
+        )
+
+        # Mock inspect.stack to return an unauthorized module
+        def mock_stack():
+            class MockFrame:
+                def __init__(self):
+                    self.f_globals = {"__name__": "unauthorized.module"}
+
+            class MockFrameInfo:
+                def __init__(self):
+                    self.frame = MockFrame()
+
+            return [MockFrameInfo(), MockFrameInfo()]
+
+        import inspect
+        monkeypatch.setattr(inspect, "stack", mock_stack)
+
+        with pytest.raises(PermissionError) as exc_info:
+            kernel.issue_capability(perms={"MUTATE_MORAL_THRESHOLD"})
+
+        assert "Cannot issue capability from" in str(exc_info.value)
+
+    def test_issue_capability_allows_internal_caller(self, monkeypatch):
+        """Test that issue_capability allows callers from the internal allowlist."""
+        kernel = GovernanceKernel(
+            dim=10,
+            capacity=100,
+            wake_duration=8,
+            sleep_duration=3
+        )
+
+        # Mock inspect.stack to return an allowed module
+        def mock_stack():
+            class MockFrame:
+                def __init__(self):
+                    self.f_globals = {"__name__": "mlsdm.core.cognitive_controller"}
+
+            class MockFrameInfo:
+                def __init__(self):
+                    self.frame = MockFrame()
+
+            return [MockFrameInfo(), MockFrameInfo()]
+
+        import inspect
+        monkeypatch.setattr(inspect, "stack", mock_stack)
+
+        cap = kernel.issue_capability(perms={"MUTATE_MORAL_THRESHOLD"})
+
+        assert cap is not None
+        assert "MUTATE_MORAL_THRESHOLD" in cap.perms
+
+
+class TestReadOnlyProxiesAdditionalMethods:
+    """Test additional read-only proxy methods for coverage."""
+
+    def test_moral_ro_get_current_threshold(self):
+        """Test MoralRO.get_current_threshold() method."""
+        kernel = GovernanceKernel(
+            dim=10,
+            capacity=100,
+            wake_duration=8,
+            sleep_duration=3
+        )
+        moral_ro = kernel.moral_ro
+
+        threshold = moral_ro.get_current_threshold()
+        assert isinstance(threshold, float)
+        assert 0 <= threshold <= 1
+
+    def test_moral_ro_get_ema_value(self):
+        """Test MoralRO.get_ema_value() method."""
+        kernel = GovernanceKernel(
+            dim=10,
+            capacity=100,
+            wake_duration=8,
+            sleep_duration=3
+        )
+        moral_ro = kernel.moral_ro
+
+        ema = moral_ro.get_ema_value()
+        assert isinstance(ema, float)
+        assert 0 <= ema <= 1
+
+    def test_synaptic_ro_get_state(self):
+        """Test SynapticRO.get_state() method."""
+        kernel = GovernanceKernel(
+            dim=10,
+            capacity=100,
+            wake_duration=8,
+            sleep_duration=3
+        )
+        synaptic_ro = kernel.synaptic_ro
+
+        state = synaptic_ro.get_state()
+        assert isinstance(state, tuple)
+        assert len(state) == 3
+
+    def test_pelm_ro_size_property(self):
+        """Test PelmRO.size property."""
+        kernel = GovernanceKernel(
+            dim=10,
+            capacity=100,
+            wake_duration=8,
+            sleep_duration=3
+        )
+        pelm_ro = kernel.pelm_ro
+
+        size = pelm_ro.size
+        assert isinstance(size, int)
+        assert size >= 0
+
+    def test_rhythm_ro_get_state_label(self):
+        """Test RhythmRO.get_state_label() method."""
+        kernel = GovernanceKernel(
+            dim=10,
+            capacity=100,
+            wake_duration=8,
+            sleep_duration=3
+        )
+        rhythm_ro = kernel.rhythm_ro
+
+        label = rhythm_ro.get_state_label()
+        assert isinstance(label, str)
+        assert label in ("wake", "sleep")
+
+    def test_rhythm_ro_get_current_phase(self):
+        """Test RhythmRO.get_current_phase() method."""
+        kernel = GovernanceKernel(
+            dim=10,
+            capacity=100,
+            wake_duration=8,
+            sleep_duration=3
+        )
+        rhythm_ro = kernel.rhythm_ro
+
+        phase = rhythm_ro.get_current_phase()
+        assert isinstance(phase, str)
+        assert phase in ("wake", "sleep")

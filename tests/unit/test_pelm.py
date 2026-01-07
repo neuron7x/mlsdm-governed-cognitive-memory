@@ -895,6 +895,66 @@ class TestPELMFallbackAndEdgeCases:
             result = pelm.auto_recover()
             assert result is False
 
+    def test_auto_recover_returns_true_when_no_corruption(self):
+        """Test auto_recover returns True when no corruption is detected."""
+        pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
+        pelm.entangle([1.0, 2.0, 3.0, 4.0], phase=0.5)
+
+        # No corruption - should return True immediately
+        result = pelm.auto_recover()
+        assert result is True
+
+    def test_entangle_non_numeric_vector_element_raises_typeerror(self):
+        """Test that non-numeric vector elements raise TypeError."""
+        pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
+
+        with pytest.raises(TypeError, match="must be numeric"):
+            pelm.entangle([1.0, 2.0, "not a number", 4.0], phase=0.5)
+
+    def test_retrieve_with_near_zero_query_clamps_norm(self):
+        """Test retrieve clamps q_norm to MIN_NORM_THRESHOLD on near-zero query."""
+        pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
+        pelm.entangle([1.0, 0.0, 0.0, 0.0], phase=0.5)
+
+        # Near-zero query vector - should not fail due to division by zero
+        tiny_query = [1e-20, 0.0, 0.0, 0.0]  # Very small norm
+        results = pelm.retrieve(tiny_query, current_phase=0.5)
+
+        # Should return results without error
+        assert isinstance(results, list)
+
+    def test_retrieve_argpartition_branch_with_many_candidates(self):
+        """Test retrieve uses argpartition when num_candidates > top_k * 2."""
+        from datetime import datetime
+
+        from mlsdm.memory.provenance import MemoryProvenance, MemorySource
+
+        pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=100)
+
+        # Add enough memories to trigger argpartition branch
+        # We need more than top_k * 2 candidates after phase filtering
+        for i in range(30):
+            vector = [float(i + 1), float(i + 2), float(i + 3), float(i + 4)]
+            provenance = MemoryProvenance(
+                source=MemorySource.USER_INPUT,
+                confidence=0.9,
+                timestamp=datetime.now(),
+            )
+            pelm.entangle(vector, phase=0.5, provenance=provenance)
+
+        # Retrieve with top_k=5, so we need > 10 candidates to trigger argpartition
+        results = pelm.retrieve(
+            [15.0, 16.0, 17.0, 18.0],
+            current_phase=0.5,
+            top_k=5,
+            phase_tolerance=1.0,  # Wide tolerance to get all candidates
+        )
+
+        assert len(results) == 5
+        # Results should be sorted by resonance (highest first)
+        resonances = [r.resonance for r in results]
+        assert resonances == sorted(resonances, reverse=True)
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

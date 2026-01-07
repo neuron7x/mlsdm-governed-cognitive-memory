@@ -1,9 +1,9 @@
 {
   "schema_version": "evidence-v1",
-  "git_sha": "20669231addb62507893851d43af2e2a0f3ace3b",
-  "short_sha": "20669231addb",
-  "created_utc": "2026-01-06T15:50:08Z",
-  "source_ref": "refs/heads/copilot/improve-memory-module-coverage",
+  "git_sha": "4c70717c2473f09d733ddc253a77a60d21e45070",
+  "short_sha": "4c70717c2473",
+  "created_utc": "2026-01-06T22:15:01Z",
+  "source_ref": "refs/heads/copilot/improve-memory-coverage-tests",
   "commands": [],
   "outputs": {
     "coverage_xml": "coverage/coverage.xml",
