@@ -39,7 +39,7 @@ def test_generated_artifact_filtering_respects_allowlists() -> None:
 def test_bidi_detector_flags_control_characters() -> None:
     module = _load_module("check_bidi", "scripts/check_bidi.py")
 
-    issues = module.find_bidi_issues(f"safe{chr(0x202E)}text")
+    issues = module.find_bidi_issues("safe\u202etext")  # U+202E RIGHT-TO-LEFT OVERRIDE
     assert any("U+202E" in item for item in issues)
 
     assert module.find_bidi_issues("plain ascii only") == []

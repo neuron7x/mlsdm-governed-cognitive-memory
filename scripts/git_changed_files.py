@@ -8,6 +8,18 @@ from typing import Iterable
 
 def repo_root() -> Path:
     current = Path(__file__).resolve()
+    try:
+        top_level = subprocess.check_output(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=current.parent,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+        if top_level:
+            return Path(top_level)
+    except subprocess.CalledProcessError:
+        pass
+
     for parent in current.parents:
         if (parent / ".git").exists() or (parent / "pyproject.toml").exists():
             return parent
@@ -34,6 +46,8 @@ def _diff_names(root: Path, ref: str) -> list[str]:
                 "git",
                 "diff",
                 "--name-only",
+                # ACMRTUXB = Added, Copied, Modified, Renamed, Type changed,
+                # Unmerged, Unknown, Broken
                 "--diff-filter=ACMRTUXB",
                 f"{ref}...HEAD",
             ],
@@ -53,6 +67,8 @@ def _fallback_names(root: Path) -> list[str]:
                 "show",
                 "--pretty=format:",
                 "--name-only",
+                # ACMRTUXB = Added, Copied, Modified, Renamed, Type changed,
+                # Unmerged, Unknown, Broken
                 "--diff-filter=ACMRTUXB",
                 "HEAD",
             ],
@@ -64,9 +80,9 @@ def _fallback_names(root: Path) -> list[str]:
     return [line for line in fallback.splitlines() if line.strip()]
 
 
-def list_changed_files(ref_log: list[str] | None = None) -> list[str]:
+def list_changed_files() -> tuple[list[str], list[str]]:
     root = repo_root()
-    refs_checked = ref_log if ref_log is not None else []
+    refs_checked: list[str] = []
     base_ref = os.environ.get("GITHUB_BASE_REF")
     candidates = []
     if base_ref:
@@ -80,7 +96,7 @@ def list_changed_files(ref_log: list[str] | None = None) -> list[str]:
         refs_checked.append(ref)
         files = _diff_names(root, ref)
         if files:
-            return files
+            return files, refs_checked
 
     refs_checked.append("HEAD (show)")
-    return _fallback_names(root)
+    return _fallback_names(root), refs_checked

@@ -82,8 +82,7 @@ def find_forbidden(paths: Iterable[str]) -> set[str]:
 
 
 def main() -> int:
-    refs_checked: list[str] = []
-    changed_files = list_changed_files(refs_checked)
+    changed_files, refs_checked = list_changed_files()
     if not changed_files:
         refs = ", ".join(refs_checked) if refs_checked else "none"
         print(f"No changed files detected; checked refs: {refs}. Skipping generated artifact check.")
