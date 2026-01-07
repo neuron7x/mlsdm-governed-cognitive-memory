@@ -1,22 +1,33 @@
+# Python caches and OS cruft
 __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.hypothesis/
+.DS_Store
+
+# Coverage and test outputs
 .coverage
 .coverage.*
 coverage.json
 coverage.xml
+htmlcov/
+junit*.xml
+results/
+baseline_comparison*.png
+baseline_comparison*.json
+load_test_report.json
+
+# Build artifacts
 *.egg-info/
 dist/
 build/
+
+# Virtual environments
 .venv/
 venv/
-.DS_Store
-results/
-htmlcov/
-.hypothesis/
 
 # Local database artifacts
 *.db
@@ -31,26 +42,14 @@ mlsdm_config.sh
 *.log
 *.log.*
 
-# Test reports and outputs
-junit*.xml
-baseline_comparison*.png
-baseline_comparison*.json
-load_test_report.json
-
-# Effectiveness suite generated reports
+# CI / evaluation artifacts
 reports/effectiveness_snapshot.json
 reports/EFFECTIVENESS_SNAPSHOT.md
-
-# Ablation evaluation generated reports
 reports/ablation/*.json
 !reports/ablation/.gitkeep
-
-# Eval suite generated reports
 evals/*_report.json
-
-# Downloaded tools and binaries
+artifacts/tmp/
 conftest
 
 # Evidence artifacts (allow committed snapshots)
 !artifacts/evidence/**
-artifacts/tmp/
