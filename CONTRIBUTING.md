@@ -34,7 +34,7 @@ This project adheres to professional engineering standards. We expect:
 
 ### Prerequisites
 
-- Python 3.12 or higher
+- Python 3.10 or higher
 - Git for version control
 - Understanding of cognitive architectures and LLM systems (recommended)
 

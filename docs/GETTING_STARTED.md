@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-- Python 3.10 or higher
+- Python 3.10+ (minimum)
 - pip (Python package manager)
 
 ## Quick Installation
