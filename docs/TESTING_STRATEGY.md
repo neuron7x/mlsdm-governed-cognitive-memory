@@ -264,6 +264,16 @@ def test_emergency_shutdown_on_memory_pressure(self):
 - ✅ Prometheus metrics export (`src/mlsdm/observability/metrics.py`)
 - ✅ Throughput testing (verified 1000+ concurrent requests)
 
+**Missing Profiling Steps (must be added)**:
+- CPU profiling across the end-to-end request path (hot functions + call graph)
+- Memory allocation profiling (peak usage + top allocators per request)
+- Garbage collection pressure profiling (GC pause time + allocation churn)
+- I/O wait and serialization profiling (JSON encode/decode, file/network latency)
+- Contention profiling (locks, queue backpressure, executor saturation)
+- Tail-latency drill-down (P99/P99.9 trace exemplars per component)
+- Saturation curve measurement (latency vs. concurrency, identify inflection)
+- Artifacted profiling reports for regression diffing (baseline vs. main)
+
 **Planned SLIs** (metrics defined, continuous monitoring planned v1.3+):
 - retrieval_latency_ms (histogram)
 - policy_eval_ms (histogram)
@@ -273,6 +283,8 @@ def test_emergency_shutdown_on_memory_pressure(self):
 
 **Current State**:
 - Performance validated through benchmarks showing P50 ~2ms, P95 ~10ms
+- Automated profiling runs via `scripts/profile_performance.py` with artifacts in `reports/profiling/`
+- CI captures profiling artifacts in the performance workflow for regression analysis
 - Full observability stack integration (OpenTelemetry traces) planned for v1.3+
 
 ---
