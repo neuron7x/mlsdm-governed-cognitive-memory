@@ -28,8 +28,9 @@ class TestPerformanceRegression:
                 },
             )
 
-        result = benchmark(make_request)
-        assert result.stats.mean < 0.030  # 30ms
+        benchmark(make_request)
+        mean_latency = float(benchmark.stats["mean"])
+        assert mean_latency < 0.030, f"P50 latency {mean_latency * 1000:.2f}ms exceeds 30ms"
 
     def test_p95_latency_under_120ms(self) -> None:
         """P95 latency must be under 120ms (production target)."""
