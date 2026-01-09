@@ -15,6 +15,11 @@ Root:
 - Allowed: peer-reviewed journals, top-tier conferences (ACM/IEEE/USENIX), academic books, official standards (NIST/ISO/IEEE), widely-used arXiv preprints.
 - Disallowed: personal blogs, unreviewed claims, non-stable URLs, sources without DOI/arXiv/canonical issuer URL.
 
+## Risk-Aware Bibliography Governance
+- Categorize sources by trust tier: **Standards**, **Peer-reviewed**, **arXiv**, **Official Report**.
+- Critical subsystems (security, governance, safety) require a minimum trust tier of **Standards** or **Peer-reviewed** for their citations.
+- High-risk subsystems (security, governance) must include **2+ Standards/Peer-reviewed** citations in the Literature Map.
+
 ## Authoritative Source Audit
 Explicitly verify the authority of every source before adding it:
 - **Publication type**: journal article, top-tier conference proceeding, academic book, or official standard/issuer publication.
