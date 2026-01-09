@@ -40,7 +40,9 @@ def test_api_import_without_repo_files(tmp_path: Path) -> None:
 def test_packaged_default_config_matches_repo() -> None:
     repo_config = Path(__file__).resolve().parents[2] / "config" / "default_config.yaml"
     if not repo_config.is_file():
-        pytest.skip("Repository default_config.yaml not present")
+        pytest.skip(
+            "Repository default_config.yaml not present (issue: https://github.com/neuron7x/mlsdm/issues/1000)"
+        )
 
     packaged_text = (
         resources.files("mlsdm.config").joinpath("default_config.yaml").read_text(encoding="utf-8")

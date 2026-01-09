@@ -1,4 +1,5 @@
-.PHONY: test test-fast coverage-gate verify-metrics lint type cov bench bench-drift help run-dev run-cloud-local run-agent health-check eval-moral_filter test-memory-obs \
+.PHONY: test test-fast coverage-gate verify-metrics verify-evidence lint type cov bench bench-drift help run-dev run-cloud-local run-agent health-check eval-moral_filter test-memory-obs \
+        determinism-check security-audit test-hygiene log-hygiene docs-lint policy-drift-check ci-summary \
         readiness-preview readiness-apply \
         build-package test-package docker-build-neuro-engine docker-run-neuro-engine docker-smoke-neuro-engine \
         docker-compose-up docker-compose-down lock sync evidence iteration-metrics
@@ -15,6 +16,13 @@ help:
 	@echo "  make test-fast     - Run fast unit tests (excludes slow/comprehensive)"
 	@echo "  make coverage-gate - Run coverage gate with threshold check"
 	@echo "  make verify-metrics - Validate latest evidence snapshot integrity"
+	@echo "  make determinism-check - Validate lockfile + requirements determinism"
+	@echo "  make security-audit - Run dependency vulnerability audit"
+	@echo "  make test-hygiene - Enforce pytest skip/xfail hygiene"
+	@echo "  make log-hygiene - Enforce structured logging rules"
+	@echo "  make docs-lint - Lint documentation for duplicate headings"
+	@echo "  make policy-drift-check - Detect policy drift requiring approval token"
+	@echo "  make verify-evidence - Validate latest evidence snapshot completeness"
 	@echo "  make lint          - Run ruff linter on src and tests"
 	@echo "  make type          - Run mypy type checker on src/mlsdm"
 	@echo "  make cov           - Run tests with coverage report"
@@ -72,13 +80,36 @@ coverage-gate:
 	@echo "✓ coverage.xml generated successfully"
 
 verify-metrics:
-	@LATEST_SNAPSHOT=$$(ls -1d artifacts/evidence/*/* 2>/dev/null | LC_ALL=C sort | tail -n 1); \
+	@LATEST_SNAPSHOT=$$(ls -1d artifacts/evidence/*/*/* 2>/dev/null | LC_ALL=C sort | tail -n 1); \
 	if [ -z "$$LATEST_SNAPSHOT" ]; then \
 		echo "No evidence snapshot found under artifacts/evidence"; \
 		exit 1; \
 	fi; \
 	echo "Validating evidence snapshot: $$LATEST_SNAPSHOT"; \
 	python scripts/evidence/verify_evidence_snapshot.py --evidence-dir "$$LATEST_SNAPSHOT"
+
+verify-evidence: verify-metrics
+
+determinism-check:
+	python scripts/ci/determinism_check.py
+
+security-audit:
+	python scripts/security/run_pip_audit.py --output artifacts/security/pip-audit.json
+
+test-hygiene:
+	python scripts/ci/test_hygiene.py
+
+log-hygiene:
+	python scripts/ci/logging_hygiene.py
+
+docs-lint:
+	python scripts/ci/docs_lint.py
+
+policy-drift-check:
+	python scripts/policy/check_policy_drift.py --output artifacts/tmp/policy-drift.json
+
+ci-summary:
+	python scripts/evidence/generate_ci_summary.py artifacts/tmp/ci-summary.json
 
 lint:
 	@echo "Running ruff linter (src + tests)..."
@@ -201,9 +232,11 @@ iteration-metrics:
 	python scripts/eval/generate_iteration_metrics.py --out $(ITERATION_METRICS_PATH)
 
 evidence: iteration-metrics
+	@$(MAKE) security-audit
+	@$(MAKE) ci-summary
 	@mkdir -p $(dir $(EVIDENCE_INPUTS_PATH))
-	@echo '{"iteration_metrics": "$(ITERATION_METRICS_PATH)"}' > $(EVIDENCE_INPUTS_PATH)
+	@echo '{"iteration_metrics": "$(ITERATION_METRICS_PATH)", "pip_audit_json": "artifacts/security/pip-audit.json", "ci_summary": "artifacts/tmp/ci-summary.json"}' > $(EVIDENCE_INPUTS_PATH)
 	@echo "Capturing evidence snapshot..."
 	DISABLE_UV_RUN=1 python scripts/evidence/capture_evidence.py --mode build --inputs $(EVIDENCE_INPUTS_PATH)
 	@echo "Verifying captured evidence snapshot..."
-	$(MAKE) verify-metrics
+	$(MAKE) verify-evidence

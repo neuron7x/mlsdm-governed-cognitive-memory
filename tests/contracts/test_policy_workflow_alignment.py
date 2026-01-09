@@ -21,7 +21,10 @@ except ImportError:
     YAML_AVAILABLE = False
 
 
-@pytest.mark.skipif(not YAML_AVAILABLE, reason="PyYAML not installed")
+@pytest.mark.skipif(
+    not YAML_AVAILABLE,
+    reason="PyYAML not installed (issue: https://github.com/neuron7x/mlsdm/issues/1000)",
+)
 class TestPolicyWorkflowAlignment:
     """Test that policy files match workflow and script reality."""
 

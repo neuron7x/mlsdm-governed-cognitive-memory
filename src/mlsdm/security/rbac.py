@@ -221,7 +221,7 @@ class RoleValidator:
             try:
                 roles.add(Role(role_name))
             except ValueError:
-                logger.warning(f"Unknown role: {role_name}")
+                logger.warning("Unknown role: %s", role_name)
         return roles or {Role.READ}
 
     def _hash_key(self, key: str) -> str:

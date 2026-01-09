@@ -151,7 +151,7 @@ def save_system_state(
         # Validate integrity before saving
         warnings = validate_state_integrity(state)
         for warning in warnings:
-            logger.warning(f"State integrity warning: {warning}")
+            logger.warning("State integrity warning: %s", warning)
 
         # Convert to dict and then to JSON-serializable format
         state_dict = state.model_dump(mode="json")
@@ -161,9 +161,9 @@ def save_system_state(
             backup_path = _get_backup_path(filepath)
             try:
                 shutil.copy2(filepath, backup_path)
-                logger.debug(f"Created backup at {backup_path}")
+                logger.debug("Created backup at %s", backup_path)
             except OSError as e:
-                logger.warning(f"Failed to create backup: {e}")
+                logger.warning("Failed to create backup: %s", e)
 
         # Serialize and write
         ext = os.path.splitext(filepath)[1].lower()
@@ -193,7 +193,7 @@ def save_system_state(
                     except OSError as e:
                         logger.debug("Failed to remove temp npz file %s: %s", temp_path, e)
 
-        logger.info(f"Saved system state to {filepath} (version {state.version})")
+        logger.info("Saved system state to %s (version %s)", filepath, state.version)
 
     except Exception as e:
         raise StateSaveError(f"Failed to save system state to {filepath}: {e}") from e
@@ -271,7 +271,9 @@ def load_system_state(
             state_version = state_dict.get("version", 1)
             if state_version < CURRENT_SCHEMA_VERSION:
                 logger.info(
-                    f"Migrating state from version {state_version} to {CURRENT_SCHEMA_VERSION}"
+                    "Migrating state from version %s to %s",
+                    state_version,
+                    CURRENT_SCHEMA_VERSION,
                 )
                 state_dict = migrate_state(state_dict, state_version, CURRENT_SCHEMA_VERSION)
 
@@ -281,9 +283,9 @@ def load_system_state(
         # Additional integrity checks
         warnings = validate_state_integrity(state)
         for warning in warnings:
-            logger.warning(f"State integrity warning on load: {warning}")
+            logger.warning("State integrity warning on load: %s", warning)
 
-        logger.info(f"Loaded system state from {filepath} (version {state.version})")
+        logger.info("Loaded system state from %s (version %s)", filepath, state.version)
         return state
 
     except (StateCorruptionError, StateLoadError):
@@ -307,7 +309,7 @@ def delete_system_state(filepath: str, *, delete_backup: bool = False) -> None:
 
     if os.path.exists(filepath):
         os.remove(filepath)
-        logger.info(f"Deleted state file: {filepath}")
+        logger.info("Deleted state file: %s", filepath)
 
     # Delete checksum file
     checksum_path = _get_checksum_path(filepath)
@@ -318,7 +320,7 @@ def delete_system_state(filepath: str, *, delete_backup: bool = False) -> None:
         backup_path = _get_backup_path(filepath)
         if os.path.exists(backup_path):
             os.remove(backup_path)
-            logger.info(f"Deleted backup file: {backup_path}")
+            logger.info("Deleted backup file: %s", backup_path)
 
 
 def recover_system_state(filepath: str) -> SystemStateRecord:
@@ -346,7 +348,7 @@ def recover_system_state(filepath: str) -> SystemStateRecord:
     try:
         return load_system_state(filepath, verify_checksum=True, auto_migrate=True)
     except (StateLoadError, StateCorruptionError) as main_error:
-        logger.warning(f"Main state file corrupted or missing: {main_error}")
+        logger.warning("Main state file corrupted or missing: %s", main_error)
 
     # Try backup
     backup_path = _get_backup_path(filepath)
@@ -383,18 +385,20 @@ def recover_system_state(filepath: str) -> SystemStateRecord:
         state_version = state_dict.get("version", 1)
         if state_version < CURRENT_SCHEMA_VERSION:
             logger.info(
-                f"Migrating recovered state from version {state_version} to {CURRENT_SCHEMA_VERSION}"
+                "Migrating recovered state from version %s to %s",
+                state_version,
+                CURRENT_SCHEMA_VERSION,
             )
             state_dict = migrate_state(state_dict, state_version, CURRENT_SCHEMA_VERSION)
 
         # Validate and create record
         state = create_system_state_from_dict(state_dict)
 
-        logger.info(f"Recovered state from backup: {backup_path}")
+        logger.info("Recovered state from backup: %s", backup_path)
 
         # Restore backup to main file
         shutil.copy2(backup_path, filepath)
-        logger.info(f"Restored backup to main file: {filepath}")
+        logger.info("Restored backup to main file: %s", filepath)
 
         return state
     except Exception as backup_error:

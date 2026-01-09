@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "determinism": {
+    "lock_file": "uv.lock",
+    "requirements_file": "requirements.txt"
+  },
+  "security_audit": {
+    "fail_severities": ["HIGH", "CRITICAL"],
+    "tool": "pip-audit"
+  },
+  "test_hygiene": {
+    "issue_link_regex": "https?://"
+  },
+  "logging_hygiene": {
+    "forbid_fstring": true
+  },
+  "docs_lint": {
+    "unique_headings_per_file": true
+  }
+}

@@ -48,10 +48,10 @@ class LifecycleManager:
         for sig in (signal.SIGTERM, signal.SIGINT):
             try:
                 signal.signal(sig, self._handle_shutdown_signal)
-                logger.info(f"Registered signal handler for {sig.name}")
+                logger.info("Registered signal handler for %s", sig.name)
             except (OSError, ValueError) as e:
                 # In some environments (e.g., tests), signal handlers can't be set
-                logger.warning(f"Could not register signal handler for {sig.name}: {e}")
+                logger.warning("Could not register signal handler for %s: %s", sig.name, e)
 
         logger.info("MLSDM API startup complete")
 
@@ -63,7 +63,7 @@ class LifecycleManager:
             frame: Current stack frame
         """
         sig_name = signal.Signals(signum).name
-        logger.info(f"Received shutdown signal: {sig_name}")
+        logger.info("Received shutdown signal: %s", sig_name)
 
         # Set shutdown event
         self._shutdown_event.set()
@@ -91,11 +91,11 @@ class LifecycleManager:
                 logger.info("All cleanup tasks completed successfully")
             except asyncio.TimeoutError:
                 logger.warning(
-                    f"Cleanup tasks exceeded timeout of {self._shutdown_timeout}s, "
-                    "forcing shutdown"
+                    "Cleanup tasks exceeded timeout of %ss, forcing shutdown",
+                    self._shutdown_timeout,
                 )
             except Exception as e:
-                logger.error(f"Error during cleanup: {e}", exc_info=True)
+                logger.error("Error during cleanup: %s", e, exc_info=True)
 
         logger.info("MLSDM API shutdown complete")
 
@@ -139,7 +139,7 @@ async def cleanup_memory_manager(manager: Any) -> None:
             await manager.shutdown()
         logger.info("Memory manager cleanup complete")
     except Exception as e:
-        logger.error(f"Error cleaning up memory manager: {e}", exc_info=True)
+        logger.error("Error cleaning up memory manager: %s", e, exc_info=True)
 
 
 async def cleanup_connections() -> None:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -21,6 +22,8 @@ def _repo_root() -> Path:
 
 def _run_generator(out_path: Path, *, seed: int = 7, steps: int = 16) -> Path:
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(_repo_root() / "src") + os.pathsep + env.get("PYTHONPATH", "")
     subprocess.check_call(
         [
             sys.executable,
@@ -33,6 +36,7 @@ def _run_generator(out_path: Path, *, seed: int = 7, steps: int = 16) -> Path:
             str(out_path),
         ],
         cwd=_repo_root(),
+        env=env,
     )
     return out_path
 
@@ -93,8 +97,12 @@ def test_jsonl_schema_and_bounds(tmp_path: Path) -> None:
 def test_capture_evidence_packs_iteration_metrics(tmp_path: Path) -> None:
     coverage = tmp_path / "coverage.xml"
     junit = tmp_path / "junit.xml"
+    audit = tmp_path / "pip-audit.json"
+    summary = tmp_path / "ci-summary.json"
     coverage.write_text('<coverage line-rate="0.5"></coverage>', encoding="utf-8")
     junit.write_text('<testsuite name="t" tests="1" failures="0" errors="0" skipped="0"><testcase name="ok"/></testsuite>', encoding="utf-8")
+    audit.write_text('{"dependencies": []}\n', encoding="utf-8")
+    summary.write_text('{"workflow": "test"}\n', encoding="utf-8")
 
     metrics = _run_generator(tmp_path / "iteration-metrics.jsonl", seed=2, steps=8)
     inputs_path = tmp_path / "inputs.json"
@@ -103,6 +111,8 @@ def test_capture_evidence_packs_iteration_metrics(tmp_path: Path) -> None:
             {
                 "coverage_xml": str(coverage),
                 "junit_xml": str(junit),
+                "pip_audit_json": str(audit),
+                "ci_summary": str(summary),
                 "iteration_metrics": str(metrics),
             }
         ),
@@ -122,7 +132,7 @@ def test_capture_evidence_packs_iteration_metrics(tmp_path: Path) -> None:
     )
 
     evidence_root = _repo_root() / "artifacts" / "evidence"
-    snapshots = sorted(evidence_root.glob("*/*"))
+    snapshots = sorted(evidence_root.glob("*/*/*"))
     assert snapshots, "capture_evidence did not produce a snapshot"
     snapshot = snapshots[-1]
     packed = snapshot / "iteration" / "iteration-metrics.jsonl"

@@ -247,7 +247,7 @@ if abs(error) > 0.05:  # dead-band
 
 ## 🏗️ Architecture
 
-### System Overview
+### Architecture Overview
 
 ```mermaid
 flowchart TB

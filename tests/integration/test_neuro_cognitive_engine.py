@@ -51,7 +51,9 @@ class TestNeuroCognitiveEngineArchitecture:
         )
 
         if engine._fslgs is None:
-            pytest.skip("FSLGS not available in this environment")
+            pytest.skip(
+                "FSLGS not available in this environment (issue: https://github.com/neuron7x/mlsdm/issues/1000)"
+            )
 
         # FSLGS повинен працювати без власної пам'яті
         assert getattr(engine._fslgs, "memory_capacity", 0) == 0
@@ -356,7 +358,10 @@ class TestNeuroCognitiveEngineIntegration:
 class TestNeuroCognitiveEngineFSLGSIntegration:
     """FSLGS-specific integration tests."""
 
-    @pytest.mark.skipif("fslgs" not in dir(), reason="FSLGS not available in this environment")
+    @pytest.mark.skipif(
+        "fslgs" not in dir(),
+        reason="FSLGS not available in this environment (issue: https://github.com/neuron7x/mlsdm/issues/1000)",
+    )
     def test_fslgs_grammar_precheck(self):
         """FSLGS grammar pre-check працює коректно."""
         llm_mock = Mock(return_value="Response")

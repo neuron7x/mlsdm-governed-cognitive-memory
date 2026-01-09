@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Iterable, List, Mapping, MutableMapping
 
 SCHEMA_VERSION = "evidence-v1"
-REQUIRED_OUTPUT_KEYS = ("coverage_xml", "junit_xml")
+REQUIRED_OUTPUT_KEYS = ("coverage_xml", "junit_xml", "pip_audit_json", "ci_summary")
 OPTIONAL_INPUT_KEYS = {
     "benchmark_metrics": "benchmark-metrics.json",
     "raw_latency": "raw_neuro_engine_latency.json",
@@ -40,6 +40,8 @@ DEFAULT_INPUTS = {
     "coverage_log": "coverage-gate.log",
     "junit_xml": "reports/junit.xml",
     "unit_log": "reports/unit-tests.log",
+    "pip_audit_json": "artifacts/security/pip-audit.json",
+    "ci_summary": "artifacts/tmp/ci-summary.json",
     **OPTIONAL_INPUT_KEYS,
 }
 
@@ -75,6 +77,16 @@ def source_ref() -> str:
         check=False,
     )
     return result.stdout.strip() or "unknown"
+
+
+def evidence_tag() -> str:
+    tag = os.getenv("EVIDENCE_TAG")
+    if tag:
+        return tag
+    ref = os.getenv("GITHUB_REF", "")
+    if ref.startswith("refs/tags/"):
+        return ref.split("/", 2)[2]
+    return "unreleased"
 
 
 def _prefer_uv(command: List[str]) -> List[str]:
@@ -179,6 +191,23 @@ def capture_pytest_junit(
         unit_log,
         Path("logs") / "unit_tests.log",
     )
+
+
+def _copy_required(
+    evidence_dir: Path,
+    produced: list[Path],
+    outputs: MutableMapping[str, str],
+    key: str,
+    source_path: Path,
+    dest_rel: Path,
+) -> None:
+    if not source_path.exists():
+        raise CaptureError(f"Required input missing: {key}")
+    dest_path = evidence_dir / dest_rel
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
+    if source_path.resolve() != dest_path.resolve():
+        shutil.copy(source_path, dest_path)
+    _record_output(evidence_dir, produced, outputs, key, dest_path)
 
 
 def _record_output(
@@ -397,7 +426,8 @@ def main() -> int:
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     sha_full = git_sha()
     short_sha = sha_full[:12] if sha_full != "unknown" else "unknown"
-    base_dir = root / "artifacts" / "evidence" / date_str
+    tag = evidence_tag().replace("/", "_")
+    base_dir = root / "artifacts" / "evidence" / date_str / tag
     temp_dir = Path(tempfile.mkdtemp(prefix="evidence-"))
     evidence_dir = temp_dir
 
@@ -412,6 +442,22 @@ def main() -> int:
         _ensure_outputs_present(inputs)
         capture_coverage(evidence_dir, produced, outputs, inputs["coverage_xml"], inputs.get("coverage_log"))
         capture_pytest_junit(evidence_dir, produced, outputs, inputs["junit_xml"], inputs.get("unit_log"))
+        _copy_required(
+            evidence_dir,
+            produced,
+            outputs,
+            "pip_audit_json",
+            inputs["pip_audit_json"],
+            Path("audit") / "pip-audit.json",
+        )
+        _copy_required(
+            evidence_dir,
+            produced,
+            outputs,
+            "ci_summary",
+            inputs["ci_summary"],
+            Path("ci") / "summary.json",
+        )
         capture_env(evidence_dir, produced, outputs)
         for key, dest in OPTIONAL_DESTS.items():
             _copy_optional(evidence_dir, produced, outputs, key, inputs[key], dest)

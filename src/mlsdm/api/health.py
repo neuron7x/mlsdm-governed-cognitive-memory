@@ -253,7 +253,7 @@ def _check_cognitive_controller_health() -> tuple[bool, str | None]:
                 return False, "emergency_shutdown_active"
         return True, None
     except Exception as e:
-        logger.warning(f"Failed to check cognitive controller: {e}")
+        logger.warning("Failed to check cognitive controller: %s", e)
         return False, f"check_failed: {str(e)}"
 
 
@@ -278,7 +278,7 @@ def _check_memory_within_bounds() -> tuple[bool, str | None]:
             return True, f"usage: {usage_pct:.1f}%"
         return True, "not_configured"
     except Exception as e:
-        logger.warning(f"Failed to check memory bounds: {e}")
+        logger.warning("Failed to check memory bounds: %s", e)
         return False, f"check_failed: {str(e)}"
 
 
@@ -365,7 +365,7 @@ async def _cpu_background_sampler() -> None:
             logger.info("CPU background sampler cancelled")
             break
         except Exception as e:
-            logger.warning(f"CPU background sampler error: {e}")
+            logger.warning("CPU background sampler error: %s", e)
             with _cpu_health_lock:
                 if _cpu_health_cache:
                     _cpu_health_cache.is_valid = False
@@ -411,7 +411,7 @@ def _check_cpu_health() -> tuple[bool, str | None]:
         return cpu_available, f"usage: {cpu_percent:.1f}%"
 
     except Exception as e:
-        logger.warning(f"Failed to check CPU availability: {e}")
+        logger.warning("Failed to check CPU availability: %s", e)
         # Fail open - don't block readiness on CPU check failure
         return True, f"check_degraded: {str(e)}"
 
@@ -480,7 +480,7 @@ async def _compute_readiness(response: Response) -> ReadinessStatus:
             all_ready = False
             details["system_memory_percent"] = memory.percent
     except Exception as e:
-        logger.warning(f"Failed to check memory availability: {e}")
+        logger.warning("Failed to check memory availability: %s", e)
         components["system_memory"] = ComponentStatus(healthy=False, details=str(e))
         checks["memory_available"] = False
         all_ready = False
@@ -593,7 +593,7 @@ async def detailed_health(response: Response) -> DetailedHealthStatus:
         system_info["memory_available_mb"] = memory.available / (1024 * 1024)
         system_info["memory_total_mb"] = memory.total / (1024 * 1024)
     except Exception as e:
-        logger.error(f"Failed to get memory info: {e}")
+        logger.error("Failed to get memory info: %s", e)
         system_info["memory_error"] = str(e)
 
     try:
@@ -601,14 +601,14 @@ async def detailed_health(response: Response) -> DetailedHealthStatus:
         system_info["cpu_percent"] = cpu_percent
         system_info["cpu_count"] = psutil.cpu_count()
     except Exception as e:
-        logger.error(f"Failed to get CPU info: {e}")
+        logger.error("Failed to get CPU info: %s", e)
         system_info["cpu_error"] = str(e)
 
     try:
         disk = psutil.disk_usage("/")
         system_info["disk_percent"] = disk.percent
     except Exception as e:
-        logger.error(f"Failed to get disk info: {e}")
+        logger.error("Failed to get disk info: %s", e)
         system_info["disk_error"] = str(e)
 
     # Get memory manager state if available
@@ -648,7 +648,7 @@ async def detailed_health(response: Response) -> DetailedHealthStatus:
                 statistics["avg_latency_ms"] = statistics["avg_latency_seconds"] * 1000
 
         except Exception as e:
-            logger.error(f"Failed to get manager state: {e}")
+            logger.error("Failed to get manager state: %s", e)
             is_healthy = False
             statistics = {"error": str(e)}
     else:

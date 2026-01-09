@@ -54,7 +54,10 @@ class TestSQLiteMemoryStoreInit:
         assert os.path.exists(db_path)
         store.close()
 
-    @pytest.mark.skipif(not _CRYPTOGRAPHY_AVAILABLE, reason="cryptography not installed")
+    @pytest.mark.skipif(
+        not _CRYPTOGRAPHY_AVAILABLE,
+        reason="cryptography not installed (issue: https://github.com/neuron7x/mlsdm/issues/1000)",
+    )
     def test_initialization_with_valid_encryption_key(self, tmp_path):
         """Test store initializes with valid 32-byte encryption key."""
         db_path = str(tmp_path / "test.db")
@@ -65,7 +68,10 @@ class TestSQLiteMemoryStoreInit:
         assert store._cipher is not None
         store.close()
 
-    @pytest.mark.skipif(not _CRYPTOGRAPHY_AVAILABLE, reason="cryptography not installed")
+    @pytest.mark.skipif(
+        not _CRYPTOGRAPHY_AVAILABLE,
+        reason="cryptography not installed (issue: https://github.com/neuron7x/mlsdm/issues/1000)",
+    )
     def test_initialization_with_invalid_encryption_key_length(self, tmp_path):
         """Test store rejects encryption keys that are not 32 bytes."""
         db_path = str(tmp_path / "test.db")
@@ -553,7 +559,10 @@ class TestSQLiteMemoryStoreCompact:
 class TestSQLiteMemoryStoreEncryption:
     """Test encryption-at-rest functionality."""
 
-    @pytest.mark.skipif(not _CRYPTOGRAPHY_AVAILABLE, reason="cryptography not installed")
+    @pytest.mark.skipif(
+        not _CRYPTOGRAPHY_AVAILABLE,
+        reason="cryptography not installed (issue: https://github.com/neuron7x/mlsdm/issues/1000)",
+    )
     def test_encrypted_put_and_get(self, tmp_path):
         """Test put/get with encryption enabled."""
         db_path = str(tmp_path / "encrypted.db")
@@ -575,7 +584,10 @@ class TestSQLiteMemoryStoreEncryption:
         assert retrieved.content == original_content
         store.close()
 
-    @pytest.mark.skipif(not _CRYPTOGRAPHY_AVAILABLE, reason="cryptography not installed")
+    @pytest.mark.skipif(
+        not _CRYPTOGRAPHY_AVAILABLE,
+        reason="cryptography not installed (issue: https://github.com/neuron7x/mlsdm/issues/1000)",
+    )
     def test_encrypted_content_stored_as_ciphertext(self, tmp_path):
         """Test that encrypted content is actually stored as ciphertext."""
         import sqlite3
@@ -607,7 +619,10 @@ class TestSQLiteMemoryStoreEncryption:
         # Ciphertext should not be None
         assert row[1] is not None
 
-    @pytest.mark.skipif(not _CRYPTOGRAPHY_AVAILABLE, reason="cryptography not installed")
+    @pytest.mark.skipif(
+        not _CRYPTOGRAPHY_AVAILABLE,
+        reason="cryptography not installed (issue: https://github.com/neuron7x/mlsdm/issues/1000)",
+    )
     def test_encrypted_get_with_provenance(self, tmp_path):
         """Test get returns properly decrypted content with provenance."""
         from datetime import datetime

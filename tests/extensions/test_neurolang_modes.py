@@ -21,7 +21,7 @@ from mlsdm.extensions import NeuroLangWrapper
 TORCH_AVAILABLE = importlib.util.find_spec("torch") is not None
 pytestmark = pytest.mark.skipif(
     not TORCH_AVAILABLE,
-    reason="optional dependency 'torch' is not installed; skipping NeuroLang tests.",
+    reason="optional dependency 'torch' is not installed; skipping NeuroLang tests. (issue: https://github.com/neuron7x/mlsdm/issues/1000)",
 )
 
 

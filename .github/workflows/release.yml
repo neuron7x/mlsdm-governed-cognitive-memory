@@ -417,6 +417,69 @@ jobs:
           # This allows for small fluctuations while maintaining quality gate
           pytest --ignore=tests/load --cov=src/mlsdm --cov-report=term-missing --cov-fail-under=80 -q -m "not slow and not benchmark"
 
+  evidence-pack:
+    name: Evidence Pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - unit-tests
+      - integration-tests
+      - property-tests
+      - validation-tests
+      - security-tests
+      - observability-tests
+      - benchmarks
+      - code-quality
+      - coverage-check
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
+
+      - name: Restore Python cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-py3.11-
+            ${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e ".[test]"
+          pip install uv pip-audit
+
+      - name: Generate evidence pack
+        env:
+          EVIDENCE_TAG: ${{ github.ref_name }}
+        run: make evidence
+
+      - name: Verify evidence pack
+        run: make verify-evidence
+
+      - name: Upload evidence pack
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: evidence-pack
+          path: artifacts/evidence
+          retention-days: 90
+
   # CICD-008: Changelog Generation
   generate-changelog:
     name: Generate Changelog
@@ -534,6 +597,7 @@ jobs:
       - benchmarks
       - code-quality
       - coverage-check
+      - evidence-pack
       - generate-changelog
 
     permissions:

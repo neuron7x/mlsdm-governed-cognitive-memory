@@ -41,6 +41,7 @@ jobs:
           python -m pip install -U pip
           pip install uv
           uv sync --frozen --extra test --extra dev
+          uv pip install pip-audit
       - name: Import smoke
         run: |
           uv run python -c "import mlsdm; print('import ok')"
@@ -74,6 +75,7 @@ jobs:
           python -m pip install -U pip
           pip install uv
           uv sync --frozen --extra test --extra dev
+          uv pip install pip-audit
       - name: Run coverage gate (tests + coverage once)
         id: coverage
         continue-on-error: true
@@ -84,6 +86,14 @@ jobs:
           status=${PIPESTATUS[0]}
           echo "exit_code=${status}" >> "$GITHUB_OUTPUT"
           exit "${status}"
+      - name: Generate security audit output
+        if: always()
+        run: |
+          uv run python scripts/security/run_pip_audit.py --output artifacts/security/pip-audit.json
+      - name: Generate CI summary
+        if: always()
+        run: |
+          uv run python scripts/evidence/generate_ci_summary.py artifacts/tmp/ci-summary.json
       - name: Upload coverage artifacts
         if: always()
         uses: actions/upload-artifact@v6
@@ -100,7 +110,9 @@ jobs:
           {
             "coverage_xml": "coverage.xml",
             "coverage_log": "coverage-gate.log",
-            "junit_xml": "reports/junit.xml"
+            "junit_xml": "reports/junit.xml",
+            "pip_audit_json": "artifacts/security/pip-audit.json",
+            "ci_summary": "artifacts/tmp/ci-summary.json"
           }
           EOF
           PARTIAL_ARGS=()
@@ -118,7 +130,7 @@ jobs:
             echo "No evidence directory found" >&2
             exit 1
           fi
-          LATEST=$(LC_ALL=C ls -1d "$ROOT"/*/* 2>/dev/null | LC_ALL=C sort | tail -n 1 || true)
+          LATEST=$(LC_ALL=C ls -1d "$ROOT"/*/*/* 2>/dev/null | LC_ALL=C sort | tail -n 1 || true)
           if [ -z "$LATEST" ]; then
             echo "No evidence snapshots found" >&2
             exit 1

@@ -33,7 +33,7 @@ OTEL_AVAILABLE = importlib.util.find_spec("opentelemetry") is not None
 # Skip all tests in this module if OpenTelemetry is not available
 pytestmark = pytest.mark.skipif(
     not OTEL_AVAILABLE,
-    reason="OpenTelemetry SDK not installed. Install with: pip install 'mlsdm[observability]'",
+    reason="OpenTelemetry SDK not installed. Install with: pip install 'mlsdm[observability]' (issue: https://github.com/neuron7x/mlsdm/issues/1000)",
 )
 
 

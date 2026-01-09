@@ -46,7 +46,7 @@ def store(temp_db_path: Path) -> SQLiteMemoryStore:
 def store_with_encryption(temp_db_path: Path) -> SQLiteMemoryStore:
     """Create an encrypted SQLiteMemoryStore instance."""
     if not CRYPTOGRAPHY_AVAILABLE:
-        pytest.skip("cryptography not available")
+        pytest.skip("cryptography not available (issue: https://github.com/neuron7x/mlsdm/issues/1000)")
 
     # Generate a random 32-byte key
     encryption_key = os.urandom(32)
@@ -281,7 +281,10 @@ def test_stats(store: SQLiteMemoryStore) -> None:
     assert stats["db_size_bytes"] > 0
 
 
-@pytest.mark.skipif(not CRYPTOGRAPHY_AVAILABLE, reason="cryptography not installed")
+@pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="cryptography not installed (issue: https://github.com/neuron7x/mlsdm/issues/1000)",
+)
 def test_encryption_at_rest_optional(
     store_with_encryption: SQLiteMemoryStore,
     temp_db_path: Path,
@@ -343,7 +346,10 @@ def test_encryption_disabled_by_default(temp_db_path: Path) -> None:
     store.close()
 
 
-@pytest.mark.skipif(CRYPTOGRAPHY_AVAILABLE, reason="Test only when cryptography is NOT available")
+@pytest.mark.skipif(
+    CRYPTOGRAPHY_AVAILABLE,
+    reason="Test only when cryptography is NOT available (issue: https://github.com/neuron7x/mlsdm/issues/1000)",
+)
 def test_encryption_requires_cryptography(temp_db_path: Path) -> None:
     """Test that enabling encryption without cryptography raises ConfigurationError."""
     from mlsdm.utils.errors import ConfigurationError

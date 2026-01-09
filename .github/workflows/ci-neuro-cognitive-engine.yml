@@ -81,6 +81,61 @@ jobs:
       - name: Run mypy type checker
         run: make type
 
+  debt-prevention:
+    name: Debt Prevention Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
+
+      - name: Restore Python cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-py3.11-${{ hashFiles('**/requirements.txt', '**/pyproject.toml', '**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-py3.11-
+            ${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e ".[dev]"
+          pip install uv pip-audit
+
+      - name: Run determinism checks
+        run: make determinism-check
+
+      - name: Run security audit
+        run: make security-audit
+
+      - name: Enforce pytest skip hygiene
+        run: make test-hygiene
+
+      - name: Enforce logging hygiene
+        run: make log-hygiene
+
+      - name: Lint docs for duplicate headings
+        run: make docs-lint
+
+      - name: Check policy drift approvals
+        run: make policy-drift-check
+
   security:
     name: Security Vulnerability Scan
     runs-on: ubuntu-latest
@@ -685,7 +740,7 @@ jobs:
     name: All CI Checks Passed
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [lint, security, test, coverage, e2e-tests, effectiveness-validation, openapi-contract]
+    needs: [lint, debt-prevention, security, test, coverage, e2e-tests, effectiveness-validation, openapi-contract]
     steps:
       - name: All checks passed
         run: echo "All CI checks passed successfully!"

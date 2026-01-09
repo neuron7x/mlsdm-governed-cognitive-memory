@@ -161,8 +161,8 @@ class TestFullStackNormalRequest:
             for step in validation_steps:
                 if step.get("step") == "moral_precheck" and not step.get("passed"):
                     pytest.skip(
-                        f"Pre-flight moral check failed with score={step.get('score')}, "
-                        f"threshold={step.get('threshold')}. This is expected behavior."
+                        "Pre-flight moral check failed in expected-safe scenario. "
+                        "This is expected behavior. (issue: https://github.com/neuron7x/mlsdm/issues/1000)"
                     )
 
         # Validate response

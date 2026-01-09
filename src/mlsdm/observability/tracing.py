@@ -405,7 +405,7 @@ class TracerManager:
             )
 
         except Exception as e:
-            logger.error(f"Failed to initialize OpenTelemetry tracing: {e}")
+            logger.error("Failed to initialize OpenTelemetry tracing: %s", e)
             self._initialized = False
 
     def _create_exporter(self) -> Any | None:
@@ -455,7 +455,7 @@ class TracerManager:
             try:
                 self._provider.shutdown()
             except Exception as e:
-                logger.error(f"Error during tracer shutdown: {e}")
+                logger.error("Error during tracer shutdown: %s", e)
             finally:
                 self._provider = None
                 self._tracer = None

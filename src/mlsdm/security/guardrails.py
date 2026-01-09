@@ -626,4 +626,4 @@ def _record_guardrail_metrics(
                 )
     except Exception as e:
         # Graceful degradation - don't fail request if metrics fail
-        logger.warning(f"Failed to record guardrail metrics: {e}")
+        logger.warning("Failed to record guardrail metrics: %s", e)

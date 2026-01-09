@@ -143,7 +143,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     try:
         psutil.cpu_percent(interval=0.1)
     except Exception as e:
-        logger.warning(f"Failed to initialize CPU monitoring: {e}")
+        logger.warning("Failed to initialize CPU monitoring: %s", e)
 
     # Log system startup
     security_logger.log_system_event(

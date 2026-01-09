@@ -147,14 +147,14 @@ def migrate_state(
 
         try:
             migrated = migration_func(migrated)
-            logger.debug(f"Applied migration {src} -> {dst}")
+            logger.debug("Applied migration %s -> %s", src, dst)
         except Exception as e:
             raise RuntimeError(f"Migration from {src} to {dst} failed: {e}") from e
 
     # Update version to target
     migrated["version"] = to_version
 
-    logger.info(f"Completed migration from version {from_version} to {to_version}")
+    logger.info("Completed migration from version %s to %s", from_version, to_version)
     return migrated
 
 
@@ -184,4 +184,4 @@ def register_migration(
         raise ValueError(f"Migration {from_version}->{to_version} already registered")
 
     MIGRATIONS[key] = func
-    logger.debug(f"Registered migration {from_version} -> {to_version}")
+    logger.debug("Registered migration %s -> %s", from_version, to_version)

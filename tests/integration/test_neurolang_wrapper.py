@@ -13,7 +13,7 @@ from mlsdm.extensions.neuro_lang_extension import TORCH_AVAILABLE
 
 pytestmark = pytest.mark.skipif(
     not TORCH_AVAILABLE,
-    reason="NeuroLang integration tests require PyTorch (mlsdm[neurolang])",
+    reason="NeuroLang integration tests require PyTorch (mlsdm[neurolang]) (issue: https://github.com/neuron7x/mlsdm/issues/1000)",
 )
 
 

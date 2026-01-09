@@ -17,6 +17,10 @@ SCHEMA_VERSION = "evidence-v1"
 REQUIRED_OUTPUTS = {
     "coverage_xml": "coverage/coverage.xml",
     "junit_xml": "pytest/junit.xml",
+    "pip_audit_json": "audit/pip-audit.json",
+    "ci_summary": "ci/summary.json",
+    "python_version": "env/python_version.txt",
+    "uv_lock_sha256": "env/uv_lock_sha256.txt",
 }
 OPTIONAL_OUTPUT_PREFIXES = {
     "benchmark_metrics": "benchmarks/benchmark-metrics.json",
@@ -181,8 +185,6 @@ def _ensure_outputs_valid(evidence_dir: Path, outputs: dict[str, str]) -> None:
     allowed_optional = {
         "coverage_log",
         "unit_log",
-        "python_version",
-        "uv_lock_sha256",
         *OPTIONAL_OUTPUT_PREFIXES.keys(),
     }
     allowed_prefixes = tuple(OPTIONAL_OUTPUT_PREFIXES.values())

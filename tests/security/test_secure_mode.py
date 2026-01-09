@@ -172,7 +172,10 @@ def test_secure_mode_preserves_explicit_detect_disabled():
 
 
 @pytest.mark.security
-@pytest.mark.skipif(not TORCH_AVAILABLE, reason="NeuroLang training requires PyTorch")
+@pytest.mark.skipif(
+    not TORCH_AVAILABLE,
+    reason="NeuroLang training requires PyTorch (issue: https://github.com/neuron7x/mlsdm/issues/1000)",
+)
 def test_without_secure_mode_training_works_normally():
     """Test that without secure mode, normal training/checkpoint loading works."""
     with patch.dict(os.environ, {"MLSDM_SECURE_MODE": "0"}):

@@ -137,7 +137,9 @@ def test_neurolang_wrapper_with_torch_enabled():
 
     # Only run if torch is actually available
     if not nle_module.TORCH_AVAILABLE:
-        pytest.skip("PyTorch not available - skipping test with torch")
+        pytest.skip(
+            "PyTorch not available - skipping test with torch (issue: https://github.com/neuron7x/mlsdm/issues/1000)"
+        )
 
     from mlsdm.extensions import NeuroLangWrapper
 

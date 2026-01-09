@@ -176,13 +176,17 @@ EOF
         k8s_dir = repo_root / "deploy" / "k8s"
 
         if not k8s_dir.exists():
-            pytest.skip("No K8s manifests directory found")
+            pytest.skip(
+                "No K8s manifests directory found (issue: https://github.com/neuron7x/mlsdm/issues/1000)"
+            )
 
         # Check that we have at least some manifests
         manifests = list(k8s_dir.glob("*.yaml")) + list(k8s_dir.glob("*.yml"))
 
         if not manifests:
-            pytest.skip("No YAML manifests found in deploy/k8s/")
+            pytest.skip(
+                "No YAML manifests found in deploy/k8s/ (issue: https://github.com/neuron7x/mlsdm/issues/1000)"
+            )
 
         # Just verify they're valid YAML (don't run full script to avoid dependencies)
         import yaml

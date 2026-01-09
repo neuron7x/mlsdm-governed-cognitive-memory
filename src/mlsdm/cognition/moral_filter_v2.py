@@ -205,13 +205,19 @@ class MoralFilterV2:
         # since thresholds are in [0.3, 0.9] range, 0.1 absolute = ~17% relative change
         if drift_magnitude > 0.1:  # >0.1 absolute change (large single jump)
             logger.error(
-                f"CRITICAL DRIFT: threshold changed {drift_magnitude:.3f} "
-                f"({old:.3f} → {new:.3f}) for filter '{self._filter_id}'"
+                "CRITICAL DRIFT: threshold changed %.3f (%.3f → %.3f) for filter '%s'",
+                drift_magnitude,
+                old,
+                new,
+                self._filter_id,
             )
         elif drift_magnitude > 0.05:  # >0.05 absolute change (moderate jump)
             logger.warning(
-                f"Significant drift: threshold changed {drift_magnitude:.3f} "
-                f"({old:.3f} → {new:.3f}) for filter '{self._filter_id}'"
+                "Significant drift: threshold changed %.3f (%.3f → %.3f) for filter '%s'",
+                drift_magnitude,
+                old,
+                new,
+                self._filter_id,
             )
 
         # Check for sustained drift (trend over history)
@@ -219,8 +225,9 @@ class MoralFilterV2:
             recent_drift = self._drift_history[-1] - self._drift_history[-10]
             if abs(recent_drift) > 0.15:  # >0.15 absolute change over 10 operations
                 logger.error(
-                    f"SUSTAINED DRIFT: threshold drifted {recent_drift:.3f} "
-                    f"over last 10 operations for filter '{self._filter_id}'"
+                    "SUSTAINED DRIFT: threshold drifted %.3f over last 10 operations for filter '%s'",
+                    recent_drift,
+                    self._filter_id,
                 )
 
     def get_drift_stats(self) -> dict[str, float]:
