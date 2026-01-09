@@ -290,12 +290,10 @@ class MemoryManager:
 
         self.metrics_collector.start_event_timer()
 
-        total = self.metrics_collector.metrics["total_events_processed"]
-        if total > 0:
-            accept_rate = self.metrics_collector.metrics["accepted_events_count"] / float(total)
-            self.filter.adapt(accept_rate)
+        accepted = self.filter.evaluate(moral_value)
+        self.filter.adapt(accepted)
 
-        if not self.filter.evaluate(moral_value):
+        if not accepted:
             self.metrics_collector.add_latent_event()
             self.metrics_collector.stop_event_timer_and_record_latency()
             return
