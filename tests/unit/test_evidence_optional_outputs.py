@@ -35,8 +35,8 @@ def _run_capture(evidence_dir: Path, inputs: dict[str, str]) -> Path:
     evidence_root = _repo_root() / "artifacts" / "evidence"
 
     def _snapshot_set(root: Path) -> set[Path]:
-        # Snapshots live under artifacts/evidence/<date>/<short_sha>
-        return set(root.glob("*/*")) if root.exists() else set()
+        # Snapshots live under artifacts/evidence/<date>/<tag>/<short_sha>
+        return set(root.glob("*/*/*")) if root.exists() else set()
 
     before = _snapshot_set(evidence_root)
     subprocess.check_call(
@@ -80,6 +80,8 @@ def test_optional_outputs_verified_when_present(tmp_path: Path) -> None:
     latency = tmp_path / "raw_neuro_engine_latency.json"
     memory = tmp_path / "memory_footprint.json"
     iteration_metrics = tmp_path / "iteration-metrics.jsonl"
+    audit = tmp_path / "pip-audit.json"
+    summary = tmp_path / "ci-summary.json"
 
     coverage.write_text('<coverage line-rate="0.5"></coverage>', encoding="utf-8")
     junit.write_text('<testsuite name="t" tests="1" failures="0" errors="0" skipped="0"><testcase name="ok"/></testsuite>', encoding="utf-8")
@@ -87,12 +89,16 @@ def test_optional_outputs_verified_when_present(tmp_path: Path) -> None:
     latency.write_text('{"p50": 1}', encoding="utf-8")
     memory.write_text('{"rss": 1}', encoding="utf-8")
     iteration_metrics.write_text('{"delta": 0.1}\n', encoding="utf-8")
+    audit.write_text('{"dependencies": []}\n', encoding="utf-8")
+    summary.write_text('{"workflow": "test"}\n', encoding="utf-8")
 
     produced = _run_capture(
         snapshot.parent,
         {
             "coverage_xml": str(coverage),
             "junit_xml": str(junit),
+            "pip_audit_json": str(audit),
+            "ci_summary": str(summary),
             "benchmark_metrics": str(bench),
             "raw_latency": str(latency),
             "memory_footprint": str(memory),
@@ -109,15 +115,21 @@ def test_required_only_still_passes(tmp_path: Path) -> None:
     snapshot = evidence_root / "2026-01-02" / "abc123"
     coverage = tmp_path / "coverage.xml"
     junit = tmp_path / "junit.xml"
+    audit = tmp_path / "pip-audit.json"
+    summary = tmp_path / "ci-summary.json"
 
     coverage.write_text('<coverage line-rate="0.5"></coverage>', encoding="utf-8")
     junit.write_text('<testsuite name="t" tests="1" failures="0" errors="0" skipped="0"><testcase name="ok"/></testsuite>', encoding="utf-8")
+    audit.write_text('{"dependencies": []}\n', encoding="utf-8")
+    summary.write_text('{"workflow": "test"}\n', encoding="utf-8")
 
     produced = _run_capture(
         snapshot.parent,
         {
             "coverage_xml": str(coverage),
             "junit_xml": str(junit),
+            "pip_audit_json": str(audit),
+            "ci_summary": str(summary),
         },
     )
 
@@ -131,14 +143,20 @@ def test_optional_output_outside_dir_fails(tmp_path: Path) -> None:
     coverage = tmp_path / "coverage.xml"
     junit = tmp_path / "junit.xml"
     bad = tmp_path / "outside.json"
+    audit = tmp_path / "pip-audit.json"
+    summary = tmp_path / "ci-summary.json"
 
     coverage.write_text('<coverage line-rate="0.5"></coverage>', encoding="utf-8")
     junit.write_text('<testsuite name="t" tests="1" failures="0" errors="0" skipped="0"><testcase name="ok"/></testsuite>', encoding="utf-8")
     bad.write_text("{}", encoding="utf-8")
+    audit.write_text('{"dependencies": []}\n', encoding="utf-8")
+    summary.write_text('{"workflow": "test"}\n', encoding="utf-8")
 
     manifest_inputs = {
         "coverage_xml": str(coverage),
         "junit_xml": str(junit),
+        "pip_audit_json": str(audit),
+        "ci_summary": str(summary),
         "benchmark_metrics": str(bad),
     }
 

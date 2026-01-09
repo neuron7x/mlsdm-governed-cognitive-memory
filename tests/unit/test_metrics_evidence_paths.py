@@ -100,7 +100,13 @@ class TestMetricsEvidencePaths:
 
         # Check the most recent snapshot
         latest_date_dir = sorted(dated_dirs)[-1]
-        sha_dirs = [d for d in latest_date_dir.iterdir() if d.is_dir()]
+        tag_dirs = [d for d in latest_date_dir.iterdir() if d.is_dir()]
+
+        if not tag_dirs:
+            return
+
+        latest_tag_dir = sorted(tag_dirs)[-1]
+        sha_dirs = [d for d in latest_tag_dir.iterdir() if d.is_dir()]
 
         if not sha_dirs:
             return
@@ -112,6 +118,8 @@ class TestMetricsEvidencePaths:
             "manifest.json",
             "coverage/coverage.xml",
             "pytest/junit.xml",
+            "audit/pip-audit.json",
+            "ci/summary.json",
             "env/python_version.txt",
             "env/uv_lock_sha256.txt",
         ]

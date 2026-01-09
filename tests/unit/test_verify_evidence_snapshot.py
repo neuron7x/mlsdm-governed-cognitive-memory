@@ -27,9 +27,14 @@ def _latest_snapshot() -> Path:
         msg = f"No dated evidence directories in {evidence_root}"
         raise AssertionError(msg)
     latest_date = dated_dirs[-1]
-    sha_dirs = sorted([p for p in latest_date.iterdir() if p.is_dir()], key=lambda path: path.name)
+    tag_dirs = sorted([p for p in latest_date.iterdir() if p.is_dir()], key=lambda path: path.name)
+    if not tag_dirs:
+        msg = f"No tag directories in {latest_date}"
+        raise AssertionError(msg)
+    latest_tag = tag_dirs[-1]
+    sha_dirs = sorted([p for p in latest_tag.iterdir() if p.is_dir()], key=lambda path: path.name)
     if not sha_dirs:
-        msg = f"No SHA directories in {latest_date}"
+        msg = f"No SHA directories in {latest_tag}"
         raise AssertionError(msg)
     return sha_dirs[-1]
 

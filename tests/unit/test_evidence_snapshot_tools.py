@@ -142,9 +142,13 @@ def test_capture_pack_mode_creates_manifest_with_file_index(tmp_path: Path) -> N
     coverage_xml = tmp_path / "coverage.xml"
     junit_xml = tmp_path / "junit.xml"
     coverage_log = tmp_path / "coverage.log"
+    audit = tmp_path / "pip-audit.json"
+    summary = tmp_path / "ci-summary.json"
     coverage_xml.write_text('<coverage line-rate="0.90"></coverage>', encoding="utf-8")
     junit_xml.write_text('<testsuite tests="1" failures="0" errors="0" skipped="0"></testsuite>', encoding="utf-8")
     coverage_log.write_text("ok", encoding="utf-8")
+    audit.write_text('{"dependencies": []}\n', encoding="utf-8")
+    summary.write_text('{"workflow": "test"}\n', encoding="utf-8")
     inputs_file = tmp_path / "inputs.json"
     inputs_file.write_text(
         json.dumps(
@@ -152,6 +156,8 @@ def test_capture_pack_mode_creates_manifest_with_file_index(tmp_path: Path) -> N
                 "coverage_xml": str(coverage_xml),
                 "coverage_log": str(coverage_log),
                 "junit_xml": str(junit_xml),
+                "pip_audit_json": str(audit),
+                "ci_summary": str(summary),
             }
         ),
         encoding="utf-8",
@@ -181,7 +187,10 @@ def test_capture_pack_mode_creates_manifest_with_file_index(tmp_path: Path) -> N
     date_dirs = sorted([d for d in evidence_root.iterdir() if d.is_dir()])
     assert date_dirs
     latest_date = date_dirs[-1]
-    sha_dirs = sorted([d for d in latest_date.iterdir() if d.is_dir()])
+    tag_dirs = sorted([d for d in latest_date.iterdir() if d.is_dir()])
+    assert tag_dirs
+    latest_tag = tag_dirs[-1]
+    sha_dirs = sorted([d for d in latest_tag.iterdir() if d.is_dir()])
     assert sha_dirs
     snapshot_dir = sha_dirs[-1]
 

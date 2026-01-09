@@ -38,6 +38,18 @@ def _changed_files(base_ref: str) -> set[str]:
     return {line.strip() for line in result.stdout.splitlines() if line.strip()}
 
 
+def _resolve_base_ref(base_ref: str) -> str:
+    if _git_ref_exists(base_ref):
+        return base_ref
+    _fetch_base_ref(base_ref.replace("origin/", ""))
+    if _git_ref_exists(base_ref):
+        return base_ref
+    fetch_head = "FETCH_HEAD"
+    if _git_ref_exists(fetch_head):
+        return fetch_head
+    raise PolicyDriftError(f"Unable to resolve base ref {base_ref}")
+
+
 def _load_json(path: Path) -> dict[str, str]:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -51,10 +63,8 @@ def check_policy_drift(base_ref: str, output_path: Path | None) -> None:
     if not APPROVAL_FILE.exists():
         raise PolicyDriftError(f"Missing approval file: {APPROVAL_FILE}")
 
-    if not _git_ref_exists(base_ref):
-        _fetch_base_ref(base_ref.replace("origin/", ""))
-
-    changed = _changed_files(base_ref)
+    resolved_ref = _resolve_base_ref(base_ref)
+    changed = _changed_files(resolved_ref)
     policy_changed = str(POLICY_FILE.relative_to(PROJECT_ROOT)) in changed
     approval_changed = str(APPROVAL_FILE.relative_to(PROJECT_ROOT)) in changed
 
@@ -72,7 +82,7 @@ def check_policy_drift(base_ref: str, output_path: Path | None) -> None:
     if output_path:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output = {
-            "base_ref": base_ref,
+            "base_ref": resolved_ref,
             "policy_changed": policy_changed,
             "approval_changed": approval_changed,
             "approval_token": None if approval_token == "UNSET" else approval_token,
