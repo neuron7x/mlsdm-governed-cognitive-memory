@@ -28,6 +28,7 @@ Root:
 - Keep BibTeX, APA, metadata, and verification tables in sync (no drift between `REFERENCES.bib`, `REFERENCES_APA7.md`, `metadata/identifiers.json`, and `VERIFICATION.md`).
 - Run `python scripts/validate_bibliography.py` (offline only; no network calls per `VERIFICATION.md` policy).
 - Run `python scripts/docs/validate_literature_map.py` (offline only; no network calls per `VERIFICATION.md` policy).
+- Before making changes, confirm every `paths:` entry exists in the repo (the `python scripts/docs/validate_literature_map.py` check enforces this).
 
 ## Literature map (CI-enforced)
 - `docs/bibliography/LITERATURE_MAP.md` is required and validated in CI.
