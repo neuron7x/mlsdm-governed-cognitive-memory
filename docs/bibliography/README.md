@@ -15,6 +15,20 @@ Root:
 - Allowed: peer-reviewed journals, top-tier conferences (ACM/IEEE/USENIX), academic books, official standards (NIST/ISO/IEEE), widely-used arXiv preprints.
 - Disallowed: personal blogs, unreviewed claims, non-stable URLs, sources without DOI/arXiv/canonical issuer URL.
 
+## Authoritative Source Audit
+Explicitly verify the authority of every source before adding it:
+- **Publication type**: journal article, top-tier conference proceeding, academic book, or official standard/issuer publication.
+- **Peer review**: confirm the venue has a formal peer-review process (journals/conferences/books) or is an official issuer (standards/government).
+- **Canonical identifier**: must include **DOI**, **ISBN**, or an **official issuer URL** (e.g., NIST/ISO/IEEE). Use the canonical issuer URL only when DOI/ISBN is not applicable.
+- **arXiv policy**: arXiv-only entries are allowed **only if no journal or conference version exists**. If a journal/conference version exists, use that canonical ID instead.
+
+## Authority-Proof Checklist (blocking)
+Complete this checklist **before** starting the Update workflow:
+- Source passes the Authoritative Source Audit (type + peer review + identifier).
+- `metadata/identifiers.json` includes the authority-proof minimum fields:
+  `canonical_id_type`, `canonical_id`, `canonical_url`, `verification_method`.
+- If the source is arXiv-only, confirm and note that no journal/conference version exists.
+
 ## Update workflow
 1) Add entry to `REFERENCES.bib` (unique key; include title+year + one of doi/url/eprint/isbn).
 2) Add same entry to `REFERENCES_APA7.md` with `<!-- key: ... -->` marker (APA 7).
