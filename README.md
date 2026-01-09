@@ -82,18 +82,15 @@
 
 ## 📋 Table of Contents
 
-- [What is MLSDM?](#-what-is-mlsdm)
-- [Core Value Proposition](#-core-value-proposition)
-- [Key Features](#-key-features)
+- [Hero / Identity](#-mlsdm)
+- [System Overview](#-system-overview)
+- [Capabilities](#-capabilities)
 - [Architecture](#-architecture)
-- [Quick Start](#-quick-start)
-- [Usage Examples](#-usage-examples)
-- [Validated Metrics](#-validated-metrics)
-- [Engineering & Readiness Status](#-engineering--readiness-status)
-- [Documentation](#-documentation)
-- [Roadmap](#-roadmap)
-- [Contributing](#-contributing)
-- [License](#-license)
+- [Guarantees / Properties](#-guarantees--properties)
+- [Evidence & Auditability](#-evidence--auditability)
+- [Usage / Getting Started](#-usage--getting-started)
+- [Governance / Safety](#-governance--safety)
+- [Project Meta](#-project-meta)
 
 ---
 
@@ -125,7 +122,9 @@
 
 </div>
 
-## 🧬 What is MLSDM?
+## 🧭 System Overview
+
+### 🧬 What is MLSDM?
 
 **MLSDM (Multi-Level Synaptic Dynamic Memory)** is a governed cognitive wrapper for Large Language Models that enforces biological constraints inspired by neuroscience.
 
@@ -181,7 +180,7 @@ MLSDM wraps **any LLM** with a neurobiologically-grounded cognitive layer that p
 
 ---
 
-## 💡 Core Value Proposition
+### 💡 Core Value Proposition
 
 | Feature | Description |
 |:--------|:------------|
@@ -192,7 +191,9 @@ MLSDM wraps **any LLM** with a neurobiologically-grounded cognitive layer that p
 
 ---
 
-## ✨ Key Features
+## ⚙️ Capabilities
+
+### ✨ Key Features
 
 <div align="center">
   <sub>🔍 Hover over details sections for expanded deep-dives</sub>
@@ -334,6 +335,8 @@ sequenceDiagram
     end
 ```
 
+## ✅ Guarantees & Properties
+
 ### Invariants
 
 | Invariant | Constraint | Enforcement |
@@ -348,7 +351,9 @@ For complete system design, see [ARCHITECTURE_SPEC.md](docs/ARCHITECTURE_SPEC.md
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Usage & Getting Started
+
+### 🚀 Quick Start
 
 > **New to MLSDM?** Start with our [**Getting Started Guide**](docs/GETTING_STARTED.md) for a streamlined introduction.
 
@@ -579,7 +584,7 @@ See [env.dev.example](env.dev.example), [env.cloud.example](env.cloud.example), 
 
 ---
 
-## 📖 Usage Examples
+### 📖 Usage Examples
 
 <details>
 <summary><strong>OpenAI Integration</strong></summary>
@@ -741,9 +746,20 @@ async def health():
 
 ---
 
-## 📊 Validated Metrics
+## 🧾 Evidence & Auditability
 
 All metrics are backed by reproducible tests with full traceability.
+
+🧭 Deterministic footprint • 🔁 reproducible tests with full traceability • ✅ GitHub Actions
+
+| Metric | Test Location |
+|:-------|:--------------|
+| Toxic Rejection Rate | `tests/validation/test_moral_filter_effectiveness.py` |
+| Memory | `tests/unit/` |
+| CI/CD | `.github/workflows/` |
+| Throughput | `tests/load/` (requires server) |
+
+### 📊 Validated Metrics
 
 ### Safety & Governance
 
@@ -782,7 +798,9 @@ For detailed validation results, see:
 
 ---
 
-## ⚙️ Engineering & Readiness Status
+## 🛡️ Governance & Safety
+
+### ⚙️ Engineering & Readiness Status
 
 > [!NOTE]
 > The tables below summarize capabilities and references. This project is in **Beta** status and is suitable for non-critical workloads with appropriate monitoring.
@@ -848,9 +866,43 @@ MLSDM implements defense-in-depth security:
 
 For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md).
 
+### 🔐 Security Model & Limitations
+
+> [!IMPORTANT]
+> MLSDM is designed with defense-in-depth but is **not audited** for production security compliance.
+
+| Control | Status | Reference |
+|:--------|:-------|:----------|
+| Log sanitization | ✅ PII scrubbing | [SECURITY_GUARDRAILS.md](docs/SECURITY_GUARDRAILS.md) |
+| Least-privilege CI | ✅ `contents: read` | [docs/CI_SECURITY_GATING.md](docs/CI_SECURITY_GATING.md) |
+| Rate limiting | ✅ 5 RPS default | [SECURITY_IMPLEMENTATION.md](docs/SECURITY_IMPLEMENTATION.md) |
+| Input validation | ✅ Type/range/sanitization | [SECURITY_GUARDRAILS.md](docs/SECURITY_GUARDRAILS.md) |
+| Threat model | ✅ STRIDE analysis | [THREAT_MODEL.md](docs/THREAT_MODEL.md) |
+
+**Limitations:**
+- Not a substitute for domain-specific security audit
+- Moral filter is heuristic-based (not guaranteed)
+- Beta status; additional hardening may be needed for mission-critical use
+
+### Known Limitations
+
+> [!WARNING]
+> Understand these constraints before deploying to production.
+
+| Limitation | Details |
+|:-----------|:--------|
+| No hallucination prevention | Wraps LLM but cannot improve factual accuracy |
+| Imperfect filtering | 93.3% toxic rejection (6.7% may pass); 37.5% false positive rate |
+| Beta status | Additional hardening needed for mission-critical production |
+| Not a compliance substitute | Requires domain-specific security audit |
+
+
+
 ---
 
-## 📖 Documentation
+## 🧩 Project Meta
+
+### 📖 Documentation
 
 See [docs/index.md](docs/index.md) for the canonical documentation hub (including the archive).
 
@@ -895,7 +947,7 @@ See [docs/index.md](docs/index.md) for the canonical documentation hub (includin
 
 ---
 
-## 🗺️ Roadmap
+### 🗺️ Roadmap
 
 ### Stable (v1.x) — Current
 
@@ -943,39 +995,9 @@ See [docs/index.md](docs/index.md) for the canonical documentation hub (includin
 | `scripts/` | Build, benchmark, deployment scripts |
 | `.github/workflows/` | CI/CD pipelines |
 
-### 🔐 Security Model & Limitations
-
-> [!IMPORTANT]
-> MLSDM is designed with defense-in-depth but is **not audited** for production security compliance.
-
-| Control | Status | Reference |
-|:--------|:-------|:----------|
-| Log sanitization | ✅ PII scrubbing | [SECURITY_GUARDRAILS.md](docs/SECURITY_GUARDRAILS.md) |
-| Least-privilege CI | ✅ `contents: read` | [docs/CI_SECURITY_GATING.md](docs/CI_SECURITY_GATING.md) |
-| Rate limiting | ✅ 5 RPS default | [SECURITY_IMPLEMENTATION.md](docs/SECURITY_IMPLEMENTATION.md) |
-| Input validation | ✅ Type/range/sanitization | [SECURITY_GUARDRAILS.md](docs/SECURITY_GUARDRAILS.md) |
-| Threat model | ✅ STRIDE analysis | [THREAT_MODEL.md](docs/THREAT_MODEL.md) |
-
-**Limitations:**
-- Not a substitute for domain-specific security audit
-- Moral filter is heuristic-based (not guaranteed)
-- Beta status; additional hardening may be needed for mission-critical use
-
-### Known Limitations
-
-> [!WARNING]
-> Understand these constraints before deploying to production.
-
-| Limitation | Details |
-|:-----------|:--------|
-| No hallucination prevention | Wraps LLM but cannot improve factual accuracy |
-| Imperfect filtering | 93.3% toxic rejection (6.7% may pass); 37.5% false positive rate |
-| Beta status | Additional hardening needed for mission-critical production |
-| Not a compliance substitute | Requires domain-specific security audit |
-
 ---
 
-## 🤝 Contributing
+### 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for:
 
@@ -1001,7 +1023,7 @@ ruff check src/
 
 ---
 
-## 📚 Citing
+### 📚 Citing
 
 If you use MLSDM in research, please cite it using the metadata in [`CITATION.cff`](CITATION.cff). GitHub's "Cite this repository" button provides pre-formatted citations.
 
@@ -1009,7 +1031,7 @@ For the curated bibliography (neuroscience, AI safety, LLM memory), see [`docs/b
 
 ---
 
-## 📄 License
+### 📄 License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
