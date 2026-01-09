@@ -14,6 +14,15 @@ import numpy as np
 import pytest
 
 from mlsdm.engine.neuro_cognitive_engine import NeuroCognitiveEngine, NeuroEngineConfig
+from mlsdm.observability.tracing import TracingConfig, initialize_tracing, shutdown_tracing
+
+
+@pytest.fixture(scope="module", autouse=True)
+def disable_tracing_for_benchmarks() -> None:
+    """Disable tracing to avoid console exporter overhead in benchmarks."""
+    initialize_tracing(TracingConfig(enabled=False))
+    yield
+    shutdown_tracing()
 
 
 def stub_llm_generate(prompt: str, max_tokens: int) -> str:
