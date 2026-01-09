@@ -74,4 +74,5 @@ CI fails if any entry drifts from the frozen metadata below or if coverage is in
 - **Quarterly review**: Check for DOI/URL rot (broken links)
 - **Version updates**: When software version changes, update CITATION.cff and CITATION.bib
 - **New releases**: Ensure date-released in CITATION.cff matches actual release date
+- **Release verification**: CITATION metadata must match release (version + date in CHANGELOG.md)
 - **Verification table**: Update verified_on date when re-verifying references

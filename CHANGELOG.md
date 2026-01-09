@@ -120,9 +120,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 1. Update version in `src/mlsdm/__init__.py`
 2. Update `CHANGELOG.md` with release notes
-3. Create and push a git tag: `git tag -a v0.1.0 -m "Release v0.1.0"`
-4. Push tag: `git push origin v0.1.0`
-5. GitHub Actions will automatically:
+3. Release checklist:
+   - Sync `CITATION.cff` and `CITATION.bib` with the release version
+   - Ensure the release date matches in `CITATION.cff` and `CHANGELOG.md`
+4. Create and push a git tag: `git tag -a v0.1.0 -m "Release v0.1.0"`
+5. Push tag: `git push origin v0.1.0`
+6. GitHub Actions will automatically:
    - Run tests
    - Build Docker image
    - Push to GitHub Container Registry
