@@ -48,6 +48,24 @@ Complete this checklist **before** starting the Update workflow:
    - `cffconvert --validate -i CITATION.cff`
 5) Open PR; CI blocks invalid metadata.
 
+## Atomic Update Protocol
+All bibliography updates are a single, fully synchronized cycle across **all** of:
+`REFERENCES.bib`, `REFERENCES_APA7.md`, `metadata/identifiers.json`, `VERIFICATION.md`.
+
+**Mandatory synchronization steps (in order):**
+1) Update `REFERENCES.bib` with the new or edited entry.
+2) Mirror the same entry in `REFERENCES_APA7.md` (matching key via `<!-- key: ... -->`).
+3) Update the corresponding record in `metadata/identifiers.json`.
+4) Regenerate the matching row in `VERIFICATION.md` from `metadata/identifiers.json`.
+5) Run local verification before PR:
+   - `python scripts/validate_bibliography.py`
+   - `cffconvert --validate -i CITATION.cff`
+
+**Rules (non-negotiable):**
+- **No partial updates** — any change must touch all four files in the same cycle.
+- **1 commit = 1 full cycle** — a single commit must include the complete synchronized update.
+- **Local verification before PR** — do not open a PR without passing local checks.
+
 ## Preflight Checklist
 - Keep BibTeX, APA, metadata, and verification tables in sync (no drift between `REFERENCES.bib`, `REFERENCES_APA7.md`, `metadata/identifiers.json`, and `VERIFICATION.md`).
 - Run `python scripts/validate_bibliography.py` (offline only; no network calls per `VERIFICATION.md` policy).
