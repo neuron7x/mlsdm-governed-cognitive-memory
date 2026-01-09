@@ -54,6 +54,7 @@ YEAR_PATTERN = re.compile(r"^\d{4}$")
 
 ISO_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 ALLOWED_CANONICAL_ID_TYPES = {"doi", "arxiv", "isbn", "url"}
+META_KEY_PREFIX = "_"
 REQUIRED_IDENTIFIER_FIELDS = ("doi", "url", "eprint", "isbn")
 PLACEHOLDER_DOMAINS = {"example.com", "example.org"}
 
@@ -599,7 +600,7 @@ def check_verification_table(
         for key in sorted(extra):
             errors.append(f"VERIFICATION.md contains key not present in BibTeX: {key}")
     if identifiers:
-        id_keys = set(identifiers.keys())
+        id_keys = {key for key in identifiers.keys() if not key.startswith(META_KEY_PREFIX)}
         missing_from_table = id_keys - table_keys
         extra_in_table = table_keys - id_keys
         for key in sorted(missing_from_table):
@@ -637,6 +638,8 @@ def check_identifiers_against_bib(
     seen_canonical: dict[tuple[str, str], str] = {}
 
     for key, payload in identifiers.items():
+        if key.startswith(META_KEY_PREFIX):
+            continue
         if key not in bib_keys:
             errors.append(f"identifiers.json contains key not present in BibTeX: {key}")
         canonical_type = payload.get("canonical_id_type")
@@ -673,7 +676,8 @@ def check_identifiers_against_bib(
                 )
             seen_canonical[canonical_key] = key
 
-    missing = bib_keys - set(identifiers.keys())
+    id_keys = {key for key in identifiers.keys() if not key.startswith(META_KEY_PREFIX)}
+    missing = bib_keys - id_keys
     for key in sorted(missing):
         errors.append(f"BibTeX key '{key}' missing from identifiers.json")
 
@@ -686,6 +690,8 @@ def check_frozen_metadata(bib_entries: list[dict], identifiers: dict[str, dict])
     bib_by_key = {entry["key"]: entry["fields"] for entry in bib_entries}
 
     for key, payload in identifiers.items():
+        if key.startswith(META_KEY_PREFIX):
+            continue
         if key not in bib_by_key:
             continue
         fields = bib_by_key[key]

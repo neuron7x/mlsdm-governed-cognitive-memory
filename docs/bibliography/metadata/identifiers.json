@@ -1,12 +1,10 @@
 {
   "_authority_proof_minimum": {
-    "required_fields": [
-      "canonical_id_type",
-      "canonical_id",
-      "canonical_url",
-      "verification_method"
-    ],
-    "description": "Minimum authority-proof attributes required for any source record."
+    "type": "canonical_id_type",
+    "canonical_id": "canonical_id",
+    "canonical_url": "canonical_url",
+    "verification_method": "verification_method",
+    "description": "Minimum authority-proof fields required for any source record."
   },
   "asha_aphasia": {
     "canonical_id": "https://www.asha.org/practice-portal/clinical-topics/aphasia/",
