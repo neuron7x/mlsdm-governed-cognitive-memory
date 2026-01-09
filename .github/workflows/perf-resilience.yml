@@ -232,6 +232,8 @@ jobs:
           python -m pip check
 
       - name: Run performance profiling
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           python scripts/profile_performance.py \
             --output-dir reports/profiling \
