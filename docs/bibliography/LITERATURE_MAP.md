@@ -15,6 +15,11 @@ paths: src/mlsdm/core/cognitive_controller.py, src/mlsdm/router/, src/mlsdm/exte
 citations: [@yao2022_react] [@schick2023_toolformer] [@park2023_generative]
 rationale: ReAct (Yao et al.) and Toolformer (Schick et al.) justify controller-driven routing between tools and language reasoning. Generative agent orchestration (Park et al.) backs the extension and router hooks that schedule multi-turn behaviors.
 
+## Cognitive Rhythm / Sleep-Wake
+paths: src/mlsdm/rhythm/, src/mlsdm/core/memory_manager.py, src/mlsdm/core/cognitive_controller.py, tests/unit/test_cognitive_rhythm.py
+citations: [@hastings2018_circadian] [@mendoza2009_clocks] [@olafsdottir2018_replay]
+rationale: Circadian control mechanisms (Hastings et al.; Mendoza) motivate phase-aware scheduling of cognitive processing, while replay dynamics (Ólafsdóttir et al.) align with alternating consolidation and online control phases.
+
 ## Safety / Guardrails / Governance
 paths: src/mlsdm/security/, policies/, SAFETY_POLICY.yaml, tests/security/test_ai_safety_invariants.py
 citations: [@bai2022_constitutional] [@gabriel2020_alignment] [@weidinger2023_veil]
