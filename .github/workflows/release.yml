@@ -519,6 +519,32 @@ jobs:
           path: changelog-fragment.md
           retention-days: 7
 
+  # CICD-009: Evidence Pack
+  evidence-pack:
+    name: Evidence Pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build evidence pack archive
+        run: |
+          tar -czf "evidence-pack-${{ steps.get_version.outputs.TAG }}.tar.gz" artifacts/evidence
+
+      - name: Upload evidence pack
+        uses: actions/upload-artifact@v6
+        with:
+          name: evidence-pack
+          path: evidence-pack-${{ steps.get_version.outputs.TAG }}.tar.gz
+          retention-days: 7
+
   # Build and Push Docker Image (only after ALL gates pass)
   build-and-push-docker:
     name: Build and Push Docker Image
@@ -535,6 +561,7 @@ jobs:
       - code-quality
       - coverage-check
       - generate-changelog
+      - evidence-pack
 
     permissions:
       contents: write
@@ -549,6 +576,12 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           name: changelog-fragment
+          path: .
+
+      - name: Download evidence pack
+        uses: actions/download-artifact@v7
+        with:
+          name: evidence-pack
           path: .
 
       - name: Set up Docker Buildx
@@ -640,6 +673,7 @@ jobs:
             echo "- SBOM (CycloneDX): \`sbom-cyclonedx.json\`" >> release-notes.md
             echo "- SBOM (SPDX): \`sbom-spdx.json\`" >> release-notes.md
             echo "- OpenAPI Spec: \`openapi.json\`" >> release-notes.md
+            echo "- Evidence Pack: \`evidence-pack-${{ steps.get_version.outputs.TAG }}.tar.gz\`" >> release-notes.md
           else
             # Fallback: Extract from CHANGELOG.md
             awk '/^## \['${{ steps.get_version.outputs.VERSION }}'\]/,/^## \[/' CHANGELOG.md | head -n -1 > release-notes.md || echo "Release ${{ steps.get_version.outputs.TAG }}" > release-notes.md
@@ -654,6 +688,7 @@ jobs:
             sbom-spdx.json
             docs/openapi.json
             changelog-fragment.md
+            evidence-pack-${{ steps.get_version.outputs.TAG }}.tar.gz
           draft: false
           prerelease: false
         env:
