@@ -519,9 +519,11 @@ class PhaseEntangledLatticeMemory:
             confidence_mask = np.empty(self.size, dtype=bool)
             provenance_size = len(self._provenance)
             for i in range(self.size):
-                confidence_mask[i] = (
-                    i < provenance_size and self._provenance[i].confidence >= min_confidence
-                )
+                if i < provenance_size:
+                    confidence_mask[i] = self._provenance[i].confidence >= min_confidence
+                else:
+                    # Backward compatibility: treat missing provenance as high confidence.
+                    confidence_mask[i] = True
 
             # Combine phase and confidence masks
             valid_mask = phase_mask & confidence_mask
