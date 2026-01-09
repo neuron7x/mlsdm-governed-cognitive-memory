@@ -406,6 +406,13 @@ pip install -r requirements-neurolang.txt  # Add Aphasia/NeuroLang support
 
 This project uses [`uv`](https://github.com/astral-sh/uv) for deterministic dependency locking. The `uv.lock` file pins all dependencies with cryptographic hashes for supply-chain security.
 
+#### Dependency Determinism Policy
+1) `uv.lock` is the canonical lock for all environments hints.
+2) `requirements.txt` is generated via `python scripts/ci/export_requirements.py` and must match `pyproject.toml`.
+3) CI enforces clean `git diff requirements.txt` after regeneration.
+4) Dev-only type stubs are pinned in `pyproject.toml` and propagated into `requirements.txt`.
+5) Dependency updates require updating `uv.lock` and regenerating `requirements.txt`.
+
 ```bash
 # Development install (uses uv.lock for reproducible installs)
 uv sync
