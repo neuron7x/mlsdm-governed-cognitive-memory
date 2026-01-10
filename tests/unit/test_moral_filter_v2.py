@@ -35,13 +35,19 @@ def test_compute_moral_value_updates_metadata() -> None:
 
 
 def test_adapt_increases_threshold() -> None:
-    """Positive signals above dead-band should raise threshold."""
+    """Positive signals above dead-band should raise threshold.
+
+    The adaptive controller uses EMA with alpha=0.1 and dead-band=0.1.
+    Starting from equilibrium (ema=0.5), three consecutive positive
+    signals are required to exceed the dead-band and trigger adaptation.
+    """
     moral_filter = MoralFilterV2(initial_threshold=0.5)
 
-    moral_filter.adapt(accepted=True)  # warm-up within dead-band
-    moral_filter.adapt(accepted=True)  # pushes error beyond dead-band
+    for _ in range(3):
+        moral_filter.adapt(accepted=True)
 
     assert moral_filter.threshold > 0.5
+    assert moral_filter.ema_accept_rate > 0.63
 
 
 def test_record_drift_logs_warning(caplog) -> None:
