@@ -11,6 +11,11 @@ This directory is the canonical source of bibliographic metadata for this reposi
 Root:
 - `CITATION.cff` — repository-level citation metadata (GitHub "Cite this repository").
 
+## Release Citation Contract
+- `CITATION.cff` fields `version` and `date-released` **must match** the latest release entry in `CHANGELOG.md`.
+- `CITATION.bib` **must be synchronized** with `CITATION.cff` (same release metadata and citation content).
+- Do not update `CITATION.cff` or `CITATION.bib` in isolation; update them together when a new release is recorded.
+
 ## Policy
 - Allowed: peer-reviewed journals, top-tier conferences (ACM/IEEE/USENIX), academic books, official standards (NIST/ISO/IEEE), widely-used arXiv preprints.
 - Disallowed: personal blogs, unreviewed claims, non-stable URLs, sources without DOI/arXiv/canonical issuer URL.
