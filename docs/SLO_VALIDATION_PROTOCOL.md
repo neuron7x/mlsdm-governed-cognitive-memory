@@ -1,7 +1,7 @@
 # SLO Validation Protocol
 
-**Version:** 1.0.0
-**Last Updated:** December 2025
+**Version:** 1.1.0
+**Last Updated:** March 2026
 **Status:** ACTIVE
 
 ## Purpose
@@ -10,11 +10,20 @@ This document defines the protocol for validating Service Level Objectives (SLOs
 
 ## SLO Sources of Truth
 
-All SLO targets are defined in **`policy/observability-slo.yaml`** and loaded through the canonical policy loader (`mlsdm.policy.loader`). Tests MUST read from the loader output to ensure consistency between documentation and enforcement.
+All SLO targets are defined in **`policy/observability-slo.yaml`** and loaded through the canonical policy loader (`mlsdm.policy.loader`). Tests MUST read from the loader output to ensure consistency between documentation and enforcement. `policy_contract_version` is strictly enforced (currently `1.1`), and unknown fields fail closed.
 
 ## Policy Architecture (Single Source of Truth)
 
-**SoT:** `policy/observability-slo.yaml` → **Loader:** `mlsdm.policy.loader` (schema + canonicalization) → **Enforcement:** runtime SLOs, tests, and CI gates.
+**SoT:** `policy/observability-slo.yaml` → **Loader:** `mlsdm.policy.loader` (schema + canonicalization + canonical hash) → **Enforcement:** runtime SLOs, tests, and CI gates.
+
+### Unit Normalization (Deterministic)
+
+SLO numeric fields accept explicit units and are normalized by the loader:
+- **Latency fields** (`*_ms`): allow `ms` or `s` (converted to milliseconds)
+- **Percent fields** (`*_percent`): allow `%`, `percent`, or `ratio` (ratio → percent)
+- **Ratio fields** (explicit validators): allow `%`, `percent`, or `ratio` (percent → ratio)
+
+This ensures deterministic interpretation across OS/Python versions.
 
 ## SLO Invariants & Test Matrix
 
@@ -156,6 +165,14 @@ pytest tests/unit/test_cognitive_controller.py::TestCognitiveControllerMemoryLea
 # Run all SLO tests
 pytest tests/perf/ tests/resilience/ -v
 ```
+
+### Local Policy Validation
+
+```bash
+python -m mlsdm.policy.check
+```
+
+This ensures the YAML contract, export mapping, and enforcement gates stay aligned with SLO test expectations.
 
 ### CI/CD
 

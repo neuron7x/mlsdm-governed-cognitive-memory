@@ -29,14 +29,15 @@ def main() -> int:
 
     try:
         sys.path.insert(0, str(REPO_ROOT / "src"))
-        from mlsdm.policy.loader import PolicyLoadError, export_opa_policy_data
+        from mlsdm.policy.loader import PolicyLoadError
+        from mlsdm.policy.opa import PolicyExportError, export_opa_policy_data
 
         policy_dir = args.policy_dir
         if not policy_dir.is_absolute():
             policy_dir = (REPO_ROOT / policy_dir).resolve()
 
         export_opa_policy_data(policy_dir, args.output)
-    except PolicyLoadError as exc:
+    except (PolicyLoadError, PolicyExportError) as exc:
         print(f"ERROR: {exc}")
         return 1
 

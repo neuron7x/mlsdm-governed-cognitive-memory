@@ -20,6 +20,12 @@ package ci.workflows
 
 policy := data.policy.security_baseline.controls.ci_workflow_policy
 
+# Ensure policy data is present (fail-closed)
+deny[msg] {
+    not data.policy.security_baseline.controls.ci_workflow_policy
+    msg := "Missing policy data key data.policy.security_baseline.controls.ci_workflow_policy (from policy/security-baseline.yaml controls.ci_workflow_policy)."
+}
+
 # ============================================================================
 # DENY RULES - Will fail CI if violated
 # ============================================================================
@@ -76,22 +82,6 @@ deny[msg] {
     msg := sprintf("Job '%s' uses prohibited mutable reference in '%s'. Pin to a SHA for security.", [job_name, uses])
 }
 
-deny[msg] {
-    job := input.jobs[job_name]
-    step := job.steps[_]
-    uses := step.uses
-    uses != null
-
-    # Check if it's a third-party action (not github/* or actions/*)
-    not is_first_party_action(uses)
-
-    # Check for mutable references
-    ref := policy.prohibited_mutable_refs[_]
-    str_contains(uses, ref)
-
-    msg := sprintf("Job '%s' uses prohibited mutable reference in '%s'. Pin to a SHA for security.", [job_name, uses])
-}
-
 # STRIDE: Information Disclosure
 # Block workflows that might expose secrets in logs
 deny[msg] {
@@ -121,19 +111,6 @@ warn[msg] {
 
 # STRIDE: Tampering
 # Warn about mutable action references (branches instead of SHAs)
-warn[msg] {
-    job := input.jobs[job_name]
-    step := job.steps[_]
-    uses := step.uses
-    uses != null
-
-    # Check for mutable references
-    ref := policy.prohibited_mutable_refs[_]
-    str_contains(uses, ref)
-
-    msg := sprintf("Job '%s' uses mutable reference in '%s'. Consider pinning to a SHA.", [job_name, uses])
-}
-
 warn[msg] {
     job := input.jobs[job_name]
     step := job.steps[_]

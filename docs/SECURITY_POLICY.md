@@ -1,8 +1,8 @@
 # Security Policy
 
-**Document Version:** 1.0.0
+**Document Version:** 2.2.0
 **Project Version:** 1.0.0
-**Last Updated:** November 2025
+**Last Updated:** March 2026
 **Security Contact:** Report vulnerabilities via GitHub Security Advisories
 
 ## Table of Contents
@@ -1088,7 +1088,9 @@ All critical security requirements are enforced through machine-readable policy 
 
 ### Policy Architecture (Single Source of Truth)
 
-**SoT:** `policy/security-baseline.yaml` → **Loader:** `mlsdm.policy.loader` (schema validation + canonicalization) → **Enforcement:** CI workflows, OPA/Conftest gates, and runtime checks. The loader also exports OPA data for conftest to prevent drift between YAML and Rego.
+**SoT:** `policy/security-baseline.yaml` → **Loader:** `mlsdm.policy.loader` (schema validation + canonicalization + canonical hash) → **OPA Exporter:** `mlsdm.policy.opa` (explicit YAML → JSON → Rego mapping contract) → **Enforcement:** CI workflows, OPA/Conftest gates, and runtime checks.
+
+**Contract Versioning:** `policy_contract_version` is strictly enforced (`1.1`), and unknown fields fail closed. Contract changes require a documented migration note (see ADR-0007).
 
 ### Policy Files
 
@@ -1195,17 +1197,25 @@ SAST violations are handled according to severity:
 
 Policy configuration consistency is validated by:
 ```bash
-python scripts/validate_policy_config.py
-python scripts/policy/export_policy_data.py --output build/policy_data.json
+python -m mlsdm.policy.check
 ```
 
-This script verifies:
-- Referenced workflows exist
-- Security modules are implemented
-- Test locations are valid
-- Documentation is complete
+This one-command runner mirrors CI and executes:
+1. Validate policy contract + repo alignment
+2. Export OPA policy data (with contract self-check)
+3. Conftest enforcement for CI workflows
+4. Conftest enforcement for fixtures
 
-**CI Integration:** Policy validation and policy data export run on every PR; the OPA gate consumes the generated data when evaluating `policies/ci/*.rego`.
+**CI Integration:** Policy validation and export run on every PR; the OPA gate consumes the generated data when evaluating `policies/ci/*.rego`.
+
+### Policy Extension Checklist
+
+When adding or modifying a policy control:
+1. Update `policy/security-baseline.yaml` (SoT).
+2. If new data is consumed by Rego, update `mlsdm.policy.opa.OPA_EXPORT_MAPPINGS`.
+3. Add/adjust fixtures in `tests/policy/ci/` (≥ 2 pass, ≥ 3 fail total).
+4. Add regression tests under `tests/policy/` for contract enforcement.
+5. Run `python -m mlsdm.policy.check` locally to confirm parity with CI.
 
 ### References
 
@@ -1218,6 +1228,6 @@ This script verifies:
 ---
 
 **Document Maintainer**: neuron7x / Security Team
-**Document Version**: 2.1 (With Policy-as-Code Integration)
-**Last Updated**: December 7, 2025
+**Document Version**: 2.2 (With Policy-as-Code Integration)
+**Last Updated**: March 2026
 **Status**: See [status/READINESS.md](status/READINESS.md) (not yet verified)

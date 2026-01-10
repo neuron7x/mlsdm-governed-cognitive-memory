@@ -208,6 +208,9 @@ jobs:
           pip install -r requirements.txt
           python -m pip check
 
+      - name: Configure policy PYTHONPATH
+        run: echo "PYTHONPATH=${{ github.workspace }}/src" >> $GITHUB_ENV
+
       - name: Install conftest
         run: |
           curl -L -o conftest.tar.gz --fail --retry 3 \
@@ -217,20 +220,17 @@ jobs:
           sudo mv conftest /usr/local/bin/
           rm conftest.tar.gz
 
-      - name: Validate policy configuration
-        run: python scripts/validate_policy_config.py
+      - name: Validate policy contract
+        run: python -m mlsdm.policy.check --stage validate
 
-      - name: Generate OPA policy data
-        run: python scripts/policy/export_policy_data.py --output build/policy_data.json
+      - name: Export policy data
+        run: python -m mlsdm.policy.check --stage export
 
       - name: Run policy checks on CI workflows
-        run: |
-          echo "Checking CI workflow policies..."
-          # Use --fail-on-warn=false to allow warnings but fail on denies
-          conftest test .github/workflows/*.yml -p policies/ci/ -d build/policy_data.json --all-namespaces --fail-on-warn=false
+        run: python -m mlsdm.policy.check --stage workflows
 
       - name: Verify policy fixtures
-        run: python scripts/policy/verify_policy_fixtures.py --data build/policy_data.json
+        run: python -m mlsdm.policy.check --stage fixtures
 
   dependency-drift-check:
     name: Dependency Drift Check

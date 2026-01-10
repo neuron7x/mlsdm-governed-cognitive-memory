@@ -4,33 +4,20 @@
 from __future__ import annotations
 
 import argparse
-import subprocess
+import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-GOOD_FIXTURES = ["tests/policy/ci/workflow-good.yml"]
+GOOD_FIXTURES = [
+    "tests/policy/ci/workflow-good.yml",
+    "tests/policy/ci/workflow-good-pinned.yml",
+]
 BAD_FIXTURES = [
     "tests/policy/ci/workflow-bad-permissions.yml",
     "tests/policy/ci/workflow-bad-unpinned.yml",
     "tests/policy/ci/workflow-bad-mutable.yml",
 ]
-
-
-def run_conftest(fixtures: list[str], data_path: Path, policy_dir: Path) -> subprocess.CompletedProcess[str]:
-    cmd = [
-        "conftest",
-        "test",
-        *fixtures,
-        "-p",
-        str(policy_dir),
-        "-d",
-        str(data_path),
-        "--all-namespaces",
-        "--fail-on-warn=false",
-    ]
-    return subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True, check=False)
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Verify policy fixtures with conftest")
@@ -52,14 +39,17 @@ def main() -> int:
         print(f"ERROR: Policy data file not found: {args.data}")
         return 1
 
-    good_result = run_conftest(GOOD_FIXTURES, args.data, args.policy_dir)
+    sys.path.insert(0, str(REPO_ROOT / "src"))
+    from mlsdm.policy.opa import run_conftest
+
+    good_result = run_conftest(GOOD_FIXTURES, args.data, args.policy_dir, REPO_ROOT)
     if good_result.returncode != 0:
         print("ERROR: Expected good fixtures to pass but conftest failed.")
         print(good_result.stdout)
         print(good_result.stderr)
         return 1
 
-    bad_result = run_conftest(BAD_FIXTURES, args.data, args.policy_dir)
+    bad_result = run_conftest(BAD_FIXTURES, args.data, args.policy_dir, REPO_ROOT)
     if bad_result.returncode == 0:
         print("ERROR: Expected bad fixtures to fail but conftest passed.")
         print(bad_result.stdout)

@@ -9,11 +9,13 @@ The repository currently enforces governance policies via multiple artifacts: hu
 
 ## Decision
 
-Adopt `policy/` YAML as the single source of truth (SoT) for governance policies. All enforcement mechanisms must be derived from the YAML via a canonical policy loader (`mlsdm.policy.loader`) that validates a strict schema, canonicalizes values, and exports data for:
+Adopt `policy/` YAML as the single source of truth (SoT) for governance policies. All enforcement mechanisms must be derived from the YAML via a canonical policy loader (`mlsdm.policy.loader`) that validates a strict schema, canonicalizes values, computes a canonical hash, and exports data for:
 
 1. **Runtime configuration:** Python modules load thresholds directly from the YAML via the loader.
 2. **OPA/Rego enforcement:** Conftest consumes generated JSON data, and Rego reads from `data.policy.*`.
 3. **Documentation and CI validation:** Docs and validation scripts reference the loader output and policy schema.
+
+Contract versioning is enforced via `policy_contract_version`. Unknown fields fail closed, and changes require explicit migration notes.
 
 ## Alternatives Considered
 
@@ -40,6 +42,13 @@ Adopt `policy/` YAML as the single source of truth (SoT) for governance policies
 3. Export OPA data from the loader and wire it into conftest execution.
 4. Update runtime SLO defaults to load from the policy contract.
 5. Update documentation to reflect SoT architecture and CI gates.
+
+### Contract Version 1.1 Migration Notes (2026-03)
+
+- Enforced strict `policy_contract_version` = `1.1` for all policy YAML.
+- Added deterministic canonical hash output for policy bundles.
+- Added unit normalization for SLO numeric fields (ms/percent/ratio) with explicit validators.
+- Introduced explicit OPA export mapping contract validation before writing data.
 
 ## Rollback Plan
 

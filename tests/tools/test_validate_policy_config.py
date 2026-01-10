@@ -2,7 +2,7 @@ from pathlib import Path
 
 import yaml
 
-from scripts.validate_policy_config import PolicyValidator
+from mlsdm.policy.validation import PolicyValidator
 
 
 def write_yaml(path: Path, data: dict) -> None:
@@ -11,7 +11,7 @@ def write_yaml(path: Path, data: dict) -> None:
 
 def security_policy_fixture(workflow_file: str) -> dict:
     return {
-        "policy_contract_version": "1.0",
+        "policy_contract_version": "1.1",
         "version": "1.0",
         "policy_name": "Security Baseline",
         "enforcement_level": "blocking",
@@ -81,7 +81,7 @@ def security_policy_fixture(workflow_file: str) -> dict:
 
 def slo_policy_fixture() -> dict:
     return {
-        "policy_contract_version": "1.0",
+        "policy_contract_version": "1.1",
         "version": "1.0",
         "policy_name": "Observability SLOs",
         "enforcement_level": "advisory",
