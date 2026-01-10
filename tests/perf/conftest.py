@@ -1,7 +1,9 @@
 """Configuration and fixtures for performance tests."""
 
 import os
+import random
 
+import numpy as np
 import pytest
 
 
@@ -22,9 +24,6 @@ def configure_perf_tests():
 @pytest.fixture
 def deterministic_seed():
     """Provide deterministic seed for reproducible tests."""
-    import numpy as np
-    import random
-
     seed = 42
     random.seed(seed)
     np.random.seed(seed)
