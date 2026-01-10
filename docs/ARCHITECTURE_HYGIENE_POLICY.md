@@ -49,3 +49,9 @@ When introducing a new package or subsystem:
 - [ ] No cross-layer imports (validated by tests).
 - [ ] Architecture docs updated with subsystem references.
 - [ ] Public interfaces documented.
+
+## Architecture Hygiene Register
+
+Architectural hygiene gaps are tracked in the register below, including ownership and review cadence:
+
+- [ARCHITECTURE_HYGIENE_REGISTER.md](ARCHITECTURE_HYGIENE_REGISTER.md)
