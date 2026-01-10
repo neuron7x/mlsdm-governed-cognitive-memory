@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
 import hashlib
 import json
 import re
-from typing import Any, Iterable
+from dataclasses import dataclass
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import yaml
 from pydantic import BaseModel, ConfigDict, ValidationError
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 DEFAULT_POLICY_DIR = Path(__file__).resolve().parents[3] / "policy"
 

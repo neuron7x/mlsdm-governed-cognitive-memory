@@ -17,19 +17,22 @@ Exit codes:
 import argparse
 import sys
 from pathlib import Path
-
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from mlsdm.policy.loader import (  # noqa: E402
-    PolicyBundle,
-    PolicyLoadError,
-    load_policy_bundle,
-    policy_documentation_paths,
-    policy_required_checks,
-    policy_test_locations,
-)
+
+def _load_policy_helpers() -> dict[str, Any]:
+    sys.path.insert(0, str(REPO_ROOT / "src"))
+    from mlsdm.policy import loader  # type: ignore
+
+    return {
+        "PolicyLoadError": loader.PolicyLoadError,
+        "load_policy_bundle": loader.load_policy_bundle,
+        "policy_documentation_paths": loader.policy_documentation_paths,
+        "policy_required_checks": loader.policy_required_checks,
+        "policy_test_locations": loader.policy_test_locations,
+    }
 
 
 class PolicyValidator:
@@ -48,31 +51,33 @@ class PolicyValidator:
         print("=" * 70)
         print()
 
+        helpers = _load_policy_helpers()
+
         # Load policy files
         try:
-            bundle = load_policy_bundle(self.policy_dir)
-        except PolicyLoadError as exc:
+            bundle = helpers["load_policy_bundle"](self.policy_dir)
+        except helpers["PolicyLoadError"] as exc:
             self.errors.append(str(exc))
             print(f"\n❌ FAILED: {exc}")
             return False
 
         # Run validation checks
-        self._validate_security_workflows(bundle)
+        self._validate_security_workflows(bundle, helpers)
         self._validate_security_modules(bundle)
-        self._validate_slo_tests(bundle)
-        self._validate_documentation(bundle)
+        self._validate_slo_tests(bundle, helpers)
+        self._validate_documentation(bundle, helpers)
 
         # Print results
         self._print_results()
 
         return len(self.errors) == 0
 
-    def _validate_security_workflows(self, bundle: PolicyBundle) -> None:
+    def _validate_security_workflows(self, bundle: Any, helpers: dict[str, Any]) -> None:
         """Validate that required CI workflows exist."""
         print("CHECK: Security Workflow Files")
         print("-" * 70)
 
-        required_checks = policy_required_checks(bundle)
+        required_checks = helpers["policy_required_checks"](bundle)
 
         for check in required_checks:
             check_name = check.name
@@ -101,7 +106,7 @@ class PolicyValidator:
 
         print()
 
-    def _validate_security_modules(self, bundle: PolicyBundle) -> None:
+    def _validate_security_modules(self, bundle: Any) -> None:
         """Validate that referenced security modules exist."""
         print("CHECK: Security Module References")
         print("-" * 70)
@@ -138,12 +143,12 @@ class PolicyValidator:
 
         print()
 
-    def _validate_slo_tests(self, bundle: PolicyBundle) -> None:
+    def _validate_slo_tests(self, bundle: Any, helpers: dict[str, Any]) -> None:
         """Validate that SLO test locations exist."""
         print("CHECK: SLO Test Locations")
         print("-" * 70)
 
-        test_locations = policy_test_locations(bundle)
+        test_locations = helpers["policy_test_locations"](bundle)
 
         for name, test_loc in test_locations:
             # Extract file path (before ::)
@@ -163,13 +168,13 @@ class PolicyValidator:
 
         print()
 
-    def _validate_documentation(self, bundle: PolicyBundle) -> None:
+    def _validate_documentation(self, bundle: Any, helpers: dict[str, Any]) -> None:
         """Validate that referenced documentation exists."""
         print("CHECK: Documentation Files")
         print("-" * 70)
 
         # Documentation from SLO policy
-        docs = policy_documentation_paths(bundle)
+        docs = helpers["policy_documentation_paths"](bundle)
         doc_files = [
             ("SLO Spec", docs.get("slo_spec")),
             ("Validation Protocol", docs.get("validation_protocol")),
