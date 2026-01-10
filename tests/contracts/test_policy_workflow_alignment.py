@@ -33,7 +33,7 @@ class TestPolicyWorkflowAlignment:
     @pytest.fixture
     def security_policy(self, repo_root: Path) -> dict:
         """Load security baseline policy."""
-        policy_path = repo_root / "policy" / "security-baseline.yaml"
+        policy_path = repo_root / "policies" / "yaml" / "security-baseline.yaml"
         with open(policy_path, encoding="utf-8") as f:
             return yaml.safe_load(f)
 

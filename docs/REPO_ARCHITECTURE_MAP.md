@@ -8,7 +8,7 @@
 - `scripts/`: Developer and CI utilities for automation, analysis, and maintenance.
 - `config/`: Configuration schemas, defaults, and environment-specific settings.
 - `deploy/`: Deployment manifests, infrastructure scaffolding, and release assets.
-- `policies/`: Governance, safety, and compliance policy artifacts.
+- `policies/`: Governance, safety, and compliance policy artifacts (`yaml/` for policy sources, `opa/` for OPA rules).
 - `reports/`: Generated evaluation, audit, and CI evidence reports.
 
 ## Module → Purpose → Owner docs
@@ -21,5 +21,5 @@
 | `scripts/` | Automation and tooling for developer workflows and CI. | [TOOLS_AND_SCRIPTS](TOOLS_AND_SCRIPTS.md), [CI_GUIDE](CI_GUIDE.md) |
 | `config/` | Configuration contracts and environment setup. | [CONFIGURATION_GUIDE](CONFIGURATION_GUIDE.md), [ARCHITECTURE_CONFIG](ARCHITECTURE_CONFIG.md) |
 | `deploy/` | Deployment procedures, infrastructure, and runtime rollout. | [DEPLOYMENT_GUIDE](DEPLOYMENT_GUIDE.md), [RUNBOOK](RUNBOOK.md) |
-| `policies/` | Safety, security, and governance controls. | [SECURITY_POLICY](SECURITY_POLICY.md), [SECURITY_GUARDRAILS](SECURITY_GUARDRAILS.md) |
+| `policies/` | Safety, security, and governance controls (`yaml/` for policy sources, `opa/` for OPA rules). | [SECURITY_POLICY](SECURITY_POLICY.md), [SECURITY_GUARDRAILS](SECURITY_GUARDRAILS.md) |
 | `reports/` | Audit, evaluation, and CI evidence outputs. | [CI_GATE_AUDIT_REPORT](CI_GATE_AUDIT_REPORT.md), [AUDIT_REGISTER](AUDIT_REGISTER.md) |

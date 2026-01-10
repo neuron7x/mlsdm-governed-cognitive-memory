@@ -11,7 +11,11 @@ compliance.
 
 ## Policy Categories
 
-### CI Workflow Policies (`ci/`)
+### Policy Sources (`yaml/`)
+- Machine-readable security baselines and observability SLOs
+- Used by validation scripts and contract tests
+
+### OPA CI Workflow Policies (`opa/ci/`)
 - Workflow permission restrictions (no `write-all`)
 - Action version pinning for third-party actions
 - Protection against secret exposure in logs
@@ -27,10 +31,10 @@ brew install conftest  # macOS
 curl -L https://github.com/open-policy-agent/conftest/releases/download/v0.55.0/conftest_0.55.0_Linux_x86_64.tar.gz | tar xzf -
 
 # Check CI workflows
-conftest test .github/workflows/*.yml -p policies/ci/
+conftest test .github/workflows/*.yml -p policies/opa/ci/
 
 # Check all policies
-conftest test -p policies/ .github/workflows/*.yml config/*.yaml
+conftest test -p policies/opa/ .github/workflows/*.yml config/*.yaml
 ```
 
 ### In CI
@@ -47,7 +51,7 @@ The CI uses `--fail-on-warn=false` to allow warnings but fail on deny rules.
 
 ## Policy Reference
 
-### ci/workflows.rego
+### opa/ci/workflows.rego
 
 **Deny Rules (will fail CI):**
 

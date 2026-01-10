@@ -10,19 +10,19 @@ This document defines the protocol for validating Service Level Objectives (SLOs
 
 ## SLO Sources of Truth
 
-All SLO targets are defined in **`policy/observability-slo.yaml`**. Tests MUST read from this policy file to ensure consistency between documentation and enforcement.
+All SLO targets are defined in **`policies/yaml/observability-slo.yaml`**. Tests MUST read from this policy file to ensure consistency between documentation and enforcement.
 
 ## SLO Invariants & Test Matrix
 
 | Invariant | Test Location | Target | Policy Source | Enforcement |
 |-----------|---------------|--------|---------------|-------------|
-| **API Readiness P95 < 120ms** | `tests/perf/test_slo_api_endpoints.py::test_readiness_latency` | p95 < 120ms (prod)<br>p95 < 150ms (CI) | `policy/observability-slo.yaml`<br>`slos.api_endpoints[0]` | Blocking |
-| **API Liveness P95 < 50ms** | `tests/perf/test_slo_api_endpoints.py::test_liveness_latency` | p95 < 50ms (prod)<br>p95 < 75ms (CI) | `policy/observability-slo.yaml`<br>`slos.api_endpoints[1]` | Blocking |
-| **Event Processing P95 < 500ms** | `tests/perf/test_slo_api_endpoints.py::test_event_processing_latency` | p95 < 500ms (prod)<br>p95 < 600ms (CI) | `policy/observability-slo.yaml`<br>`slos.api_endpoints[2]` | Advisory |
-| **Memory Stays Stable** | `tests/unit/test_cognitive_controller.py::TestCognitiveControllerMemoryLeak::test_memory_stays_stable_over_time` | later_growth ≤ initial_growth × 2.0 | `policy/observability-slo.yaml`<br>`slos.system_resources[0]` | Blocking |
-| **Memory Max < 1400 MB** | `tests/unit/test_cognitive_controller.py` | max_usage_mb ≤ 1400.0 | `policy/observability-slo.yaml`<br>`slos.system_resources[0]` | Blocking |
-| **Moral Filter Stability** | `tests/property/test_moral_filter_properties.py` | threshold ∈ [0.30, 0.90]<br>drift ≤ 0.15 | `policy/observability-slo.yaml`<br>`slos.cognitive_engine[0]` | Blocking |
-| **Memory Corruption Rate = 0** | `tests/property/test_pelm_phase_behavior.py` | corruption_rate = 0.0% | `policy/observability-slo.yaml`<br>`slos.cognitive_engine[1]` | Blocking |
+| **API Readiness P95 < 120ms** | `tests/perf/test_slo_api_endpoints.py::test_readiness_latency` | p95 < 120ms (prod)<br>p95 < 150ms (CI) | `policies/yaml/observability-slo.yaml`<br>`slos.api_endpoints[0]` | Blocking |
+| **API Liveness P95 < 50ms** | `tests/perf/test_slo_api_endpoints.py::test_liveness_latency` | p95 < 50ms (prod)<br>p95 < 75ms (CI) | `policies/yaml/observability-slo.yaml`<br>`slos.api_endpoints[1]` | Blocking |
+| **Event Processing P95 < 500ms** | `tests/perf/test_slo_api_endpoints.py::test_event_processing_latency` | p95 < 500ms (prod)<br>p95 < 600ms (CI) | `policies/yaml/observability-slo.yaml`<br>`slos.api_endpoints[2]` | Advisory |
+| **Memory Stays Stable** | `tests/unit/test_cognitive_controller.py::TestCognitiveControllerMemoryLeak::test_memory_stays_stable_over_time` | later_growth ≤ initial_growth × 2.0 | `policies/yaml/observability-slo.yaml`<br>`slos.system_resources[0]` | Blocking |
+| **Memory Max < 1400 MB** | `tests/unit/test_cognitive_controller.py` | max_usage_mb ≤ 1400.0 | `policies/yaml/observability-slo.yaml`<br>`slos.system_resources[0]` | Blocking |
+| **Moral Filter Stability** | `tests/property/test_moral_filter_properties.py` | threshold ∈ [0.30, 0.90]<br>drift ≤ 0.15 | `policies/yaml/observability-slo.yaml`<br>`slos.cognitive_engine[0]` | Blocking |
+| **Memory Corruption Rate = 0** | `tests/property/test_pelm_phase_behavior.py` | corruption_rate = 0.0% | `policies/yaml/observability-slo.yaml`<br>`slos.cognitive_engine[1]` | Blocking |
 
 ## Test Design Principles
 
@@ -81,7 +81,7 @@ from pathlib import Path
 
 def load_slo_policy():
     """Load SLO targets from policy file."""
-    policy_path = Path(__file__).parent.parent / "policy" / "observability-slo.yaml"
+    policy_path = Path(__file__).parent.parent / "policies" / "yaml" / "observability-slo.yaml"
     with open(policy_path) as f:
         return yaml.safe_load(f)
 
@@ -202,7 +202,7 @@ Memory growth: 2.5x (target: ≤ 2x) ✗
 
 ### Process
 
-1. **Propose change** in `policy/observability-slo.yaml`
+1. **Propose change** in `policies/yaml/observability-slo.yaml`
 2. **Justify change** with data and analysis
 3. **Update tests** to use new target
 4. **Run full suite** to verify
@@ -311,7 +311,7 @@ rate(rejected_events_count[5m]) / rate(total_events_processed[5m])
 
 ## References
 
-- **Policy:** `policy/observability-slo.yaml`
+- **Policy:** `policies/yaml/observability-slo.yaml`
 - **Spec:** `SLO_SPEC.md`
 - **Tests:** `tests/perf/`, `tests/resilience/`
 - **Runbook:** `RUNBOOK.md`

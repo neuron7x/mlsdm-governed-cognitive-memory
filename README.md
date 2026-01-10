@@ -493,7 +493,7 @@ brew install conftest  # macOS
 # or download from https://github.com/open-policy-agent/conftest
 
 # Run policy checks on CI workflows
-conftest test .github/workflows/*.yml -p policies/ci/
+conftest test .github/workflows/*.yml -p policies/opa/ci/
 ```
 
 ### Runtime Modes
@@ -998,7 +998,8 @@ See [docs/index.md](docs/index.md) for the canonical documentation hub (includin
 | `src/mlsdm/security/` | Rate limiting, RBAC, guardrails |
 | `tests/` | Unit, integration, property, load, validation tests |
 | `deploy/k8s/` | Kubernetes manifests |
-| `policies/ci/` | OPA/Rego policy checks |
+| `policies/yaml/` | Policy-as-code YAML sources |
+| `policies/opa/ci/` | OPA/Rego policy checks |
 | `scripts/` | Build, benchmark, deployment scripts |
 | `.github/workflows/` | CI/CD pipelines |
 

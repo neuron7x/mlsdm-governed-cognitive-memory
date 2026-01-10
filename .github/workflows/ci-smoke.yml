@@ -206,7 +206,7 @@ jobs:
         run: |
           echo "Checking CI workflow policies..."
           # Use --fail-on-warn=false to allow warnings but fail on denies
-          conftest test .github/workflows/*.yml -p policies/ci/ --all-namespaces --fail-on-warn=false
+          conftest test .github/workflows/*.yml -p policies/opa/ci/ --all-namespaces --fail-on-warn=false
 
   dependency-drift-check:
     name: Dependency Drift Check

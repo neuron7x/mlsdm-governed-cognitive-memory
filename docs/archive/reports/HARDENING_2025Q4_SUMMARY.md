@@ -13,8 +13,8 @@ This hardening initiative successfully transformed MLSDM's security and operatio
 ### 1. Policy-as-Code Foundation ✅
 
 **Created:**
-- `policy/security-baseline.yaml` - Machine-readable security requirements
-- `policy/observability-slo.yaml` - SLO targets and monitoring specifications
+- `policies/yaml/security-baseline.yaml` - Machine-readable security requirements
+- `policies/yaml/observability-slo.yaml` - SLO targets and monitoring specifications
 - `scripts/validate_policy_config.py` - Policy configuration validator
 
 **Impact:**
@@ -260,7 +260,7 @@ Status: ✅ APPROVED
 
 ## References
 
-- **Policy Files**: `policy/security-baseline.yaml`, `policy/observability-slo.yaml`
+- **Policy Files**: `policies/yaml/security-baseline.yaml`, `policies/yaml/observability-slo.yaml`
 - **Validation Script**: `scripts/validate_policy_config.py`
 - **Test Suite**: `tests/tools/`
 - **Documentation**: `SECURITY_POLICY.md`, `RUNBOOK.md`, `SLO_VALIDATION_PROTOCOL.md`

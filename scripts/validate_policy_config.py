@@ -7,7 +7,7 @@ code structure, and test locations.
 
 Usage:
     python scripts/validate_policy_config.py
-    python scripts/validate_policy_config.py --policy-dir policy/
+    python scripts/validate_policy_config.py --policy-dir policies/yaml/
 
 Exit codes:
     0 - All validations passed
@@ -252,8 +252,8 @@ def main() -> int:
     parser.add_argument(
         "--policy-dir",
         type=Path,
-        default=Path("policy"),
-        help="Path to policy directory (default: policy/)",
+        default=Path("policies/yaml"),
+        help="Path to policy directory (default: policies/yaml/)",
     )
     parser.add_argument(
         "--repo-root",

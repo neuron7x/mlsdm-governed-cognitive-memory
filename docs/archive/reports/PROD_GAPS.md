@@ -68,7 +68,7 @@
 
 | Priority | ID | Description | Status |
 |----------|-----|-------------|--------|
-| CRITICAL | HARD-001 | Policy-as-code foundation (`policy/security-baseline.yaml`, `policy/observability-slo.yaml`) | ✅ Complete |
+| CRITICAL | HARD-001 | Policy-as-code foundation (`policies/yaml/security-baseline.yaml`, `policies/yaml/observability-slo.yaml`) | ✅ Complete |
 | CRITICAL | HARD-002 | Policy validator script with comprehensive tests (`scripts/validate_policy_config.py`) | ✅ Complete |
 | CRITICAL | HARD-003 | SLO Validation Protocol documentation (`SLO_VALIDATION_PROTOCOL.md`) | ✅ Complete |
 | HIGH | HARD-004 | Bandit SARIF JSON validation in CI workflow | ✅ Complete |

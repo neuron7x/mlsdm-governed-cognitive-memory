@@ -1089,7 +1089,7 @@ All critical security requirements are enforced through machine-readable policy 
 ### Policy Files
 
 Security baseline requirements are defined in:
-- **`policy/security-baseline.yaml`**: Security checks, vulnerability thresholds, and enforcement rules
+- **`policies/yaml/security-baseline.yaml`**: Security checks, vulnerability thresholds, and enforcement rules
 
 ### Enforcement Mechanisms
 
@@ -1119,7 +1119,7 @@ All PRs must pass the following security checks before merge:
    - Failure: Blocks PR merge
 
 5. **Coverage Gate** (`./coverage_gate.sh`)
-   - Minimum: 75% code coverage (matches CI and policy/security-baseline.yaml)
+   - Minimum: 75% code coverage (matches CI and policies/yaml/security-baseline.yaml)
    - Ensures security-critical paths are tested
    - Failure: Blocks PR merge
 
@@ -1204,8 +1204,8 @@ This script verifies:
 
 ### References
 
-- **Security Baseline Policy:** `policy/security-baseline.yaml`
-- **Observability SLO Policy:** `policy/observability-slo.yaml`
+- **Security Baseline Policy:** `policies/yaml/security-baseline.yaml`
+- **Observability SLO Policy:** `policies/yaml/observability-slo.yaml`
 - **Policy Validator:** `scripts/validate_policy_config.py`
 - **SAST Workflow:** `.github/workflows/sast-scan.yml`
 - **Security Implementation:** `SECURITY_IMPLEMENTATION.md`

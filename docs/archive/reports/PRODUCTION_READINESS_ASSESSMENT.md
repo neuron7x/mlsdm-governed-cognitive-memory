@@ -190,7 +190,7 @@ make docker-smoke-neuro-engine
 
 | Area | Enhancement | Benefit |
 |------|-------------|---------|
-| **Policy-as-Code** | Created `policy/security-baseline.yaml` and `policy/observability-slo.yaml` | Machine-readable security requirements enforced in CI/CD |
+| **Policy-as-Code** | Created `policies/yaml/security-baseline.yaml` and `policies/yaml/observability-slo.yaml` | Machine-readable security requirements enforced in CI/CD |
 | **SAST Validation** | Added JSON validation to Bandit SARIF output | Prevents invalid security scan results from corrupting CI |
 | **Runbook Enhancement** | Added Symptom → Action tables, script references, test commands | Faster incident response with concrete operational procedures |
 | **Security Policy** | Removed all TBD placeholders, added Policy-as-Code integration | Clear security requirements with concrete EOL dates and CVE thresholds |
@@ -202,14 +202,14 @@ make docker-smoke-neuro-engine
 
 All critical security and observability requirements are now machine-readable and automatically enforced:
 
-**Security Baseline (`policy/security-baseline.yaml`):**
+**Security Baseline (`policies/yaml/security-baseline.yaml`):**
 - Required CI checks: Bandit, Semgrep, Ruff, Mypy, Coverage Gate
 - Vulnerability severity thresholds (CRITICAL: 0 allowed, must fix in 7 days)
 - Authentication requirements (API keys from env only, never hardcoded)
 - PII scrubbing rules (always scrub: password, api_key, secret, token, etc.)
 - Audit requirements (90-day security audit cycle)
 
-**Observability SLOs (`policy/observability-slo.yaml`):**
+**Observability SLOs (`policies/yaml/observability-slo.yaml`):**
 - API endpoint latency targets (readiness P95 < 120ms, liveness P95 < 50ms)
 - Memory usage constraints (max 1400 MB, growth rate < 2×)
 - Moral filter stability (threshold ∈ [0.30, 0.90], drift ≤ 0.15)

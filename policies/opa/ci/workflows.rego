@@ -12,7 +12,7 @@
 # - Information Disclosure: Block hardcoded secrets
 #
 # Usage:
-#   conftest test .github/workflows/*.yml -p policies/ci/
+#   conftest test .github/workflows/*.yml -p policies/opa/ci/
 #
 # ============================================================================
 

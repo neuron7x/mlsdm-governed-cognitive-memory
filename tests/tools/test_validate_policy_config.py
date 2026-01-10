@@ -11,8 +11,8 @@ def write_yaml(path: Path, data: dict) -> None:
 
 def test_validate_policy_config_success(tmp_path: Path):
     repo_root = tmp_path
-    policy_dir = repo_root / "policy"
-    policy_dir.mkdir()
+    policy_dir = repo_root / "policies" / "yaml"
+    policy_dir.mkdir(parents=True)
 
     workflows_dir = repo_root / ".github" / "workflows"
     workflows_dir.mkdir(parents=True)
@@ -35,8 +35,8 @@ def test_validate_policy_config_success(tmp_path: Path):
 
 def test_validate_policy_config_missing_workflow(tmp_path: Path):
     repo_root = tmp_path
-    policy_dir = repo_root / "policy"
-    policy_dir.mkdir()
+    policy_dir = repo_root / "policies" / "yaml"
+    policy_dir.mkdir(parents=True)
 
     security_policy = {
         "required_checks": [
