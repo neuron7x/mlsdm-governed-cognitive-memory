@@ -161,9 +161,23 @@ controls:
     first_party_action_owners:
       - "actions"
       - "github"
+    # Prohibited mutable refs include branch names and major-only version tags.
+    # Major-only tags (e.g., @v0, @v1) are mutable because maintainers can
+    # retag them to point to newer commits. Only full semver (e.g., @v0.21.1)
+    # or commit SHAs provide immutability.
     prohibited_mutable_refs:
       - "@main"
       - "@master"
+      - "@v0"
+      - "@v1"
+      - "@v2"
+      - "@v3"
+      - "@v4"
+      - "@v5"
+      - "@v6"
+      - "@v7"
+      - "@v8"
+      - "@v9"
 
 thresholds:
   # Vulnerability severity thresholds

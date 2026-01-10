@@ -50,6 +50,21 @@ Contract versioning is enforced via `policy_contract_version`. Unknown fields fa
 - Added unit normalization for SLO numeric fields (ms/percent/ratio) with explicit validators.
 - Introduced explicit OPA export mapping contract validation before writing data.
 
+### Mutable Ref Policy Fix (2026-01)
+
+- **Issue:** The Rego rule for blocking mutable action references used substring matching
+  (`str_contains(uses, ref)`), which caused false positives. For example, an action
+  pinned to `@v0.21.1` would be incorrectly blocked because `@v0` is a substring.
+- **Fix:** Changed to exact matching by parsing the ref part from the action string
+  (everything after `@`) and comparing the full `@ref_part` token against the
+  prohibited list. This ensures `@v0.21.1` (immutable semver) is allowed while
+  `@v0` (mutable major tag) is still blocked.
+- **Policy expansion:** Added major-only version tags (`@v0` through `@v9`) to
+  `prohibited_mutable_refs` to enforce supply-chain security by requiring full
+  semver or SHA pinning for third-party actions.
+- **Test coverage:** Added new fixtures `workflow-good-semver.yml` and
+  `workflow-bad-major-version.yml` to validate exact-match behavior.
+
 ## Rollback Plan
 
 If a critical release must bypass new gates, temporarily disable the policy validation and conftest data steps in CI with explicit human approval, then re-enable after remediation.

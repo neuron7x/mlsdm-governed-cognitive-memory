@@ -29,7 +29,7 @@ def _write_policy_dir(tmp_path: Path, security_data: dict, observability_data: d
 
 def test_canonical_hash_snapshot() -> None:
     bundle = load_policy_bundle(POLICY_DIR)
-    assert bundle.policy_hash == "70a4a00d22deadc0e54ef7f6d84bd75aac405f4cd37e50af09e13e10dec7b588"
+    assert bundle.policy_hash == "7c7ae4090ddf49f2a3817b5b0435f2ee9a110884d88f80ae84ce508002b0360c"
 
 
 def test_policy_missing_required_field_fails(tmp_path: Path) -> None:

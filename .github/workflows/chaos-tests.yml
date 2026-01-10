@@ -104,7 +104,7 @@ jobs:
           retention-days: 30
 
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v6
+        uses: mikepenz/action-junit-report@v6.1.0
         if: always()
         with:
           report_paths: 'chaos-*.xml'

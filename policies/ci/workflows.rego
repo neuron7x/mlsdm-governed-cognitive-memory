@@ -75,9 +75,11 @@ deny[msg] {
     # Check if it's a third-party action (not github/* or actions/*)
     not is_first_party_action(uses)
 
-    # Check for mutable references
-    ref := policy.prohibited_mutable_refs[_]
-    str_contains(uses, ref)
+    # Parse the ref part and check for exact match with prohibited refs
+    ref_part := get_action_ref(uses)
+    ref_part != ""
+    policy_ref_token := sprintf("@%s", [ref_part])
+    policy_ref_token == policy.prohibited_mutable_refs[_]
 
     msg := sprintf("Job '%s' uses prohibited mutable reference in '%s'. Pin to a SHA for security.", [job_name, uses])
 }
@@ -111,15 +113,21 @@ warn[msg] {
 
 # STRIDE: Tampering
 # Warn about mutable action references (branches instead of SHAs)
+# NOTE: This warn rule only applies to third-party actions to keep signal clean
 warn[msg] {
     job := input.jobs[job_name]
     step := job.steps[_]
     uses := step.uses
     uses != null
 
-    # Check for mutable references
-    ref := policy.prohibited_mutable_refs[_]
-    str_contains(uses, ref)
+    # Only warn for third-party actions
+    not is_first_party_action(uses)
+
+    # Parse the ref part and check for exact match with prohibited refs
+    ref_part := get_action_ref(uses)
+    ref_part != ""
+    policy_ref_token := sprintf("@%s", [ref_part])
+    policy_ref_token == policy.prohibited_mutable_refs[_]
 
     msg := sprintf("Job '%s' uses mutable reference in '%s'. Consider pinning to a SHA.", [job_name, uses])
 }
@@ -136,4 +144,19 @@ str_contains(str, pattern) {
 is_first_party_action(uses) {
     owner := split(uses, "/")[0]
     owner == policy.first_party_action_owners[_]
+}
+
+# Extract the ref part from an action uses string (e.g., "owner/repo@ref" -> "ref")
+# Returns empty string if no "@" is present.
+# Note: GitHub Actions refs cannot contain "@" so there's always exactly one "@" in valid uses.
+# For malformed strings with multiple "@", we take the last segment, which is a safe default.
+get_action_ref(uses) = ref {
+    str_contains(uses, "@")
+    parts := split(uses, "@")
+    count(parts) >= 2
+    ref := parts[count(parts) - 1]
+}
+
+get_action_ref(uses) = "" {
+    not str_contains(uses, "@")
 }

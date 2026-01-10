@@ -97,11 +97,13 @@ def run_policy_checks(
         good_fixtures = [
             "tests/policy/ci/workflow-good.yml",
             "tests/policy/ci/workflow-good-pinned.yml",
+            "tests/policy/ci/workflow-good-semver.yml",
         ]
         bad_fixtures = [
             "tests/policy/ci/workflow-bad-permissions.yml",
             "tests/policy/ci/workflow-bad-unpinned.yml",
             "tests/policy/ci/workflow-bad-mutable.yml",
+            "tests/policy/ci/workflow-bad-major-version.yml",
         ]
         good_result = run_conftest(good_fixtures, data_output, rego_dir, repo_root)
         if good_result.returncode != 0:
