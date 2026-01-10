@@ -110,6 +110,11 @@ Incomplete updates (for example, adding a BibTeX entry without matching metadata
 - Each subsystem entry must list 1–5 repo paths and **3+ citations** using `[@key]` from `REFERENCES.bib`.
 - To add a subsystem: append a `## Subsystem Name` block with `paths:`, `citations:`, and a short rationale, then run `python scripts/docs/validate_literature_map.py`.
 
+## Literature Map Path Integrity
+- Every `paths:` entry **must** exist in the repository.
+- When modules are renamed or moved, the corresponding `paths:` entries must be updated in the same change.
+- Enforcement check: `python scripts/docs/validate_literature_map.py` validates the map, including path existence.
+
 ## Subsystem Coverage Audit
 Any change to a subsystem or its API/modules **requires** auditing the corresponding block in `docs/bibliography/LITERATURE_MAP.md` before merge.
 
