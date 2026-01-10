@@ -846,6 +846,7 @@ Closes #42
 ## Related Documentation
 
 - [ARCHITECTURE_SPEC.md](../ARCHITECTURE_SPEC.md) — Full system architecture
+- [ARCHITECTURE_HYGIENE_POLICY.md](ARCHITECTURE_HYGIENE_POLICY.md) — Rules for module placement and layer dependencies
 - [docs/LLM_PIPELINE.md](LLM_PIPELINE.md) — LLM pipeline specification
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — Contribution guidelines
 - [TESTING_GUIDE.md](../TESTING_GUIDE.md) — Comprehensive testing guide
