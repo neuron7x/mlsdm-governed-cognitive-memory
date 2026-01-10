@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 import ast
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Iterable, Iterator
+from typing import TYPE_CHECKING
 
-from mlsdm.config.architecture_manifest import ARCHITECTURE_MANIFEST, PACKAGE_ROOT, ArchitectureModule
+from mlsdm.config.architecture_manifest import (
+    ARCHITECTURE_MANIFEST,
+    PACKAGE_ROOT,
+    ArchitectureModule,
+)
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @dataclass(frozen=True)

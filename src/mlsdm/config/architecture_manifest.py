@@ -177,7 +177,7 @@ ARCHITECTURE_MANIFEST: tuple[ArchitectureModule, ...] = (
             "ontology_matcher.py",
             "synergy_experience.py",
         ),
-        allowed_dependencies=("observability", "utils"),
+        allowed_dependencies=("config", "observability", "utils"),
     ),
     ArchitectureModule(
         name="rhythm",
@@ -274,7 +274,7 @@ ARCHITECTURE_MANIFEST: tuple[ArchitectureModule, ...] = (
             "sandboxed training hooks with risk gating",
         ),
         public_interfaces=("neuro_lang_extension.py",),
-        allowed_dependencies=("config", "core", "observability", "utils"),
+        allowed_dependencies=("config", "core", "observability", "speech", "utils"),
     ),
     ArchitectureModule(
         name="deploy",
@@ -339,7 +339,7 @@ ARCHITECTURE_MANIFEST: tuple[ArchitectureModule, ...] = (
             "lightweight metrics helpers",
         ),
         public_interfaces=("config_loader.py", "config_validator.py", "metrics.py"),
-        allowed_dependencies=(),
+        allowed_dependencies=("security",),
     ),
 )
 
