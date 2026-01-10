@@ -131,6 +131,7 @@ ARCHITECTURE_MANIFEST: tuple[ArchitectureModule, ...] = (
             "router",
             "adapters",
             "security",
+            "risk",
             "observability",
             "utils",
             "deploy",
@@ -158,6 +159,7 @@ ARCHITECTURE_MANIFEST: tuple[ArchitectureModule, ...] = (
             "observability",
             "utils",
             "security",
+            "risk",
         ),
     ),
     ArchitectureModule(
@@ -286,6 +288,18 @@ ARCHITECTURE_MANIFEST: tuple[ArchitectureModule, ...] = (
         ),
         public_interfaces=("canary_manager.py",),
         allowed_dependencies=(),
+    ),
+    ArchitectureModule(
+        name="risk",
+        path="risk",
+        layer="cross-cutting",
+        responsibilities=(
+            "threat-model gating and risk assessment fusion",
+            "runtime mode switching and degradation orchestration",
+            "emergency fallback directives for safe execution",
+        ),
+        public_interfaces=("__init__.py", "safety_control.py"),
+        allowed_dependencies=("config", "security", "cognition", "observability", "contracts", "utils"),
     ),
     ArchitectureModule(
         name="security",

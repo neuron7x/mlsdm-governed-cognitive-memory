@@ -107,6 +107,11 @@ MLSDM is a multi-layered system spanning from low-level cognitive primitives to 
 │    • Structured logging                                           │
 │    • Aphasia-specific logging                                     │
 │                                                                    │
+│  Risk Control (src/mlsdm/risk/):                                   │
+│    • Threat-model gating and risk fusion                           │
+│    • Mode switching and degradations                               │
+│    • Emergency fallback directives                                 │
+│                                                                    │
 │  Security (src/mlsdm/security/):                                  │
 │    • Rate limiting                                                │
 │    • Payload scrubbing                                            │
@@ -141,6 +146,7 @@ MLSDM is a multi-layered system spanning from low-level cognitive primitives to 
 | router | service | Provider routing and failover | adapters, security, observability, utils |
 | adapters | integration | Provider-specific adapters | security, utils |
 | security | cross-cutting | Policy engine, guardrails, scrubbing | utils, observability |
+| risk | cross-cutting | Threat gating, mode switching, fallback control | security, cognition, observability, config, contracts, utils |
 | observability | cross-cutting | Metrics, logging, tracing | utils |
 | utils | foundation | Config, primitives, shared helpers | — |
 
@@ -211,25 +217,38 @@ MLSDM is a multi-layered system spanning from low-level cognitive primitives to 
    - **Exporters** (`exporters.py`): Metric aggregation and export
 
 9. **Security Infrastructure** (`src/mlsdm/security/`, `src/mlsdm/utils/`)
-   - **Rate Limiting** (`security/rate_limit.py`): Token bucket rate limiter
-   - **Payload Scrubbing** (`security/payload_scrubber.py`): PII removal
-   - **Input Validation** (`utils/input_validator.py`): Schema-based validation
-   - **Security Logging** (`utils/security_logger.py`): Audit trail
+    - **Rate Limiting** (`security/rate_limit.py`): Token bucket rate limiter
+    - **Payload Scrubbing** (`security/payload_scrubber.py`): PII removal
+    - **Input Validation** (`utils/input_validator.py`): Schema-based validation
+    - **Security Logging** (`utils/security_logger.py`): Audit trail
 
-10. **Configuration & Utilities** (`src/mlsdm/utils/`)
+10. **Risk & Safety Control Contour** (`src/mlsdm/risk/`)
+    - **Safety Control Contour** (`risk/safety_control.py`): CNS-inspired gating loop
+      - **Threat-model gating**: fuse security flags with cognitive risk signals
+      - **Mode switching**: normal → guarded → degraded → emergency
+      - **Degradation controls**: token caps, rate limiting, safe-response defaults
+      - **Emergency fallback**: abort or safe-return with audit tags
+    - **API Contract**:
+      - **Inputs**: security policy outcomes, cognition risk scores, observability anomalies
+      - **Outputs**: `RiskDirective` for core/engine enforcement
+    - **Integration Points**:
+      - **Inbound signals**: `security.guardrails`, `cognition` filters, `observability` anomaly telemetry
+      - **Outbound actions**: engine/core gating, fallback selection, and response shaping
+
+11. **Configuration & Utilities** (`src/mlsdm/utils/`)
     - **Config Loader** (`config_loader.py`): YAML-based configuration
     - **Config Validator** (`config_validator.py`): Schema enforcement
     - **Config Schema** (`config_schema.py`): Pydantic models for validation
     - **Data Serialization** (`data_serializer.py`): Event serialization
     - **Coherence/Safety Metrics** (`coherence_safety_metrics.py`): Domain metrics
 
-11. **Deployment Infrastructure** (`src/mlsdm/deploy/`, `config/`, `docker/`, `deploy/`)
+12. **Deployment Infrastructure** (`src/mlsdm/deploy/`, `config/`, `docker/`, `deploy/`)
     - **Canary Manager** (`deploy/canary_manager.py`): Gradual rollout logic
     - **Docker Images**: Production containerization (Dockerfile.neuro-engine-service)
     - **Configuration Profiles**: dev, staging, production YAML configs
     - **Deployment Manifests**: Kubernetes, docker-compose examples
 
-12. **Testing Infrastructure** (`tests/`)
+13. **Testing Infrastructure** (`tests/`)
     - **Unit Tests** (`tests/unit/`): Component-level tests (90%+ coverage)
     - **Integration Tests** (`tests/integration/`): Cross-component integration scenarios
     - **End-to-End Tests** (`tests/e2e/`): Full system behavior with stub backends
@@ -253,7 +272,7 @@ MLSDM is a multi-layered system spanning from low-level cognitive primitives to 
     - **Observability Tests** (`tests/observability/`): Metrics and logging validation
     - **Extension Tests** (`tests/extensions/`): NeuroLang and extension validation
 
-13. **Scripts & Tooling** (`scripts/`)
+14. **Scripts & Tooling** (`scripts/`)
     - **Effectiveness Charts** (`generate_effectiveness_charts.py`): Visualization generation
     - **Aphasia Evaluation** (`run_aphasia_eval.py`): Aphasia detection runner
     - **Security Audit** (`security_audit.py`): Security posture assessment
@@ -262,7 +281,7 @@ MLSDM is a multi-layered system spanning from low-level cognitive primitives to 
     - **Security Features Test** (`test_security_features.py`): Security integration tests
     - **NeuroLang Smoke Test** (`smoke_neurolang_wrapper.py`): Quick validation
 
-14. **CI/CD Infrastructure** (`.github/workflows/`)
+15. **CI/CD Infrastructure** (`.github/workflows/`)
     - **Neuro Cognitive Engine CI** (`ci-neuro-cognitive-engine.yml`): Core test suite
       - Unit, integration, e2e tests
       - Performance benchmarks
