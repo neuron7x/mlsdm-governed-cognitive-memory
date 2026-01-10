@@ -25,6 +25,7 @@ class ImportViolation:
     source_file: Path
     target_module: str
     import_statement: str
+    reason: str = "disallowed dependency"
 
 
 @dataclass(frozen=True)
@@ -150,6 +151,15 @@ def find_architecture_import_violations(
             if target_module == source_module:
                 continue
             if target_module not in manifest_index:
+                violations.append(
+                    ImportViolation(
+                        source_module=source_module,
+                        source_file=path,
+                        target_module=target_module,
+                        import_statement=target.raw,
+                        reason="unknown target module",
+                    )
+                )
                 continue
             if target_module not in allowed:
                 violations.append(
@@ -158,6 +168,7 @@ def find_architecture_import_violations(
                         source_file=path,
                         target_module=target_module,
                         import_statement=target.raw,
+                        reason="disallowed dependency",
                     )
                 )
 

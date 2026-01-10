@@ -13,7 +13,8 @@ def test_architecture_dependencies_respected() -> None:
         formatted = "\n".join(
             f"{violation.source_module} -> {violation.target_module}: "
             f"{violation.source_file.relative_to(PACKAGE_ROOT)} "
-            f"({violation.import_statement})"
+            f"({violation.import_statement}) "
+            f"[{violation.reason}]"
             for violation in violations
         )
         raise AssertionError(
