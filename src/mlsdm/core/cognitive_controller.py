@@ -112,6 +112,10 @@ class CognitiveController:
             synaptic_config=resolved_config,
         )
         self._bind_kernel_views()
+        assert self.rhythm.phase == "wake", "Initial phase must be wake"
+        assert (
+            self.rhythm.counter == self.rhythm.wake_duration
+        ), "Initial counter must equal wake_duration"
         self.step_counter = 0
         # Optimization: Cache for phase values to avoid repeated computation
         self._phase_cache: dict[str, float] = {"wake": 0.1, "sleep": 0.9}
@@ -288,6 +292,7 @@ class CognitiveController:
                 self.step_counter += 1
                 # Optimization: Invalidate state cache when processing
                 self._state_cache_valid = False
+                self.rhythm_step()
 
                 # Check memory usage before processing (psutil-based, legacy)
                 memory_mb = self._check_memory_usage()
@@ -343,8 +348,6 @@ class CognitiveController:
                     memory_span.set_attribute(
                         "mlsdm.pelm_used", self.pelm.get_state_stats()["used"]
                     )
-
-                self.rhythm_step()
 
                 # Check global memory bound (CORE-04) after memory-modifying operations
                 current_memory_bytes = self.memory_usage_bytes()

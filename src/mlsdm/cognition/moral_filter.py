@@ -2,7 +2,7 @@ class MoralFilter:
     def __init__(
         self,
         threshold: float = 0.5,
-        adapt_rate: float = 0.02,
+        adapt_rate: float = 0.05,
         min_threshold: float = 0.3,
         max_threshold: float = 0.9,
     ) -> None:

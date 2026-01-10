@@ -402,7 +402,7 @@ class ConfigValidator:
         )
 
         validated["adapt_rate"] = cls.validate_rate(
-            config.get("adapt_rate", 0.02), "adapt_rate", component
+            config.get("adapt_rate", 0.05), "adapt_rate", component
         )
 
         validated["ema_alpha"] = cls.validate_rate(

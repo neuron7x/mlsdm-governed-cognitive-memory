@@ -23,7 +23,7 @@ multi_level_memory:
 # Adaptive moral filter for content governance
 moral_filter:
   threshold: 0.5      # Initial threshold (0.0-1.0)
-  adapt_rate: 0.02    # Adaptation speed
+  adapt_rate: 0.05    # Adaptation speed
   min_threshold: 0.3  # Lower bound
   max_threshold: 0.9  # Upper bound
 
