@@ -51,6 +51,8 @@ evals/*_report.json
 # Downloaded tools and binaries
 conftest
 
-# Evidence artifacts (allow committed snapshots)
-!artifacts/evidence/**
+# Evidence artifacts (ignore generated evidence by default)
+artifacts/evidence/**
+!artifacts/evidence/.gitkeep
+!artifacts/evidence/README.md
 artifacts/tmp/

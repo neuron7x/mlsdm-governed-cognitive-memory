@@ -330,6 +330,18 @@ ARCHITECTURE_MANIFEST: tuple[ArchitectureModule, ...] = (
             "runtime mode and performance SLO definitions",
         ),
         public_interfaces=("__init__.py", "calibration.py", "runtime.py", "perf_slo.py", "env_compat.py"),
+        allowed_dependencies=("policy",),
+    ),
+    ArchitectureModule(
+        name="policy",
+        path="policy",
+        layer="foundation",
+        responsibilities=(
+            "policy contract loading and validation",
+            "canonical policy data export for enforcement",
+            "runtime policy bundle access for governance",
+        ),
+        public_interfaces=("__init__.py", "loader.py"),
         allowed_dependencies=(),
     ),
     ArchitectureModule(

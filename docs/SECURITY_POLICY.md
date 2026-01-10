@@ -1086,6 +1086,10 @@ python scripts/test_security_features.py
 
 All critical security requirements are enforced through machine-readable policy files and automated CI/CD checks. This ensures security is not just documented, but actively enforced.
 
+### Policy Architecture (Single Source of Truth)
+
+**SoT:** `policy/security-baseline.yaml` → **Loader:** `mlsdm.policy.loader` (schema validation + canonicalization) → **Enforcement:** CI workflows, OPA/Conftest gates, and runtime checks. The loader also exports OPA data for conftest to prevent drift between YAML and Rego.
+
 ### Policy Files
 
 Security baseline requirements are defined in:
@@ -1119,7 +1123,7 @@ All PRs must pass the following security checks before merge:
    - Failure: Blocks PR merge
 
 5. **Coverage Gate** (`./coverage_gate.sh`)
-   - Minimum: 75% code coverage (matches CI and policy/security-baseline.yaml)
+   - Minimum: 75% code coverage (matches CI and `policy/security-baseline.yaml` thresholds)
    - Ensures security-critical paths are tested
    - Failure: Blocks PR merge
 
@@ -1192,6 +1196,7 @@ SAST violations are handled according to severity:
 Policy configuration consistency is validated by:
 ```bash
 python scripts/validate_policy_config.py
+python scripts/policy/export_policy_data.py --output build/policy_data.json
 ```
 
 This script verifies:
@@ -1200,7 +1205,7 @@ This script verifies:
 - Test locations are valid
 - Documentation is complete
 
-**CI Integration:** Policy validation runs on every PR.
+**CI Integration:** Policy validation and policy data export run on every PR; the OPA gate consumes the generated data when evaluating `policies/ci/*.rego`.
 
 ### References
 

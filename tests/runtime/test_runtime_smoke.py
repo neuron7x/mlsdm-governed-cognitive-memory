@@ -10,6 +10,7 @@ Tests basic functionality of each runtime mode:
 import os
 import subprocess
 import sys
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -201,9 +202,14 @@ class TestHealthCheckCLI:
 
     def test_health_check_cli_runs(self):
         """Test health check CLI runs successfully."""
+        repo_root = Path(__file__).resolve().parents[2]
+        env = os.environ.copy()
+        env["PYTHONPATH"] = f"{repo_root / 'src'}:{env.get('PYTHONPATH', '')}".rstrip(":")
         result = subprocess.run(
             [sys.executable, "-m", "mlsdm.entrypoints.health"],
             capture_output=True,
+            cwd=repo_root,
+            env=env,
             text=True,
             timeout=30,
         )

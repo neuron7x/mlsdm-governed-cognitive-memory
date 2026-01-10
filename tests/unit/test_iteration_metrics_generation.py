@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -21,6 +22,9 @@ def _repo_root() -> Path:
 
 def _run_generator(out_path: Path, *, seed: int = 7, steps: int = 16) -> Path:
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    env = os.environ.copy()
+    repo_root = _repo_root()
+    env["PYTHONPATH"] = f"{repo_root / 'src'}:{env.get('PYTHONPATH', '')}".rstrip(":")
     subprocess.check_call(
         [
             sys.executable,
@@ -32,7 +36,8 @@ def _run_generator(out_path: Path, *, seed: int = 7, steps: int = 16) -> Path:
             "--out",
             str(out_path),
         ],
-        cwd=_repo_root(),
+        cwd=repo_root,
+        env=env,
     )
     return out_path
 
@@ -119,6 +124,10 @@ def test_capture_evidence_packs_iteration_metrics(tmp_path: Path) -> None:
             str(inputs_path),
         ],
         cwd=_repo_root(),
+        env={
+            **os.environ,
+            "PYTHONPATH": f"{_repo_root() / 'src'}:{os.environ.get('PYTHONPATH', '')}".rstrip(":"),
+        },
     )
 
     evidence_root = _repo_root() / "artifacts" / "evidence"

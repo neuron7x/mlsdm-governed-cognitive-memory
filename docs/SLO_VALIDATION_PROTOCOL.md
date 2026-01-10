@@ -10,19 +10,25 @@ This document defines the protocol for validating Service Level Objectives (SLOs
 
 ## SLO Sources of Truth
 
-All SLO targets are defined in **`policy/observability-slo.yaml`**. Tests MUST read from this policy file to ensure consistency between documentation and enforcement.
+All SLO targets are defined in **`policy/observability-slo.yaml`** and loaded through the canonical policy loader (`mlsdm.policy.loader`). Tests MUST read from the loader output to ensure consistency between documentation and enforcement.
+
+## Policy Architecture (Single Source of Truth)
+
+**SoT:** `policy/observability-slo.yaml` → **Loader:** `mlsdm.policy.loader` (schema + canonicalization) → **Enforcement:** runtime SLOs, tests, and CI gates.
 
 ## SLO Invariants & Test Matrix
 
 | Invariant | Test Location | Target | Policy Source | Enforcement |
 |-----------|---------------|--------|---------------|-------------|
-| **API Readiness P95 < 120ms** | `tests/perf/test_slo_api_endpoints.py::test_readiness_latency` | p95 < 120ms (prod)<br>p95 < 150ms (CI) | `policy/observability-slo.yaml`<br>`slos.api_endpoints[0]` | Blocking |
-| **API Liveness P95 < 50ms** | `tests/perf/test_slo_api_endpoints.py::test_liveness_latency` | p95 < 50ms (prod)<br>p95 < 75ms (CI) | `policy/observability-slo.yaml`<br>`slos.api_endpoints[1]` | Blocking |
-| **Event Processing P95 < 500ms** | `tests/perf/test_slo_api_endpoints.py::test_event_processing_latency` | p95 < 500ms (prod)<br>p95 < 600ms (CI) | `policy/observability-slo.yaml`<br>`slos.api_endpoints[2]` | Advisory |
-| **Memory Stays Stable** | `tests/unit/test_cognitive_controller.py::TestCognitiveControllerMemoryLeak::test_memory_stays_stable_over_time` | later_growth ≤ initial_growth × 2.0 | `policy/observability-slo.yaml`<br>`slos.system_resources[0]` | Blocking |
-| **Memory Max < 1400 MB** | `tests/unit/test_cognitive_controller.py` | max_usage_mb ≤ 1400.0 | `policy/observability-slo.yaml`<br>`slos.system_resources[0]` | Blocking |
-| **Moral Filter Stability** | `tests/property/test_moral_filter_properties.py` | threshold ∈ [0.30, 0.90]<br>drift ≤ 0.15 | `policy/observability-slo.yaml`<br>`slos.cognitive_engine[0]` | Blocking |
-| **Memory Corruption Rate = 0** | `tests/property/test_pelm_phase_behavior.py` | corruption_rate = 0.0% | `policy/observability-slo.yaml`<br>`slos.cognitive_engine[1]` | Blocking |
+| **Generate P95 < 120ms** | `tests/perf/test_slo_api_endpoints.py::TestGenerateEndpointSLO` | p95 < 120ms (prod)<br>p95 < 150ms (CI) | `policy/observability-slo.yaml`<br>`thresholds.slos.api_endpoints[name=generate]` | Blocking |
+| **Infer P95 < 120ms** | `tests/perf/test_slo_api_endpoints.py::TestInferEndpointSLO` | p95 < 120ms (prod)<br>p95 < 150ms (CI) | `policy/observability-slo.yaml`<br>`thresholds.slos.api_endpoints[name=infer]` | Blocking |
+| **API Readiness P95 < 120ms** | `tests/perf/test_slo_api_endpoints.py::test_readiness_latency` | p95 < 120ms (prod)<br>p95 < 150ms (CI) | `policy/observability-slo.yaml`<br>`thresholds.slos.api_endpoints[name=health-readiness]` | Blocking |
+| **API Liveness P95 < 50ms** | `tests/perf/test_slo_api_endpoints.py::test_liveness_latency` | p95 < 50ms (prod)<br>p95 < 75ms (CI) | `policy/observability-slo.yaml`<br>`thresholds.slos.api_endpoints[name=health-liveness]` | Blocking |
+| **Event Processing P95 < 500ms** | N/A (monitoring only) | p95 < 500ms (prod)<br>p95 < 600ms (CI) | `policy/observability-slo.yaml`<br>`thresholds.slos.api_endpoints[name=event-processing]` | Advisory |
+| **Memory Stays Stable** | `tests/unit/test_cognitive_controller.py::TestCognitiveControllerMemoryLeak::test_memory_stays_stable_over_time` | later_growth ≤ initial_growth × 2.0 | `policy/observability-slo.yaml`<br>`thresholds.slos.system_resources[name=memory-usage]` | Blocking |
+| **Memory Max < 1400 MB** | `tests/unit/test_cognitive_controller.py` | max_usage_mb ≤ 1400.0 | `policy/observability-slo.yaml`<br>`thresholds.slos.system_resources[name=memory-usage]` | Blocking |
+| **Moral Filter Stability** | `tests/property/test_moral_filter_properties.py` | threshold ∈ [0.30, 0.90]<br>drift ≤ 0.15 | `policy/observability-slo.yaml`<br>`thresholds.slos.cognitive_engine[name=moral-filter-stability]` | Blocking |
+| **Memory Corruption Rate = 0** | `tests/property/test_pelm_phase_behavior.py` | corruption_rate = 0.0% | `policy/observability-slo.yaml`<br>`thresholds.slos.cognitive_engine[name=memory-operations]` | Blocking |
 
 ## Test Design Principles
 
@@ -76,18 +82,16 @@ def test_memory_stays_stable_over_time():
 **Read SLO thresholds from policy files, not hardcoded values.**
 
 ```python
-import yaml
-from pathlib import Path
-
-def load_slo_policy():
-    """Load SLO targets from policy file."""
-    policy_path = Path(__file__).parent.parent / "policy" / "observability-slo.yaml"
-    with open(policy_path) as f:
-        return yaml.safe_load(f)
+from mlsdm.policy.loader import load_policy_bundle
 
 def test_readiness_latency():
-    policy = load_slo_policy()
-    target = policy["slos"]["api_endpoints"][0]["ci_thresholds"]["p95_latency_ms"]
+    policy = load_policy_bundle()
+    readiness = next(
+        endpoint
+        for endpoint in policy.observability_slo.thresholds.slos.api_endpoints
+        if endpoint.name == "health-readiness"
+    )
+    target = readiness.ci_thresholds.p95_latency_ms
 
     # Run test
     latencies = measure_readiness_latency(n=100)

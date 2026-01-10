@@ -21,6 +21,8 @@ def test_default_config_resource_fallback(tmp_path: Path, monkeypatch: pytest.Mo
 def test_api_import_without_repo_files(tmp_path: Path) -> None:
     env = os.environ.copy()
     env.pop("CONFIG_PATH", None)
+    repo_root = Path(__file__).resolve().parents[2]
+    env["PYTHONPATH"] = f"{repo_root / 'src'}:{env.get('PYTHONPATH', '')}".rstrip(":")
 
     proc = subprocess.run(
         [

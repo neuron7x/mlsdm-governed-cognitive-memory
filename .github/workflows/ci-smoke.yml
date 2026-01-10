@@ -193,6 +193,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
+
+      - name: Install policy dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m pip check
+
       - name: Install conftest
         run: |
           curl -L -o conftest.tar.gz --fail --retry 3 \
@@ -202,11 +217,20 @@ jobs:
           sudo mv conftest /usr/local/bin/
           rm conftest.tar.gz
 
+      - name: Validate policy configuration
+        run: python scripts/validate_policy_config.py
+
+      - name: Generate OPA policy data
+        run: python scripts/policy/export_policy_data.py --output build/policy_data.json
+
       - name: Run policy checks on CI workflows
         run: |
           echo "Checking CI workflow policies..."
           # Use --fail-on-warn=false to allow warnings but fail on denies
-          conftest test .github/workflows/*.yml -p policies/ci/ --all-namespaces --fail-on-warn=false
+          conftest test .github/workflows/*.yml -p policies/ci/ -d build/policy_data.json --all-namespaces --fail-on-warn=false
+
+      - name: Verify policy fixtures
+        run: python scripts/policy/verify_policy_fixtures.py --data build/policy_data.json
 
   dependency-drift-check:
     name: Dependency Drift Check

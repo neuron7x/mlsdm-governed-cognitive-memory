@@ -18,23 +18,27 @@
 
 package ci.workflows
 
+policy := data.policy.security_baseline.controls.ci_workflow_policy
+
 # ============================================================================
 # DENY RULES - Will fail CI if violated
 # ============================================================================
 
 # STRIDE: Elevation of Privilege
-# Block workflows with overly permissive write-all permissions
+# Block workflows with overly permissive permissions
 deny[msg] {
-    input.permissions == "write-all"
-    msg := "Workflow has 'permissions: write-all' which grants excessive access. Use specific permissions instead."
+    prohibited := policy.prohibited_permissions[_]
+    input.permissions == prohibited
+    msg := sprintf("Workflow has prohibited permissions: %s.", [prohibited])
 }
 
 # STRIDE: Elevation of Privilege
-# Block jobs with write-all permissions
+# Block jobs with overly permissive permissions
 deny[msg] {
     job := input.jobs[job_name]
-    job.permissions == "write-all"
-    msg := sprintf("Job '%s' has 'permissions: write-all' which grants excessive access. Use specific permissions.", [job_name])
+    prohibited := policy.prohibited_permissions[_]
+    job.permissions == prohibited
+    msg := sprintf("Job '%s' has prohibited permissions: %s.", [job_name, prohibited])
 }
 
 # STRIDE: Tampering
@@ -46,8 +50,7 @@ deny[msg] {
     uses != null
 
     # Check if it's a third-party action (not github/* or actions/*)
-    not startswith(uses, "actions/")
-    not startswith(uses, "github/")
+    not is_first_party_action(uses)
 
     # Check if it's missing a version pin entirely
     not str_contains(uses, "@")
@@ -56,7 +59,7 @@ deny[msg] {
 }
 
 # STRIDE: Tampering
-# Block third-party actions with mutable references (@main, @master)
+# Block third-party actions with mutable references
 deny[msg] {
     job := input.jobs[job_name]
     step := job.steps[_]
@@ -64,13 +67,13 @@ deny[msg] {
     uses != null
 
     # Check if it's a third-party action (not github/* or actions/*)
-    not startswith(uses, "actions/")
-    not startswith(uses, "github/")
+    not is_first_party_action(uses)
 
     # Check for mutable references
-    str_contains(uses, "@main")
+    ref := policy.prohibited_mutable_refs[_]
+    str_contains(uses, ref)
 
-    msg := sprintf("Job '%s' uses mutable reference @main in '%s'. Pin to a SHA for security.", [job_name, uses])
+    msg := sprintf("Job '%s' uses prohibited mutable reference in '%s'. Pin to a SHA for security.", [job_name, uses])
 }
 
 deny[msg] {
@@ -80,13 +83,13 @@ deny[msg] {
     uses != null
 
     # Check if it's a third-party action (not github/* or actions/*)
-    not startswith(uses, "actions/")
-    not startswith(uses, "github/")
+    not is_first_party_action(uses)
 
     # Check for mutable references
-    str_contains(uses, "@master")
+    ref := policy.prohibited_mutable_refs[_]
+    str_contains(uses, ref)
 
-    msg := sprintf("Job '%s' uses mutable reference @master in '%s'. Pin to a SHA for security.", [job_name, uses])
+    msg := sprintf("Job '%s' uses prohibited mutable reference in '%s'. Pin to a SHA for security.", [job_name, uses])
 }
 
 # STRIDE: Information Disclosure
@@ -124,8 +127,9 @@ warn[msg] {
     uses := step.uses
     uses != null
 
-    # Check for mutable references like @main or @master
-    str_contains(uses, "@main")
+    # Check for mutable references
+    ref := policy.prohibited_mutable_refs[_]
+    str_contains(uses, ref)
 
     msg := sprintf("Job '%s' uses mutable reference in '%s'. Consider pinning to a SHA.", [job_name, uses])
 }
@@ -136,8 +140,9 @@ warn[msg] {
     uses := step.uses
     uses != null
 
-    # Check for mutable references like @main or @master
-    str_contains(uses, "@master")
+    # Check for mutable references
+    ref := policy.prohibited_mutable_refs[_]
+    str_contains(uses, ref)
 
     msg := sprintf("Job '%s' uses mutable reference in '%s'. Consider pinning to a SHA.", [job_name, uses])
 }
@@ -149,4 +154,9 @@ warn[msg] {
 # Check if a string contains a pattern
 str_contains(str, pattern) {
     indexof(str, pattern) >= 0
+}
+
+is_first_party_action(uses) {
+    owner := split(uses, "/")[0]
+    owner == policy.first_party_action_owners[_]
 }
