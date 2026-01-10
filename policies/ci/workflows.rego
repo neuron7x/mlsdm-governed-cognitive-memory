@@ -157,6 +157,6 @@ str_contains(str, pattern) {
 }
 
 is_first_party_action(uses) {
-    owner := split(uses, \"/\")[0]
+    owner := split(uses, "/")[0]
     owner == policy.first_party_action_owners[_]
 }
