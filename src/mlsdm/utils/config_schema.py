@@ -89,7 +89,7 @@ class MoralFilterConfig(BaseModel):
         description="Initial moral threshold. Values [0.0-1.0], higher = stricter.",
     )
     adapt_rate: float = Field(
-        default=0.05,
+        default=0.02,
         ge=0.0,
         le=0.5,
         description="Adaptation rate for threshold adjustment. Higher = faster adaptation.",
@@ -512,7 +512,7 @@ class SystemConfig(BaseModel):
                     },
                     "moral_filter": {
                         "threshold": 0.5,
-                        "adapt_rate": 0.05,
+                        "adapt_rate": 0.02,
                         "min_threshold": 0.3,
                         "max_threshold": 0.9,
                     },

@@ -77,7 +77,7 @@ class MoralFilterV2:
     EMA_ALPHA = MORAL_FILTER_DEFAULTS.ema_alpha if MORAL_FILTER_DEFAULTS else 0.1
     # Pre-computed constants for optimization
     _ONE_MINUS_ALPHA = 1.0 - EMA_ALPHA
-    _ADAPT_DELTA = 0.02
+    _ADAPT_DELTA = MORAL_FILTER_DEFAULTS.adapt_rate if MORAL_FILTER_DEFAULTS else 0.02
     _BOUNDARY_EPS = 0.01
 
     def __init__(

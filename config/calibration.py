@@ -40,7 +40,7 @@ class MoralFilterCalibration:
 
     # Adaptation rate for threshold adjustment
     # Direction: ↑ faster adaptation, ↓ slower/more stable
-    adapt_rate: float = 0.05
+    adapt_rate: float = 0.02
 
     # Minimum allowed threshold (safety floor)
     # Direction: ↑ higher safety floor, ↓ allows more permissive thresholds
@@ -52,7 +52,7 @@ class MoralFilterCalibration:
 
     # Dead band for EMA-based adaptation (MoralFilterV2)
     # Direction: ↑ less sensitive to small changes, ↓ more responsive
-    dead_band: float = 0.05
+    dead_band: float = 0.10
 
     # EMA alpha for accept rate smoothing (MoralFilterV2)
     # Direction: ↑ more weight on recent signals, ↓ more smoothing

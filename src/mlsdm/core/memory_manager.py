@@ -143,7 +143,7 @@ class MemoryManager:
         filt_cfg = config.get("moral_filter", {})
         self.filter = MoralFilter(
             threshold=filt_cfg.get("threshold", 0.5),
-            adapt_rate=filt_cfg.get("adapt_rate", 0.05),
+            adapt_rate=filt_cfg.get("adapt_rate", 0.02),
             min_threshold=filt_cfg.get("min_threshold", 0.3),
             max_threshold=filt_cfg.get("max_threshold", 0.9),
         )

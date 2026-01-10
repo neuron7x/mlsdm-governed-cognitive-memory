@@ -40,7 +40,7 @@ class MoralFilterCalibration:
 
     # Adaptation rate for threshold adjustment
     # Direction: ↑ faster adaptation, ↓ slower/more stable
-    adapt_rate: float = 0.05
+    adapt_rate: float = 0.02
 
     # Minimum allowed threshold (safety floor)
     # Direction: ↑ higher safety floor, ↓ allows more permissive thresholds

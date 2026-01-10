@@ -38,7 +38,7 @@ moral_filter:
   min_threshold: 0.30      # Minimum threshold (prevents over-permissiveness)
   max_threshold: 0.90      # Maximum threshold (prevents over-restriction)
   ema_alpha: 0.10         # Exponential moving average smoothing factor
-  adaptation_rate: 0.05    # Threshold adaptation speed
+  adaptation_rate: 0.02    # Threshold adaptation speed
 
 # Multi-Level Synaptic Memory Configuration
 # ====================================================

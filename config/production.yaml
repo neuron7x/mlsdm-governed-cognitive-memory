@@ -51,7 +51,7 @@ moral_filter:
   threshold: 0.50
 
   # Adaptation rate (0.0-0.5, higher = faster adjustment)
-  adapt_rate: 0.05
+  adapt_rate: 0.02
 
   # Threshold bounds
   min_threshold: 0.30   # Minimum allowed threshold
