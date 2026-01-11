@@ -46,12 +46,14 @@ from enum import Enum
 from threading import Lock
 from typing import TYPE_CHECKING, Any, Protocol
 
+from mlsdm.core.decision_stack import DecisionStack
 from mlsdm.protocols.neuro_signals import (
     ActionGatingSignal,
     LatencyProfile,
     LatencyRequirement,
     LifecycleHook,
 )
+from mlsdm.risk import RiskInputSignals, SafetyControlContour
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -140,6 +142,8 @@ class PipelineConfig:
         aphasia_repair_enabled: Enable automatic aphasia repair.
         aphasia_severity_threshold: Minimum severity to trigger repair.
         threat_assessment_enabled: Enable threat assessment (placeholder).
+        risk_gate_enabled: Enable safety control contour gating.
+        risk_token_cap: Token cap applied when risk contour degrades.
         max_tokens_default: Default max tokens for generation.
         telemetry_enabled: Enable telemetry hooks.
     """
@@ -150,6 +154,8 @@ class PipelineConfig:
     aphasia_repair_enabled: bool = True
     aphasia_severity_threshold: float = 0.3
     threat_assessment_enabled: bool = False
+    risk_gate_enabled: bool = True
+    risk_token_cap: int = 128
     max_tokens_default: int = 512
     telemetry_enabled: bool = True
 
@@ -518,6 +524,8 @@ class LLMPipeline:
         self._embedding_fn = embedding_fn
         self._config = config or PipelineConfig()
         self._lock = Lock()
+        self._safety_contour = SafetyControlContour()
+        self._decision_stack = DecisionStack(self._safety_contour)
 
         # Initialize pre-filters
         self._pre_filters: list[tuple[str, PreFilter]] = []
@@ -575,6 +583,58 @@ class LLMPipeline:
             **context,
         }
 
+        if self._config.risk_gate_enabled:
+            stage_start = perf()
+            risk_signals = RiskInputSignals(
+                security_flags=tuple(context.get("security_flags") or ()),
+                cognition_risk_score=float(context.get("cognition_risk_score") or 0.0),
+                observability_anomaly_score=float(
+                    context.get("observability_anomaly_score") or 0.0
+                ),
+                metadata=dict(context.get("risk_metadata") or {}),
+            )
+            assessment, directive = self._decision_stack.assess_and_decide(risk_signals)
+            stages.append(
+                PipelineStageResult(
+                    stage_name="risk_gate",
+                    success=True,
+                    duration_ms=(perf() - stage_start) * 1000,
+                    result={
+                        "risk_mode": directive.mode.value,
+                        "risk_score": assessment.composite_score,
+                        "degrade_actions": list(directive.degrade_actions),
+                        "allow_execution": directive.allow_execution,
+                    },
+                )
+            )
+            full_context["risk_assessment"] = assessment
+            full_context["risk_directive"] = directive
+
+            if not directive.allow_execution:
+                stage_durations_ms = {stage.stage_name: stage.duration_ms for stage in stages}
+                blocked_result = PipelineResult(
+                    response="",
+                    accepted=False,
+                    blocked_at="risk_gate",
+                    block_reason="risk_blocked",
+                    stages=stages,
+                    total_duration_ms=(perf() - start_time) * 1000,
+                    metadata={
+                        "risk_mode": directive.mode.value,
+                        "risk_score": assessment.composite_score,
+                        "degrade_actions": list(directive.degrade_actions),
+                        "stage_durations_ms": stage_durations_ms,
+                    },
+                )
+                self._emit_telemetry(blocked_result)
+                return blocked_result
+
+            if "token_cap" in directive.degrade_actions:
+                max_tokens = min(max_tokens, self._config.risk_token_cap)
+                full_context["max_tokens"] = max_tokens
+                full_context["risk_degraded"] = True
+                full_context["risk_degrade_actions"] = list(directive.degrade_actions)
+
         # Stage 1: Pre-filters
         pre_filter_result = self._run_pre_filters(prompt, full_context, stages)
         if pre_filter_result is not None:
@@ -623,6 +683,16 @@ class LLMPipeline:
                 "max_tokens": max_tokens,
                 "moral_value": moral_value,
                 "stage_durations_ms": stage_durations_ms,
+                "risk_mode": (
+                    full_context["risk_directive"].mode.value
+                    if "risk_directive" in full_context
+                    else None
+                ),
+                "degrade_actions": (
+                    list(full_context["risk_directive"].degrade_actions)
+                    if "risk_directive" in full_context
+                    else []
+                ),
             },
         )
 

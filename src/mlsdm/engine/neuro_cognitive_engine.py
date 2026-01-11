@@ -38,6 +38,7 @@ from mlsdm.cognition.prediction_error import (
     PredictionErrorAccumulator,
     PredictionErrorSignals,
 )
+from mlsdm.core.decision_stack import DecisionStack
 from mlsdm.core.llm_wrapper import LLMWrapper
 from mlsdm.observability.decision_trace import build_decision_trace
 from mlsdm.observability.tracing import get_tracer_manager
@@ -353,6 +354,7 @@ class NeuroCognitiveEngine:
 
         # Risk control contour
         self._safety_contour = SafetyControlContour()
+        self._decision_stack = DecisionStack(self._safety_contour)
         self._risk_mode: str | None = None
         self._risk_degrade_actions: tuple[str, ...] = ()
         self._risk_assessment: dict[str, Any] | None = None
@@ -512,20 +514,18 @@ class NeuroCognitiveEngine:
 
         Orchestrates the generation pipeline:
         1. Prepare request context (fill defaults, update runtime params)
-        2. Pre-select provider for metrics tracking (if router enabled)
-        3. PRE-FLIGHT: moral precheck
-        4. PRE-FLIGHT: grammar precheck (if FSLGS enabled)
-        5. MAIN: LLM/FSLGS generation
-        6. POST: moral check on response
-        7. Record metrics and build response
+        2. Risk contour assessment and gating
+        3. Pre-select provider for metrics tracking (if router enabled)
+        4. PRE-FLIGHT: moral precheck
+        5. PRE-FLIGHT: grammar precheck (if FSLGS enabled)
+        6. MAIN: LLM/FSLGS generation
+        7. POST: moral check on response
+        8. Record metrics and build response
         """
         # Step 1: Prepare request context
         user_intent, cognitive_load, moral_value, context_top_k = self._prepare_request_context(
             user_intent, cognitive_load, moral_value, context_top_k
         )
-
-        # Step 2: Pre-select provider for metrics tracking
-        self._preselect_provider_for_metrics(prompt, user_intent)
 
         mlsdm_state: dict[str, Any] | None = None
         fslgs_result: dict[str, Any] | None = None
@@ -546,7 +546,7 @@ class NeuroCognitiveEngine:
                     "mlsdm.user_intent": user_intent,
                 },
             ) as pipeline_span:
-                # Step 2.5: Risk contour assessment and gating
+                # Step 2: Risk contour assessment and gating
                 risk_directive = self._evaluate_risk(
                     security_flags=security_flags,
                     cognition_risk_score=cognition_risk_score,
@@ -596,7 +596,10 @@ class NeuroCognitiveEngine:
                         validation_steps=validation_steps,
                     )
                 else:
-                    # Step 3: PRE-FLIGHT moral check
+                    # Step 3: Pre-select provider for metrics tracking
+                    self._preselect_provider_for_metrics(prompt, user_intent)
+
+                    # Step 4: PRE-FLIGHT moral check
                     with tracer_manager.start_span("engine.moral_precheck") as moral_span:
                         rejection = self._run_moral_precheck(
                             prompt, moral_value, timing, validation_steps
@@ -614,7 +617,7 @@ class NeuroCognitiveEngine:
                                 validation_steps=validation_steps,
                             )
 
-                    # Step 4: PRE-FLIGHT grammar check
+                    # Step 5: PRE-FLIGHT grammar check
                     with tracer_manager.start_span("engine.grammar_precheck") as grammar_span:
                         rejection = self._run_grammar_precheck(prompt, timing, validation_steps)
                         if rejection is not None:
@@ -630,7 +633,7 @@ class NeuroCognitiveEngine:
                                 validation_steps=validation_steps,
                             )
 
-                    # Step 5: MAIN generation pipeline
+                    # Step 6: MAIN generation pipeline
                     self._runtime_moral_value = moral_value
                     self._runtime_context_top_k = context_top_k
 
@@ -1387,8 +1390,7 @@ class NeuroCognitiveEngine:
             observability_anomaly_score=float(observability_anomaly_score or 0.0),
             metadata=risk_metadata or {},
         )
-        assessment = self._safety_contour.assess(signals)
-        directive = self._safety_contour.decide(assessment)
+        assessment, directive = self._decision_stack.assess_and_decide(signals)
 
         self._risk_assessment = {
             "composite_score": assessment.composite_score,

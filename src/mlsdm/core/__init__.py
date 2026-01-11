@@ -13,9 +13,12 @@ from .llm_pipeline import (
     PreFilter,
     ThreatPreFilter,
 )
+from .decision_stack import DecisionStack, DecisionStackResult
 
 __all__ = [
     "AphasiaPostFilter",
+    "DecisionStack",
+    "DecisionStackResult",
     "FilterDecision",
     "FilterResult",
     "LLMPipeline",
