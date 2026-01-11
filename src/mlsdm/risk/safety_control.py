@@ -139,7 +139,7 @@ class RiskContractAdapter:
     def risk_signal(signals: RiskInputSignals) -> RiskSignal:
         threat = 1.0 if signals.security_flags else signals.observability_anomaly_score
         risk = max(signals.cognition_risk_score, signals.observability_anomaly_score)
-        metadata = {
+        metadata: dict[str, float | int | str] = {
             "cognition_risk_score": signals.cognition_risk_score,
             "observability_anomaly_score": signals.observability_anomaly_score,
             "security_flag_count": len(signals.security_flags),
