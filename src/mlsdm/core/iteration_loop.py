@@ -10,6 +10,15 @@ from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Protocol
 
+from mlsdm.core.regime_tuning import (
+    DEFAULT_ITERATION_GUARD,
+    DEFAULT_REGIME_SCALES,
+    DEFAULT_REGIME_THRESHOLDS,
+    IterationGuardConfig,
+    RegimeScales,
+    RegimeThresholds,
+)
+
 if TYPE_CHECKING:
     import pathlib
 
@@ -20,11 +29,7 @@ class Regime(str, Enum):
     DEFENSIVE = "defensive"
 
 
-GUARD_WINDOW = 10
-MAX_ABS_DELTA = 1.5
-MAX_SIGN_FLIP_RATE = 0.6
-MAX_REGIME_FLIP_RATE = 0.5
-COOLDOWN_STEPS = 2
+GUARD_CONFIG = DEFAULT_ITERATION_GUARD
 
 
 @dataclass
@@ -101,9 +106,9 @@ class IterationState:
     last_delta: float = 0.0
     steps: int = 0
     frozen: bool = False
-    delta_signs: deque[int] = field(default_factory=lambda: deque(maxlen=GUARD_WINDOW))
-    regime_flips_window: deque[int] = field(default_factory=lambda: deque(maxlen=GUARD_WINDOW))
-    recent_abs_deltas: deque[float] = field(default_factory=lambda: deque(maxlen=GUARD_WINDOW))
+    delta_signs: deque[int] = field(default_factory=lambda: deque(maxlen=GUARD_CONFIG.guard_window))
+    regime_flips_window: deque[int] = field(default_factory=lambda: deque(maxlen=GUARD_CONFIG.guard_window))
+    recent_abs_deltas: deque[float] = field(default_factory=lambda: deque(maxlen=GUARD_CONFIG.guard_window))
     max_abs_delta: float = 0.0
     last_envelope_metrics: dict[str, float] = field(default_factory=dict)
 
@@ -144,21 +149,24 @@ def _sign_flip_rate(signs: Iterable[int]) -> float:
 
 
 class RegimeController:
-    def __init__(self, caution: float = 0.4, defensive: float = 0.7, cooldown: int = 2) -> None:
-        self.caution = caution
-        self.defensive = defensive
-        self.cooldown = cooldown
+    def __init__(
+        self,
+        thresholds: RegimeThresholds = DEFAULT_REGIME_THRESHOLDS,
+        scales: RegimeScales = DEFAULT_REGIME_SCALES,
+    ) -> None:
+        self.thresholds = thresholds
+        self.scales = scales
 
     def update(self, state: IterationState, ctx: IterationContext) -> tuple[Regime, float, float, float, int]:
         cooldown = state.cooldown_steps
         regime = state.regime
-        if ctx.threat >= self.defensive or ctx.risk >= self.defensive:
+        if ctx.threat >= self.thresholds.defensive_threshold or ctx.risk >= self.thresholds.defensive_threshold:
             regime = Regime.DEFENSIVE
-            cooldown = self.cooldown
-        elif ctx.threat >= self.caution or ctx.risk >= self.caution:
+            cooldown = self.thresholds.cooldown
+        elif ctx.threat >= self.thresholds.caution_threshold or ctx.risk >= self.thresholds.caution_threshold:
             if regime == Regime.NORMAL:
                 regime = Regime.CAUTION
-                cooldown = self.cooldown
+                cooldown = self.thresholds.cooldown
             elif regime == Regime.DEFENSIVE and cooldown > 0:
                 cooldown -= 1
             else:
@@ -171,10 +179,28 @@ class RegimeController:
                 regime = Regime.NORMAL
 
         if regime == Regime.NORMAL:
-            return regime, 1.0, 1.0, 1.0, cooldown
+            return (
+                regime,
+                self.scales.normal_lr_scale,
+                self.scales.normal_inhibition_scale,
+                self.scales.normal_tau_scale,
+                cooldown,
+            )
         if regime == Regime.CAUTION:
-            return regime, 0.7, 1.1, 1.2, cooldown
-        return regime, 0.4, 1.3, 1.4, cooldown
+            return (
+                regime,
+                self.scales.caution_lr_scale,
+                self.scales.caution_inhibition_scale,
+                self.scales.caution_tau_scale,
+                cooldown,
+            )
+        return (
+            regime,
+            self.scales.defensive_lr_scale,
+            self.scales.defensive_inhibition_scale,
+            self.scales.defensive_tau_scale,
+            cooldown,
+        )
 
 
 class IterationLoop:
@@ -255,7 +281,7 @@ class IterationLoop:
             return target
 
         def _update_guard_window(target: IterationState, abs_delta_max: float) -> tuple[deque[float], float]:
-            recent_abs_deltas = deque(target.recent_abs_deltas, maxlen=GUARD_WINDOW)
+            recent_abs_deltas = deque(target.recent_abs_deltas, maxlen=GUARD_CONFIG.guard_window)
             recent_abs_deltas.append(abs_delta_max)
             window_max = max(recent_abs_deltas) if recent_abs_deltas else abs_delta_max
             return recent_abs_deltas, window_max
@@ -282,22 +308,24 @@ class IterationLoop:
                 "windowed_max_abs_delta": windowed_abs_delta_max,
                 "windowed_sign_flip_rate": sign_flip_rate,
                 "windowed_regime_flip_rate": regime_flip_rate,
-                "guard_window": GUARD_WINDOW,
-                "guard_max_abs_delta": MAX_ABS_DELTA,
-                "guard_max_sign_flip_rate": MAX_SIGN_FLIP_RATE,
-                "guard_max_regime_flip_rate": MAX_REGIME_FLIP_RATE,
+                "guard_window": GUARD_CONFIG.guard_window,
+                "guard_max_abs_delta": GUARD_CONFIG.max_abs_delta,
+                "guard_max_sign_flip_rate": GUARD_CONFIG.max_sign_flip_rate,
+                "guard_max_regime_flip_rate": GUARD_CONFIG.max_regime_flip_rate,
             }
-            delta_breach = clipped_max_delta > MAX_ABS_DELTA
-            regime_flip_breach = len(regime_flips_window) > 1 and regime_flip_rate > MAX_REGIME_FLIP_RATE
-            oscillation_breach = len(delta_signs) > 1 and sign_flip_rate > MAX_SIGN_FLIP_RATE
+            delta_breach = clipped_max_delta > GUARD_CONFIG.max_abs_delta
+            regime_flip_breach = (
+                len(regime_flips_window) > 1 and regime_flip_rate > GUARD_CONFIG.max_regime_flip_rate
+            )
+            oscillation_breach = len(delta_signs) > 1 and sign_flip_rate > GUARD_CONFIG.max_sign_flip_rate
             envelope_breach = delta_breach or regime_flip_breach or oscillation_breach
             return envelope_metrics, sign_flip_rate, regime_flip_rate, envelope_breach
 
         def _guard_metrics_stable(metrics: dict[str, float]) -> bool:
             return (
-                metrics.get("windowed_max_abs_delta", 0.0) <= MAX_ABS_DELTA
-                and metrics.get("windowed_sign_flip_rate", 0.0) <= MAX_SIGN_FLIP_RATE
-                and metrics.get("windowed_regime_flip_rate", 0.0) <= MAX_REGIME_FLIP_RATE
+                metrics.get("windowed_max_abs_delta", 0.0) <= GUARD_CONFIG.max_abs_delta
+                and metrics.get("windowed_sign_flip_rate", 0.0) <= GUARD_CONFIG.max_sign_flip_rate
+                and metrics.get("windowed_regime_flip_rate", 0.0) <= GUARD_CONFIG.max_regime_flip_rate
             )
 
         if not self.enabled:
@@ -320,10 +348,10 @@ class IterationLoop:
                     "windowed_max_abs_delta": max_abs_delta,
                     "windowed_sign_flip_rate": sign_flip_rate,
                     "windowed_regime_flip_rate": regime_flip_rate,
-                    "guard_window": GUARD_WINDOW,
-                    "guard_max_abs_delta": MAX_ABS_DELTA,
-                    "guard_max_sign_flip_rate": MAX_SIGN_FLIP_RATE,
-                    "guard_max_regime_flip_rate": MAX_REGIME_FLIP_RATE,
+                    "guard_window": GUARD_CONFIG.guard_window,
+                    "guard_max_abs_delta": GUARD_CONFIG.max_abs_delta,
+                    "guard_max_sign_flip_rate": GUARD_CONFIG.max_sign_flip_rate,
+                    "guard_max_regime_flip_rate": GUARD_CONFIG.max_regime_flip_rate,
                 },
             )
             return frozen_state, UpdateResult(parameter_deltas={}, bounded=state.frozen, applied=False), {
@@ -335,8 +363,8 @@ class IterationLoop:
         if state.kill_switch_active or state.frozen or state.cooldown_remaining > 0:
             delta_sign = _sign(delta_mean)
             regime = Regime.DEFENSIVE
-            delta_signs = deque(state.delta_signs, maxlen=GUARD_WINDOW)
-            regime_flips_window = deque(state.regime_flips_window, maxlen=GUARD_WINDOW)
+            delta_signs = deque(state.delta_signs, maxlen=GUARD_CONFIG.guard_window)
+            regime_flips_window = deque(state.regime_flips_window, maxlen=GUARD_CONFIG.guard_window)
             recent_abs_deltas, max_abs_delta = _update_guard_window(state, abs_max)
             regime_flip = regime != state.regime
             delta_signs.append(delta_sign)
@@ -350,7 +378,7 @@ class IterationLoop:
             )
             guard_stable = _guard_metrics_stable(envelope_metrics)
             if envelope_breach:
-                cooldown_remaining = COOLDOWN_STEPS
+                cooldown_remaining = GUARD_CONFIG.cooldown_steps
             else:
                 base_cooldown = state.cooldown_remaining
                 cooldown_remaining = max(0, base_cooldown - 1)
@@ -420,8 +448,8 @@ class IterationLoop:
         # Detect oscillations via sign changes between consecutive delta means.
         delta_sign = _sign(delta_mean)
         steps = state.steps + 1
-        delta_signs = deque(state.delta_signs, maxlen=GUARD_WINDOW)
-        regime_flips_window = deque(state.regime_flips_window, maxlen=GUARD_WINDOW)
+        delta_signs = deque(state.delta_signs, maxlen=GUARD_CONFIG.guard_window)
+        regime_flips_window = deque(state.regime_flips_window, maxlen=GUARD_CONFIG.guard_window)
         recent_abs_deltas, max_abs_delta = _update_guard_window(state, abs_max)
         delta_signs.append(delta_sign)
         regime_flips_window.append(1 if regime_flip else 0)
@@ -476,7 +504,7 @@ class IterationLoop:
             new_state = _apply_kill_switch_fields(
                 new_state,
                 kill_switch_active=True,
-                cooldown_remaining=COOLDOWN_STEPS,
+                cooldown_remaining=GUARD_CONFIG.cooldown_steps,
                 instability_events_count=state.instability_events_count + 1,
                 time_to_kill_switch=time_to_kill_switch,
                 recovered=False,

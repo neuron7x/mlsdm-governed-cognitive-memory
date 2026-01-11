@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from mlsdm.core.regime_tuning import DEFAULT_NEURO_TUNING, DEFAULT_REGIME_THRESHOLDS, NeuroRegimeTuning
 from mlsdm.utils.math_constants import safe_norm
 
 if TYPE_CHECKING:
@@ -50,36 +51,7 @@ def _clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
 
 
-@dataclass(frozen=True)
-class RegimeTuning:
-    """
-    Tuning parameters for regime dynamics and update scaling.
-
-    Values are bounded to preserve legacy behavior: NORMAL tracks the previous
-    dynamics, CAUTION increases inhibition and slightly shortens τ, DEFENSIVE
-    applies the strongest inhibition with aggressive τ shortening.
-    """
-
-    min_update_scale: float = 0.2
-    max_update_scale: float = 2.0
-    normal_exploration_base: float = 0.25
-    normal_inhibition_slope: float = 0.1
-    normal_tau_scale: float = 1.0
-    caution_inhibition_base: float = 1.15
-    caution_inhibition_slope: float = 0.35
-    caution_exploration_base: float = 0.22
-    caution_exploration_min: float = 0.12
-    caution_tau_min: float = 0.75
-    caution_tau_slope: float = 0.25
-    defensive_inhibition_base: float = 1.35
-    defensive_inhibition_slope: float = 0.45
-    defensive_exploration_base: float = 0.18
-    defensive_exploration_min: float = 0.08
-    defensive_tau_min: float = 0.6
-    defensive_tau_slope: float = 0.4
-
-
-_TUNING = RegimeTuning()
+_TUNING = DEFAULT_NEURO_TUNING
 
 
 class PredictionErrorAdapter:
@@ -152,26 +124,33 @@ class RegimeController:
 
     def __init__(
         self,
-        caution_threshold: float = 0.55,
-        defensive_threshold: float = 0.8,
-        hysteresis: float = 0.08,
-        cooldown: int = 2,
+        caution_threshold: float | None = None,
+        defensive_threshold: float | None = None,
+        hysteresis: float | None = None,
+        cooldown: int | None = None,
         enable: bool = True,
+        tuning: NeuroRegimeTuning = DEFAULT_NEURO_TUNING,
     ) -> None:
-        if not 0 <= caution_threshold < defensive_threshold <= 1:
+        thresholds = DEFAULT_REGIME_THRESHOLDS
+        caution_value = thresholds.caution_threshold if caution_threshold is None else caution_threshold
+        defensive_value = thresholds.defensive_threshold if defensive_threshold is None else defensive_threshold
+        hysteresis_value = thresholds.hysteresis if hysteresis is None else hysteresis
+        cooldown_value = thresholds.cooldown if cooldown is None else cooldown
+        if not 0 <= caution_value < defensive_value <= 1:
             raise ValueError(
                 "caution_threshold must be >=0 and < defensive_threshold, which must be <=1."
             )
-        if hysteresis < 0:
+        if hysteresis_value < 0:
             raise ValueError("hysteresis must be non-negative.")
-        if cooldown < 0:
+        if cooldown_value < 0:
             raise ValueError("cooldown must be non-negative.")
 
-        self.caution_threshold = float(caution_threshold)
-        self.defensive_threshold = float(defensive_threshold)
-        self.hysteresis = float(hysteresis)
-        self.cooldown = int(cooldown)
+        self.caution_threshold = float(caution_value)
+        self.defensive_threshold = float(defensive_value)
+        self.hysteresis = float(hysteresis_value)
+        self.cooldown = int(cooldown_value)
         self.enable = enable
+        self.tuning = tuning
         self.state = RegimeState.NORMAL
         self._cooldown_remaining = 0
         self._flips = 0
@@ -211,23 +190,25 @@ class RegimeController:
         risk_clamped = _clamp(risk, 0.0, 1.0)
 
         if state == RegimeState.NORMAL:
-            inhibition_gain = 1.0 + _TUNING.normal_inhibition_slope * risk_clamped
-            exploration_rate = _TUNING.normal_exploration_base - 0.05 * risk_clamped
-            tau_scale = _TUNING.normal_tau_scale
+            inhibition_gain = 1.0 + self.tuning.normal_inhibition_slope * risk_clamped
+            exploration_rate = self.tuning.normal_exploration_base - 0.05 * risk_clamped
+            tau_scale = self.tuning.normal_tau_scale
         elif state == RegimeState.CAUTION:
-            inhibition_gain = _TUNING.caution_inhibition_base + _TUNING.caution_inhibition_slope * risk_clamped
+            inhibition_gain = self.tuning.caution_inhibition_base + self.tuning.caution_inhibition_slope * risk_clamped
             exploration_rate = max(
-                _TUNING.caution_exploration_min,
-                _TUNING.caution_exploration_base - 0.12 * risk_clamped,
+                self.tuning.caution_exploration_min,
+                self.tuning.caution_exploration_base - 0.12 * risk_clamped,
             )
-            tau_scale = max(_TUNING.caution_tau_min, 1.0 - _TUNING.caution_tau_slope * risk_clamped)
+            tau_scale = max(self.tuning.caution_tau_min, 1.0 - self.tuning.caution_tau_slope * risk_clamped)
         else:
-            inhibition_gain = _TUNING.defensive_inhibition_base + _TUNING.defensive_inhibition_slope * risk_clamped
-            exploration_rate = max(
-                _TUNING.defensive_exploration_min,
-                _TUNING.defensive_exploration_base - 0.15 * risk_clamped,
+            inhibition_gain = (
+                self.tuning.defensive_inhibition_base + self.tuning.defensive_inhibition_slope * risk_clamped
             )
-            tau_scale = max(_TUNING.defensive_tau_min, 1.0 - _TUNING.defensive_tau_slope * risk_clamped)
+            exploration_rate = max(
+                self.tuning.defensive_exploration_min,
+                self.tuning.defensive_exploration_base - 0.15 * risk_clamped,
+            )
+            tau_scale = max(self.tuning.defensive_tau_min, 1.0 - self.tuning.defensive_tau_slope * risk_clamped)
 
         return RegimeDecision(
             state=state,
