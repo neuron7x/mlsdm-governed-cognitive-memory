@@ -390,16 +390,44 @@ Production systems should monitor invariant violations via metrics:
 
 ---
 
-## 9. Maintenance
+## 9. Homeostasis & Neuromodulation
 
-### 9.1 Adding New Invariants
+### 9.1 Safety Invariants
+
+**INV-HOME-S1: Neuromodulator Bounds**
+- **Statement**: Neuromodulator parameters MUST remain within configured ranges.
+- **Formal**: `∀p ∈ {exploration, learning_rate, consolidation, strictness}: min_p ≤ p ≤ max_p`
+- **Rationale**: Prevents uncontrolled adaptation and keeps modulation inspectable.
+
+**INV-HOME-S2: Governance Dominance**
+- **Statement**: Governance inhibition MUST dominate neuromodulator settings.
+- **Formal**: `allow_execution=false ⟹ action.type = blocked`
+- **Rationale**: Ensures modulators cannot bypass policy gates.
+
+### 9.2 Liveness Invariants
+
+**INV-HOME-L1: Error Accumulator Saturation**
+- **Statement**: Prediction error accumulator MUST saturate at a fixed maximum.
+- **Formal**: `cumulative_error ≤ max_cumulative_error`
+- **Rationale**: Prevents silent error drift over long runtimes.
+
+**INV-HOME-L2: Homeostatic Brake**
+- **Statement**: High memory pressure MUST reduce exploration and learning rate.
+- **Formal**: `memory_pressure ≥ threshold ⟹ exploration' ≤ exploration ∧ lr' ≤ lr`
+- **Rationale**: Stabilizes long-term behavior under resource pressure.
+
+---
+
+## 10. Maintenance
+
+### 10.1 Adding New Invariants
 
 1. Document in this file with clear formal statement
 2. Implement property test in appropriate test file
 3. Add to CI workflow
 4. Update `VALIDATION_SUMMARY.md` coverage table
 
-### 9.2 Handling Violations
+### 10.2 Handling Violations
 
 When property test fails:
 1. Examine shrunk counterexample
@@ -410,7 +438,7 @@ When property test fails:
 
 ---
 
-## 10. References
+## 11. References
 
 - **Property-Based Testing**: [Hypothesis documentation](https://hypothesis.readthedocs.io/)
 - **Formal Methods**: "Software Foundations" (Pierce et al.)

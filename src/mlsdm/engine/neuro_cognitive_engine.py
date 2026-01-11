@@ -32,7 +32,14 @@ import traceback
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
+from mlsdm.cognition.homeostasis import HomeostasisLimits, compute_memory_pressure
+from mlsdm.cognition.neuromodulation import NeuromodulatorState, enforce_governance_gate
+from mlsdm.cognition.prediction_error import (
+    PredictionErrorAccumulator,
+    PredictionErrorSignals,
+)
 from mlsdm.core.llm_wrapper import LLMWrapper
+from mlsdm.observability.decision_trace import build_decision_trace
 from mlsdm.observability.tracing import get_tracer_manager
 from mlsdm.risk import RiskDirective, RiskInputSignals, SafetyControlContour
 from mlsdm.utils.bulkhead import (
@@ -223,6 +230,10 @@ class NeuroCognitiveEngine:
         self._router = router
         self._selected_provider_id: str | None = None
         self._selected_variant: str | None = None
+
+        self._prediction_error_tracker = PredictionErrorAccumulator()
+        self._neuromodulator_state = NeuromodulatorState()
+        self._homeostasis_limits = HomeostasisLimits()
 
         # If router is provided, create a wrapper function
         if router is not None:
@@ -457,7 +468,7 @@ class NeuroCognitiveEngine:
             logger = logging.getLogger(__name__)
             logger.exception("Unexpected error in generate()")
 
-            return {
+            response = {
                 "response": "",
                 "governance": None,
                 "mlsdm": {},
@@ -471,6 +482,15 @@ class NeuroCognitiveEngine:
                 "rejected_at": "generation",
                 "meta": {},
             }
+            return self._attach_decision_trace(
+                response=response,
+                prompt=prompt,
+                user_intent=user_intent or self.config.default_user_intent,
+                moral_value=moral_value or self.config.default_moral_value,
+                context_top_k=context_top_k or self.config.default_context_top_k,
+                mlsdm_state=None,
+                validation_steps=validation_steps,
+            )
 
     def _generate_internal(
         self,
@@ -564,6 +584,17 @@ class NeuroCognitiveEngine:
                 if early_result is not None:
                     pipeline_span.set_attribute("mlsdm.accepted", early_result["error"] is None)
                     pipeline_span.set_attribute("mlsdm.risk_degraded", True)
+                    if early_result["error"] is None:
+                        self._record_success_metrics(timing)
+                    return self._attach_decision_trace(
+                        response=early_result,
+                        prompt=prompt,
+                        user_intent=user_intent,
+                        moral_value=moral_value,
+                        context_top_k=context_top_k,
+                        mlsdm_state=mlsdm_state,
+                        validation_steps=validation_steps,
+                    )
                 else:
                     # Step 3: PRE-FLIGHT moral check
                     with tracer_manager.start_span("engine.moral_precheck") as moral_span:
@@ -573,7 +604,15 @@ class NeuroCognitiveEngine:
                         if rejection is not None:
                             moral_span.set_attribute("mlsdm.rejected", True)
                             pipeline_span.set_attribute("mlsdm.rejected_at", "pre_flight")
-                            return rejection
+                            return self._attach_decision_trace(
+                                response=rejection,
+                                prompt=prompt,
+                                user_intent=user_intent,
+                                moral_value=moral_value,
+                                context_top_k=context_top_k,
+                                mlsdm_state=mlsdm_state,
+                                validation_steps=validation_steps,
+                            )
 
                     # Step 4: PRE-FLIGHT grammar check
                     with tracer_manager.start_span("engine.grammar_precheck") as grammar_span:
@@ -581,7 +620,15 @@ class NeuroCognitiveEngine:
                         if rejection is not None:
                             grammar_span.set_attribute("mlsdm.rejected", True)
                             pipeline_span.set_attribute("mlsdm.rejected_at", "pre_flight")
-                            return rejection
+                            return self._attach_decision_trace(
+                                response=rejection,
+                                prompt=prompt,
+                                user_intent=user_intent,
+                                moral_value=moral_value,
+                                context_top_k=context_top_k,
+                                mlsdm_state=mlsdm_state,
+                                validation_steps=validation_steps,
+                            )
 
                     # Step 5: MAIN generation pipeline
                     self._runtime_moral_value = moral_value
@@ -617,13 +664,21 @@ class NeuroCognitiveEngine:
                             if rejection is not None:
                                 post_span.set_attribute("mlsdm.rejected", True)
                                 pipeline_span.set_attribute("mlsdm.rejected_at", "pre_moral")
-                                return rejection
+                                return self._attach_decision_trace(
+                                    response=rejection,
+                                    prompt=prompt,
+                                    user_intent=user_intent,
+                                    moral_value=moral_value,
+                                    context_top_k=context_top_k,
+                                    mlsdm_state=mlsdm_state,
+                                    validation_steps=validation_steps,
+                                )
 
                     except MLSDMRejectionError as e:
                         # Use self._last_mlsdm_state since mlsdm_state may be None
                         # when exception is raised before return
                         pipeline_span.set_attribute("mlsdm.error_type", "mlsdm_rejection")
-                        return self._build_error_response(
+                        response = self._build_error_response(
                             error_type="mlsdm_rejection",
                             message=str(e),
                             rejected_at="generation",
@@ -633,11 +688,20 @@ class NeuroCognitiveEngine:
                             validation_steps=validation_steps,
                             record_generation_metrics=True,
                         )
+                        return self._attach_decision_trace(
+                            response=response,
+                            prompt=prompt,
+                            user_intent=user_intent,
+                            moral_value=moral_value,
+                            context_top_k=context_top_k,
+                            mlsdm_state=self._last_mlsdm_state,
+                            validation_steps=validation_steps,
+                        )
                     except EmptyResponseError as e:
                         # Use self._last_mlsdm_state since mlsdm_state may be None
                         # when exception is raised before return
                         pipeline_span.set_attribute("mlsdm.error_type", "empty_response")
-                        return self._build_error_response(
+                        response = self._build_error_response(
                             error_type="empty_response",
                             message=str(e),
                             rejected_at="generation",
@@ -647,13 +711,22 @@ class NeuroCognitiveEngine:
                             validation_steps=validation_steps,
                             record_generation_metrics=True,
                         )
+                        return self._attach_decision_trace(
+                            response=response,
+                            prompt=prompt,
+                            user_intent=user_intent,
+                            moral_value=moral_value,
+                            context_top_k=context_top_k,
+                            mlsdm_state=self._last_mlsdm_state,
+                            validation_steps=validation_steps,
+                        )
                     except BulkheadFullError as e:
                         # Bulkhead is at capacity - graceful rejection
                         pipeline_span.set_attribute("mlsdm.error_type", "bulkhead_full")
                         pipeline_span.set_attribute(
                             "mlsdm.bulkhead_compartment", e.compartment.value
                         )
-                        return self._build_error_response(
+                        response = self._build_error_response(
                             error_type="bulkhead_full",
                             message=f"System at capacity: {e.compartment.value} bulkhead full",
                             rejected_at="generation",
@@ -663,6 +736,15 @@ class NeuroCognitiveEngine:
                             validation_steps=validation_steps,
                             record_generation_metrics=False,
                         )
+                        return self._attach_decision_trace(
+                            response=response,
+                            prompt=prompt,
+                            user_intent=user_intent,
+                            moral_value=moral_value,
+                            context_top_k=context_top_k,
+                            mlsdm_state=self._last_mlsdm_state,
+                            validation_steps=validation_steps,
+                        )
                     except CircuitOpenError as e:
                         # Circuit breaker is open - fast-fail to protect system
                         pipeline_span.set_attribute("mlsdm.error_type", "circuit_open")
@@ -670,7 +752,7 @@ class NeuroCognitiveEngine:
                         pipeline_span.set_attribute(
                             "mlsdm.recovery_time_remaining", e.recovery_time_remaining
                         )
-                        return self._build_error_response(
+                        response = self._build_error_response(
                             error_type="circuit_open",
                             message=f"LLM provider circuit breaker open: {e.name}. Recovery in {e.recovery_time_remaining:.1f}s",
                             rejected_at="generation",
@@ -680,12 +762,21 @@ class NeuroCognitiveEngine:
                             validation_steps=validation_steps,
                             record_generation_metrics=False,
                         )
+                        return self._attach_decision_trace(
+                            response=response,
+                            prompt=prompt,
+                            user_intent=user_intent,
+                            moral_value=moral_value,
+                            context_top_k=context_top_k,
+                            mlsdm_state=self._last_mlsdm_state,
+                            validation_steps=validation_steps,
+                        )
                     except Exception as e:
                         # General provider/LLM error - record failure and return structured error
                         # Circuit breaker failure is already recorded in _run_llm_generation
                         pipeline_span.set_attribute("mlsdm.error_type", "provider_error")
                         tracer_manager.record_exception(pipeline_span, e)
-                        return self._build_error_response(
+                        response = self._build_error_response(
                             error_type="provider_error",
                             message=str(e),
                             rejected_at="generation",
@@ -695,6 +786,15 @@ class NeuroCognitiveEngine:
                             validation_steps=validation_steps,
                             record_generation_metrics=True,
                         )
+                        return self._attach_decision_trace(
+                            response=response,
+                            prompt=prompt,
+                            user_intent=user_intent,
+                            moral_value=moral_value,
+                            context_top_k=context_top_k,
+                            mlsdm_state=self._last_mlsdm_state,
+                            validation_steps=validation_steps,
+                        )
 
                     # Mark pipeline as successful
                     pipeline_span.set_attribute("mlsdm.accepted", True)
@@ -703,15 +803,19 @@ class NeuroCognitiveEngine:
                             "mlsdm.phase", mlsdm_state.get("phase", "unknown")
                         )
 
-        if early_result is not None:
-            if early_result["error"] is None:
-                self._record_success_metrics(timing)
-            return early_result
-
         # Step 7: Success path - record metrics and build response
         self._record_success_metrics(timing)
-        return self._build_success_response(
+        response = self._build_success_response(
             response_text, mlsdm_state, fslgs_result, timing, validation_steps
+        )
+        return self._attach_decision_trace(
+            response=response,
+            prompt=prompt,
+            user_intent=user_intent,
+            moral_value=moral_value,
+            context_top_k=context_top_k,
+            mlsdm_state=mlsdm_state,
+            validation_steps=validation_steps,
         )
 
     # ------------------------------------------------------------------ #
@@ -1114,6 +1218,152 @@ class NeuroCognitiveEngine:
             meta["risk_mode"] = self._risk_mode
             meta["degrade_actions"] = list(self._risk_degrade_actions)
         return meta
+
+    def _attach_decision_trace(
+        self,
+        *,
+        response: dict[str, Any],
+        prompt: str,
+        user_intent: str,
+        moral_value: float,
+        context_top_k: int,
+        mlsdm_state: dict[str, Any] | None,
+        validation_steps: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        decision_trace = self._build_decision_trace(
+            response=response,
+            prompt=prompt,
+            user_intent=user_intent,
+            moral_value=moral_value,
+            context_top_k=context_top_k,
+            mlsdm_state=mlsdm_state,
+            validation_steps=validation_steps,
+        )
+        response["decision_trace"] = decision_trace
+        return response
+
+    def _build_decision_trace(
+        self,
+        *,
+        response: dict[str, Any],
+        prompt: str,
+        user_intent: str,
+        moral_value: float,
+        context_top_k: int,
+        mlsdm_state: dict[str, Any] | None,
+        validation_steps: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        rejected_at = response.get("rejected_at")
+        error = response.get("error")
+        response_text = response.get("response", "")
+        prediction_signals = self._compute_prediction_errors(
+            moral_value=moral_value,
+            context_top_k=context_top_k,
+            mlsdm_state=mlsdm_state,
+            rejected_at=rejected_at,
+            error=error,
+            validation_steps=validation_steps,
+        )
+        accumulator_state = self._prediction_error_tracker.update(prediction_signals)
+        memory_used_bytes = self._get_memory_used_bytes()
+        memory_pressure = compute_memory_pressure(memory_used_bytes, self._homeostasis_limits)
+        neuromodulation = self._neuromodulator_state.update(
+            prediction_signals,
+            memory_pressure=memory_pressure,
+            risk_mode=self._risk_mode,
+        )
+        governance_gate = enforce_governance_gate(
+            allow_execution=rejected_at is None and error is None,
+            policy_strictness=self._neuromodulator_state.policy_strictness,
+        )
+        action_type = "responded" if governance_gate["allow_execution"] else "blocked"
+
+        input_payload = {
+            "prompt_length": len(prompt),
+            "user_intent": user_intent,
+            "moral_value": moral_value,
+            "context_top_k": context_top_k,
+        }
+        memory_payload = {
+            "context_items": (mlsdm_state or {}).get("context_items", 0),
+            "stateless_mode": (mlsdm_state or {}).get("stateless_mode", False),
+            "memory_pressure": memory_pressure,
+        }
+        prediction_payload = {
+            "perception_error": prediction_signals.perception_error,
+            "memory_error": prediction_signals.memory_error,
+            "policy_error": prediction_signals.policy_error,
+            "total_error": prediction_signals.total_error,
+            "propagation": prediction_signals.propagation,
+            "accumulator": accumulator_state,
+        }
+        neuromodulation_payload = {
+            "state": neuromodulation,
+            "bounds": {
+                "exploration": self._neuromodulator_state.bounds.exploration_range,
+                "learning_rate": self._neuromodulator_state.bounds.learning_rate_range,
+                "memory_consolidation": self._neuromodulator_state.bounds.consolidation_range,
+                "policy_strictness": self._neuromodulator_state.bounds.policy_strictness_range,
+            },
+        }
+        policy_payload = {
+            "governance_gate": governance_gate,
+            "risk_mode": self._risk_mode,
+            "degrade_actions": list(self._risk_degrade_actions),
+        }
+        action_payload = {
+            "type": action_type,
+            "response_length": len(response_text),
+            "rejected_at": rejected_at,
+        }
+        return build_decision_trace(
+            input_payload=input_payload,
+            memory_payload=memory_payload,
+            prediction_error=prediction_payload,
+            neuromodulation=neuromodulation_payload,
+            policy=policy_payload,
+            action=action_payload,
+        )
+
+    def _compute_prediction_errors(
+        self,
+        *,
+        moral_value: float,
+        context_top_k: int,
+        mlsdm_state: dict[str, Any] | None,
+        rejected_at: str | None,
+        error: dict[str, Any] | None,
+        validation_steps: list[dict[str, Any]],
+    ) -> PredictionErrorSignals:
+        prompt_moral = self._extract_prompt_moral_score(validation_steps)
+        threshold = (mlsdm_state or {}).get("moral_threshold", moral_value)
+        perception_error = abs(moral_value - (prompt_moral if prompt_moral is not None else threshold))
+        context_items = (mlsdm_state or {}).get("context_items", 0)
+        memory_ratio = context_items / context_top_k if context_top_k else 1.0
+        memory_error = max(0.0, 1.0 - min(memory_ratio, 1.0))
+        policy_error = 1.0 if rejected_at is not None or error is not None else 0.0
+        return PredictionErrorSignals.from_components(
+            perception_error=perception_error,
+            memory_error=memory_error,
+            policy_error=policy_error,
+        )
+
+    @staticmethod
+    def _extract_prompt_moral_score(
+        validation_steps: list[dict[str, Any]],
+    ) -> float | None:
+        for step in validation_steps:
+            if step.get("step") == "moral_precheck" and "score" in step:
+                return step["score"]
+        return None
+
+    def _get_memory_used_bytes(self) -> float | None:
+        if hasattr(self._mlsdm, "get_cognitive_state"):
+            try:
+                return float(self._mlsdm.get_cognitive_state().memory_used_bytes)
+            except Exception:
+                return None
+        return None
 
     def _evaluate_risk(
         self,

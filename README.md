@@ -10,7 +10,7 @@
   <img src="assets/mlsdm-hero.svg" alt="MLSDM Neural Architecture diagram with core components" width="1200" height="600" style="max-width: 100%; height: auto; display: block; margin: 0 auto; image-rendering: crisp-edges;">
 </picture>
 
-**Beta-stage neurobiologically-inspired cognitive governance for LLMs**
+**Neuro-Informational Control Substrate (NICS) for AI systems**
 
 *Phase-based memory • Adaptive moral filtering • Aphasia detection & repair*
 
@@ -126,7 +126,7 @@
 
 ### 🧬 What is MLSDM?
 
-**MLSDM (Multi-Level Synaptic Dynamic Memory)** is a governed cognitive wrapper for Large Language Models that enforces biological constraints inspired by neuroscience.
+**MLSDM (Multi-Level Synaptic Dynamic Memory)** is the first reference implementation of the **Neuro-Informational Control Substrate (NICS)** system class, providing bounded memory, explicit error-driven adaptation, and deterministic governance constraints for AI/agent systems.
 
 <table>
 <tr>
@@ -147,6 +147,7 @@ MLSDM wraps **any LLM** with a neurobiologically-grounded cognitive layer that p
 - ✅ **Adaptive moral filtering** (93.3% toxic rejection)
 - ✅ **Wake/sleep cycles** (89.5% resource reduction)
 - ✅ **Aphasia detection** (telegraphic speech repair)
+- ✅ **Prediction error + decision trace** (bounded, inspectable control loop)
 
 </td>
 <td width="40%">

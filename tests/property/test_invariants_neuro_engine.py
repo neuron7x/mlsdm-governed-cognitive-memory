@@ -155,6 +155,7 @@ def test_response_schema_completeness(prompt):
             "validation_steps",
             "error",
             "rejected_at",
+            "decision_trace",
         }
 
         assert required_keys.issubset(
@@ -410,6 +411,7 @@ def test_rephrasing_consistency(prompt):
         "validation_steps",
         "error",
         "rejected_at",
+        "decision_trace",
     }
     assert required_keys.issubset(
         set(response1.keys())
@@ -474,6 +476,7 @@ def test_cognitive_load_monotonicity(prompt, load1, load2):
         "validation_steps",
         "error",
         "rejected_at",
+        "decision_trace",
     }
     assert required_keys.issubset(set(response1.keys())), "response1 missing required keys"
     assert required_keys.issubset(set(response2.keys())), "response2 missing required keys"
@@ -613,6 +616,7 @@ def test_engine_state_does_not_leak_across_calls(prompt, num_generate_calls):
         "validation_steps",
         "error",
         "rejected_at",
+        "decision_trace",
     }
 
     for i, response in enumerate(responses):
