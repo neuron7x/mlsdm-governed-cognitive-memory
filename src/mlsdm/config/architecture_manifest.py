@@ -161,6 +161,7 @@ ARCHITECTURE_MANIFEST: tuple[ArchitectureModule, ...] = (
             "utils",
             "security",
             "risk",
+            "protocols",
         ),
     ),
     ArchitectureModule(
@@ -210,7 +211,7 @@ ARCHITECTURE_MANIFEST: tuple[ArchitectureModule, ...] = (
             "adapters.py",
             "config.py",
         ),
-        allowed_dependencies=("cognition", "config", "core", "memory", "rhythm", "utils"),
+        allowed_dependencies=("cognition", "config", "core", "memory", "rhythm", "utils", "protocols"),
     ),
     ArchitectureModule(
         name="speech",
@@ -300,7 +301,7 @@ ARCHITECTURE_MANIFEST: tuple[ArchitectureModule, ...] = (
             "emergency fallback directives for safe execution",
         ),
         public_interfaces=("__init__.py", "safety_control.py"),
-        allowed_dependencies=("config", "security", "cognition", "observability", "contracts", "utils"),
+        allowed_dependencies=("config", "security", "cognition", "observability", "contracts", "protocols", "utils"),
     ),
     ArchitectureModule(
         name="security",
@@ -334,6 +335,18 @@ ARCHITECTURE_MANIFEST: tuple[ArchitectureModule, ...] = (
         allowed_dependencies=("policy",),
     ),
     ArchitectureModule(
+        name="protocols",
+        path="protocols",
+        layer="foundation",
+        responsibilities=(
+            "protocol definitions for inter-module signal contracts",
+            "lightweight typed interfaces for cognitive-core communication",
+            "dependency inversion abstractions for contracts",
+        ),
+        public_interfaces=("__init__.py", "neuro_signals.py"),
+        allowed_dependencies=(),
+    ),
+    ArchitectureModule(
         name="policy",
         path="policy",
         layer="foundation",
@@ -353,8 +366,8 @@ ARCHITECTURE_MANIFEST: tuple[ArchitectureModule, ...] = (
             "typed contracts for engine inputs, outputs, and errors",
             "shared protocol models for API and governance",
         ),
-        public_interfaces=("__init__.py", "engine_models.py", "speech_models.py", "errors.py"),
-        allowed_dependencies=(),
+        public_interfaces=("__init__.py", "engine_models.py", "speech_models.py", "errors.py", "neuro_signals.py"),
+        allowed_dependencies=("protocols",),
     ),
     ArchitectureModule(
         name="utils",

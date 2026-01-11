@@ -10,6 +10,13 @@ from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Protocol
 
+from mlsdm.protocols.neuro_signals import (
+    ActionGatingSignal,
+    RewardPredictionErrorSignal,
+    RiskSignal,
+    StabilityMetrics,
+)
+
 if TYPE_CHECKING:
     import pathlib
 
@@ -598,6 +605,56 @@ class IterationLoop:
         if self.metrics_emitter and self.metrics_emitter._should_emit():
             self.metrics_emitter.emit(ctx, trace)
         return new_state, trace, safety
+
+
+@dataclass(frozen=True)
+class IterationLoopContractAdapter:
+    """Adapter for exposing IterationLoop signals via contract models."""
+
+    @staticmethod
+    def risk_signal(ctx: IterationContext, *, source: str | None = None) -> RiskSignal:
+        return RiskSignal(threat=ctx.threat, risk=ctx.risk, source=source or "iteration_loop")
+
+    @staticmethod
+    def reward_prediction_error_signal(
+        pe: PredictionError,
+        *,
+        reward: float | None = None,
+    ) -> RewardPredictionErrorSignal:
+        return RewardPredictionErrorSignal(
+            delta=[float(value) for value in pe.delta],
+            abs_delta=float(pe.abs_delta),
+            clipped_delta=[float(value) for value in pe.clipped_delta],
+            components=[float(value) for value in pe.components],
+            reward=reward,
+        )
+
+    @staticmethod
+    def stability_metrics(safety: SafetyDecision) -> StabilityMetrics:
+        metrics = safety.stability_metrics
+        return StabilityMetrics(
+            max_abs_delta=float(metrics.get("max_abs_delta", metrics.get("abs_delta_max", 0.0))),
+            windowed_max_abs_delta=float(metrics.get("windowed_max_abs_delta", 0.0)),
+            oscillation_index=float(metrics.get("oscillation_index", 0.0)),
+            sign_flip_rate=float(metrics.get("sign_flip_rate", 0.0)),
+            regime_flip_rate=float(metrics.get("regime_flip_rate", 0.0)),
+            convergence_time=float(metrics.get("convergence_time", -1.0)),
+            instability_events_count=int(metrics.get("instability_events_count", 0)),
+            time_to_kill_switch=metrics.get("time_to_kill_switch"),
+            recovered=bool(metrics.get("recovered", False)),
+        )
+
+    @staticmethod
+    def action_gating_signal(safety: SafetyDecision) -> ActionGatingSignal:
+        return ActionGatingSignal(
+            allow=safety.allow_next,
+            reason=safety.reason,
+            mode=safety.regime.value,
+            metadata={
+                "risk": float(safety.risk_metrics.get("risk", 0.0)),
+                "threat": float(safety.risk_metrics.get("threat", 0.0)),
+            },
+        )
 
 
 @dataclass

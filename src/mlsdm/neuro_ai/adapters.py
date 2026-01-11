@@ -6,6 +6,11 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from mlsdm.protocols.neuro_signals import (
+    ActionGatingSignal,
+    RewardPredictionErrorSignal,
+    StabilityMetrics,
+)
 from mlsdm.utils.math_constants import safe_norm
 
 if TYPE_CHECKING:
@@ -314,3 +319,43 @@ class SynapticMemoryAdapter:
 
     def get_state(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         return self.memory.state()
+
+
+@dataclass(frozen=True)
+class NeuroAIContractAdapter:
+    """Adapter for exporting NeuroAI signals via contract models."""
+
+    @staticmethod
+    def reward_prediction_error_signal(metrics: PredictionErrorMetrics) -> RewardPredictionErrorSignal:
+        delta = float(metrics.delta)
+        return RewardPredictionErrorSignal(
+            delta=[delta],
+            abs_delta=abs(delta),
+            clipped_delta=[delta],
+            components=[abs(delta)],
+        )
+
+    @staticmethod
+    def action_gating_signal(decision: RegimeDecision) -> ActionGatingSignal:
+        return ActionGatingSignal(
+            allow=True,
+            reason="regime_controller",
+            mode=decision.state.value,
+            metadata={"risk": decision.risk, "flips": decision.flips},
+        )
+
+    @staticmethod
+    def stability_metrics(step_metrics: NeuroAIStepMetrics) -> StabilityMetrics:
+        oscillation = step_metrics.oscillation_score
+        flips = step_metrics.regime.flips if step_metrics.regime else 0
+        return StabilityMetrics(
+            max_abs_delta=0.0,
+            windowed_max_abs_delta=0.0,
+            oscillation_index=oscillation,
+            sign_flip_rate=0.0,
+            regime_flip_rate=0.0,
+            convergence_time=-1.0,
+            instability_events_count=flips,
+            time_to_kill_switch=None,
+            recovered=False,
+        )

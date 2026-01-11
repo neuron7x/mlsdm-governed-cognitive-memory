@@ -21,6 +21,15 @@ from mlsdm.contracts.engine_models import (
     EngineValidationStep,
 )
 from mlsdm.contracts.errors import ApiError
+from mlsdm.contracts.neuro_signals import (
+    ActionGatingSignal,
+    LatencyProfile,
+    LatencyRequirement,
+    LifecycleHook,
+    RewardPredictionErrorSignal,
+    RiskSignal,
+    StabilityMetrics,
+)
 from mlsdm.contracts.speech_models import (
     AphasiaMetadata,
     AphasiaReport,
@@ -35,6 +44,13 @@ __all__ = [
     "EngineResultMeta",
     "EngineTiming",
     "EngineValidationStep",
+    "ActionGatingSignal",
+    "LatencyProfile",
+    "LatencyRequirement",
+    "LifecycleHook",
+    "RewardPredictionErrorSignal",
+    "RiskSignal",
+    "StabilityMetrics",
     # Speech governance models
     "AphasiaReport",
     "AphasiaMetadata",

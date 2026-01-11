@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from mlsdm.protocols.neuro_signals import ActionGatingSignal, RiskSignal
+
 
 class RiskMode(str, Enum):
     """Runtime safety modes for the cognitive engine."""
@@ -127,3 +129,34 @@ class SafetyControlContour:
                 audit_tags=("risk_guarded",),
             )
         return RiskDirective(mode=assessment.mode, allow_execution=True)
+
+
+@dataclass(frozen=True)
+class RiskContractAdapter:
+    """Adapter for exposing risk contour signals via contract models."""
+
+    @staticmethod
+    def risk_signal(signals: RiskInputSignals) -> RiskSignal:
+        threat = 1.0 if signals.security_flags else signals.observability_anomaly_score
+        risk = max(signals.cognition_risk_score, signals.observability_anomaly_score)
+        metadata: dict[str, float | int | str] = {
+            "cognition_risk_score": signals.cognition_risk_score,
+            "observability_anomaly_score": signals.observability_anomaly_score,
+            "security_flag_count": len(signals.security_flags),
+        }
+        return RiskSignal(threat=threat, risk=risk, source="safety_control", metadata=metadata)
+
+    @staticmethod
+    def action_gating_signal(assessment: RiskAssessment, directive: RiskDirective) -> ActionGatingSignal:
+        reason = assessment.reasons[0] if assessment.reasons else ""
+        return ActionGatingSignal(
+            allow=directive.allow_execution,
+            reason=reason or assessment.mode.value,
+            mode=assessment.mode.value,
+            metadata={
+                "composite_score": assessment.composite_score,
+                "degraded": bool(directive.degrade_actions),
+                "emergency": directive.emergency_fallback is not None,
+                "audit_tags": ",".join(directive.audit_tags),
+            },
+        )

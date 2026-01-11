@@ -46,6 +46,13 @@ from enum import Enum
 from threading import Lock
 from typing import TYPE_CHECKING, Any, Protocol
 
+from mlsdm.protocols.neuro_signals import (
+    ActionGatingSignal,
+    LatencyProfile,
+    LatencyRequirement,
+    LifecycleHook,
+)
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -801,3 +808,79 @@ class LLMPipeline:
             stats["moral_filter"] = self._moral_filter.get_state()
 
         return stats
+
+
+@dataclass(frozen=True)
+class LLMPipelineContractAdapter:
+    """Adapter exposing LLMPipeline lifecycle and gating contracts."""
+
+    @staticmethod
+    def lifecycle_hooks(pipeline: LLMPipeline) -> list[LifecycleHook]:
+        hooks: list[LifecycleHook] = []
+        for name, _ in pipeline._pre_filters:
+            hooks.append(
+                LifecycleHook(
+                    component=name,
+                    phase="pre",
+                    hook=f"{name}_pre",
+                    description="Pre-flight validation hook.",
+                )
+            )
+        for name, _ in pipeline._post_filters:
+            hooks.append(
+                LifecycleHook(
+                    component=name,
+                    phase="post",
+                    hook=f"{name}_post",
+                    description="Post-flight correction hook.",
+                )
+            )
+        return hooks
+
+    @staticmethod
+    def latency_profile(pipeline: LLMPipeline) -> LatencyProfile:
+        pre_budget = 80.0
+        post_budget = 80.0
+        llm_budget = 1500.0
+        stages: list[LatencyRequirement] = []
+        for name, _ in pipeline._pre_filters:
+            stages.append(
+                LatencyRequirement(
+                    stage=name,
+                    target_ms=pre_budget,
+                    warn_ms=pre_budget * 1.5,
+                    hard_limit_ms=pre_budget * 3,
+                )
+            )
+        stages.append(
+            LatencyRequirement(
+                stage="llm_call",
+                target_ms=llm_budget,
+                warn_ms=llm_budget * 1.5,
+                hard_limit_ms=llm_budget * 2.5,
+            )
+        )
+        for name, _ in pipeline._post_filters:
+            stages.append(
+                LatencyRequirement(
+                    stage=name,
+                    target_ms=post_budget,
+                    warn_ms=post_budget * 1.5,
+                    hard_limit_ms=post_budget * 3,
+                )
+            )
+        total_budget = sum(req.target_ms for req in stages)
+        return LatencyProfile(total_budget_ms=total_budget, stages=stages)
+
+    @staticmethod
+    def action_gating_signal(result: PipelineResult) -> ActionGatingSignal:
+        return ActionGatingSignal(
+            allow=result.accepted,
+            reason=result.block_reason or "accepted",
+            mode="pipeline",
+            metadata={
+                "blocked": not result.accepted,
+                "blocked_at": result.blocked_at or "",
+                "total_duration_ms": float(result.total_duration_ms),
+            },
+        )
