@@ -9,8 +9,9 @@ downstream action selection (routers, iteration loops) or learning updates.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from mlsdm.risk import RiskAssessment, RiskDirective, RiskInputSignals, SafetyControlContour
 

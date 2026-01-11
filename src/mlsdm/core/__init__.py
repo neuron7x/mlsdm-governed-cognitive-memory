@@ -1,5 +1,6 @@
 # package
 
+from .decision_stack import DecisionStack, DecisionStackResult
 from .llm_pipeline import (
     AphasiaPostFilter,
     FilterDecision,
@@ -13,7 +14,6 @@ from .llm_pipeline import (
     PreFilter,
     ThreatPreFilter,
 )
-from .decision_stack import DecisionStack, DecisionStackResult
 
 __all__ = [
     "AphasiaPostFilter",
