@@ -7,6 +7,7 @@ controlled load conditions. Uses stub backends for deterministic results.
 from __future__ import annotations
 
 import os
+import threading
 
 import pytest
 from fastapi.testclient import TestClient
@@ -27,8 +28,16 @@ from tests.perf.utils import run_load_test
 # This allows us to test actual endpoint performance, not rate limiter behavior
 os.environ["DISABLE_RATE_LIMIT"] = "1"
 
-# Configure test client (synchronous for load testing)
-client = TestClient(app)
+_client_local = threading.local()
+
+
+def _get_client() -> TestClient:
+    """Return a thread-local TestClient to avoid cross-thread event loop issues."""
+    client = getattr(_client_local, "client", None)
+    if client is None:
+        client = TestClient(app)
+        _client_local.client = client
+    return client
 
 
 @pytest.mark.benchmark
@@ -43,7 +52,7 @@ class TestGenerateEndpointSLO:
         profile = get_load_profile("light")
 
         def make_request() -> None:
-            response = client.post(
+            response = _get_client().post(
                 "/generate",
                 json={
                     "prompt": "Test prompt for SLO validation",
@@ -77,7 +86,7 @@ class TestGenerateEndpointSLO:
         profile = get_load_profile("light")
 
         def make_request() -> None:
-            response = client.post(
+            response = _get_client().post(
                 "/generate",
                 json={
                     "prompt": "Another test prompt",
@@ -123,7 +132,7 @@ class TestInferEndpointSLO:
         profile = get_load_profile("light")
 
         def make_request() -> None:
-            response = client.post(
+            response = _get_client().post(
                 "/infer",
                 json={
                     "prompt": "Test inference prompt",
@@ -161,7 +170,7 @@ class TestHealthEndpointSLO:
         profile = get_load_profile("light")
 
         def make_request() -> None:
-            response = client.get("/health/liveness")
+            response = _get_client().get("/health/liveness")
             assert response.status_code == 200
 
         results = run_load_test(
@@ -195,7 +204,7 @@ class TestHealthEndpointSLO:
         profile = get_load_profile("light")
 
         def make_request() -> None:
-            response = client.get("/health/readiness")
+            response = _get_client().get("/health/readiness")
             assert response.status_code == 200
 
         results = run_load_test(
@@ -227,7 +236,7 @@ class TestModerateLoadSLO:
         profile = get_load_profile("moderate")
 
         def make_request() -> None:
-            response = client.post(
+            response = _get_client().post(
                 "/generate",
                 json={
                     "prompt": "Moderate load test prompt",

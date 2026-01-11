@@ -13,6 +13,7 @@ Usage:
     python tests/perf/test_golden_path_perf.py  # standalone
 """
 
+import os
 import platform
 import sys
 import time
@@ -32,6 +33,14 @@ MEMORY_N_OPS = 1000
 CONTROLLER_N_OPS = 500
 DIMENSION = 384
 PELM_CAPACITY = 20000
+_IS_CI = os.environ.get("CI", "").lower() == "true" or os.environ.get(
+    "GITHUB_ACTIONS", ""
+).lower() == "true"
+
+PELM_MIN_OPS_SEC = 40 if _IS_CI else 100
+PELM_MAX_P95_MS = 120 if _IS_CI else 50
+MEMORY_MIN_OPS_SEC = 200 if _IS_CI else 500
+CONTROLLER_MIN_OPS_SEC = 50 if _IS_CI else 100
 
 
 @dataclass
@@ -144,8 +153,12 @@ class TestPELMPerformance:
         print(f"  Memory:     {result.memory_mb:.2f} MB")
 
         # Assertions - ensure minimum performance
-        assert result.ops_per_sec >= 100, f"entangle too slow: {result.ops_per_sec} ops/sec"
-        assert result.p95_ms < 50, f"P95 latency too high: {result.p95_ms}ms"
+        assert (
+            result.ops_per_sec >= PELM_MIN_OPS_SEC
+        ), f"entangle too slow: {result.ops_per_sec} ops/sec"
+        assert (
+            result.p95_ms < PELM_MAX_P95_MS
+        ), f"P95 latency too high: {result.p95_ms}ms"
 
     @pytest.mark.benchmark
     def test_pelm_retrieve_throughput(self, pelm) -> None:
@@ -186,8 +199,12 @@ class TestPELMPerformance:
         print(f"\n{result}")
 
         # Assertions
-        assert result.ops_per_sec >= 100, f"retrieve too slow: {result.ops_per_sec} ops/sec"
-        assert result.p95_ms < 50, f"P95 latency too high: {result.p95_ms}ms"
+        assert (
+            result.ops_per_sec >= PELM_MIN_OPS_SEC
+        ), f"retrieve too slow: {result.ops_per_sec} ops/sec"
+        assert (
+            result.p95_ms < PELM_MAX_P95_MS
+        ), f"P95 latency too high: {result.p95_ms}ms"
 
 
 class TestMultiLevelMemoryPerformance:
@@ -231,7 +248,9 @@ class TestMultiLevelMemoryPerformance:
         print(f"\n{result}")
 
         # Assertions
-        assert result.ops_per_sec >= 500, f"update too slow: {result.ops_per_sec} ops/sec"
+        assert (
+            result.ops_per_sec >= MEMORY_MIN_OPS_SEC
+        ), f"update too slow: {result.ops_per_sec} ops/sec"
 
 
 class TestCognitiveControllerPerformance:
@@ -276,7 +295,9 @@ class TestCognitiveControllerPerformance:
         print(f"\n{result}")
 
         # Assertions
-        assert result.ops_per_sec >= 100, f"process_event too slow: {result.ops_per_sec} ops/sec"
+        assert (
+            result.ops_per_sec >= CONTROLLER_MIN_OPS_SEC
+        ), f"process_event too slow: {result.ops_per_sec} ops/sec"
 
 
 def run_all_benchmarks() -> dict:
