@@ -27,6 +27,10 @@ moral_filter:
   min_threshold: 0.3  # Lower bound
   max_threshold: 0.9  # Upper bound
 
+# Threat filter (LLM safety risk gating)
+threat_filter:
+  sensitivity_threshold: 0.7  # Threat score threshold (0.0-1.0)
+
 # Ontology-based semantic categorization
 ontology_matcher:
   ontology_vectors:

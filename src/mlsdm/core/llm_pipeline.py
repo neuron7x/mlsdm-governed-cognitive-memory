@@ -132,7 +132,8 @@ class PipelineConfig:
         aphasia_detection_enabled: Enable aphasia detection.
         aphasia_repair_enabled: Enable automatic aphasia repair.
         aphasia_severity_threshold: Minimum severity to trigger repair.
-        threat_assessment_enabled: Enable threat assessment (placeholder).
+        threat_assessment_enabled: Enable threat assessment.
+        threat_sensitivity_threshold: Threat score threshold (0.0-1.0).
         max_tokens_default: Default max tokens for generation.
         telemetry_enabled: Enable telemetry hooks.
     """
@@ -143,6 +144,7 @@ class PipelineConfig:
     aphasia_repair_enabled: bool = True
     aphasia_severity_threshold: float = 0.3
     threat_assessment_enabled: bool = False
+    threat_sensitivity_threshold: float = 0.7
     max_tokens_default: int = 512
     telemetry_enabled: bool = True
 
@@ -259,48 +261,39 @@ class MoralPreFilter:
 
 
 class ThreatPreFilter:
-    """Pre-filter for threat assessment (placeholder implementation).
+    """Pre-filter for threat assessment using safety signals.
 
-    This filter evaluates potential threats in requests and can block
-    or flag high-risk inputs. Currently provides a placeholder implementation
-    that can be extended with actual threat detection logic.
+    This filter relies on the existing llm_safety analyzer to evaluate
+    prompt injection and jailbreak risk, then maps the risk signal into
+    a normalized threat_score used for gating.
 
     Neuro-principle: Amygdala threat response - rapid threat detection
     before engaging higher cognitive processes.
     """
 
-    # Default risk keywords - can be overridden via constructor
-    DEFAULT_RISK_KEYWORDS: frozenset[str] = frozenset(
-        {
-            "hack",
-            "exploit",
-            "bypass",
-            "override",
-            "inject",
-            "attack",
-            "malicious",
-        }
-    )
-
-    # Score increment per detected keyword (0.2 = 5 keywords to reach max)
-    KEYWORD_SCORE_INCREMENT: float = 0.2
-
     def __init__(
         self,
-        sensitivity: float = 0.5,
-        risk_keywords: set[str] | frozenset[str] | None = None,
+        sensitivity_threshold: float = 0.7,
     ) -> None:
         """Initialize threat pre-filter.
 
         Args:
-            sensitivity: Threat detection sensitivity (0.0-1.0).
-                        Higher values = more sensitive (more blocks).
-            risk_keywords: Custom set of risk keywords. If None, uses defaults.
+            sensitivity_threshold: Threat score threshold (0.0-1.0).
+                Lower values = more sensitive (more blocks).
         """
-        self._sensitivity = sensitivity
-        self._risk_keywords = (
-            frozenset(risk_keywords) if risk_keywords is not None else self.DEFAULT_RISK_KEYWORDS
-        )
+        self._sensitivity_threshold = sensitivity_threshold
+
+    @staticmethod
+    def _risk_level_to_score(risk_level: str) -> float:
+        """Map safety risk level to a numeric threat score."""
+        mapping = {
+            "none": 0.0,
+            "low": 0.25,
+            "medium": 0.5,
+            "high": 0.75,
+            "critical": 1.0,
+        }
+        return mapping.get(risk_level, 0.0)
 
     def evaluate(self, prompt: str, context: dict[str, Any]) -> FilterResult:
         """Evaluate threat level.
@@ -312,25 +305,24 @@ class ThreatPreFilter:
         Returns:
             FilterResult with decision.
         """
-        prompt_lower = prompt.lower()
-        detected_keywords = [kw for kw in self._risk_keywords if kw in prompt_lower]
+        from mlsdm.security.llm_safety import analyze_prompt
 
-        # Calculate basic threat score
-        if detected_keywords:
-            threat_score = len(detected_keywords) * self.KEYWORD_SCORE_INCREMENT
-            threat_score = min(1.0, threat_score)
-        else:
-            threat_score = 0.0
+        safety_result = analyze_prompt(prompt)
+        risk_level = safety_result.risk_level.value
+        max_severity = float(safety_result.metadata.get("max_severity", 0.0))
+        risk_level_score = self._risk_level_to_score(risk_level)
+        threat_score = max(max_severity, risk_level_score)
 
-        # Block if threat score exceeds sensitivity
-        if threat_score >= self._sensitivity:
+        if threat_score >= self._sensitivity_threshold:
             return FilterResult(
                 decision=FilterDecision.BLOCK,
                 reason="threat_detected",
                 metadata={
                     "threat_score": threat_score,
-                    "detected_keywords": detected_keywords,
-                    "sensitivity": self._sensitivity,
+                    "risk_level": risk_level,
+                    "max_severity": max_severity,
+                    "sensitivity_threshold": self._sensitivity_threshold,
+                    "violations": [v.category.value for v in safety_result.violations],
                 },
             )
 
@@ -339,7 +331,10 @@ class ThreatPreFilter:
             reason="no_threat_detected",
             metadata={
                 "threat_score": threat_score,
-                "sensitivity": self._sensitivity,
+                "risk_level": risk_level,
+                "max_severity": max_severity,
+                "sensitivity_threshold": self._sensitivity_threshold,
+                "violations": [v.category.value for v in safety_result.violations],
             },
         )
 
@@ -520,7 +515,9 @@ class LLMPipeline:
             self._moral_filter = moral_filter
 
         if self._config.threat_assessment_enabled:
-            threat_filter = ThreatPreFilter()
+            threat_filter = ThreatPreFilter(
+                sensitivity_threshold=self._config.threat_sensitivity_threshold
+            )
             self._pre_filters.append(("threat_filter", threat_filter))
 
         # Initialize post-filters

@@ -120,6 +120,25 @@ class MoralFilterConfig(BaseModel):
         return self
 
 
+class ThreatFilterConfig(BaseModel):
+    """Threat filter configuration for prompt safety gating."""
+
+    sensitivity_threshold: float = Field(
+        default=0.7,
+        ge=0.0,
+        le=1.0,
+        description="Threat score threshold (0.0-1.0). Lower = more sensitive blocking.",
+    )
+
+    @model_validator(mode="after")
+    def validate_threshold(self) -> Self:
+        """Validate sensitivity threshold is in valid range."""
+        if self.sensitivity_threshold is not None:
+            if not (0.0 <= self.sensitivity_threshold <= 1.0):
+                raise ValueError("sensitivity_threshold must be in [0.0, 1.0]")
+        return self
+
+
 class OntologyMatcherConfig(BaseModel):
     """Ontology matcher configuration for semantic categorization."""
 
@@ -437,6 +456,10 @@ class SystemConfig(BaseModel):
         default_factory=MoralFilterConfig,
         description="Moral filter configuration for content governance.",
     )
+    threat_filter: ThreatFilterConfig = Field(
+        default_factory=ThreatFilterConfig,
+        description="Threat filter configuration for prompt safety gating.",
+    )
     ontology_matcher: OntologyMatcherConfig = Field(
         default_factory=OntologyMatcherConfig, description="Ontology matcher configuration."
     )
@@ -515,6 +538,9 @@ class SystemConfig(BaseModel):
                         "adapt_rate": 0.05,
                         "min_threshold": 0.3,
                         "max_threshold": 0.9,
+                    },
+                    "threat_filter": {
+                        "sensitivity_threshold": 0.7,
                     },
                     "cognitive_rhythm": {"wake_duration": 8, "sleep_duration": 3},
                     "aphasia": {
