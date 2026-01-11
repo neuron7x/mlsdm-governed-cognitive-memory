@@ -65,6 +65,7 @@ from .metrics import (
     record_aphasia_event,
     record_request,
 )
+from .anomaly_detector import compute_observability_anomaly_score
 from .tracing import (
     TracerManager,
     TracingConfig,
@@ -132,6 +133,7 @@ __all__ = [
     "payload_scrubber",
     "reset_aphasia_metrics_exporter",
     "scrub_for_log",
+    "compute_observability_anomaly_score",
     # Metrics helpers
     "record_request",
     "record_aphasia_event",

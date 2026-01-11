@@ -33,6 +33,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
 from mlsdm.core.llm_wrapper import LLMWrapper
+from mlsdm.observability.anomaly_detector import compute_observability_anomaly_score
 from mlsdm.observability.tracing import get_tracer_manager
 from mlsdm.risk import RiskDirective, RiskInputSignals, SafetyControlContour
 from mlsdm.utils.bulkhead import (
@@ -526,6 +527,9 @@ class NeuroCognitiveEngine:
                     "mlsdm.user_intent": user_intent,
                 },
             ) as pipeline_span:
+                if observability_anomaly_score is None:
+                    observability_anomaly_score = compute_observability_anomaly_score()
+
                 # Step 2.5: Risk contour assessment and gating
                 risk_directive = self._evaluate_risk(
                     security_flags=security_flags,
