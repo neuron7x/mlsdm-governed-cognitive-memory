@@ -137,4 +137,6 @@ def test_functional_coverage_matrix_is_complete() -> None:
         assert record.tests  # every record must cite behavioral tests
 
     assert not contract_names  # all contracts are covered
-    assert {"action_selection", "prediction_error", "regime_switching", "inhibition"}.issubset(tags_seen)
+    assert {"action_selection", "prediction_error", "regime_switching", "inhibition"}.issubset(
+        tags_seen
+    )

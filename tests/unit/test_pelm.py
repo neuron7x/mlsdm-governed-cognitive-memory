@@ -567,18 +567,24 @@ class TestPELMObservability:
         """Test corruption detection with observability logging enabled."""
         from unittest.mock import patch
 
-        with patch('mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE', True), \
-             patch('mlsdm.memory.phase_entangled_lattice_memory.record_pelm_corruption') as mock_record:
+        with (
+            patch("mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE", True),
+            patch(
+                "mlsdm.memory.phase_entangled_lattice_memory.record_pelm_corruption"
+            ) as mock_record,
+        ):
             pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
             pelm.pointer = -1
             # Make recovery fail by patching auto_recover to return False
-            with patch.object(pelm, '_auto_recover_unsafe', return_value=False), \
-                 pytest.raises(RuntimeError, match="Memory corruption detected"):
+            with (
+                patch.object(pelm, "_auto_recover_unsafe", return_value=False),
+                pytest.raises(RuntimeError, match="Memory corruption detected"),
+            ):
                 pelm.entangle([1.0, 2.0, 3.0, 4.0], phase=0.5)
             mock_record.assert_called_once()
             call_args = mock_record.call_args[1]
-            assert call_args['detected'] is True
-            assert call_args['recovered'] is False
+            assert call_args["detected"] is True
+            assert call_args["recovered"] is False
 
     def test_low_confidence_rejection_with_observability(self):
         """Test low confidence rejection with observability logging."""
@@ -587,116 +593,128 @@ class TestPELMObservability:
 
         from mlsdm.memory.provenance import MemoryProvenance, MemorySource
 
-        with patch('mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE', True), \
-             patch('mlsdm.memory.phase_entangled_lattice_memory.record_pelm_store') as mock_record:
+        with (
+            patch("mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE", True),
+            patch("mlsdm.memory.phase_entangled_lattice_memory.record_pelm_store") as mock_record,
+        ):
             pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
             pelm._confidence_threshold = 0.8
             low_conf_prov = MemoryProvenance(
-                source=MemorySource.USER_INPUT,
-                confidence=0.3,
-                timestamp=datetime.now()
+                source=MemorySource.USER_INPUT, confidence=0.3, timestamp=datetime.now()
             )
             result = pelm.entangle(
                 [1.0, 2.0, 3.0, 4.0],
                 phase=0.5,
                 provenance=low_conf_prov,
-                correlation_id="test-rejection"
+                correlation_id="test-rejection",
             )
             assert result == -1
             mock_record.assert_called_once()
             call_args = mock_record.call_args[1]
-            assert call_args['index'] == -1
-            assert call_args['correlation_id'] == "test-rejection"
+            assert call_args["index"] == -1
+            assert call_args["correlation_id"] == "test-rejection"
 
     def test_store_with_observability_metrics(self):
         """Test storage with observability metrics logging."""
         from unittest.mock import patch
 
-        with patch('mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE', True), \
-             patch('mlsdm.memory.phase_entangled_lattice_memory.record_pelm_store') as mock_record:
+        with (
+            patch("mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE", True),
+            patch("mlsdm.memory.phase_entangled_lattice_memory.record_pelm_store") as mock_record,
+        ):
             pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
             pelm.entangle([1.0, 2.0, 3.0, 4.0], phase=0.5, correlation_id="test-store")
             mock_record.assert_called_once()
             call_args = mock_record.call_args[1]
-            assert call_args['index'] == 0
-            assert call_args['phase'] == 0.5
-            assert call_args['correlation_id'] == "test-store"
-            assert call_args['latency_ms'] >= 0
+            assert call_args["index"] == 0
+            assert call_args["phase"] == 0.5
+            assert call_args["correlation_id"] == "test-store"
+            assert call_args["latency_ms"] >= 0
 
     def test_batch_entangle_with_observability(self):
         """Test batch entangle with observability logging."""
         from unittest.mock import patch
 
-        with patch('mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE', True), \
-             patch('mlsdm.memory.phase_entangled_lattice_memory.record_pelm_store') as mock_record:
+        with (
+            patch("mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE", True),
+            patch("mlsdm.memory.phase_entangled_lattice_memory.record_pelm_store") as mock_record,
+        ):
             pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
             vectors = [[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]]
             phases = [0.3, 0.7]
             pelm.entangle_batch(vectors, phases, correlation_id="batch-test")
             mock_record.assert_called_once()
             call_args = mock_record.call_args[1]
-            assert call_args['correlation_id'] == "batch-test"
+            assert call_args["correlation_id"] == "batch-test"
 
     def test_retrieve_empty_with_observability(self):
         """Test retrieve on empty memory with observability logging."""
         from unittest.mock import patch
 
-        with patch('mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE', True), \
-             patch('mlsdm.memory.phase_entangled_lattice_memory.record_pelm_retrieve') as mock_record:
+        with (
+            patch("mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE", True),
+            patch(
+                "mlsdm.memory.phase_entangled_lattice_memory.record_pelm_retrieve"
+            ) as mock_record,
+        ):
             pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
             results = pelm.retrieve(
-                [1.0, 2.0, 3.0, 4.0],
-                current_phase=0.5,
-                correlation_id="empty-retrieve"
+                [1.0, 2.0, 3.0, 4.0], current_phase=0.5, correlation_id="empty-retrieve"
             )
             assert results == []
             mock_record.assert_called_once()
             call_args = mock_record.call_args[1]
-            assert call_args['results_count'] == 0
-            assert call_args['avg_resonance'] is None
+            assert call_args["results_count"] == 0
+            assert call_args["avg_resonance"] is None
 
     def test_retrieve_no_phase_match_with_observability(self):
         """Test retrieve with no phase match with observability logging."""
         from unittest.mock import patch
 
-        with patch('mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE', True), \
-             patch('mlsdm.memory.phase_entangled_lattice_memory.record_pelm_retrieve') as mock_record:
+        with (
+            patch("mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE", True),
+            patch(
+                "mlsdm.memory.phase_entangled_lattice_memory.record_pelm_retrieve"
+            ) as mock_record,
+        ):
             pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
             pelm.entangle([1.0, 2.0, 3.0, 4.0], phase=0.1)
             results = pelm.retrieve(
                 [1.0, 2.0, 3.0, 4.0],
                 current_phase=0.9,
                 phase_tolerance=0.05,
-                correlation_id="no-match"
+                correlation_id="no-match",
             )
             assert results == []
             assert any(
-                call[1].get('correlation_id') == 'no-match'
-                for call in mock_record.call_args_list
+                call[1].get("correlation_id") == "no-match" for call in mock_record.call_args_list
             )
 
     def test_retrieve_success_with_observability(self):
         """Test successful retrieve with observability logging."""
         from unittest.mock import patch
 
-        with patch('mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE', True), \
-             patch('mlsdm.memory.phase_entangled_lattice_memory.record_pelm_retrieve') as mock_record:
+        with (
+            patch("mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE", True),
+            patch(
+                "mlsdm.memory.phase_entangled_lattice_memory.record_pelm_retrieve"
+            ) as mock_record,
+        ):
             pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
             pelm.entangle([1.0, 2.0, 3.0, 4.0], phase=0.5)
             results = pelm.retrieve(
-                [1.0, 2.0, 3.0, 4.0],
-                current_phase=0.5,
-                correlation_id="success-retrieve"
+                [1.0, 2.0, 3.0, 4.0], current_phase=0.5, correlation_id="success-retrieve"
             )
             assert len(results) == 1
             retrieve_calls = [
-                call for call in mock_record.call_args_list
-                if call[1].get('correlation_id') == "success-retrieve"
+                call
+                for call in mock_record.call_args_list
+                if call[1].get("correlation_id") == "success-retrieve"
             ]
             assert len(retrieve_calls) >= 1
             call_args = retrieve_calls[0][1]
-            assert call_args['results_count'] == 1
-            assert call_args['avg_resonance'] is not None
+            assert call_args["results_count"] == 1
+            assert call_args["avg_resonance"] is not None
 
     def test_batch_entangle_all_rejected_with_observability(self):
         """Test batch entangle where ALL vectors are rejected due to low confidence."""
@@ -705,8 +723,10 @@ class TestPELMObservability:
 
         from mlsdm.memory.provenance import MemoryProvenance, MemorySource
 
-        with patch('mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE', True), \
-             patch('mlsdm.memory.phase_entangled_lattice_memory.record_pelm_store') as mock_record:
+        with (
+            patch("mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE", True),
+            patch("mlsdm.memory.phase_entangled_lattice_memory.record_pelm_store") as mock_record,
+        ):
             pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
             pelm._confidence_threshold = 0.9  # High threshold
 
@@ -715,7 +735,7 @@ class TestPELMObservability:
                 MemoryProvenance(
                     source=MemorySource.USER_INPUT,
                     confidence=0.1,  # Below 0.9 threshold
-                    timestamp=datetime.now()
+                    timestamp=datetime.now(),
                 )
                 for _ in range(3)
             ]
@@ -733,16 +753,20 @@ class TestPELMObservability:
             mock_record.assert_called_once()
             call_args = mock_record.call_args[1]
             # When all rejected, falls back to (0, 0.0, 0.0)
-            assert call_args['index'] == 0
-            assert call_args['phase'] == 0.0
-            assert call_args['vector_norm'] == 0.0
+            assert call_args["index"] == 0
+            assert call_args["phase"] == 0.0
+            assert call_args["vector_norm"] == 0.0
 
     def test_corruption_recovery_success_with_observability(self):
         """Test corruption recovery SUCCESS path with observability logging."""
         from unittest.mock import patch
 
-        with patch('mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE', True), \
-             patch('mlsdm.memory.phase_entangled_lattice_memory.record_pelm_corruption') as mock_record:
+        with (
+            patch("mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE", True),
+            patch(
+                "mlsdm.memory.phase_entangled_lattice_memory.record_pelm_corruption"
+            ) as mock_record,
+        ):
             pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
             pelm.entangle([1.0, 2.0, 3.0, 4.0], phase=0.5)
 
@@ -755,8 +779,8 @@ class TestPELMObservability:
             assert idx >= 0  # Recovery succeeded
             mock_record.assert_called_once()
             call_args = mock_record.call_args[1]
-            assert call_args['detected'] is True
-            assert call_args['recovered'] is True  # This is the SUCCESS path
+            assert call_args["detected"] is True
+            assert call_args["recovered"] is True  # This is the SUCCESS path
 
 
 class TestPELMReturnIndices:
@@ -766,15 +790,15 @@ class TestPELMReturnIndices:
         """Test retrieve with return_indices parameter."""
         from unittest.mock import patch
 
-        with patch('mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE', True), \
-             patch('mlsdm.memory.phase_entangled_lattice_memory.record_pelm_retrieve'):
+        with (
+            patch("mlsdm.memory.phase_entangled_lattice_memory._OBSERVABILITY_AVAILABLE", True),
+            patch("mlsdm.memory.phase_entangled_lattice_memory.record_pelm_retrieve"),
+        ):
             pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
 
             # Empty memory
             results, indices = pelm.retrieve(
-                [1.0, 2.0, 3.0, 4.0],
-                current_phase=0.5,
-                return_indices=True
+                [1.0, 2.0, 3.0, 4.0], current_phase=0.5, return_indices=True
             )
             assert results == []
             assert indices == []
@@ -784,10 +808,7 @@ class TestPELMReturnIndices:
 
             # No phase match
             results, indices = pelm.retrieve(
-                [1.0, 2.0, 3.0, 4.0],
-                current_phase=0.9,
-                phase_tolerance=0.05,
-                return_indices=True
+                [1.0, 2.0, 3.0, 4.0], current_phase=0.9, phase_tolerance=0.05, return_indices=True
             )
             assert results == []
             assert indices == []
@@ -797,7 +818,7 @@ class TestPELMReturnIndices:
                 [1.0, 2.0, 3.0, 4.0],
                 current_phase=0.5,
                 return_indices=True,
-                correlation_id="with-indices"
+                correlation_id="with-indices",
             )
             assert len(results) == 1
             assert len(indices) == 1
@@ -825,11 +846,11 @@ class TestPELMValidation:
 
         vectors = [[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]]
         phases = [0.3, 0.7]
-        provenances = [MemoryProvenance(
-            source=MemorySource.SYSTEM_PROMPT,
-            confidence=1.0,
-            timestamp=datetime.now()
-        )]
+        provenances = [
+            MemoryProvenance(
+                source=MemorySource.SYSTEM_PROMPT, confidence=1.0, timestamp=datetime.now()
+            )
+        ]
 
         with pytest.raises(ValueError, match="provenances must match vectors length"):
             pelm.entangle_batch(vectors, phases, provenances=provenances)
@@ -858,8 +879,7 @@ class TestPELMFallbackAndEdgeCases:
         assert len(results) >= 1
         # Check if any result uses the fallback provenance
         has_fallback = any(
-            r.provenance.source == MemorySource.SYSTEM_PROMPT and
-            r.provenance.confidence == 1.0
+            r.provenance.source == MemorySource.SYSTEM_PROMPT and r.provenance.confidence == 1.0
             for r in results
         )
         assert has_fallback
@@ -891,7 +911,7 @@ class TestPELMFallbackAndEdgeCases:
         pelm = PhaseEntangledLatticeMemory(dimension=4, capacity=10)
         pelm.pointer = -1
 
-        with patch.object(pelm, '_rebuild_index', side_effect=RuntimeError("Rebuild failed")):
+        with patch.object(pelm, "_rebuild_index", side_effect=RuntimeError("Rebuild failed")):
             result = pelm.auto_recover()
             assert result is False
 

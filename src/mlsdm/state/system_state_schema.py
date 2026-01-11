@@ -17,7 +17,7 @@ Invariants:
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -110,11 +110,11 @@ class SystemStateRecord(BaseModel):
     )
     id: str | None = Field(default=None, description="Optional unique state identifier")
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="Timestamp when state was first created",
     )
     updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="Timestamp when state was last updated",
     )
     memory_state: MemoryStateRecord = Field(..., description="MultiLevelSynapticMemory state")

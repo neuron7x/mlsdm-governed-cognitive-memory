@@ -12,9 +12,7 @@ def test_moral_filter_logs_boundary_cases(caplog) -> None:
     result = moral_filter.evaluate(moral_filter.MIN_THRESHOLD + 0.005)
 
     assert result is False
-    assert any(
-        "MoralFilterV2 boundary case" in record.message for record in caplog.records
-    )
+    assert any("MoralFilterV2 boundary case" in record.message for record in caplog.records)
 
 
 def test_compute_moral_value_updates_metadata() -> None:

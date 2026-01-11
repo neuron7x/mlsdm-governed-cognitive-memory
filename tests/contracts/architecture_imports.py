@@ -127,6 +127,40 @@ def build_manifest_index(
     return {module.name: module for module in manifest}
 
 
+def build_module_dependency_graph(
+    manifest: Iterable[ArchitectureModule] = ARCHITECTURE_MANIFEST,
+    package_root: Path = PACKAGE_ROOT,
+) -> tuple[dict[str, set[str]], dict[tuple[str, str], list[tuple[Path, str]]]]:
+    """Build a module-level dependency graph with file-level evidence."""
+    manifest_index = build_manifest_index(manifest)
+    graph: dict[str, set[str]] = {name: set() for name in manifest_index}
+    evidence: dict[tuple[str, str], list[tuple[Path, str]]] = {}
+
+    for path in iter_python_files(package_root):
+        module_parts = module_parts_for_path(path)
+        if not module_parts:
+            continue
+        source_module = module_parts[0]
+        if source_module not in manifest_index:
+            continue
+
+        for target in iter_import_targets(path):
+            if not target.module_parts:
+                continue
+            target_module = target.module_parts[0]
+            if target_module == source_module:
+                continue
+            if target_module not in manifest_index:
+                continue
+            graph[source_module].add(target_module)
+            edge = (source_module, target_module)
+            samples = evidence.setdefault(edge, [])
+            if len(samples) < 3:
+                samples.append((path, target.raw))
+
+    return graph, evidence
+
+
 def find_architecture_import_violations(
     manifest: Iterable[ArchitectureModule] = ARCHITECTURE_MANIFEST,
     package_root: Path = PACKAGE_ROOT,

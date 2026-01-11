@@ -300,7 +300,9 @@ class ConfigLoader:
         try:
             text = resources.files(package).joinpath(resource).read_text(encoding="utf-8")
         except FileNotFoundError as e:
-            raise FileNotFoundError(f"Resource '{resource}' not found in package '{package}'") from e
+            raise FileNotFoundError(
+                f"Resource '{resource}' not found in package '{package}'"
+            ) from e
         except Exception as e:
             raise ValueError(
                 f"Error reading resource '{resource}' from package '{package}': {str(e)}"

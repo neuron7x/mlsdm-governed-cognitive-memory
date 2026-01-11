@@ -386,7 +386,7 @@ class AphasiaPostFilter:
             repair_prompt_template: Custom repair prompt template with {prompt}
                 and {response} placeholders. If None, uses default template.
         """
-        from mlsdm.extensions.neuro_lang_extension import AphasiaBrocaDetector
+        from mlsdm.speech.aphasia_detector import AphasiaBrocaDetector
 
         self._detector = AphasiaBrocaDetector()
         self._repair_enabled = repair_enabled
@@ -423,7 +423,7 @@ class AphasiaPostFilter:
         Returns:
             FilterResult with ALLOW or MODIFY decision.
         """
-        analysis = self._detector.analyze(response)  # type: ignore[no-untyped-call]
+        analysis = self._detector.analyze(response)
 
         if not analysis["is_aphasic"]:
             return FilterResult(
@@ -598,9 +598,7 @@ class LLMPipeline:
                 block_reason="generation_failed",
                 stages=stages,
                 total_duration_ms=(perf() - start_time) * 1000,
-                metadata={
-                    "stage_durations_ms": stage_durations_ms
-                },
+                metadata={"stage_durations_ms": stage_durations_ms},
             )
             self._emit_telemetry(error_result)
             return error_result

@@ -55,9 +55,9 @@ def test_pelm_phase_isolation_wake_only():
     )
 
     # Should NOT find vectors (phase difference ~0.8, tolerance 0.05)
-    assert (
-        len(results_sleep) == 0
-    ), f"Should not find wake vectors during sleep with tight tolerance, found {len(results_sleep)}"
+    assert len(results_sleep) == 0, (
+        f"Should not find wake vectors during sleep with tight tolerance, found {len(results_sleep)}"
+    )
 
 
 def test_pelm_phase_isolation_sleep_only():
@@ -86,9 +86,9 @@ def test_pelm_phase_isolation_sleep_only():
     )
 
     # Should NOT find vectors
-    assert (
-        len(results_wake) == 0
-    ), f"Should not find sleep vectors during wake with tight tolerance, found {len(results_wake)}"
+    assert len(results_wake) == 0, (
+        f"Should not find sleep vectors during wake with tight tolerance, found {len(results_wake)}"
+    )
 
 
 def test_pelm_phase_tolerance_controls_retrieval():
@@ -171,9 +171,9 @@ def test_pelm_phase_values_stored_correctly():
 
     assert len(results) == 1
     # Phase should match what was stored (within floating point precision)
-    assert (
-        abs(results[0].phase - stored_phase) < 1e-5
-    ), f"Phase mismatch: stored {stored_phase}, got {results[0].phase}"
+    assert abs(results[0].phase - stored_phase) < 1e-5, (
+        f"Phase mismatch: stored {stored_phase}, got {results[0].phase}"
+    )
 
 
 @settings(max_examples=30, deadline=None)
@@ -204,9 +204,9 @@ def test_pelm_property_phase_filtering(num_vectors, query_phase):
     # All results must satisfy phase constraint
     for retrieval in results:
         phase_diff = abs(retrieval.phase - query_phase)
-        assert (
-            phase_diff <= tolerance
-        ), f"Retrieved vector violates phase tolerance: diff={phase_diff} > {tolerance}"
+        assert phase_diff <= tolerance, (
+            f"Retrieved vector violates phase tolerance: diff={phase_diff} > {tolerance}"
+        )
 
 
 @settings(max_examples=30, deadline=None)
@@ -245,9 +245,9 @@ def test_pelm_property_phase_separation(wake_count, sleep_count):
 
         # Should not retrieve any wake vectors (phase difference ~0.8)
         wake_in_results = sum(1 for r in results if abs(r.phase - WAKE_PHASE) < 0.1)
-        assert (
-            wake_in_results == 0
-        ), f"Found {wake_in_results} wake vectors during sleep query with tight tolerance"
+        assert wake_in_results == 0, (
+            f"Found {wake_in_results} wake vectors during sleep query with tight tolerance"
+        )
 
 
 def test_pelm_resonance_with_phase():
@@ -264,9 +264,9 @@ def test_pelm_resonance_with_phase():
 
     assert len(results) == 1
     # Resonance should be very high (close to 1.0) for self-query
-    assert (
-        results[0].resonance > 0.95
-    ), f"Self-query should have high resonance, got {results[0].resonance}"
+    assert results[0].resonance > 0.95, (
+        f"Self-query should have high resonance, got {results[0].resonance}"
+    )
 
 
 def test_pelm_empty_results_outside_phase():

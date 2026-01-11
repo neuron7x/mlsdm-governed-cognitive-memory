@@ -27,9 +27,9 @@ def test_missing_defusedxml_writes_outputs(monkeypatch, tmp_path: Path):
     summary = run_main(tmp_path, [])
     # Check that errors contains structured error with defusedxml_missing code
     errors = summary.get("errors", [])
-    assert any(
-        isinstance(e, dict) and e.get("code") == "defusedxml_missing" for e in errors
-    ), f"Expected defusedxml_missing error in {errors}"
+    assert any(isinstance(e, dict) and e.get("code") == "defusedxml_missing" for e in errors), (
+        f"Expected defusedxml_missing error in {errors}"
+    )
     assert summary["signal"].startswith("Failure intelligence")
     assert summary.get("status") == "degraded"
 
@@ -54,7 +54,9 @@ def test_happy_path_outputs(tmp_path: Path):
         encoding="utf-8",
     )
     coverage = tmp_path / "coverage.xml"
-    coverage.write_text('<coverage line-rate="0.5" branch-rate="0.1" version="1.0"></coverage>', encoding="utf-8")
+    coverage.write_text(
+        '<coverage line-rate="0.5" branch-rate="0.1" version="1.0"></coverage>', encoding="utf-8"
+    )
     summary = run_main(tmp_path, ["--junit", str(junit), "--coverage", str(coverage)])
     assert summary["coverage_percent"] == 50.0
     assert summary["top_failures"][0]["id"] == "pkg.test_sample::test_one"

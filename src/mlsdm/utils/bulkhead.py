@@ -108,9 +108,7 @@ class BulkheadFullError(Exception):
     def __init__(self, compartment: BulkheadCompartment, timeout: float) -> None:
         self.compartment = compartment
         self.timeout = timeout
-        super().__init__(
-            f"Bulkhead compartment '{compartment.value}' is full " f"(timeout={timeout}s)"
-        )
+        super().__init__(f"Bulkhead compartment '{compartment.value}' is full (timeout={timeout}s)")
 
 
 class _CompartmentState:

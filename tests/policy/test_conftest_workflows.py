@@ -24,6 +24,5 @@ def test_conftest_passes_on_repo_workflows(tmp_path: Path) -> None:
 
     result = run_conftest(workflows, data_path, REGO_DIR, REPO_ROOT)
     assert result.returncode == 0, (
-        "Conftest failed for repo workflows:\n"
-        f"{result.stdout}\n{result.stderr}"
+        f"Conftest failed for repo workflows:\n{result.stdout}\n{result.stderr}"
     )

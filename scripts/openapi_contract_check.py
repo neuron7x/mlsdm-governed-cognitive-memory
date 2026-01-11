@@ -76,9 +76,7 @@ def _check_required_properties(
     return failures
 
 
-def check_breaking_changes(
-    baseline: dict[str, Any], candidate: dict[str, Any]
-) -> list[str]:
+def check_breaking_changes(baseline: dict[str, Any], candidate: dict[str, Any]) -> list[str]:
     failures: list[str] = []
 
     baseline_ops = _collect_operations(baseline)
@@ -105,9 +103,7 @@ def check_breaking_changes(
             base_required = bool(base_request.get("required", False))
             cand_required = bool(cand_request.get("required", False))
             if base_required and not cand_required:
-                failures.append(
-                    f"requestBody required removed for {op_key[1].upper()} {op_key[0]}"
-                )
+                failures.append(f"requestBody required removed for {op_key[1].upper()} {op_key[0]}")
 
     baseline_schemas = _collect_schemas(baseline)
     candidate_schemas = _collect_schemas(candidate)

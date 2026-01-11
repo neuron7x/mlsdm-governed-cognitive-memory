@@ -86,8 +86,10 @@ def main() -> int:
             for line, col, char, name in findings:
                 print(f"  Line {line}, Col {col}: {char} ({name})")
 
-        print(f"\n⚠️  Total: {sum(len(f) for f in all_findings.values())} "
-              f"violations in {len(all_findings)} file(s)")
+        print(
+            f"\n⚠️  Total: {sum(len(f) for f in all_findings.values())} "
+            f"violations in {len(all_findings)} file(s)"
+        )
         return 2
 
     print("✅ No hidden Unicode characters found")

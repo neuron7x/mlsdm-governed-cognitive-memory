@@ -14,12 +14,7 @@ class TestReadOnlyProxies:
 
     def test_synaptic_ro_lambda_l3(self):
         """Test SynapticRO.lambda_l3 property."""
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
         synaptic_ro = kernel.synaptic_ro
 
         # Access lambda_l3 property
@@ -29,12 +24,7 @@ class TestReadOnlyProxies:
 
     def test_synaptic_ro_theta_l2(self):
         """Test SynapticRO.theta_l2 property."""
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
         synaptic_ro = kernel.synaptic_ro
 
         # Access theta_l2 property
@@ -44,12 +34,7 @@ class TestReadOnlyProxies:
 
     def test_synaptic_ro_gating12(self):
         """Test SynapticRO.gating12 property."""
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
         synaptic_ro = kernel.synaptic_ro
 
         # Access gating12 property
@@ -59,12 +44,7 @@ class TestReadOnlyProxies:
 
     def test_synaptic_ro_gating23(self):
         """Test SynapticRO.gating23 property."""
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
         synaptic_ro = kernel.synaptic_ro
 
         # Access gating23 property
@@ -74,12 +54,7 @@ class TestReadOnlyProxies:
 
     def test_synaptic_ro_to_dict(self):
         """Test SynapticRO.to_dict() method."""
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
         synaptic_ro = kernel.synaptic_ro
 
         # Call to_dict method
@@ -89,12 +64,7 @@ class TestReadOnlyProxies:
 
     def test_moral_ro_get_state(self):
         """Test MoralRO.get_state() method."""
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
         moral_ro = kernel.moral_ro
 
         # Call get_state method
@@ -103,12 +73,7 @@ class TestReadOnlyProxies:
 
     def test_pelm_ro_detect_corruption(self):
         """Test PelmRO.detect_corruption() method."""
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
         pelm_ro = kernel.pelm_ro
 
         # Call detect_corruption method
@@ -122,11 +87,7 @@ class TestGovernanceKernelReset:
     def test_reset_with_initial_moral_threshold(self):
         """Test reset with initial_moral_threshold parameter."""
         kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3,
-            initial_moral_threshold=0.5
+            dim=10, capacity=100, wake_duration=8, sleep_duration=3, initial_moral_threshold=0.5
         )
 
         # Reset with new threshold
@@ -137,16 +98,12 @@ class TestGovernanceKernelReset:
 
     def test_reset_with_synaptic_config(self):
         """Test reset with synaptic_config parameter."""
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
 
         # Create a simple config-like object (could be None in practice)
         # Since we're testing code coverage, we just need to pass the parameter
         from mlsdm.config import SYNAPTIC_MEMORY_DEFAULTS
+
         config = SYNAPTIC_MEMORY_DEFAULTS
 
         # Reset with synaptic config
@@ -157,25 +114,18 @@ class TestGovernanceKernelReset:
 
     def test_reset_with_all_optional_params(self):
         """Test reset with both initial_moral_threshold and synaptic_config."""
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
 
         # Import config if available
         try:
             from mlsdm.config import SYNAPTIC_MEMORY_DEFAULTS
+
             config = SYNAPTIC_MEMORY_DEFAULTS
         except ImportError:
             config = None
 
         # Reset with both optional parameters
-        kernel.reset(
-            initial_moral_threshold=0.6,
-            synaptic_config=config
-        )
+        kernel.reset(initial_moral_threshold=0.6, synaptic_config=config)
 
         # Verify the kernel still works after reset
         assert kernel.moral_ro is not None
@@ -203,17 +153,11 @@ class TestGovernanceKernelCapabilities:
         """Test that capability with wrong nonce raises PermissionError."""
         from mlsdm.core.governance_kernel import Capability
 
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
 
         # Create a fake capability with wrong nonce hash
         bad_cap = Capability(
-            perms=frozenset(["MUTATE_MORAL_THRESHOLD"]),
-            kernel_nonce_hash="wrong_nonce_hash"
+            perms=frozenset(["MUTATE_MORAL_THRESHOLD"]), kernel_nonce_hash="wrong_nonce_hash"
         )
 
         import pytest
@@ -227,12 +171,7 @@ class TestGovernanceKernelCapabilities:
         """Test that capability without required permission raises PermissionError."""
         from mlsdm.core.governance_kernel import Capability
 
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
 
         # Create a capability with correct nonce but missing permission
         # Access private _cap_hash for testing
@@ -240,7 +179,7 @@ class TestGovernanceKernelCapabilities:
 
         bad_cap = Capability(
             perms=frozenset(["WRONG_PERM"]),  # Missing MUTATE_MORAL_THRESHOLD
-            kernel_nonce_hash=correct_nonce
+            kernel_nonce_hash=correct_nonce,
         )
 
         import pytest
@@ -254,12 +193,7 @@ class TestGovernanceKernelCapabilities:
         """Test that mutations from unauthorized callers are blocked."""
         import pytest
 
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
 
         # Mock inspect.stack to return an unauthorized module
         def mock_stack():
@@ -274,6 +208,7 @@ class TestGovernanceKernelCapabilities:
             return [MockFrameInfo(), MockFrameInfo(), MockFrameInfo()]
 
         import inspect
+
         monkeypatch.setattr(inspect, "stack", mock_stack)
 
         with pytest.raises(PermissionError) as exc_info:
@@ -285,12 +220,7 @@ class TestGovernanceKernelCapabilities:
         """Test that issue_capability blocks unauthorized callers."""
         import pytest
 
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
 
         # Mock inspect.stack to return an unauthorized module
         def mock_stack():
@@ -305,6 +235,7 @@ class TestGovernanceKernelCapabilities:
             return [MockFrameInfo(), MockFrameInfo()]
 
         import inspect
+
         monkeypatch.setattr(inspect, "stack", mock_stack)
 
         with pytest.raises(PermissionError) as exc_info:
@@ -314,12 +245,7 @@ class TestGovernanceKernelCapabilities:
 
     def test_issue_capability_allows_internal_caller(self, monkeypatch):
         """Test that issue_capability allows callers from the internal allowlist."""
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
 
         # Mock inspect.stack to return an allowed module
         def mock_stack():
@@ -334,6 +260,7 @@ class TestGovernanceKernelCapabilities:
             return [MockFrameInfo(), MockFrameInfo()]
 
         import inspect
+
         monkeypatch.setattr(inspect, "stack", mock_stack)
 
         cap = kernel.issue_capability(perms={"MUTATE_MORAL_THRESHOLD"})
@@ -347,12 +274,7 @@ class TestReadOnlyProxiesAdditionalMethods:
 
     def test_moral_ro_get_current_threshold(self):
         """Test MoralRO.get_current_threshold() method."""
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
         moral_ro = kernel.moral_ro
 
         threshold = moral_ro.get_current_threshold()
@@ -361,12 +283,7 @@ class TestReadOnlyProxiesAdditionalMethods:
 
     def test_moral_ro_get_ema_value(self):
         """Test MoralRO.get_ema_value() method."""
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
         moral_ro = kernel.moral_ro
 
         ema = moral_ro.get_ema_value()
@@ -375,12 +292,7 @@ class TestReadOnlyProxiesAdditionalMethods:
 
     def test_synaptic_ro_get_state(self):
         """Test SynapticRO.get_state() method."""
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
         synaptic_ro = kernel.synaptic_ro
 
         state = synaptic_ro.get_state()
@@ -389,12 +301,7 @@ class TestReadOnlyProxiesAdditionalMethods:
 
     def test_pelm_ro_size_property(self):
         """Test PelmRO.size property."""
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
         pelm_ro = kernel.pelm_ro
 
         size = pelm_ro.size
@@ -403,12 +310,7 @@ class TestReadOnlyProxiesAdditionalMethods:
 
     def test_rhythm_ro_get_state_label(self):
         """Test RhythmRO.get_state_label() method."""
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
         rhythm_ro = kernel.rhythm_ro
 
         label = rhythm_ro.get_state_label()
@@ -417,12 +319,7 @@ class TestReadOnlyProxiesAdditionalMethods:
 
     def test_rhythm_ro_get_current_phase(self):
         """Test RhythmRO.get_current_phase() method."""
-        kernel = GovernanceKernel(
-            dim=10,
-            capacity=100,
-            wake_duration=8,
-            sleep_duration=3
-        )
+        kernel = GovernanceKernel(dim=10, capacity=100, wake_duration=8, sleep_duration=3)
         rhythm_ro = kernel.rhythm_ro
 
         phase = rhythm_ro.get_current_phase()

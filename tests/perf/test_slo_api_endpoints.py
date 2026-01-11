@@ -108,9 +108,9 @@ class TestGenerateEndpointSLO:
         )
 
         # Error rate should be very low
-        assert (
-            results.error_rate_percent <= DEFAULT_ERROR_RATE_SLO.max_error_rate_percent
-        ), f"Error rate {results.error_rate_percent:.2f}% exceeds SLO"
+        assert results.error_rate_percent <= DEFAULT_ERROR_RATE_SLO.max_error_rate_percent, (
+            f"Error rate {results.error_rate_percent:.2f}% exceeds SLO"
+        )
 
         # Availability should be high
         availability = 100.0 - results.error_rate_percent
@@ -189,9 +189,9 @@ class TestHealthEndpointSLO:
         )
 
         # Health checks should never fail
-        assert (
-            results.error_rate_percent == 0.0
-        ), f"Health checks failed {results.error_rate_percent:.2f}% of time"
+        assert results.error_rate_percent == 0.0, (
+            f"Health checks failed {results.error_rate_percent:.2f}% of time"
+        )
 
     def test_readiness_latency(self, deterministic_seed: int) -> None:
         """Validate /health/readiness latency is low.

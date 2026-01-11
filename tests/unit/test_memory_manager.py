@@ -1229,9 +1229,7 @@ class TestLTMConfiguration:
         import mlsdm.memory.sqlite_store
 
         original_cls = mlsdm.memory.sqlite_store.SQLiteMemoryStore
-        monkeypatch.setattr(
-            mlsdm.memory.sqlite_store, "SQLiteMemoryStore", mock_init
-        )
+        monkeypatch.setattr(mlsdm.memory.sqlite_store, "SQLiteMemoryStore", mock_init)
 
         try:
             with pytest.raises(ConfigurationError):
@@ -1246,12 +1244,11 @@ class TestLTMConfiguration:
                     }
                 )
         finally:
-            monkeypatch.setattr(
-                mlsdm.memory.sqlite_store, "SQLiteMemoryStore", original_cls
-            )
+            monkeypatch.setattr(mlsdm.memory.sqlite_store, "SQLiteMemoryStore", original_cls)
 
     def test_ltm_init_error_with_strict_reraises(self, tmp_path, monkeypatch):
         """LTM init error should be re-raised when ltm_strict=True."""
+
         # Mock SQLiteMemoryStore to raise a non-ConfigurationError
         def mock_init(*args, **kwargs):
             raise RuntimeError("Database init failed")
@@ -1259,9 +1256,7 @@ class TestLTMConfiguration:
         import mlsdm.memory.sqlite_store
 
         original_cls = mlsdm.memory.sqlite_store.SQLiteMemoryStore
-        monkeypatch.setattr(
-            mlsdm.memory.sqlite_store, "SQLiteMemoryStore", mock_init
-        )
+        monkeypatch.setattr(mlsdm.memory.sqlite_store, "SQLiteMemoryStore", mock_init)
 
         try:
             with pytest.raises(RuntimeError):
@@ -1277,9 +1272,7 @@ class TestLTMConfiguration:
                     }
                 )
         finally:
-            monkeypatch.setattr(
-                mlsdm.memory.sqlite_store, "SQLiteMemoryStore", original_cls
-            )
+            monkeypatch.setattr(mlsdm.memory.sqlite_store, "SQLiteMemoryStore", original_cls)
 
     def test_ltm_init_error_disabled_when_not_strict(self, tmp_path, monkeypatch, caplog):
         """LTM init error should disable LTM when ltm_strict=False."""
@@ -1292,9 +1285,7 @@ class TestLTMConfiguration:
         import mlsdm.memory.sqlite_store
 
         original_cls = mlsdm.memory.sqlite_store.SQLiteMemoryStore
-        monkeypatch.setattr(
-            mlsdm.memory.sqlite_store, "SQLiteMemoryStore", mock_init
-        )
+        monkeypatch.setattr(mlsdm.memory.sqlite_store, "SQLiteMemoryStore", mock_init)
 
         try:
             with caplog.at_level(logging.ERROR):
@@ -1315,9 +1306,7 @@ class TestLTMConfiguration:
             # Error should be logged
             assert "Failed to initialize LTM store" in caplog.text
         finally:
-            monkeypatch.setattr(
-                mlsdm.memory.sqlite_store, "SQLiteMemoryStore", original_cls
-            )
+            monkeypatch.setattr(mlsdm.memory.sqlite_store, "SQLiteMemoryStore", original_cls)
 
 
 class TestStateLoadingEdgeCases:

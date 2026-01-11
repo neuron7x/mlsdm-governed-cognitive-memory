@@ -106,7 +106,9 @@ class NeuromodulatorState:
         }
 
 
-def enforce_governance_gate(allow_execution: bool, policy_strictness: float) -> dict[str, float | bool]:
+def enforce_governance_gate(
+    allow_execution: bool, policy_strictness: float
+) -> dict[str, float | bool]:
     """Ensure governance inhibition dominates neuromodulatory settings."""
 
     return {

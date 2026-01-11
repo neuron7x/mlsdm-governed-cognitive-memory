@@ -238,7 +238,12 @@ class GovernanceKernel:
             self._moral.adapt(accepted)
 
     def memory_commit(
-        self, prompt_vector: np.ndarray, phase: float, *, provenance: Any | None = None, cap: Capability | None = None
+        self,
+        prompt_vector: np.ndarray,
+        phase: float,
+        *,
+        provenance: Any | None = None,
+        cap: Capability | None = None,
     ) -> None:
         self._assert_can_mutate("MEMORY_COMMIT", cap)
         with self._lock:

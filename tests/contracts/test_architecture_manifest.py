@@ -24,6 +24,5 @@ def test_manifest_covers_primary_modules() -> None:
         if path.is_dir() and not path.name.startswith("__")
     }
     assert top_modules.issubset(names), (
-        "ARCHITECTURE_MANIFEST is missing modules: "
-        f"{sorted(top_modules - names)}"
+        f"ARCHITECTURE_MANIFEST is missing modules: {sorted(top_modules - names)}"
     )

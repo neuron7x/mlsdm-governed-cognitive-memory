@@ -17,7 +17,7 @@ import threading
 import time
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import numpy as np  # noqa: TC002 - used at runtime for array operations
 
@@ -181,7 +181,7 @@ class EmbeddingCache:
             self._hits += 1
 
             # Return a copy to prevent external modification
-            return cast("np.ndarray", entry.vector.copy())
+            return entry.vector.copy()
 
     def put(self, text: str, vector: np.ndarray) -> None:
         """Store an embedding vector in the cache.

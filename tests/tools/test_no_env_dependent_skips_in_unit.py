@@ -16,6 +16,6 @@ def test_no_env_dependent_skips_in_unit() -> None:
                     relative_path = path.relative_to(unit_dir.parent)
                     offenders.append(f"{relative_path}:{lineno}: {line.strip()}")
 
-    assert not offenders, (
-        "Env-dependent skip/importorskip found in unit tests:\n" + "\n".join(offenders)
+    assert not offenders, "Env-dependent skip/importorskip found in unit tests:\n" + "\n".join(
+        offenders
     )

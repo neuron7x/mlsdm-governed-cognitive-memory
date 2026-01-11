@@ -13,10 +13,7 @@ class TestMemoryItem:
     def test_memory_item_creation(self):
         """Test creating a MemoryItem with required fields."""
         item = MemoryItem(
-            id="test_id",
-            ts=1234567890.0,
-            content="test content",
-            content_hash="abc123"
+            id="test_id", ts=1234567890.0, content="test content", content_hash="abc123"
         )
 
         assert item.id == "test_id"
@@ -36,7 +33,7 @@ class TestMemoryItem:
             content="test content",
             content_hash="abc123",
             ttl_s=3600.0,
-            pii_flags=pii_flags
+            pii_flags=pii_flags,
         )
 
         assert item.ttl_s == 3600.0

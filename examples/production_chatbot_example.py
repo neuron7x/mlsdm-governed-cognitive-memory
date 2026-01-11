@@ -355,7 +355,7 @@ class ProductionChatbot:
         print("\nMemory:")
         qilm = state["qilm_stats"]
         print(f"  Used: {qilm['used']:,}/{qilm['capacity']:,} vectors")
-        print(f"  Usage: {(qilm['used']/qilm['capacity']*100):.1f}%")
+        print(f"  Usage: {(qilm['used'] / qilm['capacity'] * 100):.1f}%")
         print(f"  Size: {qilm['memory_mb']:.2f} MB")
 
         print("\nSynaptic Memory:")
@@ -392,9 +392,9 @@ def demo_conversation():
     print(f"\nStarting conversation ({len(conversation)} messages)...\n")
 
     for i, user_input in enumerate(conversation, 1):
-        print(f"\n{'─'*60}")
+        print(f"\n{'─' * 60}")
         print(f"Message {i}/{len(conversation)}")
-        print(f"{'─'*60}")
+        print(f"{'─' * 60}")
         print(f"👤 User: {user_input}")
 
         # Process message

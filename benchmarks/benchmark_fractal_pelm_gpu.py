@@ -151,7 +151,7 @@ def benchmark_fractal_pelm_gpu(
     # Sample result
     print("  Sample result (first query, top-3):")
     for i, (score, vec, _meta) in enumerate(results[0][:3]):
-        print(f"    #{i+1}: score={score:.4f}, vec_norm={np.linalg.norm(vec):.2f}")
+        print(f"    #{i + 1}: score={score:.4f}, vec_norm={np.linalg.norm(vec):.2f}")
 
     # GPU benchmark if available
     if cuda_available:

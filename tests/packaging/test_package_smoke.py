@@ -38,9 +38,9 @@ class TestPackageSmoke:
         # Semver pattern: major.minor.patch with optional pre-release
         # Matches: 1.0.0, 1.2.3, 1.0.0-rc1, 1.0.0-alpha.1, etc.
         semver_pattern = r"^\d+\.\d+(\.\d+)?(-[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*)?$"
-        assert re.match(
-            semver_pattern, __version__
-        ), f"Version should follow semver format: {__version__}"
+        assert re.match(semver_pattern, __version__), (
+            f"Version should follow semver format: {__version__}"
+        )
 
     def test_core_imports(self) -> None:
         """Test that core classes can be imported.
@@ -273,9 +273,7 @@ class TestObservabilitySmoke:
         assert isinstance(text, str)
 
 
-def test_packaged_default_config_fallback(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_packaged_default_config_fallback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Ensure packaged default_config.yaml loads when cwd lacks config/."""
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("CONFIG_PATH", raising=False)

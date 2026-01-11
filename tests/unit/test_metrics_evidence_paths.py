@@ -70,10 +70,7 @@ class TestMetricsEvidencePaths:
 
         # Find dated subdirectories (YYYY-MM-DD pattern)
         date_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-        snapshots = [
-            d for d in evidence_dir.iterdir()
-            if d.is_dir() and date_pattern.match(d.name)
-        ]
+        snapshots = [d for d in evidence_dir.iterdir() if d.is_dir() and date_pattern.match(d.name)]
 
         assert len(snapshots) >= 1, (
             f"No evidence snapshots found in {evidence_dir}. "
@@ -91,8 +88,7 @@ class TestMetricsEvidencePaths:
         # Find dated subdirectories
         date_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}$")
         dated_dirs = [
-            d for d in evidence_dir.iterdir()
-            if d.is_dir() and date_pattern.match(d.name)
+            d for d in evidence_dir.iterdir() if d.is_dir() and date_pattern.match(d.name)
         ]
 
         if not dated_dirs:

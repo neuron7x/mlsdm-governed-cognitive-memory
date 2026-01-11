@@ -695,9 +695,7 @@ class TestSQLiteMemoryStoreSchemaInit:
         cursor = conn.cursor()
 
         # Check table exists
-        cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='memories'"
-        )
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='memories'")
         assert cursor.fetchone() is not None
 
         # Check indexes exist

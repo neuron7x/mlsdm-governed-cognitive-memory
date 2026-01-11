@@ -8,24 +8,13 @@ Usage:
     python scripts/ci/export_requirements.py
     python scripts/ci/export_requirements.py --check  # CI mode: fail if drift detected
 """
+
 from __future__ import annotations
 
 import argparse
 import re
 import sys
-
-# Python 3.11+ has tomllib in stdlib, earlier versions need tomli backport
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    try:
-        import tomli as tomllib
-    except ImportError as e:
-        raise ImportError(
-            "tomli package is required for Python <3.11. "
-            "Install it with: pip install tomli"
-        ) from e
-
+import tomllib
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -36,6 +25,8 @@ if TYPE_CHECKING:
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 PYPROJECT_PATH = PROJECT_ROOT / "pyproject.toml"
 REQUIREMENTS_PATH = PROJECT_ROOT / "requirements.txt"
+
+
 def _normalize_package_name(name: str) -> str:
     normalized = name.strip().lower()
     normalized = normalized.replace("_", "-").replace(".", "-")
@@ -44,12 +35,9 @@ def _normalize_package_name(name: str) -> str:
 
 
 def _normalize_excluded_packages(
-    excluded_packages: dict[str, dict[str, str]]
+    excluded_packages: dict[str, dict[str, str]],
 ) -> dict[str, dict[str, str]]:
-    return {
-        _normalize_package_name(name): metadata
-        for name, metadata in excluded_packages.items()
-    }
+    return {_normalize_package_name(name): metadata for name, metadata in excluded_packages.items()}
 
 
 EXCLUDED_PACKAGES: dict[str, dict[str, str]] = _normalize_excluded_packages(
@@ -73,14 +61,54 @@ def load_pyproject(path: Path) -> dict[str, Any]:
     return tomllib.loads(path.read_text(encoding="utf-8"))
 
 
+def _format_poetry_dependency(name: str, spec: Any) -> str:
+    if isinstance(spec, str):
+        return f"{name}{'' if spec == '*' else spec}"
+    if isinstance(spec, dict):
+        version = spec.get("version", "")
+        marker = spec.get("markers") or spec.get("marker")
+        requirement = f"{name}{'' if version in ('', '*') else version}"
+        if marker:
+            requirement += f"; {marker}"
+        return requirement
+    return name
+
+
 def parse_pyproject_deps(pyproject_data: dict[str, Any]) -> dict[str, Any]:
     """Parse dependencies from pyproject.toml data."""
     project = pyproject_data.get("project", {})
-    core_deps = list(project.get("dependencies", []) or [])
-    optional_deps = {
-        group: list(deps or [])
-        for group, deps in (project.get("optional-dependencies", {}) or {}).items()
-    }
+    if project:
+        core_deps = list(project.get("dependencies", []) or [])
+        optional_deps = {
+            group: list(deps or [])
+            for group, deps in (project.get("optional-dependencies", {}) or {}).items()
+        }
+        return {"core": core_deps, "optional": optional_deps}
+
+    poetry = (pyproject_data.get("tool", {}) or {}).get("poetry", {})
+    dependencies = poetry.get("dependencies", {}) or {}
+    core_deps = [
+        _format_poetry_dependency(name, spec)
+        for name, spec in dependencies.items()
+        if name != "python" and not (isinstance(spec, dict) and spec.get("optional"))
+    ]
+
+    extras = poetry.get("extras", {}) or {}
+    optional_deps: dict[str, list[str]] = {}
+    for group, names in extras.items():
+        optional_deps[group] = [
+            _format_poetry_dependency(name, dependencies.get(name, "*"))
+            for name in names
+            if name in dependencies
+        ]
+
+    groups = poetry.get("group", {}) or {}
+    for group_name, group_data in groups.items():
+        group_deps = group_data.get("dependencies", {}) or {}
+        optional_deps[group_name] = [
+            _format_poetry_dependency(name, spec) for name, spec in group_deps.items()
+        ]
+
     return {"core": core_deps, "optional": optional_deps}
 
 
@@ -153,12 +181,14 @@ def generate_requirements(deps: dict[str, Any]) -> str:
         lines.append(
             f"# Optional {title} (from pyproject.toml [project.optional-dependencies].{group})"
         )
-        lines.append(f"# Install with: pip install \".[{group}]\"")
+        lines.append(f'# Install with: pip install ".[{group}]"')
         for dep in sorted(filter_excluded_dependencies(deps["optional"][group]), key=str.lower):
             lines.append(dep)
         lines.append("")
 
-    lines.append("# Security: Pin minimum versions for indirect dependencies with known vulnerabilities")
+    lines.append(
+        "# Security: Pin minimum versions for indirect dependencies with known vulnerabilities"
+    )
     lines.append("certifi>=2025.11.12")
     lines.append("cryptography>=46.0.3")
     lines.append("jinja2>=3.1.6")

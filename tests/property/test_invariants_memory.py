@@ -209,9 +209,9 @@ def test_distance_non_increase_after_insertion(dim):
     final_norm = np.linalg.norm(L1_after) + np.linalg.norm(L2_after) + np.linalg.norm(L3_after)
 
     # After insertions, memory should have accumulated information
-    assert (
-        final_norm >= initial_norm
-    ), f"Memory norm decreased unexpectedly: {initial_norm} -> {final_norm}"
+    assert final_norm >= initial_norm, (
+        f"Memory norm decreased unexpectedly: {initial_norm} -> {final_norm}"
+    )
 
 
 @settings(max_examples=30, deadline=None)
@@ -243,9 +243,9 @@ def test_level_transfer_monotonicity(dim):
     norm_L3 = np.linalg.norm(L3)
 
     # At least one deeper level should have accumulated information
-    assert (
-        norm_L2 > 0 or norm_L3 > 0
-    ), f"No information transferred to L2/L3: L2={norm_L2}, L3={norm_L3}"
+    assert norm_L2 > 0 or norm_L3 > 0, (
+        f"No information transferred to L2/L3: L2={norm_L2}, L3={norm_L3}"
+    )
 
 
 # ============================================================================
@@ -300,9 +300,9 @@ def test_pelm_vector_dimensionality(dim, num_vectors):
     )
 
     for retrieval in neighbors:
-        assert (
-            retrieval.vector.shape[0] == dim
-        ), f"Retrieved vector has wrong dimension: {retrieval.vector.shape[0]} != {dim}"
+        assert retrieval.vector.shape[0] == dim, (
+            f"Retrieved vector has wrong dimension: {retrieval.vector.shape[0]} != {dim}"
+        )
 
 
 # ============================================================================
@@ -335,9 +335,9 @@ def test_pelm_nearest_neighbor_availability(dim, num_vectors, k):
 
     # Should find at least one neighbor (up to k or num_vectors)
     expected_count = min(k, num_vectors)
-    assert len(neighbors) >= min(
-        1, expected_count
-    ), f"No neighbors found despite having {num_vectors} vectors"
+    assert len(neighbors) >= min(1, expected_count), (
+        f"No neighbors found despite having {num_vectors} vectors"
+    )
 
 
 # ============================================================================
@@ -368,9 +368,9 @@ def test_pelm_retrieval_relevance_ordering(dim, k):
     resonances = [retrieval.resonance for retrieval in neighbors]
 
     for i in range(len(resonances) - 1):
-        assert (
-            resonances[i] >= resonances[i + 1] - RESONANCE_ORDERING_TOLERANCE
-        ), f"Neighbors not ordered by resonance: {resonances[i]} < {resonances[i+1]}"
+        assert resonances[i] >= resonances[i + 1] - RESONANCE_ORDERING_TOLERANCE, (
+            f"Neighbors not ordered by resonance: {resonances[i]} < {resonances[i + 1]}"
+        )
 
 
 @settings(max_examples=30, deadline=None)
@@ -491,14 +491,14 @@ def test_memory_never_exceeds_capacity_under_random_load(dim, capacity, num_inse
         current_size = pelm.size
         max_size_seen = max(max_size_seen, current_size)
 
-        assert (
-            current_size <= capacity
-        ), f"PELM size {current_size} exceeds capacity {capacity} after insert {i+1}"
+        assert current_size <= capacity, (
+            f"PELM size {current_size} exceeds capacity {capacity} after insert {i + 1}"
+        )
 
     # Final size should be exactly capacity (since inserts > capacity)
-    assert (
-        pelm.size == capacity
-    ), f"After {num_inserts} inserts (> capacity {capacity}), size should be {capacity}, got {pelm.size}"
+    assert pelm.size == capacity, (
+        f"After {num_inserts} inserts (> capacity {capacity}), size should be {capacity}, got {pelm.size}"
+    )
 
     # Max size seen should never exceed capacity
     assert max_size_seen <= capacity, f"Max size {max_size_seen} exceeded capacity {capacity}"
@@ -527,7 +527,7 @@ def test_pelm_mixed_phase_capacity_enforcement(dim, capacity):
         pelm.entangle(vec.tolist(), phase=phase)
 
         # Capacity invariant must hold
-        assert pelm.size <= capacity, f"Size {pelm.size} > capacity {capacity} at insert {i+1}"
+        assert pelm.size <= capacity, f"Size {pelm.size} > capacity {capacity} at insert {i + 1}"
 
     # Final state checks
     assert pelm.size == capacity
@@ -564,9 +564,9 @@ def test_pelm_retrieval_after_overflow(dim, capacity):
     # Results should be ordered by resonance (INV-MEM-M3)
     resonances = [r.resonance for r in results]
     for i in range(len(resonances) - 1):
-        assert (
-            resonances[i] >= resonances[i + 1] - 1e-6
-        ), f"Results not ordered: {resonances[i]} < {resonances[i + 1]}"
+        assert resonances[i] >= resonances[i + 1] - 1e-6, (
+            f"Results not ordered: {resonances[i]} < {resonances[i + 1]}"
+        )
 
 
 @settings(max_examples=20, deadline=None)

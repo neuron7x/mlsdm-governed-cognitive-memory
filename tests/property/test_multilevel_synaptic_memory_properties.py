@@ -63,15 +63,15 @@ def test_multilevel_decay_monotonicity(dim, num_updates):
     norm_L3_after = np.linalg.norm(L3_after)
 
     # Decay should reduce or maintain norms (within floating point tolerance)
-    assert (
-        norm_L1_after <= norm_L1_before + 1e-6
-    ), f"L1 norm increased: {norm_L1_before} -> {norm_L1_after}"
-    assert (
-        norm_L2_after <= norm_L2_before + 1e-6
-    ), f"L2 norm increased: {norm_L2_before} -> {norm_L2_after}"
-    assert (
-        norm_L3_after <= norm_L3_before + 1e-6
-    ), f"L3 norm increased: {norm_L3_before} -> {norm_L3_after}"
+    assert norm_L1_after <= norm_L1_before + 1e-6, (
+        f"L1 norm increased: {norm_L1_before} -> {norm_L1_after}"
+    )
+    assert norm_L2_after <= norm_L2_before + 1e-6, (
+        f"L2 norm increased: {norm_L2_before} -> {norm_L2_after}"
+    )
+    assert norm_L3_after <= norm_L3_before + 1e-6, (
+        f"L3 norm increased: {norm_L3_before} -> {norm_L3_after}"
+    )
 
 
 @settings(max_examples=30, deadline=None)
@@ -329,14 +329,14 @@ def test_multilevel_l1_decays_faster_than_l2_l3(dim, num_updates):
     # L1 should have lower retention (decayed more) than L2 and L3
     # Only assert if we had meaningful initial content
     if norm_L1_before > 1e-3:
-        assert (
-            retention_L1 <= retention_L2 + DECAY_RATE_TOLERANCE
-        ), f"L1 retention ({retention_L1:.4f}) should be <= L2 retention ({retention_L2:.4f})"
+        assert retention_L1 <= retention_L2 + DECAY_RATE_TOLERANCE, (
+            f"L1 retention ({retention_L1:.4f}) should be <= L2 retention ({retention_L2:.4f})"
+        )
 
     if norm_L2_before > 1e-3:
-        assert (
-            retention_L2 <= retention_L3 + DECAY_RATE_TOLERANCE
-        ), f"L2 retention ({retention_L2:.4f}) should be <= L3 retention ({retention_L3:.4f})"
+        assert retention_L2 <= retention_L3 + DECAY_RATE_TOLERANCE, (
+            f"L2 retention ({retention_L2:.4f}) should be <= L3 retention ({retention_L3:.4f})"
+        )
 
 
 @settings(max_examples=30, deadline=None)
@@ -370,9 +370,9 @@ def test_multilevel_memory_no_leak_under_load(dim, num_updates):
     # With decay parameters, memory should reach steady state
     theoretical_max = 1000 * np.sqrt(dim)  # Conservative upper bound
 
-    assert (
-        max_total_norm < theoretical_max
-    ), f"Memory norm grew unboundedly: max={max_total_norm}, bound={theoretical_max}"
+    assert max_total_norm < theoretical_max, (
+        f"Memory norm grew unboundedly: max={max_total_norm}, bound={theoretical_max}"
+    )
 
     # Verify stabilization: recent norms should be similar (steady state)
     if len(norms_history) >= 20:
@@ -383,9 +383,9 @@ def test_multilevel_memory_no_leak_under_load(dim, num_updates):
         # Coefficient of variation should be reasonable (not wildly oscillating)
         if mean_recent > 1e-3:
             cv = std_recent / mean_recent
-            assert (
-                cv < 1.0
-            ), f"Memory norms not stable: CV={cv:.3f} (std={std_recent:.3f}, mean={mean_recent:.3f})"
+            assert cv < 1.0, (
+                f"Memory norms not stable: CV={cv:.3f} (std={std_recent:.3f}, mean={mean_recent:.3f})"
+            )
 
 
 @settings(max_examples=30, deadline=None)

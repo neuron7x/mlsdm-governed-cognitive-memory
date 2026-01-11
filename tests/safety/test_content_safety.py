@@ -57,9 +57,9 @@ class TestMoralFilterBounds:
                 filter.adapt(accepted)
 
             state = filter.get_state()
-            assert (
-                0.30 <= state["threshold"] <= 0.90
-            ), f"Threshold out of bounds: {state['threshold']}"
+            assert 0.30 <= state["threshold"] <= 0.90, (
+                f"Threshold out of bounds: {state['threshold']}"
+            )
 
 
 class TestMoralFilterAdaptation:
@@ -98,9 +98,9 @@ class TestMoralFilterAdaptation:
 
         # Threshold should stay relatively close to initial
         final_threshold = filter.threshold
-        assert (
-            abs(final_threshold - initial_threshold) < 0.1
-        ), f"Threshold changed too much: {initial_threshold} -> {final_threshold}"
+        assert abs(final_threshold - initial_threshold) < 0.1, (
+            f"Threshold changed too much: {initial_threshold} -> {final_threshold}"
+        )
 
     def test_convergence_under_consistent_input(self):
         """Threshold converges under consistent input patterns."""

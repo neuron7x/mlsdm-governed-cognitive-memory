@@ -130,7 +130,9 @@ class PredictionErrorAdapter:
             return float(np.mean(value))
         return float(value)
 
-    def update(self, predicted: float | np.ndarray, observed: float | np.ndarray) -> PredictionErrorMetrics:
+    def update(
+        self, predicted: float | np.ndarray, observed: float | np.ndarray
+    ) -> PredictionErrorMetrics:
         pred = self._to_scalar(predicted)
         obs = self._to_scalar(observed)
         delta = _clamp(obs - pred, -self.clip_value, self.clip_value)
@@ -188,8 +190,12 @@ class RegimeController:
         risk_clamped = _clamp(risk, 0.0, 1.0)
         target = self.state
 
-        upper_caution = self.caution_threshold + (self.hysteresis if self.state == RegimeState.CAUTION else 0.0)
-        upper_defensive = self.defensive_threshold + (self.hysteresis if self.state == RegimeState.DEFENSIVE else 0.0)
+        upper_caution = self.caution_threshold + (
+            self.hysteresis if self.state == RegimeState.CAUTION else 0.0
+        )
+        upper_defensive = self.defensive_threshold + (
+            self.hysteresis if self.state == RegimeState.DEFENSIVE else 0.0
+        )
         lower_caution = self.caution_threshold - self.hysteresis
 
         if risk_clamped >= upper_defensive:
@@ -220,19 +226,26 @@ class RegimeController:
             exploration_rate = _TUNING.normal_exploration_base - 0.05 * risk_clamped
             tau_scale = _TUNING.normal_tau_scale
         elif state == RegimeState.CAUTION:
-            inhibition_gain = _TUNING.caution_inhibition_base + _TUNING.caution_inhibition_slope * risk_clamped
+            inhibition_gain = (
+                _TUNING.caution_inhibition_base + _TUNING.caution_inhibition_slope * risk_clamped
+            )
             exploration_rate = max(
                 _TUNING.caution_exploration_min,
                 _TUNING.caution_exploration_base - 0.12 * risk_clamped,
             )
             tau_scale = max(_TUNING.caution_tau_min, 1.0 - _TUNING.caution_tau_slope * risk_clamped)
         else:
-            inhibition_gain = _TUNING.defensive_inhibition_base + _TUNING.defensive_inhibition_slope * risk_clamped
+            inhibition_gain = (
+                _TUNING.defensive_inhibition_base
+                + _TUNING.defensive_inhibition_slope * risk_clamped
+            )
             exploration_rate = max(
                 _TUNING.defensive_exploration_min,
                 _TUNING.defensive_exploration_base - 0.15 * risk_clamped,
             )
-            tau_scale = max(_TUNING.defensive_tau_min, 1.0 - _TUNING.defensive_tau_slope * risk_clamped)
+            tau_scale = max(
+                _TUNING.defensive_tau_min, 1.0 - _TUNING.defensive_tau_slope * risk_clamped
+            )
 
         return RegimeDecision(
             state=state,
@@ -315,7 +328,9 @@ class SynapticMemoryAdapter:
 
         l1, l2, l3 = self.memory.state()
         oscillation = self._oscillation_score((l1, l2, l3))
-        return NeuroAIStepMetrics(regime=regime, prediction_error=pe_metrics, oscillation_score=oscillation)
+        return NeuroAIStepMetrics(
+            regime=regime, prediction_error=pe_metrics, oscillation_score=oscillation
+        )
 
     def get_state(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         return self.memory.state()
@@ -326,7 +341,9 @@ class NeuroAIContractAdapter:
     """Adapter for exporting NeuroAI signals via contract models."""
 
     @staticmethod
-    def reward_prediction_error_signal(metrics: PredictionErrorMetrics) -> RewardPredictionErrorSignal:
+    def reward_prediction_error_signal(
+        metrics: PredictionErrorMetrics,
+    ) -> RewardPredictionErrorSignal:
         delta = float(metrics.delta)
         return RewardPredictionErrorSignal(
             delta=[delta],

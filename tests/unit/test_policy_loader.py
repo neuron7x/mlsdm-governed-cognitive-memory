@@ -51,8 +51,12 @@ def test_policy_schema_rejects_unknown_fields(tmp_path: Path) -> None:
     policy_dir = tmp_path / "policy"
     policy_dir.mkdir()
 
-    security_policy = yaml.safe_load(Path("policy/security-baseline.yaml").read_text(encoding="utf-8"))
-    observability_policy = yaml.safe_load(Path("policy/observability-slo.yaml").read_text(encoding="utf-8"))
+    security_policy = yaml.safe_load(
+        Path("policy/security-baseline.yaml").read_text(encoding="utf-8")
+    )
+    observability_policy = yaml.safe_load(
+        Path("policy/observability-slo.yaml").read_text(encoding="utf-8")
+    )
 
     security_policy["unexpected_field"] = "nope"
     observability_policy["unexpected_field"] = "nope"
@@ -73,9 +77,14 @@ def test_runtime_slo_parity_with_policy() -> None:
     runtime_defaults = bundle.observability_slo.thresholds.runtime_defaults
 
     assert perf_slo.DEFAULT_LATENCY_SLO.api_p95_ms == runtime_defaults.latency.api_p95_ms
-    assert perf_slo.DEFAULT_ERROR_RATE_SLO.max_error_rate_percent == runtime_defaults.error_rate.max_error_rate_percent
+    assert (
+        perf_slo.DEFAULT_ERROR_RATE_SLO.max_error_rate_percent
+        == runtime_defaults.error_rate.max_error_rate_percent
+    )
     assert perf_slo.DEFAULT_THROUGHPUT_SLO.min_rps == runtime_defaults.throughput.min_rps
-    assert runtime_defaults.load_multipliers.moderate_load_slo == perf_slo.MODERATE_LOAD_SLO_MULTIPLIER
+    assert (
+        runtime_defaults.load_multipliers.moderate_load_slo == perf_slo.MODERATE_LOAD_SLO_MULTIPLIER
+    )
 
 
 def test_rego_rules_reference_policy_data() -> None:

@@ -20,7 +20,11 @@ def security_policy_fixture(workflow_file: str) -> dict:
         "rationale": "Test policy fixture.",
         "controls": {
             "required_checks": [
-                {"name": "security-check", "workflow_file": workflow_file, "fail_on_violation": True}
+                {
+                    "name": "security-check",
+                    "workflow_file": workflow_file,
+                    "fail_on_violation": True,
+                }
             ],
             "security_requirements": {
                 "authentication": {
@@ -105,9 +109,7 @@ def slo_policy_fixture() -> dict:
             "alerting": {
                 "alert_manager_required": True,
                 "notification_channels": ["email"],
-                "critical_alerts": [
-                    {"name": "Alert", "condition": "always", "severity": "high"}
-                ],
+                "critical_alerts": [{"name": "Alert", "condition": "always", "severity": "high"}],
             },
             "testing": {
                 "slo_tests": {
@@ -161,7 +163,11 @@ def slo_policy_fixture() -> dict:
                     "expected_rejection_rate_percent_min": 0.0,
                     "expected_rejection_rate_percent_max": 30.0,
                 },
-                "throughput": {"min_rps": 50.0, "max_queue_depth": 100, "min_concurrent_capacity": 10},
+                "throughput": {
+                    "min_rps": 50.0,
+                    "max_queue_depth": 100,
+                    "min_concurrent_capacity": 10,
+                },
                 "load_multipliers": {
                     "moderate_load_slo": 1.2,
                     "moderate_load_error": 1.5,

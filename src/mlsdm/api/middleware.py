@@ -120,7 +120,7 @@ class BulkheadSemaphore:
         """Acquire a slot from the bulkhead.
 
         Raises:
-            asyncio.TimeoutError: If slot cannot be acquired within timeout
+            TimeoutError: If slot cannot be acquired within timeout
 
         Yields:
             None when slot is acquired
@@ -153,7 +153,7 @@ class BulkheadSemaphore:
                 with self._lock:
                     self._metrics.current_active -= 1
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             with self._lock:
                 self._waiting_count -= 1
                 self._metrics.rejected_requests += 1
@@ -248,7 +248,7 @@ class BulkheadMiddleware(BaseHTTPMiddleware):
             async with self._bulkhead.acquire():
                 self._update_prometheus_metrics(rejected=False)
                 return await call_next(request)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self._update_prometheus_metrics(rejected=True)
             logger.warning(
                 "Request rejected by bulkhead",
@@ -318,7 +318,7 @@ class TimeoutMiddleware(BaseHTTPMiddleware):
             )
             return response
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             elapsed = time.time() - start_time
             logger.error(
                 "Request timeout",

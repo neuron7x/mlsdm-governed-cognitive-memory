@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -34,7 +34,7 @@ def build_decision_trace(
 ) -> dict[str, Any]:
     trace = DecisionTrace(
         trace_id=str(uuid.uuid4()),
-        timestamp=datetime.now(tz=timezone.utc).isoformat(),
+        timestamp=datetime.now(tz=UTC).isoformat(),
         input=input_payload,
         memory=memory_payload,
         prediction_error=prediction_error,

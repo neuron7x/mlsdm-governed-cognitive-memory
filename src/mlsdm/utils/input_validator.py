@@ -6,6 +6,7 @@ data corruption, and ensure data integrity as per SECURITY_POLICY.md.
 
 import math
 import re
+from collections.abc import Callable
 from typing import Any
 
 import numpy as np
@@ -387,6 +388,7 @@ def sanitize_user_input(
     max_length: int = 10000,
     check_injections: bool = True,
     check_llm_safety: bool = False,
+    llm_safety_analyzer: Callable[[str], Any] | None = None,
 ) -> tuple[str, dict[str, Any]]:
     """Centralized user input sanitization with comprehensive security checks.
 
@@ -400,6 +402,7 @@ def sanitize_user_input(
         max_length: Maximum allowed length (default: 10000)
         check_injections: Whether to check for SQL/shell/path injection patterns
         check_llm_safety: Whether to run LLM safety analysis
+        llm_safety_analyzer: Optional callable for LLM safety analysis
 
     Returns:
         Tuple of (sanitized_text, security_metadata)
@@ -459,17 +462,15 @@ def sanitize_user_input(
 
     # LLM safety analysis if enabled
     if check_llm_safety:
-        try:
-            from mlsdm.security.llm_safety import analyze_prompt
-
-            safety_result = analyze_prompt(text)
+        if llm_safety_analyzer is None:
+            metadata["warnings"].append("LLM safety analyzer not provided")
+        else:
+            safety_result = llm_safety_analyzer(text)
             metadata["llm_safety"] = safety_result.to_dict()
             if not safety_result.is_safe:
                 metadata["is_safe"] = False
                 metadata["warnings"].append(
                     f"LLM safety violation: {safety_result.risk_level.value}"
                 )
-        except ImportError:
-            metadata["warnings"].append("LLM safety module not available")
 
     return sanitized, metadata

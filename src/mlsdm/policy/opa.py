@@ -65,7 +65,9 @@ def _path_exists(data: dict[str, Any], path: str) -> bool:
 
 
 def validate_opa_export_contract(data: dict[str, Any]) -> None:
-    missing = [mapping for mapping in OPA_EXPORT_MAPPINGS if not _path_exists(data, mapping.export_path)]
+    missing = [
+        mapping for mapping in OPA_EXPORT_MAPPINGS if not _path_exists(data, mapping.export_path)
+    ]
     if not missing:
         return
 
@@ -77,7 +79,9 @@ def validate_opa_export_contract(data: dict[str, Any]) -> None:
         lines.append(
             f"- {mapping.export_path} (rego: {mapping.rego_path}; yaml: {mapping.yaml_path})"
         )
-    lines.append("Remediation: update the policy YAML and exporter mapping to restore the contract.")
+    lines.append(
+        "Remediation: update the policy YAML and exporter mapping to restore the contract."
+    )
     raise PolicyExportError("\n".join(lines))
 
 

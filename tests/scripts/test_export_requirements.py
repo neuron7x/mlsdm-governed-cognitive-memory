@@ -21,23 +21,17 @@ def test_header_lists_all_optional_groups():
     optional_groups = sorted(deps["optional"].keys())
     group_list = ", ".join(optional_groups)
 
-    assert (
-        f"# Optional dependency groups discovered in pyproject.toml: {group_list}" in content
-    )
-    assert (
-        f"# Optional dependency groups included in this file: all ({group_list})" in content
-    )
+    assert f"# Optional dependency groups discovered in pyproject.toml: {group_list}" in content
+    assert f"# Optional dependency groups included in this file: all ({group_list})" in content
     assert "# Optional dependency groups excluded: none" in content
     assert "# Optional dependency packages excluded:" in content
     assert (
         "# - jupyter: excluded from requirements.txt to avoid pip-audit failures via nbconvert"
-        " (CVE-2025-53000; remove once nbconvert>=7.16.0)"
-        in content
+        " (CVE-2025-53000; remove once nbconvert>=7.16.0)" in content
     )
     assert (
         "# - jupyter-core: excluded from requirements.txt to avoid pip-audit failures via nbconvert"
-        " (CVE-2025-53000; remove once nbconvert>=7.16.0)"
-        in content
+        " (CVE-2025-53000; remove once nbconvert>=7.16.0)" in content
     )
 
 

@@ -56,9 +56,7 @@ def load_bib_keys(repo_root: Path) -> set[str]:
     content = bib_path.read_text(encoding="utf-8")
     entries, parse_errors = parse_bibtex_entries(content)
     if parse_errors:
-        raise SystemExit(
-            f"REFERENCES.bib parse errors encountered: {parse_errors}"
-        )
+        raise SystemExit(f"REFERENCES.bib parse errors encountered: {parse_errors}")
     return {entry["key"] for entry in entries}
 
 

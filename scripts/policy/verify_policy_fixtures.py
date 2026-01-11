@@ -19,6 +19,7 @@ BAD_FIXTURES = [
     "tests/policy/ci/workflow-bad-mutable.yml",
 ]
 
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Verify policy fixtures with conftest")
     parser.add_argument(

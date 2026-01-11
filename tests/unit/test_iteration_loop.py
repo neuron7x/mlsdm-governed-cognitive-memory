@@ -12,7 +12,9 @@ import pytest
 
 
 def _load_iteration_loop_module():
-    module_path = Path(__file__).resolve().parents[2] / "src" / "mlsdm" / "core" / "iteration_loop.py"
+    module_path = (
+        Path(__file__).resolve().parents[2] / "src" / "mlsdm" / "core" / "iteration_loop.py"
+    )
     spec = importlib.util.spec_from_file_location("iteration_loop", module_path)
     if spec is None or spec.loader is None:
         raise ImportError("Unable to load iteration_loop module")
@@ -184,7 +186,9 @@ def test_stability_envelope_triggers_fail_safe_on_oscillation() -> None:
     frozen_seen = False
     safety: SafetyDecision | None = None
     for i in range(12):
-        state, trace, safety = loop.step(state, env, _ctx(i, threat=0.9 if i % 2 == 0 else 0.1, risk=0.6))
+        state, trace, safety = loop.step(
+            state, env, _ctx(i, threat=0.9 if i % 2 == 0 else 0.1, risk=0.6)
+        )
         if state.frozen:
             frozen_seen = True
             assert trace["regime"] == Regime.DEFENSIVE.value
@@ -538,7 +542,9 @@ def test_metrics_emitter_creates_parent_directories(tmp_path: Path) -> None:
         (0.3, 0.75, Regime.DEFENSIVE),
     ],
 )
-def test_regime_selection_by_threat_risk(threat: float, risk: float, expected_regime: Regime) -> None:
+def test_regime_selection_by_threat_risk(
+    threat: float, risk: float, expected_regime: Regime
+) -> None:
     loop = IterationLoop(enabled=True)
     env = ToyEnvironment(target=0.5)
     state = IterationState(parameter=0.0, learning_rate=0.2)

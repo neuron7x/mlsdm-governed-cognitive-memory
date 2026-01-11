@@ -230,7 +230,10 @@ class TestOpenAIProviderInit:
 
         from mlsdm.adapters.llm_provider import OpenAIProvider
 
-        with block_imports({"openai"}), pytest.raises(ImportError, match="openai package is required"):
+        with (
+            block_imports({"openai"}),
+            pytest.raises(ImportError, match="openai package is required"),
+        ):
             OpenAIProvider(api_key="test-key")
 
     def test_accepts_api_key_parameter(self, monkeypatch):

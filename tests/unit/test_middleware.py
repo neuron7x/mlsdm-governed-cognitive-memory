@@ -103,7 +103,7 @@ class TestBulkheadSemaphore:
         await asyncio.sleep(0.05)  # Let blocker acquire
 
         # Try to acquire - should timeout
-        with pytest.raises(asyncio.TimeoutError):
+        with pytest.raises(TimeoutError):
             async with bulkhead.acquire():
                 pass
 

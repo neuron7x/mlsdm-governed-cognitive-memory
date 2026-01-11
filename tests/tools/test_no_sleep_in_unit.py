@@ -14,6 +14,4 @@ def test_no_time_sleep_in_unit_tests() -> None:
                     relative_path = path.relative_to(unit_dir.parent)
                     offenders.append(f"{relative_path}:{lineno}: {line.strip()}")
 
-    assert not offenders, "time.sleep found in unit tests without waiver:\n" + "\n".join(
-        offenders
-    )
+    assert not offenders, "time.sleep found in unit tests without waiver:\n" + "\n".join(offenders)

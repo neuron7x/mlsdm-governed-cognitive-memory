@@ -218,6 +218,8 @@ class TestOpenAIAdapterContract:
                 sys.modules["openai"] = original_openai
             else:
                 del sys.modules["openai"]
+
+
 ANTHROPIC_TEST_MODEL = "claude-3-sonnet-20240229"
 
 
@@ -303,7 +305,9 @@ class TestAnthropicAdapterContract:
 
             importlib.reload(lp_module)
 
-            provider = lp_module.AnthropicProvider(api_key="sk-ant-test-key", model=ANTHROPIC_TEST_MODEL)
+            provider = lp_module.AnthropicProvider(
+                api_key="sk-ant-test-key", model=ANTHROPIC_TEST_MODEL
+            )
             # Provider ID should contain anthropic and model name (sanitized)
             assert "anthropic" in provider.provider_id
             assert "claude" in provider.provider_id

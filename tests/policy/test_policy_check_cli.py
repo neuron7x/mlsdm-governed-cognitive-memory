@@ -35,9 +35,9 @@ def test_policy_check_fails_on_invalid_policy(tmp_path: Path) -> None:
     _write_policy_dir(tmp_path, security, observability)
 
     env = dict(os.environ)
-    pythonpath = os.pathsep.join(
-        [str(REPO_ROOT / "src"), env.get("PYTHONPATH", "")]
-    ).strip(os.pathsep)
+    pythonpath = os.pathsep.join([str(REPO_ROOT / "src"), env.get("PYTHONPATH", "")]).strip(
+        os.pathsep
+    )
     env["PYTHONPATH"] = pythonpath
 
     result = subprocess.run(

@@ -110,9 +110,9 @@ class TestMoralFilterEvalSmoke:
 
         # All threshold bounds scenarios should pass (INV-MF-1)
         failed = [s for s in bounds_scenarios if not s.passed]
-        assert (
-            len(failed) == 0
-        ), f"Threshold bounds scenarios failed: {[s.scenario_id for s in failed]}"
+        assert len(failed) == 0, (
+            f"Threshold bounds scenarios failed: {[s.scenario_id for s in failed]}"
+        )
 
     def test_evaluation_behavior_scenarios_pass(self) -> None:
         """Verify evaluation behavior scenarios work correctly."""
@@ -144,9 +144,9 @@ class TestMoralFilterEvalSmoke:
 
         # All should pass
         failed = [s for s in drift_scenarios if not s.passed]
-        assert (
-            len(failed) == 0
-        ), f"Drift resistance scenarios failed: {[s.scenario_id for s in failed]}"
+        assert len(failed) == 0, (
+            f"Drift resistance scenarios failed: {[s.scenario_id for s in failed]}"
+        )
 
     def test_ema_stability_scenarios_pass(self) -> None:
         """Verify EMA stability scenarios maintain [0, 1] bounds."""
@@ -162,9 +162,9 @@ class TestMoralFilterEvalSmoke:
 
         # All should pass
         failed = [s for s in ema_scenarios if not s.passed]
-        assert (
-            len(failed) == 0
-        ), f"EMA stability scenarios failed: {[s.scenario_id for s in failed]}"
+        assert len(failed) == 0, (
+            f"EMA stability scenarios failed: {[s.scenario_id for s in failed]}"
+        )
 
     @pytest.mark.slow
     def test_full_pass_rate(self) -> None:
@@ -217,7 +217,7 @@ class TestMoralFilterEvalProperties:
                 if "delta_threshold" in prop and not passed:
                     delta = scenario.actual_values.get("delta_threshold", "N/A")
                     pytest.fail(
-                        f"INV-MF-2 violated in {scenario.scenario_id}: " f"delta_threshold={delta}"
+                        f"INV-MF-2 violated in {scenario.scenario_id}: delta_threshold={delta}"
                     )
 
     def test_inv_mf_3_ema_bounded(self) -> None:
@@ -230,6 +230,6 @@ class TestMoralFilterEvalProperties:
         for scenario_result in results.scenarios:
             ema = scenario_result.actual_values.get("ema")
             if ema is not None:
-                assert (
-                    0.0 <= ema <= 1.0
-                ), f"INV-MF-3 violated in {scenario_result.scenario_id}: ema={ema}"
+                assert 0.0 <= ema <= 1.0, (
+                    f"INV-MF-3 violated in {scenario_result.scenario_id}: ema={ema}"
+                )

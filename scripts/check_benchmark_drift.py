@@ -68,7 +68,7 @@ def check_drift(
             if max_p95 > allowed_max:
                 msg = (
                     f"⚠️  DRIFT: Max P95 {max_p95:.2f}ms exceeds baseline "
-                    f"{baseline_max_p95:.2f}ms by more than {tolerance*100:.0f}% "
+                    f"{baseline_max_p95:.2f}ms by more than {tolerance * 100:.0f}% "
                     f"(allowed: {allowed_max:.2f}ms)"
                 )
                 messages.append(msg)
@@ -78,7 +78,7 @@ def check_drift(
                 msg = (
                     f"✅ OK: Max P95 {max_p95:.2f}ms within tolerance "
                     f"(baseline: {baseline_max_p95:.2f}ms, "
-                    f"tolerance: {tolerance*100:.0f}%)"
+                    f"tolerance: {tolerance * 100:.0f}%)"
                 )
                 messages.append(msg)
 
@@ -97,9 +97,7 @@ def check_drift(
 
 def main() -> int:
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Check benchmark results for baseline drift"
-    )
+    parser = argparse.ArgumentParser(description="Check benchmark results for baseline drift")
     parser.add_argument(
         "metrics_file",
         type=Path,

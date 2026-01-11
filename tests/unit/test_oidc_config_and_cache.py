@@ -78,7 +78,12 @@ def test_extract_token_handles_bearer_header():
     authenticator = OIDCAuthenticator(config)
 
     request = Request(
-        {"type": "http", "method": "GET", "path": "/", "headers": [(b"authorization", b"Bearer token123")]}
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [(b"authorization", b"Bearer token123")],
+        }
     )
     assert authenticator._extract_token(request) == "token123"
 

@@ -128,9 +128,7 @@ class TestCachedLLMResponseDecorator:
         cache = CacheManager(config)
 
         @cached_llm_response(cache)
-        def generate(
-            prompt: str, max_tokens: int = 256, temperature: float = 0.7
-        ) -> str:
+        def generate(prompt: str, max_tokens: int = 256, temperature: float = 0.7) -> str:
             return f"Response (temp={temperature}): {prompt}"
 
         result = generate("Hello", 256, temperature=0.5)

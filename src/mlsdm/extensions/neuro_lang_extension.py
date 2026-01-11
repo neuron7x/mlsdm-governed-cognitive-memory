@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 from mlsdm.core.cognitive_controller import CognitiveController
 from mlsdm.core.llm_wrapper import LLMWrapper
 from mlsdm.observability.aphasia_logging import AphasiaLogEvent, log_aphasia_event
+from mlsdm.speech.aphasia_detector import AphasiaBrocaDetector
 
 if TYPE_CHECKING:
     from mlsdm.config import AphasiaDetectorCalibration, SecureModeCalibration
@@ -343,140 +344,6 @@ if TORCH_AVAILABLE:
             if random.random() > 0.7:
                 combined = combined.replace("that", "which", 1)
             return combined
-
-
-# AphasiaBrocaDetector does NOT depend on torch - keep it outside the conditional block
-class AphasiaBrocaDetector:
-    # Default values from calibration
-    DEFAULT_MIN_SENTENCE_LEN = APHASIA_DEFAULTS.min_sentence_len if APHASIA_DEFAULTS else 6.0
-    DEFAULT_MIN_FUNCTION_WORD_RATIO = (
-        APHASIA_DEFAULTS.min_function_word_ratio if APHASIA_DEFAULTS else 0.15
-    )
-    DEFAULT_MAX_FRAGMENT_RATIO = APHASIA_DEFAULTS.max_fragment_ratio if APHASIA_DEFAULTS else 0.5
-    DEFAULT_FRAGMENT_LENGTH_THRESHOLD = (
-        APHASIA_DEFAULTS.fragment_length_threshold if APHASIA_DEFAULTS else 4
-    )
-
-    def __init__(
-        self,
-        min_sentence_len: float | None = None,
-        min_function_word_ratio: float | None = None,
-        max_fragment_ratio: float | None = None,
-    ):
-        # Use calibration defaults if not specified
-        if min_sentence_len is None:
-            min_sentence_len = self.DEFAULT_MIN_SENTENCE_LEN
-        if min_function_word_ratio is None:
-            min_function_word_ratio = self.DEFAULT_MIN_FUNCTION_WORD_RATIO
-        if max_fragment_ratio is None:
-            max_fragment_ratio = self.DEFAULT_MAX_FRAGMENT_RATIO
-
-        self.function_words = {
-            "the",
-            "a",
-            "an",
-            "and",
-            "or",
-            "but",
-            "if",
-            "that",
-            "which",
-            "who",
-            "to",
-            "of",
-            "in",
-            "on",
-            "at",
-            "for",
-            "with",
-            "by",
-            "as",
-            "is",
-            "are",
-            "was",
-            "were",
-            "be",
-            "been",
-            "being",
-        }
-        self.min_sentence_len = float(min_sentence_len)
-        self.min_function_word_ratio = float(min_function_word_ratio)
-        self.max_fragment_ratio = float(max_fragment_ratio)
-        self.fragment_length_threshold = self.DEFAULT_FRAGMENT_LENGTH_THRESHOLD
-
-    def analyze(self, text):
-        cleaned = text.strip()
-        if not cleaned:
-            return {
-                "is_aphasic": True,
-                "severity": 1.0,
-                "avg_sentence_len": 0.0,
-                "function_word_ratio": 0.0,
-                "fragment_ratio": 1.0,
-                "flags": ["empty_text"],
-            }
-        sentences = re.split(r"[.!?]+", cleaned)
-        sentences = [s.strip() for s in sentences if s.strip()]
-        if not sentences:
-            return {
-                "is_aphasic": True,
-                "severity": 1.0,
-                "avg_sentence_len": 0.0,
-                "function_word_ratio": 0.0,
-                "fragment_ratio": 1.0,
-                "flags": ["no_sentence_boundaries"],
-            }
-        total_tokens = 0
-        function_tokens = 0
-        fragment_sentences = 0
-        for sent in sentences:
-            tokens = [t.lower() for t in sent.split() if t.strip()]
-            length = len(tokens)
-            total_tokens += length
-            if length < self.fragment_length_threshold:
-                fragment_sentences += 1
-            function_tokens += sum(1 for t in tokens if t in self.function_words)
-        if total_tokens == 0:
-            return {
-                "is_aphasic": True,
-                "severity": 1.0,
-                "avg_sentence_len": 0.0,
-                "function_word_ratio": 0.0,
-                "fragment_ratio": 1.0,
-                "flags": ["no_tokens"],
-            }
-        avg_sentence_len = total_tokens / len(sentences)
-        function_word_ratio = function_tokens / total_tokens
-        fragment_ratio = fragment_sentences / len(sentences)
-        flags = []
-        if avg_sentence_len < self.min_sentence_len:
-            flags.append("short_sentences")
-        if function_word_ratio < self.min_function_word_ratio:
-            flags.append("low_function_words")
-        if fragment_ratio > self.max_fragment_ratio:
-            flags.append("high_fragment_ratio")
-        is_aphasic = bool(flags)
-        severity = 0.0
-        if flags:
-            severity = min(
-                1.0,
-                (
-                    max(0.0, self.min_sentence_len - avg_sentence_len) / self.min_sentence_len
-                    + max(0.0, self.min_function_word_ratio - function_word_ratio)
-                    / max(self.min_function_word_ratio, 1e-6)
-                    + max(0.0, fragment_ratio - self.max_fragment_ratio)
-                    / max(self.max_fragment_ratio, 1e-6)
-                )
-                / 3.0,
-            )
-        return {
-            "is_aphasic": is_aphasic,
-            "severity": float(severity),
-            "avg_sentence_len": float(avg_sentence_len),
-            "function_word_ratio": float(function_word_ratio),
-            "fragment_ratio": float(fragment_ratio),
-            "flags": flags,
-        }
 
 
 class AphasiaSpeechGovernor:

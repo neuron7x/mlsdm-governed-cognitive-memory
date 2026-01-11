@@ -456,7 +456,7 @@ def validate_config(config: dict[str, Any], component_type: str) -> dict[str, An
 
     if component_type not in validators:
         raise ValueError(
-            f"Unknown component type: {component_type}. " f"Valid types: {list(validators.keys())}"
+            f"Unknown component type: {component_type}. Valid types: {list(validators.keys())}"
         )
 
     return validators[component_type](config)

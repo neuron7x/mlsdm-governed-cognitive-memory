@@ -43,6 +43,7 @@ def test_register_and_apply_custom_migration():
     original = MIGRATIONS.copy()
 
     try:
+
         def _custom_migration(data: dict) -> dict:
             data = data.copy()
             data["custom"] = True

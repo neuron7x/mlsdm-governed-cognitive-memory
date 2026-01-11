@@ -2,18 +2,14 @@
 # MLSDM Governed Cognitive Memory - Project Configuration
 # ====================================================
 
-[project]
+[tool.poetry]
 name = "mlsdm-governed-cognitive-memory"
 version = "1.2.0"
 description = "Production-ready neurobiologically-grounded cognitive architecture with moral governance"
 readme = "README.md"
-license = {text = "MIT"}
-authors = [
-    {name = "neuron7x", email = "neuron7x@users.noreply.github.com"}
-]
-maintainers = [
-    {name = "neuron7x", email = "neuron7x@users.noreply.github.com"}
-]
+license = "MIT"
+authors = ["neuron7x <neuron7x@users.noreply.github.com>"]
+maintainers = ["neuron7x <neuron7x@users.noreply.github.com>"]
 keywords = [
     "cognitive-architecture",
     "neuromorphic",
@@ -22,104 +18,103 @@ keywords = [
     "ai-safety",
     "llm-wrapper",
     "circadian-rhythm",
-    "phase-entangled-memory"
+    "phase-entangled-memory",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-requires-python = ">=3.10"
-dependencies = [
-    "numpy>=2.0.0",
-    "fastapi>=0.115.0",
-    "uvicorn>=0.32.0",
-    "pyyaml>=6.0.2",
-    "pydantic>=2.10.0",
-    "prometheus-client>=0.21.0",
-    "tenacity>=9.0.0",
-    "requests>=2.32.3",
-    "psutil>=6.1.0",
-    "defusedxml>=0.7.1",
+include = [
+    "src/mlsdm/py.typed",
+    "src/mlsdm/config/*.yaml",
 ]
 
-[project.optional-dependencies]
-observability = [
-    "opentelemetry-api>=1.31.0",
-    "opentelemetry-sdk>=1.31.0",
-    "pyjwt>=2.10.0",
-]
-neurolang = [
-    "torch>=2.0.0",
-]
-embeddings = [
-    "sentence-transformers>=3.0.0",
-]
-ltm = [
-    "cryptography>=42.0.0",
-]
-dev = [
-    "pytest>=8.3.0",
-    "pytest-asyncio>=0.24.0",
-    "pytest-cov>=6.0.0",
-    "pytest-benchmark>=4.0.0",
-    "hypothesis>=6.122.0",
-    "ruff>=0.9.0",
-    "mypy>=1.15.0",
-    "deptry>=0.24.0",
-    "locust>=2.32.0",
-    "httpx>=0.28.0",
-    "types-PyYAML==6.0.12.20250915",
-    "types-requests==2.32.4.20250913",
-    "tomli>=2.0.0; python_version < '3.11'",  # TOML backport for Py3.10 compatibility
-    "sentence-transformers>=3.0.0",  # Include embeddings in dev for full testing
-]
-docs = [
-    "sphinx>=7.0.0",
-    "sphinx-rtd-theme>=2.0.0",
-]
-test = [
-    "pytest>=8.3.0",
-    "pytest-asyncio>=0.24.0",
-    "pytest-cov>=6.0.0",
-    "pytest-benchmark>=4.0.0",
-    "hypothesis>=6.122.0",
-    "httpx>=0.28.0",
-]
-visualization = [
-    "matplotlib>=3.8.4",
-    "jupyter>=1.0.0",
-]
+[[tool.poetry.packages]]
+include = "mlsdm"
+from = "src"
 
-[project.urls]
+[tool.poetry.dependencies]
+python = ">=3.11,<4.0"
+numpy = ">=2.0.0"
+fastapi = ">=0.115.0"
+uvicorn = ">=0.32.0"
+pyyaml = ">=6.0.2"
+pydantic = ">=2.10.0"
+prometheus-client = ">=0.21.0"
+tenacity = ">=9.0.0"
+requests = ">=2.32.3"
+psutil = ">=6.1.0"
+defusedxml = ">=0.7.1"
+opentelemetry-api = {version = ">=1.31.0", optional = true}
+opentelemetry-sdk = {version = ">=1.31.0", optional = true}
+pyjwt = {version = ">=2.10.0", optional = true}
+torch = {version = ">=2.0.0", optional = true}
+sentence-transformers = {version = ">=3.0.0", optional = true}
+cryptography = {version = ">=42.0.0", optional = true}
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8.3.0"
+pytest-asyncio = ">=0.24.0"
+pytest-cov = ">=6.0.0"
+pytest-benchmark = ">=4.0.0"
+hypothesis = ">=6.122.0"
+ruff = ">=0.9.0"
+mypy = ">=1.15.0"
+deptry = ">=0.24.0"
+locust = ">=2.32.0"
+httpx = ">=0.28.0"
+types-PyYAML = "==6.0.12.20250915"
+types-requests = "==2.32.4.20250913"
+sentence-transformers = ">=3.0.0"
+bandit = ">=1.7.9"
+
+[tool.poetry.group.test.dependencies]
+pytest = ">=8.3.0"
+pytest-asyncio = ">=0.24.0"
+pytest-cov = ">=6.0.0"
+pytest-benchmark = ">=4.0.0"
+hypothesis = ">=6.122.0"
+httpx = ">=0.28.0"
+
+[tool.poetry.group.docs.dependencies]
+sphinx = ">=7.0.0"
+sphinx-rtd-theme = ">=2.0.0"
+
+[tool.poetry.group.visualization.dependencies]
+matplotlib = ">=3.8.4"
+jupyter = ">=1.0.0"
+
+[tool.poetry.extras]
+observability = ["opentelemetry-api", "opentelemetry-sdk", "pyjwt"]
+neurolang = ["torch"]
+embeddings = ["sentence-transformers"]
+ltm = ["cryptography"]
+
+[tool.poetry.urls]
 Homepage = "https://github.com/neuron7x/mlsdm"
 Repository = "https://github.com/neuron7x/mlsdm"
 Documentation = "https://github.com/neuron7x/mlsdm/blob/main/docs/index.md"
 Issues = "https://github.com/neuron7x/mlsdm/issues"
 
-[project.scripts]
+[tool.poetry.scripts]
 mlsdm = "mlsdm.cli:main"
 
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools.package-data]
-mlsdm = ["py.typed"]
-"mlsdm.config" = ["*.yaml"]
+requires = ["poetry-core>=1.6.0"]
+build-backend = "poetry.core.masonry.api"
 
 # ====================================================
 # Tool Configuration
 # ====================================================
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 strict = true
 ignore_missing_imports = true
 warn_return_any = true
@@ -227,7 +222,7 @@ show_missing = true
 skip_empty = true
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 100
 indent-width = 4
 
@@ -262,18 +257,6 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
-
-# ====================================================
-# Package Configuration
-# ====================================================
-
-[tool.setuptools]
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.package-dir]
-"" = "src"
 
 [tool.deptry]
 # Exclude dev/test/docs dependencies from being treated as main dependencies

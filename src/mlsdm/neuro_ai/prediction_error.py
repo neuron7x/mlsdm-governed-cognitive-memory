@@ -12,7 +12,9 @@ def _to_scalar(value: float | np.ndarray) -> float:
     return float(np.nan_to_num(value))
 
 
-def compute_delta(predicted: float | np.ndarray, observed: float | np.ndarray, clip_value: float = 1.0) -> float:
+def compute_delta(
+    predicted: float | np.ndarray, observed: float | np.ndarray, clip_value: float = 1.0
+) -> float:
     """Compute bounded prediction error Δ = observed − predicted."""
     if clip_value <= 0:
         raise ValueError("clip_value must be positive.")

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Fail fast when generated artifacts are committed."""
+
 from __future__ import annotations
 
 import fnmatch
@@ -52,9 +53,7 @@ ALLOWED_EXACT: tuple[str, ...] = (
 
 def _repo_files() -> list[str]:
     try:
-        listing = subprocess.check_output(
-            ["git", "ls-files", "--cached"], text=True
-        )
+        listing = subprocess.check_output(["git", "ls-files", "--cached"], text=True)
     except (subprocess.CalledProcessError, FileNotFoundError) as exc:
         print(f"Unable to list repository files via git: {exc}")
         sys.exit(1)

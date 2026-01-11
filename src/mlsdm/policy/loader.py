@@ -529,7 +529,10 @@ def _sort_list(items: list[Any]) -> list[Any]:
 
 def canonicalize_policy_data(data: Any) -> Any:
     if isinstance(data, dict):
-        normalized = {key: canonicalize_policy_data(_normalize_scalar(key, value)) for key, value in data.items()}
+        normalized = {
+            key: canonicalize_policy_data(_normalize_scalar(key, value))
+            for key, value in data.items()
+        }
         return {key: normalized[key] for key in sorted(normalized)}
 
     if isinstance(data, list):

@@ -109,9 +109,9 @@ class TestEmbeddingCacheBenchmarks:
 
         # Validate high hit rate for repeated prompts
         assert stats.hits == expected_hits, f"Expected {expected_hits} hits, got {stats.hits}"
-        assert (
-            stats.misses == expected_misses
-        ), f"Expected {expected_misses} misses, got {stats.misses}"
+        assert stats.misses == expected_misses, (
+            f"Expected {expected_misses} misses, got {stats.misses}"
+        )
         assert stats.hit_rate >= 99.0, f"Expected hit rate >= 99%, got {stats.hit_rate:.2f}%"
 
         print("✓ Cache achieves 99%+ hit rate with repeated prompts")
@@ -185,9 +185,9 @@ class TestEmbeddingCacheBenchmarks:
 
         # Cache should provide significant latency improvement
         assert stats_with_cache["mean"] < stats_no_cache["mean"], "Cache should reduce mean latency"
-        assert (
-            mean_improvement > 50.0
-        ), f"Expected >50% mean latency improvement, got {mean_improvement:.1f}%"
+        assert mean_improvement > 50.0, (
+            f"Expected >50% mean latency improvement, got {mean_improvement:.1f}%"
+        )
 
         print("✓ Cache provides >50% latency reduction")
         print()
@@ -285,9 +285,9 @@ class TestEmbeddingCacheBenchmarks:
         # the actual numbers depend on internal calls. Let's verify reasonable hit rate.
 
         assert cache_stats["hits"] > 0, "Should have cache hits after warming up"
-        assert (
-            cache_stats["hit_rate"] > 50
-        ), f"Expected hit rate > 50%, got {cache_stats['hit_rate']:.2f}%"
+        assert cache_stats["hit_rate"] > 50, (
+            f"Expected hit rate > 50%, got {cache_stats['hit_rate']:.2f}%"
+        )
 
         print("✓ LLMWrapper integrates correctly with embedding cache")
         print()

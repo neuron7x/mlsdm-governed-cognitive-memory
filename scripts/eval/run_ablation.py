@@ -30,7 +30,7 @@ import random
 import sys
 import time
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -433,9 +433,7 @@ class AblationRunner:
 
         # Memory metrics
         memory_results = [
-            r.get("memory", {})
-            for r in results
-            if not r.get("memory", {}).get("skipped", True)
+            r.get("memory", {}) for r in results if not r.get("memory", {}).get("skipped", True)
         ]
         if memory_results:
             successes = sum(1 for m in memory_results if m.get("success", False))
@@ -446,9 +444,7 @@ class AblationRunner:
         if aphasia_fixtures:
             aphasia_correct = 0
             for fixture in aphasia_fixtures:
-                result = next(
-                    (r for r in results if r.get("id") == fixture.get("id")), None
-                )
+                result = next((r for r in results if r.get("id") == fixture.get("id")), None)
                 if result:
                     expected_aphasic = fixture.get("expected_aphasic", False)
                     detected_aphasic = result.get("aphasia", {}).get("is_aphasic", False)
@@ -468,7 +464,7 @@ class AblationRunner:
         report = AblationReport(
             mode=self.mode,
             seed=self.seed,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
 
         start_time = time.perf_counter()
@@ -508,7 +504,7 @@ class AblationRunner:
         """
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         filename = f"{self.mode}_{timestamp}.json"
         output_path = self.output_dir / filename
 
@@ -538,8 +534,12 @@ class AblationRunner:
         print(f"  Deterministic Hash: {report.metrics.deterministic_hash}")
         print("-" * 60)
         print("Quality Metrics:")
-        print(f"  Response Length (mean±std): {report.metrics.response_length_mean:.1f}±{report.metrics.response_length_std:.1f}")
-        print(f"  Latency (mean±std):         {report.metrics.latency_ms_mean:.2f}±{report.metrics.latency_ms_std:.2f}ms")
+        print(
+            f"  Response Length (mean±std): {report.metrics.response_length_mean:.1f}±{report.metrics.response_length_std:.1f}"
+        )
+        print(
+            f"  Latency (mean±std):         {report.metrics.latency_ms_mean:.2f}±{report.metrics.latency_ms_std:.2f}ms"
+        )
         print("-" * 60)
         print("Component Metrics:")
         print(f"  Memory Hit Rate:        {report.metrics.retrieval_hit_rate:.2%}")

@@ -3,6 +3,7 @@
 This script is intentionally stdlib-only and resilient to missing inputs.
 Missing artifacts are recorded as structured errors with explicit codes.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -24,7 +25,10 @@ try:
 
     HAS_DEFUSEDXML = True
     DEFUSEDXML_ERR = None
-except (ImportError, ModuleNotFoundError) as exc:  # pragma: no cover - exercised via unit test monkeypatch
+except (
+    ImportError,
+    ModuleNotFoundError,
+) as exc:  # pragma: no cover - exercised via unit test monkeypatch
     HAS_DEFUSEDXML = False
     DEFUSEDXML_ERR = repr(exc)
     parse = None  # type: ignore
@@ -142,13 +146,21 @@ def classify_failure(
         ]
     ).lower()
 
-    for keyword in ("connection refused", "network unreachable", "timeout connecting", "rate limit"):
+    for keyword in (
+        "connection refused",
+        "network unreachable",
+        "timeout connecting",
+        "rate limit",
+    ):
         if keyword in combined_text:
             return {"category": "infra", "reason": f"Detected infra keyword '{keyword}'"}
 
     for keyword in ("ruff", "mypy", "flake8", "static analysis"):
         if keyword in combined_text:
-            return {"category": "static analysis", "reason": f"Detected static analysis keyword '{keyword}'"}
+            return {
+                "category": "static analysis",
+                "reason": f"Detected static analysis keyword '{keyword}'",
+            }
 
     file_counts: dict[str, int] = {}
     for failure in failures:
@@ -156,13 +168,19 @@ def classify_failure(
         if file_path:
             file_counts[file_path] = file_counts.get(file_path, 0) + 1
     if any(count > 1 for count in file_counts.values()):
-        return {"category": "deterministic test", "reason": "Repeated failures within the same test file"}
+        return {
+            "category": "deterministic test",
+            "reason": "Repeated failures within the same test file",
+        }
 
     for keyword in ("flaky", "intermittent", "timed out", "timeout", "race", "retry"):
         if keyword in combined_text:
             return {"category": "possible flake", "reason": f"Detected flake keyword '{keyword}'"}
 
-    return {"category": "deterministic test", "reason": "Test failures without infra/static indicators"}
+    return {
+        "category": "deterministic test",
+        "reason": "Test failures without infra/static indicators",
+    }
 
 
 def _extract_module(path: str) -> str:
@@ -360,25 +378,31 @@ def generate_summary(
     # Track missing inputs as structured errors
     # If user explicitly provided a path but it doesn't exist, report as missing
     if expected_junit_path and not os.path.isfile(expected_junit_path):
-        input_errors.append({
-            "code": "input_missing",
-            "artifact": "junit",
-            "expected_path": expected_junit_path,
-        })
+        input_errors.append(
+            {
+                "code": "input_missing",
+                "artifact": "junit",
+                "expected_path": expected_junit_path,
+            }
+        )
 
     if expected_coverage_path and not os.path.isfile(expected_coverage_path):
-        input_errors.append({
-            "code": "input_missing",
-            "artifact": "coverage",
-            "expected_path": expected_coverage_path,
-        })
+        input_errors.append(
+            {
+                "code": "input_missing",
+                "artifact": "coverage",
+                "expected_path": expected_coverage_path,
+            }
+        )
 
     if changed_files_path and not os.path.isfile(changed_files_path):
-        input_errors.append({
-            "code": "input_missing",
-            "artifact": "changed_files",
-            "expected_path": changed_files_path,
-        })
+        input_errors.append(
+            {
+                "code": "input_missing",
+                "artifact": "changed_files",
+                "expected_path": changed_files_path,
+            }
+        )
 
     # Sort for deterministic output
     input_errors.sort(key=lambda e: (e.get("artifact", ""), e.get("code", "")))
@@ -401,7 +425,9 @@ def generate_summary(
         "classification": classification,
         "impacted_modules": modules,
         "repro_commands": available_repro_commands(),
-        "evidence": [p for p in (junit_path, coverage_path, changed_files_path) if p and os.path.isfile(p)],
+        "evidence": [
+            p for p in (junit_path, coverage_path, changed_files_path) if p and os.path.isfile(p)
+        ],
         "input_errors": input_errors,
         "errors": [],
     }
@@ -409,10 +435,14 @@ def generate_summary(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate deterministic failure intelligence summary.")
+    parser = argparse.ArgumentParser(
+        description="Generate deterministic failure intelligence summary."
+    )
     parser.add_argument("--junit", help="Path to junit XML file", default=None)
     parser.add_argument("--coverage", help="Path to coverage XML file", default=None)
-    parser.add_argument("--changed-files", help="Path to file containing changed files list", default=None)
+    parser.add_argument(
+        "--changed-files", help="Path to file containing changed files list", default=None
+    )
     parser.add_argument("--logs", help="Glob pattern to include log snippets", default=None)
     parser.add_argument("--out", required=True, help="Output markdown summary path")
     parser.add_argument("--json", required=True, dest="json_out", help="Output JSON summary path")
@@ -422,7 +452,9 @@ def main() -> None:
 
     # Always create initial stub outputs
     try:
-        write_outputs("## Failure Intelligence\n\nStarting...", {"status": "started"}, args.out, args.json_out)
+        write_outputs(
+            "## Failure Intelligence\n\nStarting...", {"status": "started"}, args.out, args.json_out
+        )
     except Exception:
         pass
 
@@ -433,7 +465,10 @@ def main() -> None:
                 "signal": "Failure intelligence unavailable",
                 "top_failures": [],
                 "coverage_percent": None,
-                "classification": {"category": "pass", "reason": "defusedxml missing; parsing skipped"},
+                "classification": {
+                    "category": "pass",
+                    "reason": "defusedxml missing; parsing skipped",
+                },
                 "impacted_modules": [],
                 "repro_commands": available_repro_commands(),
                 "evidence": [],

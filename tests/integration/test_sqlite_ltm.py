@@ -22,6 +22,7 @@ from mlsdm.memory.store import MemoryItem, compute_content_hash
 # Check if cryptography is available for encryption tests
 try:
     import cryptography.hazmat.primitives.ciphers.aead  # noqa: F401
+
     CRYPTOGRAPHY_AVAILABLE = True
 except ImportError:
     CRYPTOGRAPHY_AVAILABLE = False

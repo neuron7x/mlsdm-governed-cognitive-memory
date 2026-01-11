@@ -183,10 +183,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
 # Canonical app factory used by all runtime entrypoints
 def create_app() -> FastAPI:
     """Return the canonical FastAPI application instance."""
     return app
+
 
 # Versioned API routers for contract stability
 v1_router = APIRouter(prefix="/v1")
@@ -267,9 +269,7 @@ def _require_manager(request: Request) -> MemoryManager:
 
 def _require_engine(request: Request) -> NeuroCognitiveEngine:
     _ensure_runtime_state(request.app)
-    engine = cast(
-        "NeuroCognitiveEngine | None", getattr(request.app.state, "neuro_engine", None)
-    )
+    engine = cast("NeuroCognitiveEngine | None", getattr(request.app.state, "neuro_engine", None))
     if engine is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Service not initialized"

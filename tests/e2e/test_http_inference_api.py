@@ -124,9 +124,7 @@ class TestHealthEndpoints:
                 data = response.json()
                 unhealthy = data.get("details", {}).get("unhealthy_components", [])
                 # Log for debugging but don't fail yet
-                print(
-                    f"Attempt {attempt + 1}/{max_attempts}: Not ready. Unhealthy: {unhealthy}"
-                )
+                print(f"Attempt {attempt + 1}/{max_attempts}: Not ready. Unhealthy: {unhealthy}")
                 time.sleep(retry_delay)
             else:
                 # Final attempt or unexpected status code - fail with details

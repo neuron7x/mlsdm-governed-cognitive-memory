@@ -13,7 +13,7 @@ Tests cover:
 import json
 import os
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -225,8 +225,8 @@ class TestSystemStateRecord:
         )
         qilm = QILMStateRecord(memory=[], phases=[])
 
-        created = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        updated = datetime(2023, 1, 1, tzinfo=timezone.utc)  # Before created!
+        created = datetime(2024, 1, 1, tzinfo=UTC)
+        updated = datetime(2023, 1, 1, tzinfo=UTC)  # Before created!
 
         with pytest.raises(ValueError, match="created_at.*updated_at"):
             SystemStateRecord(

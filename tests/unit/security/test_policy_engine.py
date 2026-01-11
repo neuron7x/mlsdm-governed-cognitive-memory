@@ -357,9 +357,9 @@ class TestEvaluateLLMOutputPolicy:
 
             assert decision.allow is False, f"Failed for violation: {violation}"
             # Check that at least one expected STRIDE category is present
-            assert any(
-                cat in decision.stride_categories for cat in expected_categories
-            ), f"Expected one of {expected_categories} in {decision.stride_categories} for {violation}"
+            assert any(cat in decision.stride_categories for cat in expected_categories), (
+                f"Expected one of {expected_categories} in {decision.stride_categories} for {violation}"
+            )
 
 
 @pytest.mark.parametrize(

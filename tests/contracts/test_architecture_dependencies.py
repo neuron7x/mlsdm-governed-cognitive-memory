@@ -17,6 +17,4 @@ def test_architecture_dependencies_respected() -> None:
             f"[{violation.reason}]"
             for violation in violations
         )
-        raise AssertionError(
-            "Disallowed architecture dependencies detected:\n" + formatted
-        )
+        raise AssertionError("Disallowed architecture dependencies detected:\n" + formatted)

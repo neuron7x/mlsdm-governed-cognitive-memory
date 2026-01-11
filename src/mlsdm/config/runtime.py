@@ -129,9 +129,7 @@ class RuntimeConfig:
             "LLM_BACKEND": self.engine.llm_backend,
             "EMBEDDING_DIM": str(self.engine.embedding_dim),
             "ENABLE_FSLGS": "true" if self.engine.enable_fslgs else "false",
-            "MLSDM_ENGINE_ENABLE_METRICS": "true"
-            if self.engine.enable_metrics
-            else "false",
+            "MLSDM_ENGINE_ENABLE_METRICS": "true" if self.engine.enable_metrics else "false",
             "CONFIG_PATH": self.engine.config_path,
             # Debug
             "MLSDM_DEBUG": "1" if self.debug else "0",

@@ -147,7 +147,9 @@ class RiskContractAdapter:
         return RiskSignal(threat=threat, risk=risk, source="safety_control", metadata=metadata)
 
     @staticmethod
-    def action_gating_signal(assessment: RiskAssessment, directive: RiskDirective) -> ActionGatingSignal:
+    def action_gating_signal(
+        assessment: RiskAssessment, directive: RiskDirective
+    ) -> ActionGatingSignal:
         reason = assessment.reasons[0] if assessment.reasons else ""
         return ActionGatingSignal(
             allow=directive.allow_execution,

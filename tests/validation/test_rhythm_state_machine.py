@@ -196,12 +196,12 @@ def test_rhythm_property_cycle_consistency(
         rhythm.step()
 
     # Should return to initial state
-    assert (
-        rhythm.phase == initial_phase
-    ), f"Phase mismatch after {num_cycles} cycles: {rhythm.phase} != {initial_phase}"
-    assert (
-        rhythm.counter == initial_counter
-    ), f"Counter mismatch after {num_cycles} cycles: {rhythm.counter} != {initial_counter}"
+    assert rhythm.phase == initial_phase, (
+        f"Phase mismatch after {num_cycles} cycles: {rhythm.phase} != {initial_phase}"
+    )
+    assert rhythm.counter == initial_counter, (
+        f"Counter mismatch after {num_cycles} cycles: {rhythm.counter} != {initial_counter}"
+    )
 
 
 @settings(max_examples=50, deadline=None)
@@ -224,13 +224,13 @@ def test_rhythm_property_counter_bounds(
         assert rhythm.counter > 0, f"Counter should be positive, got {rhythm.counter}"
 
         if rhythm.phase == "wake":
-            assert (
-                rhythm.counter <= wake_duration
-            ), f"Wake counter {rhythm.counter} exceeds duration {wake_duration}"
+            assert rhythm.counter <= wake_duration, (
+                f"Wake counter {rhythm.counter} exceeds duration {wake_duration}"
+            )
         else:
-            assert (
-                rhythm.counter <= sleep_duration
-            ), f"Sleep counter {rhythm.counter} exceeds duration {sleep_duration}"
+            assert rhythm.counter <= sleep_duration, (
+                f"Sleep counter {rhythm.counter} exceeds duration {sleep_duration}"
+            )
 
         rhythm.step()
 

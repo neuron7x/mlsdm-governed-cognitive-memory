@@ -17,7 +17,7 @@ import json
 import logging
 import os
 import shutil
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import numpy as np
@@ -141,7 +141,7 @@ def save_system_state(
 
     try:
         # Update state with new timestamp and id if provided
-        update_data: dict[str, datetime | str] = {"updated_at": datetime.now(timezone.utc)}
+        update_data: dict[str, datetime | str] = {"updated_at": datetime.now(UTC)}
         if state_id is not None:
             update_data["id"] = state_id
 

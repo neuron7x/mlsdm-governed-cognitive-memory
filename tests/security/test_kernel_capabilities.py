@@ -60,14 +60,10 @@ def test_kernel_ro_proxies_do_not_expose_mutators():
     )
 
     # Check that SynapticRO doesn't have update method
-    assert not hasattr(kernel.synaptic_ro, "update"), (
-        "SynapticRO should not expose 'update' method"
-    )
+    assert not hasattr(kernel.synaptic_ro, "update"), "SynapticRO should not expose 'update' method"
 
     # Check that PelmRO doesn't have entangle method
-    assert not hasattr(kernel.pelm_ro, "entangle"), (
-        "PelmRO should not expose 'entangle' method"
-    )
+    assert not hasattr(kernel.pelm_ro, "entangle"), "PelmRO should not expose 'entangle' method"
 
     # Verify read-only methods are still accessible
     assert hasattr(kernel.synaptic_ro, "state"), "SynapticRO should have 'state' method"

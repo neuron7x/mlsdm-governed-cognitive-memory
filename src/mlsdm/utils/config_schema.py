@@ -6,10 +6,9 @@ properly validated before use.
 """
 
 import logging
-from typing import Any
+from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 
@@ -152,8 +151,7 @@ class OntologyMatcherConfig(BaseModel):
 
         if labels is not None and len(labels) != len(vectors):
             raise ValueError(
-                f"Number of labels ({len(labels)}) must match "
-                f"number of vectors ({len(vectors)})"
+                f"Number of labels ({len(labels)}) must match number of vectors ({len(vectors)})"
             )
 
         return self
@@ -260,8 +258,7 @@ class NeuroLangConfig(BaseModel):
         allowed_modes = {"eager_train", "lazy_train", "disabled"}
         if v not in allowed_modes:
             raise ValueError(
-                f"Invalid neurolang mode: '{v}'. "
-                f"Must be one of: {', '.join(sorted(allowed_modes))}"
+                f"Invalid neurolang mode: '{v}'. Must be one of: {', '.join(sorted(allowed_modes))}"
             )
         return v
 
@@ -389,7 +386,7 @@ class APIPriorityConfig(BaseModel):
         allowed = {"high", "normal", "low"}
         if v.lower() not in allowed:
             raise ValueError(
-                f"Invalid default_priority: '{v}'. " f"Must be one of: {', '.join(sorted(allowed))}"
+                f"Invalid default_priority: '{v}'. Must be one of: {', '.join(sorted(allowed))}"
             )
         return v.lower()
 
@@ -488,8 +485,7 @@ class SystemConfig(BaseModel):
                 vec_dim = len(vectors[0])
                 if vec_dim != dim:
                     raise ValueError(
-                        f"Ontology vector dimension ({vec_dim}) must match "
-                        f"system dimension ({dim})"
+                        f"Ontology vector dimension ({vec_dim}) must match system dimension ({dim})"
                     )
 
         return self

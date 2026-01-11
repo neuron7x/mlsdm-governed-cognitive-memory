@@ -22,8 +22,16 @@ def test_neuromodulator_bounds_hold(perception, memory, policy, memory_pressure,
 
     state.update(signals, memory_pressure=memory_pressure, risk_mode=risk_mode)
 
-    assert state.bounds.exploration_range[0] <= state.exploration_bias <= state.bounds.exploration_range[1]
-    assert state.bounds.learning_rate_range[0] <= state.learning_rate <= state.bounds.learning_rate_range[1]
+    assert (
+        state.bounds.exploration_range[0]
+        <= state.exploration_bias
+        <= state.bounds.exploration_range[1]
+    )
+    assert (
+        state.bounds.learning_rate_range[0]
+        <= state.learning_rate
+        <= state.bounds.learning_rate_range[1]
+    )
     assert (
         state.bounds.consolidation_range[0]
         <= state.memory_consolidation_bias

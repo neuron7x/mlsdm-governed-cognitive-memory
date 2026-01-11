@@ -33,6 +33,7 @@ uvicorn>=0.32.0
 
 # Optional Dev (from pyproject.toml [project.optional-dependencies].dev)
 # Install with: pip install ".[dev]"
+bandit>=1.7.9
 deptry>=0.24.0
 httpx>=0.28.0
 hypothesis>=6.122.0
@@ -44,7 +45,6 @@ pytest-cov>=6.0.0
 pytest>=8.3.0
 ruff>=0.9.0
 sentence-transformers>=3.0.0
-tomli>=2.0.0; python_version < '3.11'
 types-PyYAML==6.0.12.20250915
 types-requests==2.32.4.20250913
 

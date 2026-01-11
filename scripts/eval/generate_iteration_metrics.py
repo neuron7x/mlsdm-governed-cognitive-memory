@@ -85,7 +85,9 @@ class ToyIterationEnvironment(EnvironmentAdapter):
         base_wave = 0.12 * math.sin(self.index * 0.35)
         drift = 0.18 * math.cos(self.index * 0.15)
         noise = self.rng.uniform(-self.noise_scale, self.noise_scale)
-        outcome = action * ACTION_SCALE + risk * RISK_SCALE + base_wave + drift * DRIFT_SCALE + noise
+        outcome = (
+            action * ACTION_SCALE + risk * RISK_SCALE + base_wave + drift * DRIFT_SCALE + noise
+        )
         self.index += 1
         return ObservationBundle(observed_outcome=[outcome], reward=None, terminal=False)
 
@@ -148,7 +150,9 @@ def main() -> int:
             sort_keys=True,
         )
     )
-    print(f"summary: steps={args.steps}, mean_abs_prediction_error={mean_abs_error:.6f}, max_risk={max_risk:.6f}")
+    print(
+        f"summary: steps={args.steps}, mean_abs_prediction_error={mean_abs_error:.6f}, max_risk={max_risk:.6f}"
+    )
     print(f"regime_histogram: {regimes}")
     return 0
 

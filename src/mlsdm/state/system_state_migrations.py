@@ -38,7 +38,7 @@ def migrate_v0_to_v1(state: dict[str, Any]) -> dict[str, Any]:
     - created_at/updated_at timestamps
     - id field
     """
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
 
     # If already has version, this is not v0
     if "version" in state:
@@ -47,8 +47,8 @@ def migrate_v0_to_v1(state: dict[str, Any]) -> dict[str, Any]:
     migrated = {
         "version": 1,
         "id": None,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
+        "updated_at": datetime.now(UTC).isoformat(),
         "memory_state": state.get("memory_state", {}),
         "qilm": state.get("qilm", {}),
     }

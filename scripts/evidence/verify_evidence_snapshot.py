@@ -80,11 +80,15 @@ def _validate_manifest(path: Path) -> dict[str, Any]:
             f"manifest.json schema_version is '{data['schema_version']}', expected '{SCHEMA_VERSION}'"
         )
 
-    if not isinstance(data["commands"], list) or not all(isinstance(cmd, str) for cmd in data["commands"]):
+    if not isinstance(data["commands"], list) or not all(
+        isinstance(cmd, str) for cmd in data["commands"]
+    ):
         raise EvidenceError("manifest.json 'commands' must be a list of strings")
 
     outputs = data["outputs"]
-    if not isinstance(outputs, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in outputs.items()):
+    if not isinstance(outputs, dict) or not all(
+        isinstance(k, str) and isinstance(v, str) for k, v in outputs.items()
+    ):
         raise EvidenceError("manifest.json 'outputs' must be a mapping of strings")
 
     status = data["status"]
@@ -95,7 +99,9 @@ def _validate_manifest(path: Path) -> dict[str, Any]:
             raise EvidenceError(f"manifest.json 'status' missing key '{key}'")
     if not isinstance(status["ok"], bool) or not isinstance(status["partial"], bool):
         raise EvidenceError("manifest.json status.ok and status.partial must be booleans")
-    if not isinstance(status["failures"], list) or not all(isinstance(err, str) for err in status["failures"]):
+    if not isinstance(status["failures"], list) or not all(
+        isinstance(err, str) for err in status["failures"]
+    ):
         raise EvidenceError("manifest.json status.failures must be a list of strings")
     if status["ok"] == status["partial"]:
         raise EvidenceError("manifest.json status.ok and status.partial must not be equal")
@@ -190,7 +196,9 @@ def _ensure_outputs_valid(evidence_dir: Path, outputs: dict[str, str]) -> None:
         if key not in outputs:
             raise EvidenceError(f"manifest.outputs missing required key '{key}'")
         if outputs[key] != expected_rel:
-            raise EvidenceError(f"manifest.outputs.{key} must be '{expected_rel}' (got '{outputs[key]}')")
+            raise EvidenceError(
+                f"manifest.outputs.{key} must be '{expected_rel}' (got '{outputs[key]}')"
+            )
 
     for key, rel in outputs.items():
         if Path(rel).is_absolute():
@@ -198,8 +206,10 @@ def _ensure_outputs_valid(evidence_dir: Path, outputs: dict[str, str]) -> None:
         target = _resolve_under(evidence_dir, rel)
         if not target.exists():
             raise EvidenceError(f"manifest.outputs references missing file: {rel}")
-        if key not in REQUIRED_OUTPUTS and key not in allowed_optional and not any(
-            rel.startswith(prefix) for prefix in allowed_prefixes
+        if (
+            key not in REQUIRED_OUTPUTS
+            and key not in allowed_optional
+            and not any(rel.startswith(prefix) for prefix in allowed_prefixes)
         ):
             raise EvidenceError(f"manifest.outputs contains unexpected key '{key}'")
 
@@ -207,7 +217,9 @@ def _ensure_outputs_valid(evidence_dir: Path, outputs: dict[str, str]) -> None:
 def _check_file_index(evidence_dir: Path, file_index: list[dict[str, Any]]) -> None:
     indexed_paths = set()
     total_bytes = 0
-    actual_files = {str(p.relative_to(evidence_dir)) for p in evidence_dir.rglob("*") if p.is_file()}
+    actual_files = {
+        str(p.relative_to(evidence_dir)) for p in evidence_dir.rglob("*") if p.is_file()
+    }
 
     for entry in file_index:
         rel = entry["path"]
@@ -221,7 +233,9 @@ def _check_file_index(evidence_dir: Path, file_index: list[dict[str, Any]]) -> N
         computed_size = target.stat().st_size
         computed_hash = _hash_file(target)
         if computed_size != entry["bytes"]:
-            raise EvidenceError(f"file_index bytes mismatch for {rel}: {entry['bytes']} != {computed_size}")
+            raise EvidenceError(
+                f"file_index bytes mismatch for {rel}: {entry['bytes']} != {computed_size}"
+            )
         if computed_hash != entry["sha256"]:
             raise EvidenceError(f"file_index sha256 mismatch for {rel}")
         if computed_size > MAX_FILE_BYTES:
@@ -271,11 +285,17 @@ def verify_snapshot(evidence_dir: Path) -> None:
     _ensure_outputs_indexed(outputs, manifest["file_index"])
     _scan_secrets(evidence_dir)
 
-    coverage_percent = _parse_coverage_percent(_resolve_under(evidence_dir, outputs["coverage_xml"]))
-    tests, failures, errors, skipped = _parse_junit(_resolve_under(evidence_dir, outputs["junit_xml"]))
+    coverage_percent = _parse_coverage_percent(
+        _resolve_under(evidence_dir, outputs["coverage_xml"])
+    )
+    tests, failures, errors, skipped = _parse_junit(
+        _resolve_under(evidence_dir, outputs["junit_xml"])
+    )
 
     print(f"✓ Evidence snapshot valid: {evidence_dir}")
-    print(f"  Schema: {manifest['schema_version']} (status.partial={manifest['status']['partial']})")
+    print(
+        f"  Schema: {manifest['schema_version']} (status.partial={manifest['status']['partial']})"
+    )
     print(f"  Coverage: {coverage_percent:.2f}%")
     print(f"  Tests: {tests} (failures={failures}, errors={errors}, skipped={skipped})")
     print(

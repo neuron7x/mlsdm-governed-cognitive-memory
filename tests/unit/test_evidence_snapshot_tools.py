@@ -23,7 +23,9 @@ def _hash_file(path: Path) -> str:
     return h.hexdigest()
 
 
-def _write_manifest(evidence_dir: Path, failures: list[str] | None = None, schema: str = SCHEMA_VERSION) -> None:
+def _write_manifest(
+    evidence_dir: Path, failures: list[str] | None = None, schema: str = SCHEMA_VERSION
+) -> None:
     manifest = {
         "schema_version": schema,
         "git_sha": "abcdef1234567890",
@@ -56,7 +58,9 @@ def _write_manifest(evidence_dir: Path, failures: list[str] | None = None, schem
     (evidence_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 
-def _build_snapshot(tmp_path: Path, *, schema: str = SCHEMA_VERSION, failures: list[str] | None = None) -> Path:
+def _build_snapshot(
+    tmp_path: Path, *, schema: str = SCHEMA_VERSION, failures: list[str] | None = None
+) -> Path:
     evidence_dir = tmp_path / "artifacts" / "evidence" / "2025-01-01" / "abcdef123456"
     (evidence_dir / "coverage").mkdir(parents=True, exist_ok=True)
     (evidence_dir / "pytest").mkdir(parents=True, exist_ok=True)
@@ -102,7 +106,9 @@ def test_verifier_rejects_path_traversal_in_manifest(tmp_path: Path) -> None:
 
 def test_verifier_rejects_secret_like_content(tmp_path: Path) -> None:
     snapshot = _build_snapshot(tmp_path)
-    (snapshot / "logs" / "unit_tests.log").write_text("Authorization: Bearer SECRET-TOKEN-ABC", encoding="utf-8")
+    (snapshot / "logs" / "unit_tests.log").write_text(
+        "Authorization: Bearer SECRET-TOKEN-ABC", encoding="utf-8"
+    )
     manifest_path = snapshot / "manifest.json"
     data = json.loads(manifest_path.read_text(encoding="utf-8"))
     data["file_index"].append(
@@ -143,7 +149,9 @@ def test_capture_pack_mode_creates_manifest_with_file_index(tmp_path: Path) -> N
     junit_xml = tmp_path / "junit.xml"
     coverage_log = tmp_path / "coverage.log"
     coverage_xml.write_text('<coverage line-rate="0.90"></coverage>', encoding="utf-8")
-    junit_xml.write_text('<testsuite tests="1" failures="0" errors="0" skipped="0"></testsuite>', encoding="utf-8")
+    junit_xml.write_text(
+        '<testsuite tests="1" failures="0" errors="0" skipped="0"></testsuite>', encoding="utf-8"
+    )
     coverage_log.write_text("ok", encoding="utf-8")
     inputs_file = tmp_path / "inputs.json"
     inputs_file.write_text(

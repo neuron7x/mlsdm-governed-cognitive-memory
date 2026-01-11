@@ -81,7 +81,9 @@ class LoadProfile:
     description: str
 
 
-def _load_policy_runtime_defaults() -> tuple[LatencySLO, ErrorRateSLO, ThroughputSLO, dict[str, float]]:
+def _load_policy_runtime_defaults() -> tuple[
+    LatencySLO, ErrorRateSLO, ThroughputSLO, dict[str, float]
+]:
     try:
         bundle = load_policy_bundle(DEFAULT_POLICY_DIR)
     except PolicyLoadError as exc:
@@ -121,6 +123,7 @@ def _load_policy_runtime_defaults() -> tuple[LatencySLO, ErrorRateSLO, Throughpu
     }
 
     return latency_slo, error_rate_slo, throughput_slo, multiplier_values
+
 
 _DEFAULT_LATENCY_SLO, _DEFAULT_ERROR_RATE_SLO, _DEFAULT_THROUGHPUT_SLO, _MULTIPLIERS = (
     _load_policy_runtime_defaults()

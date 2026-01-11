@@ -316,7 +316,7 @@ class CoherenceSafetyAnalyzer:
 
         # Look at recent history
         recent = threshold_history[-window_size:]
-        mean_recent = np.mean(recent)
+        mean_recent = float(np.mean(recent))
 
         # Compute distance from target
         distance = abs(mean_recent - target_threshold)

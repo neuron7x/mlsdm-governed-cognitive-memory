@@ -329,9 +329,7 @@ class TestFilterOutputLogging:
         analyzer = LLMSafetyAnalyzer(log_violations=True)
 
         with patch.object(logging.getLogger("mlsdm.security.llm_safety"), "log") as mock_log:
-            analyzer.filter_output(
-                "api_key=verysecret123456789012345678901234567890verylongkey"
-            )
+            analyzer.filter_output("api_key=verysecret123456789012345678901234567890verylongkey")
             mock_log.assert_called()
 
 

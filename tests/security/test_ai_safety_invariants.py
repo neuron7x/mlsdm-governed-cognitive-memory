@@ -269,9 +269,9 @@ class TestCoherenceMetricsBounds:
         coherence = analyzer.measure_semantic_coherence(query_vectors, retrieved_vectors)
 
         # Cosine similarity can be [-1, 1], so we validate that range
-        assert (
-            -1.0 <= coherence <= 1.0
-        ), f"Semantic coherence {coherence} out of expected bounds [-1, 1]"
+        assert -1.0 <= coherence <= 1.0, (
+            f"Semantic coherence {coherence} out of expected bounds [-1, 1]"
+        )
 
 
 # ============================================================================
@@ -297,12 +297,12 @@ class TestThresholdStability:
         for _ in range(attack_duration):
             moral_filter.adapt(False)  # All rejections
 
-        assert (
-            moral_filter.threshold >= MoralFilterV2.MIN_THRESHOLD
-        ), f"Threshold {moral_filter.threshold} fell below MIN during attack"
-        assert (
-            moral_filter.threshold <= MoralFilterV2.MAX_THRESHOLD
-        ), f"Threshold {moral_filter.threshold} exceeded MAX during attack"
+        assert moral_filter.threshold >= MoralFilterV2.MIN_THRESHOLD, (
+            f"Threshold {moral_filter.threshold} fell below MIN during attack"
+        )
+        assert moral_filter.threshold <= MoralFilterV2.MAX_THRESHOLD, (
+            f"Threshold {moral_filter.threshold} exceeded MAX during attack"
+        )
 
     @settings(max_examples=50, deadline=None)
     @given(oscillation_cycles=st.integers(min_value=10, max_value=50))
@@ -325,9 +325,9 @@ class TestThresholdStability:
         drift = abs(moral_filter.threshold - initial)
         max_expected_drift = MoralFilterV2.MAX_THRESHOLD - MoralFilterV2.MIN_THRESHOLD
 
-        assert (
-            drift <= max_expected_drift
-        ), f"Oscillation attack caused drift {drift} > max {max_expected_drift}"
+        assert drift <= max_expected_drift, (
+            f"Oscillation attack caused drift {drift} > max {max_expected_drift}"
+        )
 
     def test_threshold_maintains_minimum_safety_margin(self):
         """
@@ -342,9 +342,9 @@ class TestThresholdStability:
             moral_filter.adapt(False)
 
         # MIN_THRESHOLD should still be respected
-        assert (
-            moral_filter.threshold >= MoralFilterV2.MIN_THRESHOLD
-        ), "Safety margin violated after extreme adaptation"
+        assert moral_filter.threshold >= MoralFilterV2.MIN_THRESHOLD, (
+            "Safety margin violated after extreme adaptation"
+        )
 
 
 # ============================================================================

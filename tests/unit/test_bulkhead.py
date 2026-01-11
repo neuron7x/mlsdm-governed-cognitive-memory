@@ -154,9 +154,7 @@ class TestBulkheadTimeout:
         def attempt() -> None:
             call_start = fake_clock.now()
             started.set()
-            result_holder["result"] = bulkhead.try_acquire(
-                BulkheadCompartment.MEMORY, timeout=0.2
-            )
+            result_holder["result"] = bulkhead.try_acquire(BulkheadCompartment.MEMORY, timeout=0.2)
             result_holder["elapsed"] = fake_clock.now() - call_start
 
         thread = threading.Thread(target=attempt)

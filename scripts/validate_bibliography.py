@@ -262,7 +262,9 @@ def parse_bibtex_entries(content: str) -> tuple[list[dict], list[str]]:
             name_raw, value_raw = field_str.split("=", 1)
             field_name = name_raw.strip().lower()
             value = value_raw.strip().rstrip(",")
-            if (value.startswith("{") and value.endswith("}")) or (value.startswith('"') and value.endswith('"')):
+            if (value.startswith("{") and value.endswith("}")) or (
+                value.startswith('"') and value.endswith('"')
+            ):
                 value = value[1:-1]
             fields[field_name] = value.strip()
 
@@ -340,7 +342,9 @@ def validate_url(url: str) -> bool:
     return not is_placeholder_domain(host)
 
 
-def check_forbidden_content(content: str, context: str, patterns: list[str] | None = None) -> list[str]:
+def check_forbidden_content(
+    content: str, context: str, patterns: list[str] | None = None
+) -> list[str]:
     """Check for forbidden patterns in content."""
     if patterns is None:
         patterns = FORBIDDEN_PATTERNS_STRICT
@@ -586,7 +590,12 @@ def check_verification_table(
             errors.append(f"Row '{key}' verified_on must be ISO date (YYYY-MM-DD)")
         if identifiers and key in identifiers:
             id_entry = identifiers[key]
-            for field in ("canonical_id_type", "canonical_id", "canonical_url", "verification_method"):
+            for field in (
+                "canonical_id_type",
+                "canonical_id",
+                "canonical_url",
+                "verification_method",
+            ):
                 if str(row[field]) != str(id_entry.get(field, "")):
                     errors.append(
                         f"Row '{key}' mismatch for {field}: table='{row[field]}' identifiers='{id_entry.get(field, '')}'"
@@ -737,7 +746,9 @@ def check_bib_apa_consistency(bib_keys: set[str], apa_keys: set[str]) -> list[st
     # Keys in BibTeX but not in APA
     missing_in_apa = bib_keys - apa_keys
     for key in sorted(missing_in_apa):
-        errors.append(f"BibTeX key '{key}' has no corresponding APA entry (add <!-- key: {key} --> comment)")
+        errors.append(
+            f"BibTeX key '{key}' has no corresponding APA entry (add <!-- key: {key} --> comment)"
+        )
 
     # Keys in APA but not in BibTeX
     missing_in_bib = apa_keys - bib_keys

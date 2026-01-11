@@ -58,9 +58,7 @@ def load_excluded_packages() -> dict[str, str]:
     if not EXPORT_REQUIREMENTS_PATH.exists():
         return {}
 
-    spec = importlib.util.spec_from_file_location(
-        "export_requirements", EXPORT_REQUIREMENTS_PATH
-    )
+    spec = importlib.util.spec_from_file_location("export_requirements", EXPORT_REQUIREMENTS_PATH)
     if spec is None or spec.loader is None:
         return {}
 

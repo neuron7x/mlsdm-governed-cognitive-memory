@@ -220,32 +220,37 @@ class SQLiteMemoryStore:
         pii_flags_json = json.dumps(item.pii_flags) if item.pii_flags else None
         provenance_json: str | None = None
         if item.provenance is not None:
-            provenance_json = json.dumps({
-                "source": item.provenance.source.value,
-                "confidence": item.provenance.confidence,
-                "timestamp": item.provenance.timestamp.isoformat(),
-                "llm_model": item.provenance.llm_model,
-                "parent_id": item.provenance.parent_id,
-            })
+            provenance_json = json.dumps(
+                {
+                    "source": item.provenance.source.value,
+                    "confidence": item.provenance.confidence,
+                    "timestamp": item.provenance.timestamp.isoformat(),
+                    "llm_model": item.provenance.llm_model,
+                    "parent_id": item.provenance.parent_id,
+                }
+            )
 
         # Insert or replace
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT OR REPLACE INTO memories
             (id, ts, ttl_s, content, content_hash, pii_flags, provenance_json,
              ciphertext, nonce, alg)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            item.id,
-            item.ts,
-            item.ttl_s,
-            stored_content,
-            item.content_hash,
-            pii_flags_json,
-            provenance_json,
-            ciphertext,
-            nonce,
-            alg,
-        ))
+        """,
+            (
+                item.id,
+                item.ts,
+                item.ttl_s,
+                stored_content,
+                item.content_hash,
+                pii_flags_json,
+                provenance_json,
+                ciphertext,
+                nonce,
+                alg,
+            ),
+        )
 
         conn.commit()
         logger.debug("Stored memory item %s (encrypted=%s)", item.id, alg is not None)
@@ -266,12 +271,15 @@ class SQLiteMemoryStore:
         conn = self._get_connection()
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT id, ts, ttl_s, content, content_hash, pii_flags,
                    provenance_json, ciphertext, nonce, alg
             FROM memories
             WHERE id = ?
-        """, (item_id,))
+        """,
+            (item_id,),
+        )
 
         row = cursor.fetchone()
         if row is None:
@@ -380,15 +388,17 @@ class SQLiteMemoryStore:
                     parent_id=prov_data.get("parent_id"),
                 )
 
-            items.append(MemoryItem(
-                id=row["id"],
-                ts=row["ts"],
-                content=content,
-                content_hash=row["content_hash"],
-                ttl_s=row["ttl_s"],
-                pii_flags=pii_flags,
-                provenance=provenance,
-            ))
+            items.append(
+                MemoryItem(
+                    id=row["id"],
+                    ts=row["ts"],
+                    content=content,
+                    content_hash=row["content_hash"],
+                    ttl_s=row["ttl_s"],
+                    pii_flags=pii_flags,
+                    provenance=provenance,
+                )
+            )
 
         return items
 
@@ -407,11 +417,14 @@ class SQLiteMemoryStore:
         cursor = conn.cursor()
 
         # Delete expired items (those with TTL where ts + ttl_s < now_ts)
-        cursor.execute("""
+        cursor.execute(
+            """
             DELETE FROM memories
             WHERE ttl_s IS NOT NULL
               AND (ts + ttl_s) < ?
-        """, (now_ts,))
+        """,
+            (now_ts,),
+        )
 
         deleted_count = cursor.rowcount
         conn.commit()

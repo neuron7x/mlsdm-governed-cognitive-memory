@@ -14,7 +14,7 @@ import json
 import logging
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from pathlib import Path
@@ -252,7 +252,7 @@ class JSONFormatter(logging.Formatter):
 
         # Use the record's timestamp for consistency
         log_entry: dict[str, Any] = {
-            "timestamp": datetime.fromtimestamp(record.created, timezone.utc).isoformat(),
+            "timestamp": datetime.fromtimestamp(record.created, UTC).isoformat(),
             "timestamp_unix": record.created,
             "level": record.levelname,
             "logger": record.name,

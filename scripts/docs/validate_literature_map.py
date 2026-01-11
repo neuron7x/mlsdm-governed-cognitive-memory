@@ -172,7 +172,9 @@ def validate_literature_map(repo_root: Path, map_path: Path | None = None) -> li
 
 
 def main(argv: Iterable[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Validate LITERATURE_MAP.md against REFERENCES.bib")
+    parser = argparse.ArgumentParser(
+        description="Validate LITERATURE_MAP.md against REFERENCES.bib"
+    )
     parser.add_argument(
         "--repo-root",
         type=Path,

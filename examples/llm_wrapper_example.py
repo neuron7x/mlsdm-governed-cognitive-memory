@@ -176,12 +176,12 @@ def example_3_wake_sleep_cycles():
     print("\nProcessing 10 messages across multiple cycles...")
 
     for i in range(10):
-        result = wrapper.generate(f"Message {i+1}", moral_value=0.9)
+        result = wrapper.generate(f"Message {i + 1}", moral_value=0.9)
 
         status = "✅ ACCEPTED" if result["accepted"] else "❌ REJECTED"
         phase_emoji = "☀️" if result["phase"] == "wake" else "🌙"
 
-        print(f"{i+1:2d}. {phase_emoji} {result['phase']:5s} | {status:12s} | {result['note']}")
+        print(f"{i + 1:2d}. {phase_emoji} {result['phase']:5s} | {status:12s} | {result['note']}")
 
     state = wrapper.get_state()
     print(f"\nFinal: {state['accepted_count']} accepted, {state['rejected_count']} rejected")

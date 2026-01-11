@@ -636,17 +636,15 @@ class NeuroCognitiveEngine:
 
                     try:
                         with tracer_manager.start_span("engine.llm_generation") as gen_span:
-                            response_text, mlsdm_state, fslgs_result = (
-                                self._run_llm_generation(
-                                    prompt,
-                                    max_tokens,
-                                    cognitive_load,
-                                    user_intent,
-                                    moral_value,
-                                    context_top_k,
-                                    enable_diagnostics,
-                                    timing,
-                                )
+                            response_text, mlsdm_state, fslgs_result = self._run_llm_generation(
+                                prompt,
+                                max_tokens,
+                                cognitive_load,
+                                user_intent,
+                                moral_value,
+                                context_top_k,
+                                enable_diagnostics,
+                                timing,
                             )
                             gen_span.set_attribute("mlsdm.response_length", len(response_text))
 
@@ -1337,7 +1335,9 @@ class NeuroCognitiveEngine:
     ) -> PredictionErrorSignals:
         prompt_moral = self._extract_prompt_moral_score(validation_steps)
         threshold = (mlsdm_state or {}).get("moral_threshold", moral_value)
-        perception_error = abs(moral_value - (prompt_moral if prompt_moral is not None else threshold))
+        perception_error = abs(
+            moral_value - (prompt_moral if prompt_moral is not None else threshold)
+        )
         context_items = (mlsdm_state or {}).get("context_items", 0)
         memory_ratio = context_items / context_top_k if context_top_k else 1.0
         memory_error = max(0.0, 1.0 - min(memory_ratio, 1.0))

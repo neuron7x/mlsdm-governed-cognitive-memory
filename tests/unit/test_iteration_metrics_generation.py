@@ -9,7 +9,9 @@ import sys
 from pathlib import Path
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "eval" / "generate_iteration_metrics.py"
-MAX_JSONL_BYTES = 100_000  # ensures deterministic artifact stays well under evidence size guardrails
+MAX_JSONL_BYTES = (
+    100_000  # ensures deterministic artifact stays well under evidence size guardrails
+)
 
 
 def _repo_root() -> Path:
@@ -47,7 +49,9 @@ def _hash(path: Path) -> str:
 
 
 def _load_lines(path: Path) -> list[dict]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
 
 
 def _assert_finite(values: list[float]) -> None:
@@ -99,7 +103,10 @@ def test_capture_evidence_packs_iteration_metrics(tmp_path: Path) -> None:
     coverage = tmp_path / "coverage.xml"
     junit = tmp_path / "junit.xml"
     coverage.write_text('<coverage line-rate="0.5"></coverage>', encoding="utf-8")
-    junit.write_text('<testsuite name="t" tests="1" failures="0" errors="0" skipped="0"><testcase name="ok"/></testsuite>', encoding="utf-8")
+    junit.write_text(
+        '<testsuite name="t" tests="1" failures="0" errors="0" skipped="0"><testcase name="ok"/></testsuite>',
+        encoding="utf-8",
+    )
 
     metrics = _run_generator(tmp_path / "iteration-metrics.jsonl", seed=2, steps=8)
     inputs_path = tmp_path / "inputs.json"

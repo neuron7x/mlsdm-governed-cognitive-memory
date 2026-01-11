@@ -68,9 +68,10 @@ settings.register_profile(
         max_examples=1000,
     ),
 )
-_is_ci = os.environ.get("CI", "").lower() == "true" or os.environ.get(
-    "GITHUB_ACTIONS", ""
-).lower() == "true"
+_is_ci = (
+    os.environ.get("CI", "").lower() == "true"
+    or os.environ.get("GITHUB_ACTIONS", "").lower() == "true"
+)
 settings.load_profile("ci" if _is_ci else "dev")
 
 

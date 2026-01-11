@@ -335,9 +335,9 @@ class TestGetDefaultFallback:
         from mlsdm.memory import multi_level_memory
 
         # Mock _SYNAPTIC_MEMORY_DEFAULTS to be None
-        with patch.object(multi_level_memory, '_SYNAPTIC_MEMORY_DEFAULTS', None):
+        with patch.object(multi_level_memory, "_SYNAPTIC_MEMORY_DEFAULTS", None):
             # Call _get_default with a fallback value
-            result = multi_level_memory._get_default('lambda_l1', 0.99)
+            result = multi_level_memory._get_default("lambda_l1", 0.99)
 
             # Should return the fallback value since defaults is None
             assert result == 0.99
